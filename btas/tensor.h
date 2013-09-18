@@ -22,14 +22,14 @@ class Tensor
     //
 
     //! default constructor
-    TArray();
+    Tensor();
 
     //! constructor with array range, for ndim() == 1
     explicit 
-    TArray(int n01) 
+    Tensor(int n01) 
 
     //! constructor with array range, for ndim() == 2
-    TArray(int n01, int n02) 
+    Tensor(int n01, int n02) 
 
     //etc... up to 10 or so indices
 
@@ -85,45 +85,32 @@ class Tensor
     iterator end() ;
 
 
-    //! returns element i01 (ndim() == 1) without range check
+    //! returns element i01,i02,... without range check
     T 
-    operator[](int i01) const;
+    operator[](int i01     , int i02 = -1, int i03 = -1, int i04 = -1,
+               int i05 = -1, int i06 = -1, int i07 = -1, int i08 = -1,
+               int i09 = -1, int i10 = -1, int i11 = -1, int i12 = -1) const;
 
-    //! returns element i01,i02 (ndim() == 2) without range check
-    T 
-    operator[](int i01, int i02) const;
-
-    //etc... up to 10 or so indices
-
-    //! returns element i01 (ndim() == 1) without range check
+    //! access element i01,i02,... without range check
     T& 
-    operator[](int i01);
+    operator[](int i01     , int i02 = -1, int i03 = -1, int i04 = -1,
+               int i05 = -1, int i06 = -1, int i07 = -1, int i08 = -1,
+               int i09 = -1, int i10 = -1, int i11 = -1, int i12 = -1);
 
-    //! returns element i01,i02 (ndim() == 2) without range check
-    T&
-    operator[](int i01, int i02);
-
-    //etc... up to 10 or so indices
     
-    //! returns element i01 (ndim() == 1) with range check
+    //! returns element i01,i02,... with range check
     T 
-    at(int i01) const;
+    at(int i01     , int i02 = -1, int i03 = -1, int i04 = -1,
+       int i05 = -1, int i06 = -1, int i07 = -1, int i08 = -1,
+       int i09 = -1, int i10 = -1, int i11 = -1, int i12 = -1) const;
 
-    //! returns element i01,i02 (ndim() == 2) with range check
-    T 
-    at(int i01, int i02) const;
 
-    //etc... up to 10 or so indices
-
-    //! returns element i01 (ndim() == 1) with range check
-    T& 
-    at(int i01);
-
-    //! returns element i01,i02 (ndim() == 2) with range check
+    //! access element i01,i02,... with range check
     T&
-    at(int i01, int i02);
+    at(int i01     , int i02 = -1, int i03 = -1, int i04 = -1,
+       int i05 = -1, int i06 = -1, int i07 = -1, int i08 = -1,
+       int i09 = -1, int i10 = -1, int i11 = -1, int i12 = -1);
 
-    //etc... up to 10 or so indices
 
     //! return number of elements in storage
     int
