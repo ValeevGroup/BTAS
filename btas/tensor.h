@@ -125,61 +125,61 @@ class Tensor
 
 
     //! return element i01 without range check (ndim()==1)
-    T 
+    const T& 
     operator()(int i01) const;
 
     //! return element i01,i02,... without range check (ndim()==2)
-    T 
+    const T& 
     operator()(int i01, int i02) const;
 
     //! return element i01,i02,... without range check (ndim()==3)
-    T 
+    const T& 
     operator()(int i01, int i02, int i03) const;
 
     //! return element i01,i02,... without range check (ndim()==4)
-    T 
+    const T& 
     operator()(int i01, int i02, int i03, int i04) const;
 
     //! return element i01,i02,... without range check (ndim()==5)
-    T 
+    const T& 
     operator()(int i01, int i02, int i03, int i04,
                int i05) const;
 
     //! return element i01,i02,... without range check (ndim()==6)
-    T 
+    const T& 
     operator()(int i01, int i02, int i03, int i04,
                int i05, int i06) const;
 
     //! return element i01,i02,... without range check (ndim()==7)
-    T 
+    const T& 
     operator()(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07) const;
 
     //! return element i01,i02,... without range check (ndim()==8)
-    T 
+    const T& 
     operator()(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07, int i08) const;
 
     //! return element i01,i02,... without range check (ndim()==9)
-    T 
+    const T& 
     operator()(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07, int i08,
                int i09) const;
 
     //! return element i01,i02,... without range check (ndim()==10)
-    T 
+    const T& 
     operator()(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07, int i08,
                int i09, int i10) const;
 
     //! return element i01,i02,... without range check (ndim()==11)
-    T 
+    const T& 
     operator()(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07, int i08,
                int i09, int i10, int i11) const;
 
     //! return element i01,i02,... without range check (ndim()==12)
-    T 
+    const T& 
     operator()(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07, int i08,
                int i09, int i10, int i11, int i12) const;
@@ -245,61 +245,61 @@ class Tensor
                int i09, int i10, int i11, int i12);
 
     //! return element i01 with range check (ndim()==1)
-    T 
+    const T& 
     at(int i01) const;
 
     //! return element i01,i02,... with range check (ndim()==2)
-    T 
+    const T& 
     at(int i01, int i02) const;
 
     //! return element i01,i02,... with range check (ndim()==3)
-    T 
+    const T& 
     at(int i01, int i02, int i03) const;
 
     //! return element i01,i02,... with range check (ndim()==4)
-    T 
+    const T& 
     at(int i01, int i02, int i03, int i04) const;
 
     //! return element i01,i02,... with range check (ndim()==5)
-    T 
+    const T& 
     at(int i01, int i02, int i03, int i04,
                int i05) const;
 
     //! return element i01,i02,... with range check (ndim()==6)
-    T 
+    const T& 
     at(int i01, int i02, int i03, int i04,
                int i05, int i06) const;
 
     //! return element i01,i02,... with range check (ndim()==7)
-    T 
+    const T& 
     at(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07) const;
 
     //! return element i01,i02,... with range check (ndim()==8)
-    T 
+    const T& 
     at(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07, int i08) const;
 
     //! return element i01,i02,... with range check (ndim()==9)
-    T 
+    const T& 
     at(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07, int i08,
                int i09) const;
 
     //! return element i01,i02,... with range check (ndim()==10)
-    T 
+    const T& 
     at(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07, int i08,
                int i09, int i10) const;
 
     //! return element i01,i02,... with range check (ndim()==11)
-    T 
+    const T& 
     at(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07, int i08,
                int i09, int i10, int i11) const;
 
     //! return element i01,i02,... with range check (ndim()==12)
-    T 
+    const T& 
     at(int i01, int i02, int i03, int i04,
                int i05, int i06, int i07, int i08,
                int i09, int i10, int i11, int i12) const;
@@ -364,7 +364,7 @@ class Tensor
        int i05, int i06, int i07, int i08,
        int i09, int i10, int i11, int i12);
     
-    //! return number of elements in storage
+    //! return number of elements
     int
     size() const;
 
@@ -376,11 +376,65 @@ class Tensor
     T* 
     data();   
 
-    //! resize array range, for N = 1
+    //! resize array range, for ndim() == 1
     void 
-    resize(int n01) ;
+    resize(int n01);
 
-    //etc... up to 10 or so indices
+    //! resize array range, for ndim() == 2
+    void 
+    resize(int n01, int n02);
+
+    //! resize array range, for ndim() == 3
+    void 
+    resize(int n01, int n02, int n03);
+
+    //! resize array range, for ndim() == 4
+    void 
+    resize(int n01, int n02, int n03, int n04);
+
+    //! resize array range, for ndim() == 5
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05);
+
+    //! resize array range, for ndim() == 6
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06);
+
+    //! resize array range, for ndim() == 7
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07);
+
+    //! resize array range, for ndim() == 8
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08);
+
+    //! resize array range, for ndim() == 9
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09);
+
+    //! resize array range, for ndim() == 10
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09, int n10);
+
+    //! resize array range, for ndim() == 11
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09, int n10, int n11);
+
+    //! resize array range, for ndim() == 12
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09, int n10, int n11, int n12);
 
     //! slice array to return sub-array object
     TSubArray<T> 
