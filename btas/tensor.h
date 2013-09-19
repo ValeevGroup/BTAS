@@ -22,16 +22,56 @@ class Tensor
     //
 
     //! default constructor
-    TArray();
+    Tensor();
 
-    //! constructor with array range, for ndim() == 1
+    //! constructor with index range, for ndim() == 1
     explicit 
-    TArray(int n01) 
+    Tensor(int n01);
 
-    //! constructor with array range, for ndim() == 2
-    TArray(int n01, int n02) 
+    //! constructor with index ranges, for ndim() == 2
+    Tensor(int n01, int n02);
 
-    //etc... up to 10 or so indices
+    //! constructor with index ranges, for ndim() == 3
+    Tensor(int n01, int n02, int n03);
+
+    //! constructor with index ranges, for ndim() == 4
+    Tensor(int n01, int n02, int n03, int n04);
+
+    //! constructor with index ranges, for ndim() == 5
+    Tensor(int n01, int n02, int n03, int n04,
+           int n05);
+
+    //! constructor with index ranges, for ndim() == 6
+    Tensor(int n01, int n02, int n03, int n04,
+           int n05, int n06);
+
+    //! constructor with index ranges, for ndim() == 7
+    Tensor(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07);
+
+    //! constructor with index ranges, for ndim() == 8
+    Tensor(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08);
+
+    //! constructor with index ranges, for ndim() == 9
+    Tensor(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09);
+
+    //! constructor with index ranges, for ndim() == 10
+    Tensor(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09, int n10);
+
+    //! constructor with index ranges, for ndim() == 11
+    Tensor(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09, int n10, int n11);
+
+    //! constructor with index ranges, for ndim() == 12
+    Tensor(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09, int n10, int n11, int n12);
 
     //
     // Accessors and iterators
@@ -52,7 +92,6 @@ class Tensor
 
     //
     // Overloaded operators
-    // (prefer external methods?)
     //
 
     //! addition of tensors
@@ -85,47 +124,247 @@ class Tensor
     iterator end() ;
 
 
-    //! returns element i01 (ndim() == 1) without range check
-    T 
-    operator[](int i01) const;
+    //! return element i01 without range check (ndim()==1)
+    const T& 
+    operator()(int i01) const;
 
-    //! returns element i01,i02 (ndim() == 2) without range check
-    T 
-    operator[](int i01, int i02) const;
+    //! return element i01,i02,... without range check (ndim()==2)
+    const T& 
+    operator()(int i01, int i02) const;
 
-    //etc... up to 10 or so indices
+    //! return element i01,i02,... without range check (ndim()==3)
+    const T& 
+    operator()(int i01, int i02, int i03) const;
 
-    //! returns element i01 (ndim() == 1) without range check
+    //! return element i01,i02,... without range check (ndim()==4)
+    const T& 
+    operator()(int i01, int i02, int i03, int i04) const;
+
+    //! return element i01,i02,... without range check (ndim()==5)
+    const T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05) const;
+
+    //! return element i01,i02,... without range check (ndim()==6)
+    const T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06) const;
+
+    //! return element i01,i02,... without range check (ndim()==7)
+    const T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07) const;
+
+    //! return element i01,i02,... without range check (ndim()==8)
+    const T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08) const;
+
+    //! return element i01,i02,... without range check (ndim()==9)
+    const T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09) const;
+
+    //! return element i01,i02,... without range check (ndim()==10)
+    const T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09, int i10) const;
+
+    //! return element i01,i02,... without range check (ndim()==11)
+    const T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09, int i10, int i11) const;
+
+    //! return element i01,i02,... without range check (ndim()==12)
+    const T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09, int i10, int i11, int i12) const;
+
+    //! access element i01 without range check (ndim()==1)
     T& 
-    operator[](int i01);
+    operator()(int i01);
 
-    //! returns element i01,i02 (ndim() == 2) without range check
-    T&
-    operator[](int i01, int i02);
+    //! access element i01,i02,... without range check (ndim()==2)
+    T& 
+    operator()(int i01, int i02);
 
-    //etc... up to 10 or so indices
-    
-    //! returns element i01 (ndim() == 1) with range check
-    T 
+    //! access element i01,i02,... without range check (ndim()==3)
+    T& 
+    operator()(int i01, int i02, int i03);
+
+    //! access element i01,i02,... without range check (ndim()==4)
+    T& 
+    operator()(int i01, int i02, int i03, int i04);
+
+    //! access element i01,i02,... without range check (ndim()==5)
+    T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05);
+
+    //! access element i01,i02,... without range check (ndim()==6)
+    T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06);
+
+    //! access element i01,i02,... without range check (ndim()==7)
+    T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07);
+
+    //! access element i01,i02,... without range check (ndim()==8)
+    T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08);
+
+    //! access element i01,i02,... without range check (ndim()==9)
+    T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09);
+
+    //! access element i01,i02,... without range check (ndim()==10)
+    T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09, int i10);
+
+    //! access element i01,i02,... without range check (ndim()==11)
+    T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09, int i10, int i11);
+
+    //! access element i01,i02,... without range check (ndim()==12)
+    T& 
+    operator()(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09, int i10, int i11, int i12);
+
+    //! return element i01 with range check (ndim()==1)
+    const T& 
     at(int i01) const;
 
-    //! returns element i01,i02 (ndim() == 2) with range check
-    T 
+    //! return element i01,i02,... with range check (ndim()==2)
+    const T& 
     at(int i01, int i02) const;
 
-    //etc... up to 10 or so indices
+    //! return element i01,i02,... with range check (ndim()==3)
+    const T& 
+    at(int i01, int i02, int i03) const;
 
-    //! returns element i01 (ndim() == 1) with range check
+    //! return element i01,i02,... with range check (ndim()==4)
+    const T& 
+    at(int i01, int i02, int i03, int i04) const;
+
+    //! return element i01,i02,... with range check (ndim()==5)
+    const T& 
+    at(int i01, int i02, int i03, int i04,
+               int i05) const;
+
+    //! return element i01,i02,... with range check (ndim()==6)
+    const T& 
+    at(int i01, int i02, int i03, int i04,
+               int i05, int i06) const;
+
+    //! return element i01,i02,... with range check (ndim()==7)
+    const T& 
+    at(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07) const;
+
+    //! return element i01,i02,... with range check (ndim()==8)
+    const T& 
+    at(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08) const;
+
+    //! return element i01,i02,... with range check (ndim()==9)
+    const T& 
+    at(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09) const;
+
+    //! return element i01,i02,... with range check (ndim()==10)
+    const T& 
+    at(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09, int i10) const;
+
+    //! return element i01,i02,... with range check (ndim()==11)
+    const T& 
+    at(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09, int i10, int i11) const;
+
+    //! return element i01,i02,... with range check (ndim()==12)
+    const T& 
+    at(int i01, int i02, int i03, int i04,
+               int i05, int i06, int i07, int i08,
+               int i09, int i10, int i11, int i12) const;
+
+    //! access element i01 with range check (ndim()==1)
     T& 
     at(int i01);
 
-    //! returns element i01,i02 (ndim() == 2) with range check
-    T&
+    //! access element i01,i02,... with range check (ndim()==2)
+    T& 
     at(int i01, int i02);
 
-    //etc... up to 10 or so indices
+    //! access element i01,i02,... with range check (ndim()==3)
+    T& 
+    at(int i01, int i02, int i03);
 
-    //! return number of elements in storage
+    //! access element i01,i02,... with range check (ndim()==4)
+    T& 
+    at(int i01, int i02, int i03, int i04);
+
+    //! access element i01,i02,... with range check (ndim()==5)
+    T& 
+    at(int i01, int i02, int i03, int i04,
+       int i05);
+
+    //! access element i01,i02,... with range check (ndim()==6)
+    T& 
+    at(int i01, int i02, int i03, int i04,
+       int i05, int i06);
+
+    //! access element i01,i02,... with range check (ndim()==7)
+    T& 
+    at(int i01, int i02, int i03, int i04,
+       int i05, int i06, int i07);
+
+    //! access element i01,i02,... with range check (ndim()==8)
+    T& 
+    at(int i01, int i02, int i03, int i04,
+       int i05, int i06, int i07, int i08);
+
+    //! access element i01,i02,... with range check (ndim()==9)
+    T& 
+    at(int i01, int i02, int i03, int i04,
+       int i05, int i06, int i07, int i08,
+       int i09);
+
+    //! access element i01,i02,... with range check (ndim()==10)
+    T& 
+    at(int i01, int i02, int i03, int i04,
+       int i05, int i06, int i07, int i08,
+       int i09, int i10);
+
+    //! access element i01,i02,... with range check (ndim()==11)
+    T& 
+    at(int i01, int i02, int i03, int i04,
+       int i05, int i06, int i07, int i08,
+       int i09, int i10, int i11);
+
+    //! access element i01,i02,... with range check (ndim()==12)
+    T& 
+    at(int i01, int i02, int i03, int i04,
+       int i05, int i06, int i07, int i08,
+       int i09, int i10, int i11, int i12);
+    
+    //! return number of elements
     int
     size() const;
 
@@ -137,11 +376,65 @@ class Tensor
     T* 
     data();   
 
-    //! resize array range, for N = 1
+    //! resize array range, for ndim() == 1
     void 
-    resize(int n01) ;
+    resize(int n01);
 
-    //etc... up to 10 or so indices
+    //! resize array range, for ndim() == 2
+    void 
+    resize(int n01, int n02);
+
+    //! resize array range, for ndim() == 3
+    void 
+    resize(int n01, int n02, int n03);
+
+    //! resize array range, for ndim() == 4
+    void 
+    resize(int n01, int n02, int n03, int n04);
+
+    //! resize array range, for ndim() == 5
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05);
+
+    //! resize array range, for ndim() == 6
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06);
+
+    //! resize array range, for ndim() == 7
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07);
+
+    //! resize array range, for ndim() == 8
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08);
+
+    //! resize array range, for ndim() == 9
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09);
+
+    //! resize array range, for ndim() == 10
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09, int n10);
+
+    //! resize array range, for ndim() == 11
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09, int n10, int n11);
+
+    //! resize array range, for ndim() == 12
+    void 
+    resize(int n01, int n02, int n03, int n04,
+           int n05, int n06, int n07, int n08,
+           int n09, int n10, int n11, int n12);
 
     //! slice array to return sub-array object
     TSubArray<T> 
