@@ -54,6 +54,14 @@ class Tensor
     typedef std::vector<T>
     data_type;
 
+    //! iterator
+    typedef std::vector<T>::iterator
+    iterator;
+
+    //! const iterator
+    typedef std::vector<T>::const_iterator
+    const_iterator;
+
     //
     // Constructors
     //
@@ -977,9 +985,10 @@ class Tensor
     void
     resize(const range_type& range)
     {
+        assert(range.size() > 0);
         range_ = range;
         size_t str = 1;
-        for(size_t i = N-1; i > 0; --i) {
+        for(size_t i = range_.size()-1; i > 0; --i) {
             stride_[i] = str;
             str *= range_[i];
         }

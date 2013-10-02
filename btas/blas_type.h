@@ -10,6 +10,7 @@ extern "C"
 #include <cblas.h>
 #endif
 }
+#endif // _HAS_BLAS
 
 namespace btas
 {
