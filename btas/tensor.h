@@ -55,11 +55,11 @@ class Tensor
     data_type;
 
     //! iterator
-    typedef std::vector<T>::iterator
+    typedef typename std::vector<T>::iterator
     iterator;
 
     //! const iterator
-    typedef std::vector<T>::const_iterator
+    typedef typename std::vector<T>::const_iterator
     const_iterator;
 
     //
