@@ -899,6 +899,7 @@ public:
    {
       assert(range.size() > 0);
       range_ = range;
+      stride_.resize(range_.size());
       size_type str = 1;
       for(size_type i = range_.size()-1; i > 0; --i) {
           stride_[i] = str;

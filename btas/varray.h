@@ -265,7 +265,7 @@ public:
       if (n > 0) {
          _M_start = new value_type [n];
          _M_finish = _M_start + n;
-         std::copy (_M_start, first, last);
+         std::copy (first, last, _M_start);
       }
    }
 
@@ -276,7 +276,7 @@ public:
       if (n > 0) {
          _M_start = new value_type [n];
          _M_finish = _M_start + n;
-         std::copy (_M_start, x._M_start, x._M_finish);
+         std::copy (x._M_start, x._M_finish, _M_start);
       }
    }
 
@@ -294,7 +294,7 @@ public:
       if (n > 0) {
          _M_start = new value_type [n];
          _M_finish = _M_start + n;
-         std::copy (_M_start, il.begin(), il.end());
+         std::copy (il.begin(), il.end(), _M_start);
       }
    }
 
@@ -309,7 +309,7 @@ public:
       if (n > 0) {
          _M_start = new value_type [n];
          _M_finish = _M_start + n;
-         std::copy (_M_start, x._M_start, x._M_finish);
+         std::copy (x._M_start, x._M_finish, _M_start);
       }
       return *this;
    }
@@ -332,7 +332,7 @@ public:
       if (n > 0) {
          _M_start = new value_type [n];
          _M_finish = _M_start + n;
-         std::copy (_M_start, il.begin(), il.end());
+         std::copy (il.begin(), il.end(), _M_start);
       }
    }
 
