@@ -1,27 +1,42 @@
-#ifndef __BTAS_TENSOR_H
-#define __BTAS_TENSOR_H 1
+#ifndef __BTAS_REFERENCE_TENSOR_H
+#define __BTAS_REFERENCE_TENSOR_H 1
 
-#include <aliases.h>
+#include <cassert>
+#include <algorithm>
+#include <type_traits>
+#include <vector>
+
+/// default storage type
+template<typename _T>
+using DEFAULT_STORAGE = std::vector<_T>;
+
+/// default range type
+using DEFAULT_RANGE   = std::vector<unsigned long>;
 
 namespace btas {
 
-/// forward decl. SlicedTensor
-template <typename T>
-class SlicedTensor;
-
-/// reference implementation of dense tensor class
-template <typename T>
+/// reference implementation of dense tensor class (variable rank)
+template<typename _T,
+         class _Container = DEFAULT_STORAGE<_T>,
+         class _Range = DEFAULT_RANGE>
 class Tensor {
+
 public:
 
-   /// element type
-   typedef T value_type;
+   //  ========== Starting Public Interface and Its Reference Implementations ==========
 
-   /// type of array storing index ranges (sizes)
-   typedef TensorRange range_type;
+   //
+   //  Concepts for Standard Tensor Template Class
+   //
+
+   /// element type
+   typedef _T value_type;
 
    /// type of array storing data as 1D array
-   typedef VARIABLE_SIZE_ARRAY<T> storage_type;
+   typedef _Container storage_type;
+
+   /// size type
+   typedef typename storage_type::size_type size_type;
 
    /// iterator
    typedef typename storage_type::iterator iterator;
@@ -29,122 +44,76 @@ public:
    /// const iterator
    typedef typename storage_type::const_iterator const_iterator;
 
-   /// size type
-   typedef size_t size_type;
+   /// type of array for index ranges
+   /// range_type requires, default-constructible, resizable, accessible by operator[]
+   typedef _Range range_type;
+
+   /// type of array for index/shape
+   /// shape_type requires, default-constructible, resizable, accessible by operator[]
+   /// regarding shape_type = range_type, in this implementation
+   typedef _Range shape_type;
+
+public:
+
+   //
+   //  Constructors
+   //
 
    /// default constructor
-   Tensor () { }
+   /// \param n tensor rank
+   explicit
+   Tensor (size_type n = 0)
+   : range_ (n, 0), stride_ (n, 0)
+   { }
 
    /// destructor
    ~Tensor () { }
 
-   /// constructor with index range, for rank() == 1
-   explicit 
-   Tensor (size_type n01)
+   /// constructor with index range
+   template<typename _arg1, typename... _args>
+   Tensor (const _arg1& first, const _args&... rest)
    {
-      resize (n01);
+      resize(first, rest...);
    }
 
-   /// constructor with index range, for rank() == 2
-   Tensor (size_type n01, size_type n02)
-   {
-      resize (n01, n02);
-   }
-
-   /// constructor with index range, for rank() == 3
-   Tensor (size_type n01, size_type n02, size_type n03)
-   {
-      resize (n01, n02, n03);
-   }
-
-   /// constructor with index range, for rank() == 4
-   Tensor (size_type n01, size_type n02, size_type n03, size_type n04)
-   {
-      resize (n01, n02, n03, n04);
-   }
-
-   /// constructor with index range, for rank() == 5
-   Tensor (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05)
-   {
-      resize (n01, n02, n03, n04, n05);
-   }
-
-   /// constructor with index range, for rank() == 6
-   Tensor (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06)
-   {
-      resize (n01, n02, n03, n04, n05, n06);
-   }
-
-   /// constructor with index range, for rank() == 7
-   Tensor (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07)
-   {
-      resize (n01, n02, n03, n04, n05, n06, n07);
-   }
-
-   /// constructor with index range, for rank() == 8
-   Tensor (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07, size_type n08)
-   {
-      resize (n01, n02, n03, n04, n05, n06, n07, n08);
-   }
-
-   /// constructor with index range, for rank() == 9
-   Tensor (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07, size_type n08,
-           size_type n09)
-   {
-      resize (n01, n02, n03, n04, n05, n06, n07, n08, n09);
-   }
-
-   /// constructor with index range, for rank() == 10
-   Tensor (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07, size_type n08,
-           size_type n09, size_type n10)
-   {
-      resize (n01, n02, n03, n04, n05, n06, n07, n08, n09, n10);
-   }
-
-   /// constructor with index range, for rank() == 11
-   Tensor (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07, size_type n08,
-           size_type n09, size_type n10, size_type n11)
-   {
-      resize (n01, n02, n03, n04, n05, n06, n07, n08, n09, n10, n11);
-   }
-
-   /// constructor with index range, for rank() == 12
-   Tensor (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07, size_type n08,
-           size_type n09, size_type n10, size_type n11, size_type n12)
-   {
-      resize (n01, n02, n03, n04, n05, n06, n07, n08, n09, n10, n11, n12);
-   }
-
-   /// constructor with index range, for general rank
+   /// constructor with index range object
    Tensor (const range_type& range)
    {
-      resize (range);
+      resize(range);
    }
 
+   //
+   //  Copy semantics:
+   //  provides the interface b/w different tensor class
+   //  _Tensor must have convertible value_type and iterators for range, stride, and data
+   //
+
    /// copy constructor
-   Tensor (const Tensor& x)
-   : range_ (x.range_), stride_ (x.stride_)
+   template<class _Tensor>
+   Tensor (const _Tensor& x)
+   : range_ (x.rank()), stride_ (x.rank())
    {
+      std::copy(x.range().begin(), x.range().end(), range_.begin());
+
+      std::copy(x.stride().begin(), x.stride().end(), stride_.begin());
+
       data_.resize(x.size());
-      NUMERIC_TYPE<T>::copy (x.size(), x.data_.data(), data_.data());
+      std::copy(x.begin(), x.end(), data_.begin());
    }
 
    /// copy assignment operator
+   template<class _Tensor>
    Tensor&
-   operator= (const Tensor& x)
+   operator= (const _Tensor& x)
    {
-      range_ = x.range_;
-      stride_ = x.stride_;
+      range_.resize(x.rank());
+      std::copy(x.range().begin(), x.range().end(), range_.begin());
+
+      stride_.resize(x.rank());
+      std::copy(x.stride().begin(), x.stride().end(), stride_.begin());
+
       data_.resize(x.size());
-      NUMERIC_TYPE<T>::copy (x.size(), x.data_.data(), data_.data());
+      std::copy(x.begin(), x.end(), data_.begin());
       return *this;
    }
 
@@ -165,60 +134,65 @@ public:
 
    /// number of indices (tensor rank)
    size_type
-   rank () const { return range_.size(); }
+   rank () const
+   {
+      return range_.size();
+   }
 
-   /// list of index sizes/ranges
-   range_type
-   range () const { return range_; }
-
-   /// specific index size/range
+   /// \return number of elements
    size_type
-   range (size_type i) const { return range_.at(i); }
+   size () const
+   {
+      return data_.size();
+   }
 
-   /// list of strides
-   range_type
-   stride () const { return stride_; }
+   /// \return range object
+   const range_type&
+   range () const
+   {
+      return range_;
+   }
 
-   /// specific stride
-   size_type
-   stride (size_type i) const { return stride_; }
+   /// \return n-th range
+   const typename range_type::value_type&
+   range (const size_type& n) const
+   {
+      return range_[n];
+   }
 
-   /// empty() -> storage_type::empty()
+   /// \return shape (= range) object
+   const shape_type&
+   shape () const
+   {
+      return range_;
+   }
+
+   /// \return n-th shape (= range)
+   const typename shape_type::value_type&
+   shape (const size_type& n) const
+   {
+      return range_[n];
+   }
+
+   /// \return stride object
+   const shape_type&
+   stride () const
+   {
+      return stride_;
+   }
+
+   /// \return n-th stride
+   const typename shape_type::value_type&
+   stride (const size_type& n) const
+   {
+      return stride_[n];
+   }
+
+   /// test whether storage is empty
    bool
-   empty() const { return data_.empty(); }
-
-   /// addition assignment
-   Tensor&
-   operator+= (const Tensor& x)
+   empty() const
    {
-      assert (range_ == x.range_);
-      NUMERIC_TYPE<T>::plus (x.size(), x.data_.data(), this->data_.data());
-      return *this;
-   }
-
-   /// addition of tensors
-   Tensor
-   operator+ (const Tensor& x) const
-   {
-      Tensor y(*this); y += x;
-      return y; /* automatically called move semantics */
-   }
-
-   /// subtraction assignment
-   Tensor&
-   operator-= (const Tensor& x)
-   {
-      assert (range_ == x.range_);
-      NUMERIC_TYPE<T>::minus(x.size(), x.data_.data(), this->data_.data());
-      return *this;
-   }
-
-   /// subtraction of tensors
-   Tensor
-   operator- (const Tensor& x) const
-   {
-      Tensor y(*this); y -= x;
-      return y; /* automatically called move semantics */
+      return data_.empty();
    }
 
    /// \return const iterator first
@@ -249,693 +223,89 @@ public:
       return data_.end();
    }
 
-   /// \return element i01 without range check (rank() == 1)
+   /// \return element without range check
+   template<typename... _args>
    const value_type& 
-   operator() (size_type i01) const
+   operator() (const size_type& first, const _args&... rest) const
    {
-      range_type index = { i01 };
-      return this->operator()(index);
-   }
-
-   /// \return element i01,i02,... without range check (rank() == 2)
-   const value_type& 
-   operator() (size_type i01, size_type i02) const
-   {
-      range_type index = { i01, i02 };
-      return this->operator()(index);
-   }
-
-   /// \return element i01,i02,... without range check (rank() == 3)
-   const value_type& 
-   operator() (size_type i01, size_type i02, size_type i03) const
-   {
-      range_type index = { i01, i02, i03 };
-      return this->operator()(index);
-   }
-
-   /// \return element i01,i02,... without range check (rank() == 4)
-   const value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04) const
-   {
-      range_type index = { i01, i02, i03, i04 };
-      return this->operator()(index);
-   }
-
-   /// \return element i01,i02,... without range check (rank() == 5)
-   const value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05 };
-      return this->operator()(index);
-   }
-
-   /// \return element i01,i02,... without range check (rank() == 6)
-   const value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06 };
-      return this->operator()(index);
-   }
-
-   /// \return element i01,i02,... without range check (rank() == 7)
-   const value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07 };
-      return this->operator()(index);
-   }
-
-   /// \return element i01,i02,... without range check (rank() == 8)
-   const value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07, size_type i08) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08 };
-      return this->operator()(index);
-   }
-
-   /// \return element i01,i02,... without range check (rank() == 9)
-   const value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07, size_type i08,
-               size_type i09) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09 };
-      return this->operator()(index);
-   }
-
-   /// \return element i01,i02,... without range check (rank() == 10)
-   const value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07, size_type i08,
-               size_type i09, size_type i10) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09, i10 };
-      return this->operator()(index);
-   }
-
-   /// \return element i01,i02,... without range check (rank() == 11)
-   const value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07, size_type i08,
-               size_type i09, size_type i10, size_type i11) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09, i10, i11 };
-      return this->operator()(index);
-   }
-
-   /// \return element i01,i02,... without range check (rank() == 12)
-   const value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07, size_type i08,
-               size_type i09, size_type i10, size_type i11, size_type i12) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09, i10, i11, i12 };
-      return this->operator()(index);
+      return data_[_address<0>(first, rest...)];
    }
 
    /// \return element without range check (rank() == general)
    const value_type& 
-   operator()(const range_type& index) const
+   operator() (const shape_type& index) const
    {
-      assert(index.size() == this->rank());
-      return data_[dot(index, stride_)];
-   }
-   
-   /// access element i01 without range check (rank() == 1)
-   value_type& 
-   operator() (size_type i01)
-   {
-      range_type index = { i01 };
-      return this->operator()(index);
+      return data_[_address(index)];
    }
 
-   /// access element i01,i02,... without range check (rank() == 2)
+   /// access element without range check
+   template<typename... _args>
    value_type& 
-   operator() (size_type i01, size_type i02)
+   operator() (const size_type& first, const _args&... rest)
    {
-      range_type index = { i01, i02 };
-      return this->operator()(index);
-   }
-
-   /// access element i01,i02,... without range check (rank() == 3)
-   value_type& 
-   operator() (size_type i01, size_type i02, size_type i03)
-   {
-      range_type index = { i01, i02, i03 };
-      return this->operator()(index);
-   }
-
-   /// access element i01,i02,... without range check (rank() == 4)
-   value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04)
-   {
-      range_type index = { i01, i02, i03, i04 };
-      return this->operator()(index);
-   }
-
-   /// access element i01,i02,... without range check (rank() == 5)
-   value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05 };
-      return this->operator()(index);
-   }
-
-   /// access element i01,i02,... without range check (rank() == 6)
-   value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06 };
-      return this->operator()(index);
-   }
-
-   /// access element i01,i02,... without range check (rank() == 7)
-   value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07 };
-      return this->operator()(index);
-   }
-
-   /// access element i01,i02,... without range check (rank() == 8)
-   value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07, size_type i08)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08 };
-      return this->operator()(index);
-   }
-
-   /// access element i01,i02,... without range check (rank() == 9)
-   value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07, size_type i08,
-               size_type i09)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09 };
-      return this->operator()(index);
-   }
-
-   /// access element i01,i02,... without range check (rank() == 10)
-   value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07, size_type i08,
-               size_type i09, size_type i10)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09, i10 };
-      return this->operator()(index);
-   }
-
-   /// access element i01,i02,... without range check (rank() == 11)
-   value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07, size_type i08,
-               size_type i09, size_type i10, size_type i11)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09, i10, i11 };
-      return this->operator()(index);
-   }
-
-   /// access element i01,i02,... without range check (rank() == 12)
-   value_type& 
-   operator() (size_type i01, size_type i02, size_type i03, size_type i04,
-               size_type i05, size_type i06, size_type i07, size_type i08,
-               size_type i09, size_type i10, size_type i11, size_type i12)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09, i10, i11, i12 };
-      return this->operator()(index);
+      return data_[_address<0>(first, rest...)];
    }
 
    /// access element without range check (rank() == general)
    value_type& 
-   operator() (const range_type& index)
+   operator() (const shape_type& index)
    {
-      assert(index.size() == this->rank());
-      return data_[dot(index, stride_)];
+      return data_[_address(index)];
    }
    
-   /// \return element i01 with range check (rank() == 1)
+   /// \return element without range check
+   template<typename... _args>
    const value_type& 
-   at (size_type i01) const
+   at (const size_type& first, const _args&... rest) const
    {
-      range_type index = { i01 };
-      return at(index);
+      assert(_check_range<0>(first, rest...));
+      return data_[_address<0>(first, rest...)];
    }
 
-   /// \return element i01,i02,... with range check (rank() == 2)
+   /// \return element without range check (rank() == general)
    const value_type& 
-   at (size_type i01, size_type i02) const
+   at (const shape_type& index) const
    {
-      range_type index = { i01, i02 };
-      return at(index);
+      assert(_check_range(index));
+      return data_[_address(index)];
    }
 
-   /// \return element i01,i02,... with range check (rank() == 3)
-   const value_type& 
-   at (size_type i01, size_type i02, size_type i03) const
-   {
-      range_type index = { i01, i02, i03 };
-      return at(index);
-   }
-
-   /// \return element i01,i02,... with range check (rank() == 4)
-   const value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04) const
-   {
-      range_type index = { i01, i02, i03, i04 };
-      return at(index);
-   }
-
-   /// \return element i01,i02,... with range check (rank() == 5)
-   const value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05 };
-      return at(index);
-   }
-
-   /// \return element i01,i02,... with range check (rank() == 6)
-   const value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06 };
-      return at(index);
-   }
-
-   /// \return element i01,i02,... with range check (rank() == 7)
-   const value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07 };
-      return at(index);
-   }
-
-   /// \return element i01,i02,... with range check (rank() == 8)
-   const value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07, size_type i08) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08 };
-      return at(index);
-   }
-
-   /// \return element i01,i02,... with range check (rank() == 9)
-   const value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07, size_type i08,
-       size_type i09) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09 };
-      return at(index);
-   }
-
-   /// \return element i01,i02,... with range check (rank() == 10)
-   const value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07, size_type i08,
-       size_type i09, size_type i10) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09, i10 };
-      return at(index);
-   }
-
-   /// \return element i01,i02,... with range check (rank() == 11)
-   const value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07, size_type i08,
-       size_type i09, size_type i10, size_type i11) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09, i10, i11 };
-      return at(index);
-   }
-
-   /// \return element i01,i02,... with range check (rank() == 12)
-   const value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07, size_type i08,
-       size_type i09, size_type i10, size_type i11, size_type i12) const
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09, i10, i11, i12 };
-      return at(index);
-   }
-
-   /// \return element with range check (rank() == general)
-   const value_type& 
-   at(const range_type& index) const
-   {
-      assert(index.size() == this->rank());
-      return data_.at(dot(index, stride_));
-   }
-    
-   /// access element i01 with range check (rank() == 1)
+   /// access element without range check
+   template<typename... _args>
    value_type& 
-   at (size_type i01)
+   at (const size_type& first, const _args&... rest)
    {
-      range_type index = { i01 };
-      return at(index);
+      assert(_check_range<0>(first, rest...));
+      return data_[_address<0>(first, rest...)];
    }
 
-   /// access element i01,i02,... with range check (rank() == 2)
+   /// access element without range check (rank() == general)
    value_type& 
-   at (size_type i01, size_type i02)
+   at (const shape_type& index)
    {
-      range_type index = { i01, i02 };
-      return at(index);
-   }
-
-   /// access element i01,i02,... with range check (rank() == 3)
-   value_type& 
-   at (size_type i01, size_type i02, size_type i03)
-   {
-      range_type index = { i01, i02, i03 };
-      return at(index);
-   }
-
-   /// access element i01,i02,... with range check (rank() == 4)
-   value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04)
-   {
-      range_type index = { i01, i02, i03, i04 };
-      return at(index);
-   }
-
-   /// access element i01,i02,... with range check (rank() == 5)
-   value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05 };
-      return at(index);
-   }
-
-   /// access element i01,i02,... with range check (rank() == 6)
-   value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06 };
-      return at(index);
-   }
-
-   /// access element i01,i02,... with range check (rank() == 7)
-   value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07 };
-      return at(index);
-   }
-
-   /// access element i01,i02,... with range check (rank() == 8)
-   value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07, size_type i08)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08 };
-      return at(index);
-   }
-
-   /// access element i01,i02,... with range check (rank() == 9)
-   value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07, size_type i08,
-       size_type i09)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09 };
-      return at(index);
-   }
-
-   /// access element i01,i02,... with range check (rank() == 10)
-   value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07, size_type i08,
-       size_type i09, size_type i10)
-   {
-       range_type index = { i01, i02, i03, i04,
-                            i05, i06, i07, i08,
-                            i09, i10 };
-       return at(index);
-   }
-
-   /// access element i01,i02,... with range check (rank() == 11)
-   value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07, size_type i08,
-       size_type i09, size_type i10, size_type i11)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09, i10, i11 };
-      return at(index);
-   }
-
-   /// access element i01,i02,... with range check (rank() == 12)
-   value_type& 
-   at (size_type i01, size_type i02, size_type i03, size_type i04,
-       size_type i05, size_type i06, size_type i07, size_type i08,
-       size_type i09, size_type i10, size_type i11, size_type i12)
-   {
-      range_type index = { i01, i02, i03, i04,
-                           i05, i06, i07, i08,
-                           i09, i10, i11, i12 };
-      return at(index);
-   }
-
-   /// access element with range check (rank() == general)
-   value_type& 
-   at(const range_type& index)
-   {
-      assert(index.size() == this->rank());
-      return data_.at(dot(index, stride_));
+      assert(_check_range(index));
+      return data_[_address(index)];
    }
    
-   /// \return number of elements
-   size_type
-   size() const
+   /// resize array with range
+   template<typename... _args>
+   void
+   resize (const typename range_type::value_type& first, const _args&... rest)
    {
-      return data_.size();
+      range_.resize(1u+sizeof...(rest));
+      _set_range<0>(first, rest...);
+      _set_stride();
+      data_.resize(range_[0]*stride_[0]);
    }
 
-   /// \returns const posize_typeer to start of elements
-   const value_type* 
-   data() const
-   {
-      return data_.data();
-   }
-
-   /// \returns posize_typeer to start of elements
-   value_type* 
-   data()
-   {
-      return data_.data();
-   }
-
-   /// resize array range, for rank() == 1
-   void 
-   resize (size_type n01)
-   {
-      range_type r = { n01 };
-      resize(r);
-   }
-
-   /// resize array range, for rank() == 2
-   void 
-   resize (size_type n01, size_type n02)
-   {
-      range_type r = { n01, n02 };
-      resize(r);
-   }
-
-   /// resize array range, for rank() == 3
-   void 
-   resize (size_type n01, size_type n02, size_type n03)
-   {
-      range_type r = { n01, n02, n03 };
-      resize(r);
-   }
-
-   /// resize array range, for rank() == 4
-   void 
-   resize (size_type n01, size_type n02, size_type n03, size_type n04)
-   {
-      range_type r = { n01, n02, n03, n04 };
-      resize(r);
-   }
-
-   /// resize array range, for rank() == 5
-   void 
-   resize (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05)
-   {
-      range_type r = { n01, n02, n03, n04,
-                       n05 };
-      resize(r);
-   }
-
-   /// resize array range, for rank() == 6
-   void 
-   resize (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06)
-   {
-      range_type r = { n01, n02, n03, n04,
-                       n05, n06 };
-      resize(r);
-   }
-
-   /// resize array range, for rank() == 7
-   void 
-   resize (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07)
-   {
-      range_type r = { n01, n02, n03, n04,
-                       n05, n06, n07 };
-      resize(r);
-   }
-
-   /// resize array range, for rank() == 8
-   void 
-   resize (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07, size_type n08)
-   {
-      range_type r = { n01, n02, n03, n04,
-                       n05, n06, n07, n08 };
-      resize(r);
-   }
-
-   /// resize array range, for rank() == 9
-   void 
-   resize (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07, size_type n08,
-           size_type n09)
-   {
-      range_type r = { n01, n02, n03, n04,
-                       n05, n06, n07, n08,
-                       n09 };
-      resize(r);
-   }
-
-   /// resize array range, for rank() == 10
-   void 
-   resize (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07, size_type n08,
-           size_type n09, size_type n10)
-   {
-      range_type r = { n01, n02, n03, n04,
-                       n05, n06, n07, n08,
-                       n09, n10 };
-      resize(r);
-   }
-
-   /// resize array range, for rank() == 11
-   void 
-   resize (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07, size_type n08,
-           size_type n09, size_type n10, size_type n11)
-   {
-      range_type r = { n01, n02, n03, n04,
-                       n05, n06, n07, n08,
-                       n09, n10, n11 };
-      resize(r);
-   }
-
-   /// resize array range, for rank() == 12
-   void 
-   resize (size_type n01, size_type n02, size_type n03, size_type n04,
-           size_type n05, size_type n06, size_type n07, size_type n08,
-           size_type n09, size_type n10, size_type n11, size_type n12)
-   {
-      range_type r = { n01, n02, n03, n04,
-                       n05, n06, n07, n08,
-                       n09, n10, n11, n12 };
-      resize(r);
-   }
-
-   /// resize array range, for general rank
+   /// resize array with range object
    void
    resize (const range_type& range)
    {
       assert(range.size() > 0);
       range_ = range;
-      stride_.resize(range_.size());
-      size_type str = 1;
-      for(size_type i = range_.size()-1; i > 0; --i) {
-          stride_[i] = str;
-          str *= range_[i];
-      }
-      stride_[0] = str;
-      data_.resize(range_[0]*str);
-   }
-
-   /// \return sliced tensor
-   /// TODO: have not yet been implemented
-   SlicedTensor<value_type> 
-   slice (const range_type& lbound, const range_type& ubound) const;
-
-   /// fill all elements by val
-   void
-   fill (const value_type& val)
-   {
-      std::fill(data_.begin(), data_.end(), val);
-   }
-
-   /// generate all elements by gen()
-   template<class Generator>
-   void 
-   generate (Generator gen)
-   {
-      std::generate(data_.begin(), data_.end(), gen);
+      _set_stride();
+      data_.resize(range_[0]*stride_[0]);
    }
 
    /// swap this and x
@@ -956,36 +326,180 @@ public:
       data_.clear();
    }
 
-private:
+   //  ========== Finished Public Interface and Its Reference Implementations ==========
 
-   /// enable boost serialization
-   friend class boost::serialization::access;
+   //
+   //  Here comes Non-Standard members
+   //
 
-   /// serialize members
-   template<class Archive>
-   void serialize(Archive& ar, const unsigned int version)
+   /// addition assignment
+   Tensor&
+   operator+= (const Tensor& x)
    {
-      ar & range_ & stride_ & data_;
+      assert(std::equal(range_.begin(), range_.end(), x.range_.begin()));
+      std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::plus<value_type>());
+      return *this;
    }
 
-protected:
+   /// addition of tensors
+   Tensor
+   operator+ (const Tensor& x) const
+   {
+      Tensor y(*this); y += x;
+      return y; /* automatically called move semantics */
+   }
 
-   // data members go here
+   /// subtraction assignment
+   Tensor&
+   operator-= (const Tensor& x)
+   {
+      assert(std::equal(range_.begin(), range_.end(), x.range_.begin()));
+      std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::minus<value_type>());
+      return *this;
+   }
+
+   /// subtraction of tensors
+   Tensor
+   operator- (const Tensor& x) const
+   {
+      Tensor y(*this); y -= x;
+      return y; /* automatically called move semantics */
+   }
+
+   /// \return bare const pointer to the first element of data_
+   /// this enables to call BLAS functions
+   const value_type*
+   data () const
+   {
+      return data_.data();
+   }
+
+   /// \return bare pointer to the first element of data_
+   /// this enables to call BLAS functions
+   value_type* 
+   data()
+   {
+      return data_.data();
+   }
+
+   /// fill all elements by val
+   void
+   fill (const value_type& val)
+   {
+      std::fill(data_.begin(), data_.end(), val);
+   }
+
+   /// generate all elements by gen()
+   template<class Generator>
+   void 
+   generate (Generator gen)
+   {
+      std::generate(data_.begin(), data_.end(), gen);
+   }
+
+private:
+
+   //
+   //  Supportive functions
+   //
+
+   /// set range object
+   template<size_type i, typename... _args>
+   void
+   _set_range (const typename range_type::value_type& first, const _args&... rest)
+   {
+      range_[i] = first;
+      _set_range<i+1>(rest...);
+   }
+
+   /// set range object (specialized)
+   template<size_type i>
+   void
+   _set_range (const typename range_type::value_type& first)
+   {
+      range_[i] = first;
+   }
+   
+   /// \return address pointed by index
+   template<size_type i, typename... _args>
+   size_type
+   _address (const size_type& first, const _args&... rest) const
+   {
+      return first*stride_[i] + _address<i+1>(rest...);
+   }
+
+   /// \return address pointed by index
+   template<size_type i>
+   size_type
+   _address (const size_type& first) const
+   {
+      return first*stride_[i];
+   }
+
+   /// \return address pointed by index
+   size_type
+   _address (const shape_type& index) const
+   {
+      assert(index.size() == rank());
+      size_type adr = 0;
+      for(size_type i = 0; i < rank(); ++i) {
+          adr += stride_[i]*index[i];
+      }
+      return adr;
+   }
+
+   /// calculate stride_ from given range_
+   void
+   _set_stride ()
+   {
+      stride_.resize(range_.size());
+      size_type str = 1;
+      for(size_type i = range_.size()-1; i > 0; --i) {
+         stride_[i] = str;
+         str *= range_[i]; /* FIXME: this should be hacked for general purpose */
+      }
+      stride_[0] = str;
+   }
+
+   /// test whether index is in range
+   template<size_type i, typename... _args>
+   bool
+   _check_range (const size_type& first, const _args&... rest) const
+   {
+      return (first >= 0 && first < range_[i] && _check_range<i+1>(rest...));
+   }
+
+   /// test whether index is in range
+   template<size_type i>
+   bool
+   _check_range (const size_type& first) const
+   {
+      return (first >= 0 && first < range_[i]);
+   }
+
+   /// test whether index is in range
+   bool
+   _check_range (const shape_type& index)
+   {
+      assert(index.size() == rank());
+      typename range_type::iterator r = range_.begin();
+      return std::all_of(index.begin(), index.end(), [&r] (const typename shape_type::value_type& i) { return (i >= 0 && i < *r++); });
+   }
+
+private:
+
+   //
+   // Data members go here
+   //
 
    range_type range_; ///< range (shape)
 
-   range_type stride_; ///< stride
+   shape_type stride_; ///< stride
 
    storage_type data_; ///< data stored as 1D array
 
 };
 
-}; //namespace btas
+}; // namespace btas
 
-#ifndef __BTAS_SLICED_TENSOR_H
-
-#include <sliced_tensor.h>
-
-#endif
-
-#endif // __BTAS_TENSOR_H
+#endif // __BTAS_REFERENCE_TENSOR_H

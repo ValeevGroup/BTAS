@@ -5,8 +5,16 @@
 #include <numeric_type.h>
 #include <type_traits>
 
-namespace btas
+namespace btas {
+
+/// copy x to y
+template <class _Tensor>
+void 
+copy(const _Tensor& x, _Tensor& y)
 {
+   BTAS_ASSERT(x.size() == y.size());
+   NUMERIC_TYPE<typename _Tensor::value_type>::copy(x.size(), x.data(), 1, y.data(), 1)
+}
 
 /// multiply a tensor x by a scalar
 template <class _Tensor>
@@ -45,14 +53,14 @@ nrm2(const _Tensor& x)
 
 template <class _TensorA, class _TensorX, class _TensorY>
 void 
-gemv(const TRANSPOSE transa, const typename _TensorA::value_type& alpha, const _TensorA& a, const _TensorX& x, const typename _TensorY::value_type& beta, _TensorY& y)
+gemv(const CBLAS_TRANSPOSE transa, const typename _TensorA::value_type& alpha, const _TensorA& a, const _TensorX& x, const typename _TensorY::value_type& beta, _TensorY& y)
 {
    BTAS_STATIC_ASSERT(std::is_same<typename _TensorA::value_type, typename _TensorX::value_type>::value_type, "ERROR: type mismatched");
    BTAS_STATIC_ASSERT(std::is_same<typename _TensorA::value_type, typename _TensorY::value_type>::value_type, "ERROR: type mismatched");
    INTEGER_TYPE m = y.size();
    INTEGER_TYPE n = x.size();
    if (transa != NoTrans) std::swap(m, n);
-   gemv(transa, m, n, alpha, a.data(), n, x.data(), 1, beta, y.data(), 1);
+   NUMERIC_TYPE<typename _TensorA::value_type>::gemv(transa, m, n, alpha, a.data(), n, x.data(), 1, beta, y.data(), 1);
 }
 
 template <class _TensorX, class _TensorY, class _TensorA>
@@ -63,24 +71,93 @@ ger(const typename _TensorA::value_type& alpha, const _TensorX& x, const _Tensor
    BTAS_STATIC_ASSERT(std::is_same<typename _TensorA::value_type, typename _TensorY::value_type>::value_type, "ERROR: type mismatched");
    INTEGER_TYPE m = x.size();
    INTEGER_TYPE n = y.size();
-   ger(m, n, alpha, x.data(), 1, y.data(), 1, a.data(), n);
+   NUMERIC_TYPE<typename _TensorA::value_type>::ger(m, n, alpha, x.data(), 1, y.data(), 1, a.data(), n);
 }
 
+/// matrix-matrix multiplication in BLAS level 3
 template <class _TensorA, class _TensorB, class _TensorC>
 void 
-gemm(const TRANSPOSE transa, const TRANSPOSE transb, const typename _TensorA::value_type& alpha, const _TensorA& a, const _TensorB& b, const typename _TensorC::value_type& beta, _TensorC& c)
-{
-   BTAS_STATIC_ASSERT(std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value_type, "ERROR: type mismatched");
-   BTAS_STATIC_ASSERT(std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value_type, "ERROR: type mismatched");
-   INTEGER_TYPE a_size = a.size();
-   INTEGER_TYPE b_size = b.size();
-   INTEGER_TYPE c_size = c.size();
-   INTEGER_TYPE k = static_cast<INTEGER_TYPE>(sqrt(static_cast<double>(a_size*b_size/c_size)));
-   BTAS_ASSERT(k > 0, "ERROR: 0 division");
-   INTEGER_TYPE m = a_size/k;
-   INTEGER_TYPE n = b_size/k;
+gemm (
+      const CBLAS_TRANSPOSE transa,
+      const CBLAS_TRANSPOSE transb,
+      const typename _TensorA::value_type& alpha,
+      const _TensorA& a,
+      const _TensorB& b,
+      const typename _TensorC::value_type& beta,
+            _TensorC& c
+) {
+   typedef typename _TensorA::value_type value_type;
+   BTAS_STATIC_ASSERT(std::is_same<value_type, typename _TensorB::value_type>::value_type, "ERROR: type mismatched");
+   BTAS_STATIC_ASSERT(std::is_same<value_type, typename _TensorC::value_type>::value_type, "ERROR: type mismatched");
+
+   const INTEGER_TYPE a_rank = a.rank();
+   const INTEGER_TYPE b_rank = b.rank();
+   const INTEGER_TYPE c_rank = c.rank();
+   const INTEGER_TYPE k_rank = (a_rank + b_rank - c_rank) / 2;
+
+   const typename _TensorA::shape_type& a_shape = a.shape();
+   const typename _TensorB::shape_type& b_shape = b.shape();
+         typename _TensorC::shape_type  c_shape = c.shape();
+
+   if (c.empty()) {
+
+      const typename _TensorA::range_type& a_range = a.range();
+      const typename _TensorB::range_type& b_range = b.range();
+            typename _TensorC::range_type  c_range = c.range();
+
+      if (transa == NoTrans) {
+         for (size_t i = 0; i < a_rank-k_rank; ++i) c_range[i] = a_range[i];
+      }
+      else {
+         for (size_t i = 0; i < a_rank-k_rank; ++i) c_range[i] = a_range[i+k_rank];
+      }
+
+      if (transb == NoTrans) {
+         for (size_t i = 0; i < b_rank-k_rank; ++i) c_range[i+a_rank-k_rank] = b_range[i+k_rank];
+      }
+      else {
+         for (size_t i = 0; i < b_rank-k_rank; ++i) c_range[i+a_rank-k_rank] = b_range[i];
+      }
+
+      c.resize(c_range, NUMERIC_TYPE<value_type>::zero());
+   }
+   else {
+
+      if (transa == NoTrans) {
+         for (size_t i = 0; i < a_rank-k_rank; ++i)
+            c_shape[i] = a_shape[i];
+      }
+      else {
+         for (size_t i = 0; i < a_rank-k_rank; ++i)
+            c_shape[i] = a_shape[i+k_rank];
+      }
+
+      if (transb == NoTrans) {
+         for (size_t i = 0; i < b_rank-k_rank; ++i)
+            c_shape[i+a_rank-k_rank] = b_shape[i+k_rank];
+      }
+      else {
+         for (size_t i = 0; i < b_rank-k_rank; ++i)
+            c_shape[i+a_rank-k_rank] = b_shape[i];
+      }
+
+      BTAS_ASSERT(std::equal(c_shape.begin(), c_shape.end(), c.shape().begin()));
+      scal(beta, c);
+   }
+
+   INTEGER_TYPE k;
+   if (transa == NoTrans)
+      k = std::accumulate(a_shape.begin()+a_rank-k_rank, a_shape.end(),   1, std::multiplies<INTEGER_TYPE>());
+   else
+      k = std::accumulate(a_shape.begin(), a_shape.begin()+a_rank-k_rank, 1, std::multiplies<INTEGER_TYPE>());
+
+   BTAS_ASSERT(k > 0);
+   INTEGER_TYPE m = a.size() / k;
+   INTEGER_TYPE n = b.size() / k;
+
    INTEGER_TYPE lda = (transa == NoTrans) ? k : m;
    INTEGER_TYPE ldb = (transb == NoTrans) ? n : k;
+
    gemm(transa, transb, m, n, k, alpha, a.data(), lda, b.data(), ldb, beta, c.data(), n);
 }
 
