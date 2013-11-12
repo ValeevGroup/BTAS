@@ -28,12 +28,12 @@ namespace btas {
 template <typename T>
 struct NUMERIC_TYPE
 {
-// constexpr static T zero () { static_assert (false, "Template parameter is not numeric type!"); return T(); }
-// constexpr static T one  () { static_assert (false, "Template parameter is not numeric type!"); return T(); }
-// constexpr static T two  () { static_assert (false, "Template parameter is not numeric type!"); return T(); }
-   constexpr static T zero () { return static_cast<T>(0); }
-   constexpr static T one  () { return static_cast<T>(1); }
-   constexpr static T two  () { return static_cast<T>(2); }
+   constexpr static T zero () { static_assert (false, "Template parameter is not numeric type!"); return T(); }
+   constexpr static T one  () { static_assert (false, "Template parameter is not numeric type!"); return T(); }
+   constexpr static T two  () { static_assert (false, "Template parameter is not numeric type!"); return T(); }
+// constexpr static T zero () { return static_cast<T>(0); }
+// constexpr static T one  () { return static_cast<T>(1); }
+// constexpr static T two  () { return static_cast<T>(2); }
 
    /// copy from x to y
    inline void copy  (INTEGER_TYPE n, T* x, T* y)

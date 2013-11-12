@@ -35,6 +35,9 @@ public:
    /// default constructor
    Tensor () { }
 
+   /// destructor
+   ~Tensor () { }
+
    /// constructor with index range, for rank() == 1
    explicit 
    Tensor (size_type n01)
@@ -118,6 +121,12 @@ public:
            size_type n09, size_type n10, size_type n11, size_type n12)
    {
       resize (n01, n02, n03, n04, n05, n06, n07, n08, n09, n10, n11, n12);
+   }
+
+   /// constructor with index range, for general rank
+   Tensor (const range_type& range)
+   {
+      resize (range);
    }
 
    /// copy constructor

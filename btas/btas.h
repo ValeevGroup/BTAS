@@ -68,7 +68,7 @@ ger(const typename _TensorA::value_type& alpha, const _TensorX& x, const _Tensor
 
 template <class _TensorA, class _TensorB, class _TensorC>
 void 
-gemv(const TRANSPOSE transa, const TRANSPOSE transb, const typename _TensorA::value_type& alpha, const _TensorA& a, const _TensorB& b, const typename _TensorC::value_type& beta, _TensorC& c)
+gemm(const TRANSPOSE transa, const TRANSPOSE transb, const typename _TensorA::value_type& alpha, const _TensorA& a, const _TensorB& b, const typename _TensorC::value_type& beta, _TensorC& c)
 {
    BTAS_STATIC_ASSERT(std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value_type, "ERROR: type mismatched");
    BTAS_STATIC_ASSERT(std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value_type, "ERROR: type mismatched");
