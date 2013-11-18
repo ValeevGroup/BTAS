@@ -19,13 +19,15 @@ namespace btas
  *       n       l           n l
  *
  */
-template <typename T>
-void
-contract(T alpha, 
-         const Tensor<T>& A, const shape& Ashape,
-         const Tensor<T>& B, const shape Bshape,
-         T beta,
-         Tensor<T>& C,const shape& Cshape);
+template<typename _T, class _TensorA, class _TensorB, class _TensorC>
+void contract(
+      const _T& alpha,
+      const _TensorA& A, const typename _TensorA::shape_type& Ashape,
+      const _TensorB& B, const typename _TensorB::shape_type& Bshape,
+      const _T& beta,
+            _TensorC& C, const typename _TensorC::shape_type& Cshape)
+{
+}
 
 } //namespace btas
 

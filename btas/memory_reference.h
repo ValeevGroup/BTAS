@@ -58,6 +58,17 @@ struct memory_reference {
    : _M_start (x._M_start), _M_finish (x._M_finish)
    { }
 
+   template<class _Container>
+   memory_reference (_Container& x)
+   : _M_start (nullptr), _M_finish (nullptr)
+   {
+      static_assert(std::is_same<typename _Container::value_type, value_type>::value, "Error: mismatched value_type's");
+      if (!x.empty()) {
+         _M_start (x.data());
+         _M_finish = _M_start + x.size();
+      }
+   }
+   
    memory_reference& operator= (const memory_reference& x)
    {
       _M_start = x._M_start;

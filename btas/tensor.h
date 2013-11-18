@@ -10,15 +10,15 @@
 template<typename _T>
 using DEFAULT_STORAGE = std::vector<_T>;
 
-/// default range type
-using DEFAULT_RANGE   = std::vector<unsigned long>;
+/// default shape type
+using DEFAULT_SHAPE   = std::vector<unsigned long>;
 
 namespace btas {
 
 /// reference implementation of dense tensor class (variable rank)
 template<typename _T,
          class _Container = DEFAULT_STORAGE<_T>,
-         class _Range = DEFAULT_RANGE>
+         class _Shape = DEFAULT_SHAPE>
 class Tensor {
 
 public:
@@ -33,25 +33,20 @@ public:
    typedef _T value_type;
 
    /// type of array storing data as 1D array
-   typedef _Container storage_type;
+   typedef _Container container_type;
 
    /// size type
-   typedef typename storage_type::size_type size_type;
+   typedef typename container_type::size_type size_type;
 
    /// iterator
-   typedef typename storage_type::iterator iterator;
+   typedef typename container_type::iterator iterator;
 
    /// const iterator
-   typedef typename storage_type::const_iterator const_iterator;
+   typedef typename container_type::const_iterator const_iterator;
 
-   /// type of array for index ranges
-   /// range_type requires, default-constructible, resizable, accessible by operator[]
-   typedef _Range range_type;
-
-   /// type of array for index/shape
+   /// type of array for index shapes
    /// shape_type requires, default-constructible, resizable, accessible by operator[]
-   /// regarding shape_type = range_type, in this implementation
-   typedef _Range shape_type;
+   typedef _Shape shape_type;
 
 public:
 
@@ -63,37 +58,37 @@ public:
    /// \param n tensor rank
    explicit
    Tensor (size_type n = 0)
-   : range_ (n, 0), stride_ (n, 0)
+   : shape_ (n, 0), stride_ (n, 0)
    { }
 
    /// destructor
    ~Tensor () { }
 
-   /// constructor with index range
+   /// constructor with index shape
    template<typename _arg1, typename... _args>
    Tensor (const _arg1& first, const _args&... rest)
    {
       resize(first, rest...);
    }
 
-   /// constructor with index range object
-   Tensor (const range_type& range)
+   /// constructor with index shape object
+   Tensor (const shape_type& shape)
    {
-      resize(range);
+      resize(shape);
    }
 
    //
    //  Copy semantics:
    //  provides the interface b/w different tensor class
-   //  _Tensor must have convertible value_type and iterators for range, stride, and data
+   //  _Tensor must have convertible value_type and iterators for shape, stride, and data
    //
 
    /// copy constructor
    template<class _Tensor>
    Tensor (const _Tensor& x)
-   : range_ (x.rank()), stride_ (x.rank())
+   : shape_ (x.rank()), stride_ (x.rank())
    {
-      std::copy(x.range().begin(), x.range().end(), range_.begin());
+      std::copy(x.shape().begin(), x.shape().end(), shape_.begin());
 
       std::copy(x.stride().begin(), x.stride().end(), stride_.begin());
 
@@ -106,8 +101,8 @@ public:
    Tensor&
    operator= (const _Tensor& x)
    {
-      range_.resize(x.rank());
-      std::copy(x.range().begin(), x.range().end(), range_.begin());
+      shape_.resize(x.rank());
+      std::copy(x.shape().begin(), x.shape().end(), shape_.begin());
 
       stride_.resize(x.rank());
       std::copy(x.stride().begin(), x.stride().end(), stride_.begin());
@@ -119,14 +114,14 @@ public:
 
    /// move constructor
    Tensor (Tensor&& x)
-   : range_ (x.range_), stride_ (x.stride_), data_ (x.data_)
+   : shape_ (x.shape_), stride_ (x.stride_), data_ (x.data_)
    { }
 
    /// move assignment operator
    Tensor&
    operator= (Tensor&& x)
    {
-      range_.swap(x.range_);
+      shape_.swap(x.shape_);
       stride_.swap(x.stride_);
       data_.swap(x.data_);
       return *this;
@@ -136,7 +131,7 @@ public:
    size_type
    rank () const
    {
-      return range_.size();
+      return shape_.size();
    }
 
    /// \return number of elements
@@ -146,32 +141,18 @@ public:
       return data_.size();
    }
 
-   /// \return range object
-   const range_type&
-   range () const
-   {
-      return range_;
-   }
-
-   /// \return n-th range
-   const typename range_type::value_type&
-   range (const size_type& n) const
-   {
-      return range_[n];
-   }
-
-   /// \return shape (= range) object
+   /// \return shape object
    const shape_type&
    shape () const
    {
-      return range_;
+      return shape_;
    }
 
-   /// \return n-th shape (= range)
+   /// \return n-th shape
    const typename shape_type::value_type&
    shape (const size_type& n) const
    {
-      return range_[n];
+      return shape_[n];
    }
 
    /// \return stride object
@@ -223,7 +204,7 @@ public:
       return data_.end();
    }
 
-   /// \return element without range check
+   /// \return element without shape check
    template<typename... _args>
    const value_type& 
    operator() (const size_type& first, const _args&... rest) const
@@ -231,14 +212,14 @@ public:
       return data_[_address<0>(first, rest...)];
    }
 
-   /// \return element without range check (rank() == general)
+   /// \return element without shape check (rank() == general)
    const value_type& 
    operator() (const shape_type& index) const
    {
       return data_[_address(index)];
    }
 
-   /// access element without range check
+   /// access element without shape check
    template<typename... _args>
    value_type& 
    operator() (const size_type& first, const _args&... rest)
@@ -246,14 +227,14 @@ public:
       return data_[_address<0>(first, rest...)];
    }
 
-   /// access element without range check (rank() == general)
+   /// access element without shape check (rank() == general)
    value_type& 
    operator() (const shape_type& index)
    {
       return data_[_address(index)];
    }
    
-   /// \return element without range check
+   /// \return element without shape check
    template<typename... _args>
    const value_type& 
    at (const size_type& first, const _args&... rest) const
@@ -262,7 +243,7 @@ public:
       return data_[_address<0>(first, rest...)];
    }
 
-   /// \return element without range check (rank() == general)
+   /// \return element without shape check (rank() == general)
    const value_type& 
    at (const shape_type& index) const
    {
@@ -270,7 +251,7 @@ public:
       return data_[_address(index)];
    }
 
-   /// access element without range check
+   /// access element without shape check
    template<typename... _args>
    value_type& 
    at (const size_type& first, const _args&... rest)
@@ -279,7 +260,7 @@ public:
       return data_[_address<0>(first, rest...)];
    }
 
-   /// access element without range check (rank() == general)
+   /// access element without shape check (rank() == general)
    value_type& 
    at (const shape_type& index)
    {
@@ -287,32 +268,32 @@ public:
       return data_[_address(index)];
    }
    
-   /// resize array with range
+   /// resize array with shape
    template<typename... _args>
    void
-   resize (const typename range_type::value_type& first, const _args&... rest)
+   resize (const typename shape_type::value_type& first, const _args&... rest)
    {
-      range_.resize(1u+sizeof...(rest));
-      _set_range<0>(first, rest...);
+      shape_.resize(1u+sizeof...(rest));
+      _set_shape<0>(first, rest...);
       _set_stride();
-      data_.resize(range_[0]*stride_[0]);
+      data_.resize(shape_[0]*stride_[0]);
    }
 
-   /// resize array with range object
+   /// resize array with shape object
    void
-   resize (const range_type& range)
+   resize (const shape_type& shape)
    {
-      assert(range.size() > 0);
-      range_ = range;
+      assert(shape.size() > 0);
+      shape_ = shape;
       _set_stride();
-      data_.resize(range_[0]*stride_[0]);
+      data_.resize(shape_[0]*stride_[0]);
    }
 
    /// swap this and x
    void 
    swap (Tensor& x)
    {
-      range_.swap(x.range_);
+      shape_.swap(x.shape_);
       stride_.swap(x.stride_);
       data_.swap(x.data_);
    }
@@ -321,7 +302,7 @@ public:
    void 
    clear()
    {
-      range_.clear();
+      shape_.clear();
       stride_.clear();
       data_.clear();
    }
@@ -329,14 +310,14 @@ public:
    //  ========== Finished Public Interface and Its Reference Implementations ==========
 
    //
-   //  Here comes Non-Standard members
+   //  Here comes Non-Standard members (to be discussed)
    //
 
    /// addition assignment
    Tensor&
    operator+= (const Tensor& x)
    {
-      assert(std::equal(range_.begin(), range_.end(), x.range_.begin()));
+      assert(std::equal(shape_.begin(), shape_.end(), x.shape_.begin()));
       std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::plus<value_type>());
       return *this;
    }
@@ -353,7 +334,7 @@ public:
    Tensor&
    operator-= (const Tensor& x)
    {
-      assert(std::equal(range_.begin(), range_.end(), x.range_.begin()));
+      assert(std::equal(shape_.begin(), shape_.end(), x.shape_.begin()));
       std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::minus<value_type>());
       return *this;
    }
@@ -403,21 +384,21 @@ private:
    //  Supportive functions
    //
 
-   /// set range object
+   /// set shape object
    template<size_type i, typename... _args>
    void
-   _set_range (const typename range_type::value_type& first, const _args&... rest)
+   _set_shape (const typename shape_type::value_type& first, const _args&... rest)
    {
-      range_[i] = first;
-      _set_range<i+1>(rest...);
+      shape_[i] = first;
+      _set_shape<i+1>(rest...);
    }
 
-   /// set range object (specialized)
+   /// set shape object (specialized)
    template<size_type i>
    void
-   _set_range (const typename range_type::value_type& first)
+   _set_shape (const typename shape_type::value_type& first)
    {
-      range_[i] = first;
+      shape_[i] = first;
    }
    
    /// \return address pointed by index
@@ -448,15 +429,15 @@ private:
       return adr;
    }
 
-   /// calculate stride_ from given range_
+   /// calculate stride_ from given shape_
    void
    _set_stride ()
    {
-      stride_.resize(range_.size());
+      stride_.resize(shape_.size());
       size_type str = 1;
-      for(size_type i = range_.size()-1; i > 0; --i) {
+      for(size_type i = shape_.size()-1; i > 0; --i) {
          stride_[i] = str;
-         str *= range_[i]; /* FIXME: this should be hacked for general purpose */
+         str *= shape_[i];
       }
       stride_[0] = str;
    }
@@ -466,7 +447,7 @@ private:
    bool
    _check_range (const size_type& first, const _args&... rest) const
    {
-      return (first >= 0 && first < range_[i] && _check_range<i+1>(rest...));
+      return (first >= 0 && first < shape_[i] && _check_range<i+1>(rest...));
    }
 
    /// test whether index is in range
@@ -474,7 +455,7 @@ private:
    bool
    _check_range (const size_type& first) const
    {
-      return (first >= 0 && first < range_[i]);
+      return (first >= 0 && first < shape_[i]);
    }
 
    /// test whether index is in range
@@ -482,7 +463,7 @@ private:
    _check_range (const shape_type& index)
    {
       assert(index.size() == rank());
-      typename range_type::iterator r = range_.begin();
+      typename shape_type::iterator r = shape_.begin();
       return std::all_of(index.begin(), index.end(), [&r] (const typename shape_type::value_type& i) { return (i >= 0 && i < *r++); });
    }
 
@@ -492,14 +473,14 @@ private:
    // Data members go here
    //
 
-   range_type range_; ///< range (shape)
+   shape_type shape_; ///< shape
 
    shape_type stride_; ///< stride
 
-   storage_type data_; ///< data stored as 1D array
+   container_type data_; ///< data stored as 1D array
 
 };
 
-}; // namespace btas
+} // namespace btas
 
 #endif // __BTAS_REFERENCE_TENSOR_H

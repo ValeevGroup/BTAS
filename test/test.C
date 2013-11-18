@@ -20,8 +20,8 @@ int main()
 
    // test 2
    typedef Tensor<float, varray<float>, varray<int>> MyTensor;
-   MyTensor::range_type range = { 4, 4 };
-   MyTensor Q(range);
+   MyTensor::shape_type shape = { 4, 4 };
+   MyTensor Q(shape);
    fill(Q.begin(), Q.end(), 1.0);
 
    MyTensor::shape_type index = { 1, 2 };
