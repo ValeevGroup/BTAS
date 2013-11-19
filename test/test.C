@@ -4,11 +4,8 @@ using namespace std;
 
 namespace btas { enum CBLAS_TRANSPOSE { CblasNoTrans, CblasTrans, CblasConjTrans }; };
 
-#include <tensor.h>
 #include <varray.h>
-#include <tensor_traits.h>
-#include <axpy_impl.h>
-#include <gemm_impl.h>
+#include <btas.h>
 using namespace btas;
 
 int main()
@@ -82,6 +79,11 @@ int main()
 
    Tensor<Tensor<double>> C(4,4); C.fill(Tensor<double>(0,0)); // rank info is required to determine contraction ranks at gemm
    gemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 1.0, C);
+
+   // test 7
+
+   Tensor<double> a(4,4); a.fill(1.0);
+// gemm(CblasNoTrans, CblasNoTrans, 1.0, A, a, 1.0, C); // this will give a compile-time error, since gemm for "tensor of tensor" and "tensor" is not supported
 
    return 0;
 }
