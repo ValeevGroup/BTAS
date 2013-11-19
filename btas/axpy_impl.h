@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iterator>
 #include <type_traits>
+#include <tensor_traits.h>
 
 namespace btas {
 
@@ -35,7 +36,16 @@ template<> struct axpy_impl<false>
 };
 
 /// Generic implementation of BLAS-AXPY
-template<typename _T, class _Tensor>
+template<
+   typename _T, class _Tensor,
+   class = typename std::enable_if<
+      is_tensor<_Tensor>::value &
+      std::is_same<
+         typename std::iterator_traits<typename _Tensor::iterator>::iterator_category,
+         std::random_access_iterator_tag
+      >::value
+   >::type
+>
 void axpy(const _T& alpha, const _Tensor& x, _Tensor& y)
 {
    if (x.empty())
@@ -53,7 +63,7 @@ void axpy(const _T& alpha, const _Tensor& x, _Tensor& y)
       assert(std::equal(x.shape().begin(), x.shape().end(), y.shape().begin()));
    }
 
-   static_assert(std::is_same<typename std::iterator_traits<typename _Tensor::iterator>::iterator_category, std::random_access_iterator_tag>::value, "axpy: _Tensor::iterator must be random-access iterator");
+// static_assert(std::is_same<typename std::iterator_traits<typename _Tensor::iterator>::iterator_category, std::random_access_iterator_tag>::value, "axpy: _Tensor::iterator must be random-access iterator");
 
    typedef typename std::iterator_traits<typename _Tensor::iterator>::value_type value_type;
    axpy_impl<std::is_convertible<_T, value_type>::value> call(x.size(), alpha, x.begin(), y.begin());

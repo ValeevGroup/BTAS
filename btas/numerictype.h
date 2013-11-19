@@ -11,14 +11,14 @@ namespace btas {
 /// Numeric value functions
 template<typename _T> struct NumericType
 {
-   const static _T zero () { _T x; return x; }
-   const static _T one  () { _T x; return x; }
+   const static int zero () { return 0; }
+   const static int one  () { return 1; }
 
    template<class _Iterator>
-   static void fill(_Iterator first, _Iterator last, const _T& val) { }
+   static void fill(_Iterator, _Iterator, int) { }
 
    template<class _Iterator>
-   static void scal(_Iterator first, _Iterator last, const _T& val) { }
+   static void scal(_Iterator, _Iterator, int) { }
 };
 
 //

@@ -6,6 +6,8 @@
 #include <type_traits>
 #include <vector>
 
+#include <tensor_traits.h>
+
 /// default storage type
 template<typename _T>
 using DEFAULT_STORAGE = std::vector<_T>;
@@ -62,6 +64,7 @@ public:
 
    /// constructor with index shape
    template<typename... _args>
+   explicit
    Tensor (const size_type& first, const _args&... rest)
    {
       resize(first, rest...);
@@ -81,7 +84,7 @@ public:
    //
 
    /// copy constructor
-   template<class _Tensor>
+   template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
    explicit
    Tensor (const _Tensor& x)
    : shape_ (x.rank()), stride_ (x.rank())
@@ -94,7 +97,7 @@ public:
       std::copy(x.begin(), x.end(), data_.begin());
    }
 
-   /// copy constructor specialized for me
+   /// copy constructor specialized (avoid implicit deletion of copy constructor)
    /// TODO: should be implemented in terms of efficient copy.
    explicit
    Tensor (const Tensor& x)
@@ -109,7 +112,7 @@ public:
    }
 
    /// copy assignment operator
-   template<class _Tensor>
+   template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
    Tensor&
    operator= (const _Tensor& x)
    {
@@ -124,7 +127,7 @@ public:
       return *this;
    }
 
-   /// copy assignment operator specialized for me
+   /// copy assignment operator (avoid implicit deletion of copy assignment)
    /// TODO: should be implemented in terms of efficient copy.
    Tensor&
    operator= (const Tensor& x)

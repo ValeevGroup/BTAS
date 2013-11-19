@@ -6,6 +6,7 @@
 #include <iterator>
 #include <type_traits>
 
+#include <tensor_traits.h>
 #include <numerictype.h>
 
 namespace btas {
@@ -197,16 +198,29 @@ template<> struct gemm_impl<false>
 /// \param beta scalar value to be multiplied to \param c
 /// \param c output tensor which can be empty tensor but needs to have rank info (= size of shape).
 /// Iterator is assumed to be consecutive (or, random_access_iterator) , thus e.g. iterator to map doesn't work.
-template<typename _T, class _TensorA, class _TensorB, class _TensorC>
+template<
+   typename _T,
+   class _TensorA, class _TensorB, class _TensorC,
+   class = typename std::enable_if<
+      is_tensor<_TensorA>::value &
+      is_tensor<_TensorB>::value &
+      is_tensor<_TensorC>::value &
+      std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value &
+      std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value &
+      std::is_same<typename std::iterator_traits<typename _TensorA::iterator>::iterator_category, std::random_access_iterator_tag>::value &
+      std::is_same<typename std::iterator_traits<typename _TensorB::iterator>::iterator_category, std::random_access_iterator_tag>::value &
+      std::is_same<typename std::iterator_traits<typename _TensorC::iterator>::iterator_category, std::random_access_iterator_tag>::value
+   >::type
+>
 void gemm(CBLAS_TRANSPOSE transA, CBLAS_TRANSPOSE transB, const _T& alpha, const _TensorA& a, const _TensorB& b, const _T& beta, _TensorC& c)
 {
    typedef unsigned long size_type;
 
    if (a.empty() || b.empty()) return;
 
-   // check element types
-   static_assert(std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value, "type of A and B mismatches");
-   static_assert(std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value, "type of A and C mismatches");
+// // check element types
+// static_assert(std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value, "type of A and B mismatches");
+// static_assert(std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value, "type of A and C mismatches");
 
    // get contraction rank
    const size_type rankA = a.rank();
@@ -262,10 +276,10 @@ void gemm(CBLAS_TRANSPOSE transA, CBLAS_TRANSPOSE transB, const _T& alpha, const
       for (size_type i = 0; i < N; ++i) shapeC[M+i] = shapeB[i];
    }
 
-   // check iterator is "random-access" iterator
-   static_assert(std::is_same<typename std::iterator_traits<typename _TensorA::iterator>::iterator_category, std::random_access_iterator_tag>::value, "gemm: _TensorA::iterator must be random-access iterator");
-   static_assert(std::is_same<typename std::iterator_traits<typename _TensorB::iterator>::iterator_category, std::random_access_iterator_tag>::value, "gemm: _TensorB::iterator must be random-access iterator");
-   static_assert(std::is_same<typename std::iterator_traits<typename _TensorC::iterator>::iterator_category, std::random_access_iterator_tag>::value, "gemm: _TensorC::iterator must be random-access iterator");
+// // check iterator is "random-access" iterator
+// static_assert(std::is_same<typename std::iterator_traits<typename _TensorA::iterator>::iterator_category, std::random_access_iterator_tag>::value, "gemm: _TensorA::iterator must be random-access iterator");
+// static_assert(std::is_same<typename std::iterator_traits<typename _TensorB::iterator>::iterator_category, std::random_access_iterator_tag>::value, "gemm: _TensorB::iterator must be random-access iterator");
+// static_assert(std::is_same<typename std::iterator_traits<typename _TensorC::iterator>::iterator_category, std::random_access_iterator_tag>::value, "gemm: _TensorC::iterator must be random-access iterator");
 
    typedef typename std::iterator_traits<typename _TensorA::iterator>::value_type value_type;
 

@@ -37,6 +37,10 @@ int main()
    cout << "printing Q: size = " << Q.size() << " objsize = " << sizeof(Q) << endl;
    for(double x : Q) cout << x << endl;
 
+   Q = T;
+   cout << "printing Q (=T): size = " << Q.size() << " objsize = " << sizeof(Q) << endl;
+   for(double x : Q) cout << x << endl;
+
    // test 3
    Tensor<double> S(2,2,2); S.fill(1.0);
    axpy(0.5, T, S);
@@ -59,10 +63,6 @@ int main()
 
    // test 5
    cout << boolalpha;
-   cout << "1:" << has_value_type<Tensor<double>>::value << endl;
-   cout << "2:" << has_shape_type<Tensor<double>>::value << endl;
-   cout << "3:" << has_container_type<Tensor<double>>::value << endl;
-   cout << "4:" << has_rank<Tensor<double>>::value << endl;
    cout << "is_tensor<Tensor<double>> = " << is_tensor<Tensor<double>>::value << endl;
    cout << "is_tensor<Tensor<Tensor<double>>> = " << is_tensor<Tensor<Tensor<double>>>::value << endl;
    cout << "is_tensor<vector<double>> = " << is_tensor<vector<double>>::value << endl;
@@ -74,14 +74,14 @@ int main()
    A(2,2) = Tensor<double>(2,2);
    A(3,3) = Tensor<double>(2,2);
 
-// Tensor<Tensor<double>> B(4,4); B.fill(Tensor<double>(0,0));
-// B(0,0) = Tensor<double>(2,2);
-// B(1,1) = Tensor<double>(2,2);
-// B(2,2) = Tensor<double>(2,2);
-// B(3,3) = Tensor<double>(2,2);
+   Tensor<Tensor<double>> B(4,4); B.fill(Tensor<double>(0,0));
+   B(0,0) = Tensor<double>(2,2);
+   B(1,1) = Tensor<double>(2,2);
+   B(2,2) = Tensor<double>(2,2);
+   B(3,3) = Tensor<double>(2,2);
 
-// Tensor<Tensor<double>> C(0,0);
-// gemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 1.0, C);
+   Tensor<Tensor<double>> C(4,4); C.fill(Tensor<double>(0,0)); // rank info is required to determine contraction ranks at gemm
+   gemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 1.0, C);
 
    return 0;
 }
