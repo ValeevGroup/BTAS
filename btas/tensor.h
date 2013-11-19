@@ -55,23 +55,20 @@ public:
    //
 
    /// default constructor
-   /// \param n tensor rank
-   explicit
-   Tensor (size_type n = 0)
-   : shape_ (n, 0), stride_ (n, 0)
-   { }
+   Tensor () { }
 
    /// destructor
    ~Tensor () { }
 
    /// constructor with index shape
-   template<typename _arg1, typename... _args>
-   Tensor (const _arg1& first, const _args&... rest)
+   template<typename... _args>
+   Tensor (const size_type& first, const _args&... rest)
    {
       resize(first, rest...);
    }
 
    /// constructor with index shape object
+   explicit
    Tensor (const shape_type& shape)
    {
       resize(shape);
@@ -85,7 +82,22 @@ public:
 
    /// copy constructor
    template<class _Tensor>
+   explicit
    Tensor (const _Tensor& x)
+   : shape_ (x.rank()), stride_ (x.rank())
+   {
+      std::copy(x.shape().begin(), x.shape().end(), shape_.begin());
+
+      std::copy(x.stride().begin(), x.stride().end(), stride_.begin());
+
+      data_.resize(x.size());
+      std::copy(x.begin(), x.end(), data_.begin());
+   }
+
+   /// copy constructor specialized for me
+   /// TODO: should be implemented in terms of efficient copy.
+   explicit
+   Tensor (const Tensor& x)
    : shape_ (x.rank()), stride_ (x.rank())
    {
       std::copy(x.shape().begin(), x.shape().end(), shape_.begin());
@@ -112,7 +124,24 @@ public:
       return *this;
    }
 
+   /// copy assignment operator specialized for me
+   /// TODO: should be implemented in terms of efficient copy.
+   Tensor&
+   operator= (const Tensor& x)
+   {
+      shape_.resize(x.rank());
+      std::copy(x.shape().begin(), x.shape().end(), shape_.begin());
+
+      stride_.resize(x.rank());
+      std::copy(x.stride().begin(), x.stride().end(), stride_.begin());
+
+      data_.resize(x.size());
+      std::copy(x.begin(), x.end(), data_.begin());
+      return *this;
+   }
+
    /// move constructor
+   explicit
    Tensor (Tensor&& x)
    : shape_ (x.shape_), stride_ (x.stride_), data_ (x.data_)
    { }
@@ -271,7 +300,7 @@ public:
    /// resize array with shape
    template<typename... _args>
    void
-   resize (const typename shape_type::value_type& first, const _args&... rest)
+   resize (const size_type& first, const _args&... rest)
    {
       shape_.resize(1u+sizeof...(rest));
       _set_shape<0>(first, rest...);
@@ -387,7 +416,7 @@ private:
    /// set shape object
    template<size_type i, typename... _args>
    void
-   _set_shape (const typename shape_type::value_type& first, const _args&... rest)
+   _set_shape (const size_type& first, const _args&... rest)
    {
       shape_[i] = first;
       _set_shape<i+1>(rest...);
@@ -396,7 +425,7 @@ private:
    /// set shape object (specialized)
    template<size_type i>
    void
-   _set_shape (const typename shape_type::value_type& first)
+   _set_shape (const size_type& first)
    {
       shape_[i] = first;
    }
