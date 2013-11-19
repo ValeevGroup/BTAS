@@ -6,6 +6,7 @@ namespace btas { enum CBLAS_TRANSPOSE { CblasNoTrans, CblasTrans, CblasConjTrans
 
 #include <tensor.h>
 #include <varray.h>
+#include <tensor_traits.h>
 #include <axpy_impl.h>
 #include <gemm_impl.h>
 using namespace btas;
@@ -56,12 +57,22 @@ int main()
    cout << "printing V: size = " << V.size() << " objsize = " << sizeof(V) << endl;
    for(double x : V) cout << x << endl;
 
-// // test 5
-// Tensor<Tensor<double>> A(4,4); A.fill(Tensor<double>(0,0));
-// A(0,0) = Tensor<double>(2,2);
-// A(1,1) = Tensor<double>(2,2);
-// A(2,2) = Tensor<double>(2,2);
-// A(3,3) = Tensor<double>(2,2);
+   // test 5
+   cout << boolalpha;
+   cout << "1:" << has_value_type<Tensor<double>>::value << endl;
+   cout << "2:" << has_shape_type<Tensor<double>>::value << endl;
+   cout << "3:" << has_container_type<Tensor<double>>::value << endl;
+   cout << "4:" << has_rank<Tensor<double>>::value << endl;
+   cout << "is_tensor<Tensor<double>> = " << is_tensor<Tensor<double>>::value << endl;
+   cout << "is_tensor<Tensor<Tensor<double>>> = " << is_tensor<Tensor<Tensor<double>>>::value << endl;
+   cout << "is_tensor<vector<double>> = " << is_tensor<vector<double>>::value << endl;
+
+   // test 6
+   Tensor<Tensor<double>> A(4,4); A.fill(Tensor<double>(0,0));
+   A(0,0) = Tensor<double>(2,2);
+   A(1,1) = Tensor<double>(2,2);
+   A(2,2) = Tensor<double>(2,2);
+   A(3,3) = Tensor<double>(2,2);
 
 // Tensor<Tensor<double>> B(4,4); B.fill(Tensor<double>(0,0));
 // B(0,0) = Tensor<double>(2,2);

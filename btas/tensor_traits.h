@@ -16,7 +16,7 @@ class has_data {
    template<class>
    static std::false_type __test(...);
 public:
-   static constexpr const bool value = std::is_same<std::true_type(), decltype(__test<T>(0))>::value;
+   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
 };
 
 /// test T has rank() member
@@ -29,7 +29,7 @@ class has_rank {
    template<class>
    static std::false_type __test(...);
 public:
-   static constexpr const bool value = std::is_same<std::true_type(), decltype(__test<T>(0))>::value;
+   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
 };
 
 /// test T has value_type
@@ -37,12 +37,38 @@ template<class T>
 class has_value_type {
    /// true case
    template<class U>
-   static decltype(U::value_type, std::true_type()) __test(int);
+   static std::true_type __test(typename U::value_type*);
    /// false case
    template<class>
    static std::false_type __test(...);
 public:
-   static constexpr const bool value = std::is_same<std::true_type(), decltype(__test<T>(0))>::value;
+   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
+};
+
+/// test T has shape_type
+template<class T>
+class has_shape_type {
+   /// true case
+   template<class U>
+   static std::true_type __test(typename U::shape_type*);
+   /// false case
+   template<class>
+   static std::false_type __test(...);
+public:
+   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
+};
+
+/// test T has container_type
+template<class T>
+class has_container_type {
+   /// true case
+   template<class U>
+   static std::true_type __test(typename U::container_type*);
+   /// false case
+   template<class>
+   static std::false_type __test(...);
+public:
+   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
 };
 
 /// test _Tensor has a standard tensor concept
@@ -51,8 +77,8 @@ template<class _Tensor>
 class is_tensor {
 public:
    static constexpr const bool
-   value = has_value_type<_Tensor>::value | has_shape_type<_Tensor>::value |
-           has_container_type<_Tensor>::value | has_rank<_Tensor>::value;
+   value = has_value_type<_Tensor>::value & has_shape_type<_Tensor>::value &
+           has_container_type<_Tensor>::value & has_rank<_Tensor>::value;
 };
 
 } // namespace btas
