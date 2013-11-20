@@ -1,7 +1,7 @@
 #ifndef __BTAS_BTAS_H
 #define __BTAS_BTAS_H
 
-#include <tensor.h>
+#include <cassert>
 
 #include <axpy_impl.h> // -> <detail/axpy_impl.h>
 #include <gemm_impl.h> // -> <detail/gemm_impl.h>

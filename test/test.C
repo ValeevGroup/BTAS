@@ -6,6 +6,8 @@ namespace btas { enum CBLAS_TRANSPOSE { CblasNoTrans, CblasTrans, CblasConjTrans
 
 #include <varray.h>
 #include <btas.h>
+#include <tensor.h>
+#include <tarray.h>
 using namespace btas;
 
 int main()
@@ -84,6 +86,27 @@ int main()
 
    Tensor<double> a(4,4); a.fill(1.0);
 // gemm(CblasNoTrans, CblasNoTrans, 1.0, A, a, 1.0, C); // this will give a compile-time error, since gemm for "tensor of tensor" and "tensor" is not supported
+
+   // test 8
+   TArray<double,3> t(2,2,2); t.fill(0.0);
+
+   t(1,0,1) = -0.5;
+
+   t.at(1,1,0) = 0.5;
+
+   cout << "printing t: size = " << t.size() << " objsize = " << sizeof(t) << endl;
+   for(double x : t) cout << x << endl;
+
+   TArray<double,3> s(S);
+
+   cout << "printing s: size = " << s.size() << " objsize = " << sizeof(s) << endl;
+   for(double x : s) cout << x << endl;
+
+   TArray<double,2> v;
+   gemm(CblasNoTrans, CblasNoTrans, 1.0, t, s, 1.0, v);
+
+   cout << "printing v: size = " << v.size() << " objsize = " << sizeof(v) << endl;
+   for(double x : v) cout << x << endl;
 
    return 0;
 }
