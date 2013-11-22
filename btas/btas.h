@@ -3,8 +3,8 @@
 
 #include <cassert>
 
-#include <axpy_impl.h> // -> <detail/axpy_impl.h>
-#include <gemm_impl.h> // -> <detail/gemm_impl.h>
+#include <generic/axpy_impl.h>
+#include <generic/gemm_impl.h>
 
 #include <contract.h>
 

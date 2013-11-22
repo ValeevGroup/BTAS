@@ -235,13 +235,13 @@ public:
    const shape_type& shape() const { return shape_; }
 
    /// \return n-th shape
-   const shape_type& shape(size_type n) const { return shape_.at(n); }
+   const size_type& shape(size_type n) const { return shape_.at(n); }
 
    /// \return stride object
    const shape_type& stride() const { return stride_; }
 
    /// \return n-th stride
-   const shape_type& stride(size_type n) const { return stride_.at(n); }
+   const size_type& stride(size_type n) const { return stride_.at(n); }
 
    //
    //  Resize ======================================================================================
@@ -304,13 +304,13 @@ public:
       std::generate(data_.begin(), data_.end(), gen);
    }
 
-   typename std::enable_if<has_data<container_type>::value, value_type*>::type
+   value_type*
    data()
    {
       return data_.data();
    }
 
-   typename std::enable_if<has_data<container_type>::value, const value_type*>::type
+   const value_type*
    data() const
    {
       return data_.data();

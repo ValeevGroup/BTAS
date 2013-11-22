@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <set>
 using namespace std;
 
 namespace btas { enum CBLAS_TRANSPOSE { CblasNoTrans, CblasTrans, CblasConjTrans }; };
@@ -107,6 +108,8 @@ int main()
 
    cout << "printing v: size = " << v.size() << " objsize = " << sizeof(v) << endl;
    for(double x : v) cout << x << endl;
+
+   TArray<double,3,std::set<double>> u;
 
    return 0;
 }
