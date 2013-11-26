@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <type_traits>
 
-#include <tensor_traits.h>
+#include <btas/tensor_traits.h>
 
 namespace btas {
 

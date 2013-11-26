@@ -3,9 +3,9 @@
 
 #include <cassert>
 
-#include <generic/axpy_impl.h>
-#include <generic/gemm_impl.h>
+#include <btas/generic/axpy_impl.h>
+#include <btas/generic/gemm_impl.h>
 
-#include <contract.h>
+#include <btas/contract.h>
 
 #endif // __BTAS_BTAS_H

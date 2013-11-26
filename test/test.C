@@ -5,10 +5,10 @@ using namespace std;
 
 //namespace btas { enum CBLAS_TRANSPOSE { CblasNoTrans, CblasTrans, CblasConjTrans }; };
 
-#include <varray.h>
-#include <btas.h>
-#include <tensor.h>
-#include <tarray.h>
+#include <btas/varray.h>
+#include <btas/btas.h>
+#include <btas/tensor.h>
+#include <btas/tarray.h>
 using namespace btas;
 
 int main()

@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <vector>
 
-#include <tensor_traits.h>
+#include <btas/tensor_traits.h>
 
 /// default storage type
 template<typename _T>
