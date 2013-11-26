@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <type_traits>
 
-#include <tensor_traits.h>
+#include <btas/tensor_traits.h>
 
 namespace btas {
 
@@ -215,11 +215,17 @@ public:
    /// \return const_iterator to the first
    const_iterator begin() const { return data_.begin(); }
 
+   /// \return const iterator to the first even if this is not itself const
+   const_iterator cbegin() const { return data_.begin(); }
+
    /// \return iterator to the end
    iterator end() { return data_.end(); }
 
    /// \return const_iterator to the end
    const_iterator end() const { return data_.end(); }
+
+   /// \return const iterator to the end even if this is not itself const
+   const_iterator cend() const { return data_.end(); }
 
    //
    //  Size and Shape ==============================================================================

@@ -6,8 +6,9 @@
 #include <iterator>
 #include <type_traits>
 
-#include <tensor_traits.h>
-#include <numerictype.h>
+#include <btas/tensor_traits.h>
+#include <btas/numerictype.h>
+#include <btas/generic/types.h>
 
 namespace btas {
 

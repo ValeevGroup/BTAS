@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <vector>
 
-#include <tensor_traits.h>
+#include <btas/tensor_traits.h>
 
 /// default storage type
 template<typename _T>
@@ -219,6 +219,20 @@ public:
    /// \return const iterator last
    const_iterator
    end() const
+   {
+      return data_.end();
+   }
+
+   /// \return const iterator first even if this is not itself const
+   const_iterator
+   cbegin() const
+   {
+      return data_.begin();
+   }
+
+   /// \return const iterator last even if this is not itself const
+   const_iterator
+   cend() const
    {
       return data_.end();
    }
