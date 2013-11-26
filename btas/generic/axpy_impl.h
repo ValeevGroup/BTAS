@@ -6,6 +6,8 @@
 #include <type_traits>
 #include <tensor_traits.h>
 
+#include <generic/types.h>
+
 namespace btas {
 
 /// Call BLAS depending on type of Tensor class

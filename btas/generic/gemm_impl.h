@@ -9,6 +9,8 @@
 #include <tensor_traits.h>
 #include <numerictype.h>
 
+#include <generic/types.h>
+
 namespace btas {
 
 template<bool _DoGemm> struct gemm_impl { };

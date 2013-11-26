@@ -3,7 +3,7 @@
 #include <set>
 using namespace std;
 
-namespace btas { enum CBLAS_TRANSPOSE { CblasNoTrans, CblasTrans, CblasConjTrans }; };
+//namespace btas { enum CBLAS_TRANSPOSE { CblasNoTrans, CblasTrans, CblasConjTrans }; };
 
 #include <varray.h>
 #include <btas.h>
