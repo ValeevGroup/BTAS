@@ -222,6 +222,20 @@ public:
       return data_.end();
    }
 
+   /// \return const iterator first even if this is not itself const
+   const_iterator
+   cbegin() const
+   {
+      return data_.begin();
+   }
+
+   /// \return const iterator last even if this is not itself const
+   const_iterator
+   cend() const
+   {
+      return data_.end();
+   }
+
    /// \return iterator first
    iterator
    begin()
