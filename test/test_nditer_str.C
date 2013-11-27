@@ -4,13 +4,15 @@
 #include <random>
 #include <functional>
 #include <vector>
+#include <string>
+#include <sstream>
 using namespace std;
 
 #include <btas/tensor.h>
 #include <btas/nditerator.h>
 using namespace btas;
 
-void print(const Tensor<double>& X)
+void print(const Tensor<string>& X)
 {
    cout << "shape [";
    for(size_t i = 0; i < X.rank()-1; ++i)
@@ -24,23 +26,23 @@ void print(const Tensor<double>& X)
    for(auto ix = X.begin(); ix != X.end(); ++ix, ++ipr)
    {
       if(ipr > 0 && ipr % str == 0) cout << endl;
-      cout << setw(6) << fixed << *ix;
+      cout << " " << *ix;
    }
    cout << endl;
 }
 
 // =================================================================================================
 //
-// Use cases of NDIterator
+// This is for checking how NDIterator works by monitoring explicit indexing
 //
 // =================================================================================================
 
 int main()
 {
-   typedef Tensor<double>::shape_type shape_type;
+   typedef Tensor<string>::shape_type shape_type;
 
-   mt19937 rgen;
-   uniform_real_distribution<double> dist(-1.0, 1.0);
+// mt19937 rgen;
+// uniform_real_distribution<string> dist(-1.0, 1.0);
 
 // =================================================================================================
 //
@@ -48,7 +50,16 @@ int main()
 //
 // =================================================================================================
 
-   Tensor<double> A(4,4,4); A.generate(bind(dist, rgen));
+   Tensor<string> A(4,4,4); // A.generate(bind(dist, rgen));
+   for(size_t i = 0; i < A.shape(0); ++i) {
+      for(size_t j = 0; j < A.shape(1); ++j) {
+         for(size_t k = 0; k < A.shape(2); ++k) {
+            ostringstream sout;
+            sout << "[" << i << "," << j << "," << k << "]";
+            A(i,j,k) = sout.str();
+         }
+      }
+   }
 
    cout.precision(2);
    cout << "Printing A: "; print(A);
@@ -72,10 +83,10 @@ int main()
    }
 
    // resize B with permuted shape
-   Tensor<double> B(new_shape);
+   Tensor<string> B(new_shape);
 
    // NDIterator ([pointer to start], [new shape], [stride hack], [current index]);
-   NDIterator<double*, shape_type> it_permt(A.data(), new_shape, new_stride);
+   NDIterator<string*, shape_type> it_permt(A.data(), new_shape, new_stride);
 
    for(auto ib = B.begin(); ib != B.end(); ++ib, ++it_permt)
    {
@@ -102,10 +113,10 @@ int main()
    }
 
    // resize C with sliced shape
-   Tensor<double> C(slice_shape);
+   Tensor<string> C(slice_shape);
 
    // NDIterator ([pointer to start], [new shape], [stride hack], [current index]);
-   NDIterator<double*, shape_type> it_slice(A.data()+offset, slice_shape, A.stride());
+   NDIterator<string*, shape_type> it_slice(A.data()+offset, slice_shape, A.stride());
 
    for(auto ic = C.begin(); ic != C.end(); ++ic, ++it_slice)
    {
@@ -130,10 +141,10 @@ int main()
    shape_type tie_stride = { istr, jstr };
 
    // resize D with tied shape
-   Tensor<double> D(tie_shape);
+   Tensor<string> D(tie_shape);
 
    // NDIterator ([pointer to start], [new shape], [stride hack], [current index]);
-   NDIterator<double*, shape_type> it_tie(A.data(), tie_shape, tie_stride);
+   NDIterator<string*, shape_type> it_tie(A.data(), tie_shape, tie_stride);
 
    for(auto ic = D.begin(); ic != D.end(); ++ic, ++it_tie)
    {
@@ -159,19 +170,19 @@ int main()
    }
 
    // copy A into E
-   Tensor<double> E(A);
+   Tensor<string> E(A);
 
    // NDIterator ([pointer to start], [new shape], [stride hack], [current index]);
    // get iterator to the first
-   NDIterator<double*, shape_type> it_slice_E(E.data()+offset, slice_shape, E.stride());
+   NDIterator<string*, shape_type> it_slice_E(E.data()+offset, slice_shape, E.stride());
 
    // get iterator to the end, i.e. index = { cnew_shape[0], 0, 0 }
    shape_type index_last = slice_shape;
    fill(index_last.begin()+1, index_last.end(), 0);
-   NDIterator<double*, shape_type> it_slice_E_end(E.data()+offset, slice_shape, E.stride(), index_last);
+   NDIterator<string*, shape_type> it_slice_E_end(E.data()+offset, slice_shape, E.stride(), index_last);
 
    // get iterator to permute within slice (using NDIterator of NDIterator)
-   NDIterator<NDIterator<double*, shape_type>, shape_type> it_slice_permt_A(NDIterator<double*, shape_type>(A.data()+offset, slice_shape, A.stride()), cnew_shape, cnew_stride);
+   NDIterator<NDIterator<string*, shape_type>, shape_type> it_slice_permt_A(NDIterator<string*, shape_type>(A.data()+offset, slice_shape, A.stride()), cnew_shape, cnew_stride);
 
    for(; it_slice_E != it_slice_E_end; ++it_slice_E, ++it_slice_permt_A)
    {

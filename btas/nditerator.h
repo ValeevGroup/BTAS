@@ -3,6 +3,7 @@
 
 #include <iterator>
 #include <type_traits>
+//#include <algorithm>
 
 #include <btas/tensor_traits.h>
 #include <btas/resize.h>
@@ -91,7 +92,8 @@ public:
    NDIterator (_Iterator start, const shape_type& shape, const shape_type& stride, const shape_type& index)
    : start_ (start), shape_ (shape), stride_ (stride), index_ (index)
    {
-      for(size_type i = 0; i < shape_.size(); ++i)
+      assert(index_[0] <= shape_[0]);
+      for(size_type i = 1; i < shape_.size(); ++i)
       {
          assert(index_[i] < shape_[i]);
       }
@@ -234,7 +236,6 @@ public:
    NDIterator& operator+= (const difference_type& n)
    {
       __diff__index(n);
-      current_ = __get__address();
       return *this;
    }
 
@@ -248,7 +249,6 @@ public:
    NDIterator& operator-= (const difference_type& n)
    {
       __diff__index(-n);
-      current_ = __get__address();
       return *this;
    }
 
@@ -281,7 +281,7 @@ private:
    /// calculate absolute address (lots of overheads? so I have current_ for fast access)
    _Iterator __get__address () const
    {
-      size_type offset = 0;
+      difference_type offset = 0;
       for(size_type i = 0; i < stride_.size(); ++i)
       {
          offset += stride_[i]*index_[i];
@@ -292,6 +292,7 @@ private:
    /// calculate index from step size
    void __diff__index (difference_type n)
    {
+/*
       if(n >= 0)
       {
          for(size_type i = shape_.size()-1; i > 0; --i)
@@ -318,7 +319,30 @@ private:
          }
          assert(n >= 0);
       }
-      index_[0] = n;
+      index_[0] = std::min(static_cast<difference_type>(shape_[0]), n);
+*/
+      difference_type pos = index_[0];
+      for(size_type i = 1; i < shape_.size(); ++i)
+      {
+         pos = pos*shape_[i]+index_[i];
+      }
+      pos += n;
+
+      for(size_type i = shape_.size()-1; i > 0; --i)
+      {
+         index_[i] = pos % shape_[i];
+         pos /= shape_[i];
+      }
+      if(pos < shape_[0])
+      {
+         index_[0] = pos;
+      }
+      else
+      {
+         index_[0] = shape_[0];
+         std::fill(index_.begin()+1, index_.end(), 0);
+      }
+      current_ = __get__address();
    }
 
    /// increment
