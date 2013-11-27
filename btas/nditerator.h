@@ -292,35 +292,7 @@ private:
    /// calculate index from step size
    void __diff__index (difference_type n)
    {
-/*
-      if(n >= 0)
-      {
-         for(size_type i = shape_.size()-1; i > 0; --i)
-         {
-            n += index_[i];
-            index_[i] = n % shape_[i];
-            n /= shape_[i];
-         }
-         assert(n < shape_[0]);
-      }
-      else
-      {
-         for(size_type i = shape_.size()-1; i > 0; --i)
-         {
-            n += index_[i];
-            difference_type diff = n % shape_[i];
-            if(diff < 0)
-            {
-               diff += shape_[i];
-               n    -= shape_[i];
-            }
-            index_[i] = diff;
-            n /= shape_[i];
-         }
-         assert(n >= 0);
-      }
-      index_[0] = std::min(static_cast<difference_type>(shape_[0]), n);
-*/
+      // calculate absolute position to add diff. step n
       difference_type pos = index_[0];
       for(size_type i = 1; i < shape_.size(); ++i)
       {
@@ -328,20 +300,29 @@ private:
       }
       pos += n;
 
-      for(size_type i = shape_.size()-1; i > 0; --i)
-      {
-         index_[i] = pos % shape_[i];
-         pos /= shape_[i];
+      if(pos <= 0) {
+         // index to the first
+         std::fill(index_.begin(), index_.end(), 0);
       }
-      if(pos < shape_[0])
-      {
-         index_[0] = pos;
+      else {
+         // calculate index from new position
+         for(size_type i = shape_.size()-1; i > 0; --i)
+         {
+            index_[i] = pos % shape_[i];
+            pos /= shape_[i];
+         }
+         if(pos < shape_[0])
+         {
+            index_[0] = pos;
+         }
+         else
+         {
+            // index to the last
+            index_[0] = shape_[0];
+            std::fill(index_.begin()+1, index_.end(), 0);
+         }
       }
-      else
-      {
-         index_[0] = shape_[0];
-         std::fill(index_.begin()+1, index_.end(), 0);
-      }
+      // update current iterator
       current_ = __get__address();
    }
 
