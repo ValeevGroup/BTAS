@@ -7,6 +7,7 @@
 namespace btas {
 
 /// test T has data() member
+/// this will be used to detect whether or not the storage is consecutive
 template<class T>
 class has_data {
    /// true case
