@@ -38,17 +38,20 @@ template<> struct axpy_impl<false>
 };
 
 /// Generic implementation of BLAS-AXPY
+/// tensor iterator must provide consecutive increment operator or never skip index
+/// i.e. disable "std::set<T>::iterator" or something like that...
+/// TODO: is there any missing type traits?
 template<
-   typename _T, class _Tensor,
+   typename _T, class _TensorX, class _TensorY,
    class = typename std::enable_if<
-      is_tensor<_Tensor>::value &
-      std::is_same<
-         typename std::iterator_traits<typename _Tensor::iterator>::iterator_category,
-         std::random_access_iterator_tag
+      is_tensor<_TensorX>::value &
+      is_tensor<_TensorY>::value &
+      std::is_same<typename _TensorX::value_type,
+                   typename _TensorY::value_type
       >::value
    >::type
 >
-void axpy(const _T& alpha, const _Tensor& x, _Tensor& y)
+void axpy(const _T& alpha, const _TensorX& x, _TensorY& y)
 {
    if (x.empty())
    {
@@ -65,9 +68,7 @@ void axpy(const _T& alpha, const _Tensor& x, _Tensor& y)
       assert(std::equal(x.shape().begin(), x.shape().end(), y.shape().begin()));
    }
 
-// static_assert(std::is_same<typename std::iterator_traits<typename _Tensor::iterator>::iterator_category, std::random_access_iterator_tag>::value, "axpy: _Tensor::iterator must be random-access iterator");
-
-   typedef typename std::iterator_traits<typename _Tensor::iterator>::value_type value_type;
+   typedef typename std::iterator_traits<typename _TensorX::iterator>::value_type value_type;
    axpy_impl<std::is_convertible<_T, value_type>::value> call(x.size(), alpha, x.begin(), y.begin());
 }
 

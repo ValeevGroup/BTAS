@@ -277,11 +277,6 @@ void gemm(CBLAS_TRANSPOSE transA, CBLAS_TRANSPOSE transB, const _T& alpha, const
       for (size_type i = 0; i < N; ++i) shapeC[M+i] = shapeB[i];
    }
 
-// // check iterator is "random-access" iterator
-// static_assert(std::is_same<typename std::iterator_traits<typename _TensorA::iterator>::iterator_category, std::random_access_iterator_tag>::value, "gemm: _TensorA::iterator must be random-access iterator");
-// static_assert(std::is_same<typename std::iterator_traits<typename _TensorB::iterator>::iterator_category, std::random_access_iterator_tag>::value, "gemm: _TensorB::iterator must be random-access iterator");
-// static_assert(std::is_same<typename std::iterator_traits<typename _TensorC::iterator>::iterator_category, std::random_access_iterator_tag>::value, "gemm: _TensorC::iterator must be random-access iterator");
-
    typedef typename std::iterator_traits<typename _TensorA::iterator>::value_type value_type;
 
    // resize / scale
