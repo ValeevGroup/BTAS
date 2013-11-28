@@ -117,6 +117,7 @@ public:
       shape_ = x.shape_;
       stride_ = x.stride_;
       index_ = x.index_;
+      return *this;
    }
 
    //
