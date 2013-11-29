@@ -10,16 +10,18 @@
 
 namespace btas {
 
-template<typename _Iterator, class _Shape, bool _IsResizable = is_resizable<_Shape>::value> class NDIterator { };
-
-/// multi-dimensional iterator (similar to nditer in NumPy???) with variable-size shape object
-/// provides iterator over tensor elements with specific shape & stride
-/// which enables to doing permutation, reshape, tie, slicing, etc...
-/// to enable NDIteration, _Iterator must be a random-access iterator
-template<typename _Iterator, class _Shape>
-class NDIterator<_Iterator, _Shape, true>
+/// multi-dimensional iterator (similar to nditer in NumPy)
+/// design revised on 11/29/2013
+/// provides iterator over tensor elements using shape & stride
+/// this is useful to implement permutation, reshape, tie, slicing, etc...
+/// _Iterator is required to be random-access iterator
+template<
+   class _Tensor,
+   class _Iterator = typename _Tensor::iterator,
+   class = typename std::enable_if<is_tensor<_Tensor>::value>::type
+>
+class NDIterator
 {
-
 private:
 
    typedef std::iterator_traits<_Iterator> __traits_type;
@@ -32,9 +34,8 @@ public:
    typedef typename __traits_type::reference reference;
    typedef typename __traits_type::pointer pointer;
 
-   typedef _Shape shape_type;
-
-   typedef unsigned long size_type;
+   typedef typename _Tensor::shape_type shape_type;
+   typedef typename _Tensor::size_type size_type;
 
 private:
 
@@ -57,6 +58,9 @@ private:
    /// current index (relative index w.r.t. slice)
    shape_type index_;
 
+   /// whether or not iterator is contiguous
+   bool contiguous_;
+
 public:
 
    //
@@ -70,6 +74,11 @@ public:
    /// destructor
   ~NDIterator ()
    { }
+
+   /// construct from tensor object
+   explicit
+   NDIterator (_Tensor& x, _Iterator start = x.begin())
+   : start_ (start), 
 
    /// construct with the least arguments
    NDIterator (_Iterator start, const shape_type& shape)
