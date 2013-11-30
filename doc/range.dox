@@ -1,0 +1,225 @@
+/**
+  @addtogroup TWG_Range
+
+  \section sec_TWG_Range_Concept_Range Range Concept
+  Range represents a (dense or sparse) space of indices (<i>n</i>-tuples of integral types; <i>n</i> is the index <em>rank</em>).
+  The rank of indices in a Range is, simply, the Range rank.
+  Range also provides a deterministic ordering of indices.
+
+  The concept of Range naturally arises in the context of iteration on data structures.
+  Thus its examples appear in many contexts:
+  <ul>
+   <li> <a href="http://www.boost.org/doc/libs/1_55_0/libs/range/doc/html/index.html">Boost.Range</a> library </li>
+   <li> Intel <a href="http://www.threadingbuildingblocks.org/docs/help/index.htm#reference/containers_overview/container_range_concept.htm">
+        Thread Building Blocks</a> (TBB) library </li>
+  </ul>
+  Our Range should be viewed as a specialization of the general concept of Range to the context of tensor algebra.
+  Existing examples of types that model the tensor Range concept can be found in <a href="https://github.com/ValeevGroup/tiledarray/blob/master/src/TiledArray/range.h">TiledArray</a>
+  and <a href="https://github.com/ValeevGroup/mpqc/blob/master/src/lib/mpqc/range.hpp">MPQC</a>.
+
+  \subsection sec_TWG_Range_Concept_Range_Synopsis Synopsis
+  See \ref sec_BTAS_Range_Synopsis for example uses of Range concept types.
+
+  \subsection sec_TWG_Range_Concept_Range_Description Description
+  To be a valid Range, class must be a <a href="http://www.stepanovpapers.com/DeSt98.pdf"><em>regular type</em></a>, and define
+  types and operations specified below.
+
+  \subsubsection sec_TWG_Range_Concept_Range_Description_Types Associated Types
+  <table>
+   <tr>
+    <th> type </th>
+    <th> description </th>
+    <th> comments </th>
+   </tr>
+
+   <tr>
+    <td> \c index_type </td>
+    <td> the type of indices contained by the Range </td>
+    <td> a regular type </td>
+   </tr>
+
+   <tr>
+    <td> \c ordinal_type </td>
+    <td> the type of ordinals for the indices in the Range; usually \c index_type will not have ordering operators, hence
+    conversion to ordinal_type is necessary to define the order of indices in Range. The map from index to ordinal is one-to-one.
+    </td>
+    <td> a regular type; for fast computation this will typically be
+a sufficiently-wide scalar </td>
+   </tr>
+
+   <tr>
+    <td> \c iterator </td>
+    <td> iterator over indices in the Range; dereferences to <code>index_type</code> </td>
+    <td> according to the <a href="http://www.sgi.com/tech/stl/Iterators.html">STL classification</a> of iterators,
+this is a const Bidirectional Iterator; in other words it supports increment and decrement operators </td>
+   </tr>
+
+  </table>
+
+  \subsubsection sec_TWG_Range_Concept_Range_Description_Memfun Member Functions
+   <table>
+   <tr>
+    <th> signature </th>
+    <th> specification </th>
+    <th> comments </th>
+   </tr>
+
+   <tr>
+    <td> @code Range() @endcode </td>
+    <td>
+     @code
+      Range r0;
+      assert(r0.area() == 0);
+     @endcode
+    </td>
+    <td> creates an empty range: { } </td>
+   </tr>
+
+   <tr>
+    <td> @code Range(const Range&) @endcode </td>
+    <td>
+     @code
+      Range r1(r0);
+      assert(r0 == r1);
+     @endcode
+    </td>
+    <td> must be deep-copy </td>
+   </tr>
+
+   <tr>
+    <td> @code Range(Range&&) @endcode </td>
+    <td>
+    </td>
+    <td> move ctor </td>
+   </tr>
+
+   <tr>
+    <td> @code operator=(const Range&) @endcode </td>
+    <td>
+     @code
+      Range r2 = r0;
+      assert(r2 == r0);
+     @endcode
+    </td>
+    <td> must be deep-copy </td>
+   </tr>
+
+   <tr>
+    <td> @code operator=(Range&&) @endcode </td>
+    <td> </td>
+    <td> </td>
+   </tr>
+
+   <tr>
+    <td> @code bool operator==(const Range&, const Range&) @endcode </td>
+    <td>
+     @code
+      assert(r0 == r0);
+      r1 = r0;
+      mutate(r1); // changes state of r1
+      assert(!(r1 == r0));
+     @endcode
+    </td>
+    <td> member or non-member </td>
+   </tr>
+
+   <tr>
+    <td> @code iterator begin() @endcode </td>
+    <td> </td>
+    <td> returns the iterator to the first index in Range; if Range is empty, <code>begin() == end()</code> is true </td>
+   </tr>
+
+   <tr>
+    <td> @code iterator end() @endcode </td>
+    <td> </td>
+    <td> returns the iterator past the last index in Range; if Range is empty, <code>begin() == end()</code> is true </td>
+   </tr>
+
+   <tr>
+    <td> @code uint rank() const @endcode </td>
+    <td> </td>
+    <td> returns the rank of Range </td>
+   </tr>
+
+   <tr>
+    <td> @code uint area() const @endcode </td>
+    <td>
+     @code
+      uint c = 0;
+      for(auto& i: r0) { ++c; }
+      assert(c == r0.area());
+     @endcode
+    </td>
+    <td> returns the area of Range, i.e. the number of indices</td>
+   </tr>
+
+   <tr>
+    <td> @code bool contains(const index_type&) @endcode </td>
+    <td>
+     @code
+      assert(r0.contains(* r0.begin()));
+     @endcode
+    </td>
+    <td> queries whether an index is in Range</td>
+   </tr>
+
+   <tr>
+    <td>
+     @code
+      ordinal_type
+      ordinal(const index_type&)
+      const
+     @endcode
+    </td>
+    <td>
+     @code
+      // assuming non-empty r0
+      ordinal_type o0 =
+        r0.ordinal(* r0.begin());
+      for(auto& i: r0) {
+        ordinal_type o1 = r0.ordinal(i);
+        assert(o1 > o0);
+        swap(o0,o1);
+      }
+     @endcode
+    </td>
+    <td> </td>
+   </tr>
+
+  </table>
+
+  where we used the following notation:
+  \li <code>uint</code> is an unsigned integral type.
+
+*/
+
+// this will be moved to range.h
+
+/** @addtogroup BTAS_Range
+
+    \section sec_BTAS_Range Range class
+    Range implements the Range TWG concept. It supports dense and strided ranges, with fixed (compile-time) and variable (run-time)
+    ranks.
+
+    \subsection sec_BTAS_Range_Synopsis Synopsis
+    The following will be valid with the reference implementation of Range. This does not belong to the concept specification,
+    and not all of these operations will model the concept, but it is useful for discussion; will eventually be moved elsewhere.
+    @code
+    // Constructors
+    Range<1> r0;         // empty = {}
+    Range<1> r1(5);      // [0,5) = {0, 1, 2, 3, 4}
+    Range<1> r2(2,4);    // [2,4) = {2, 3}
+    Range<1> r3(1,7,2);  // [1,7) with stride 2 = {1, 3, 5}
+    assert(r3.rank() == 1);
+    Range x(r2,r3);   // r1 x r2 = { {2,1}, {2,3}, {2,5}, {4,1}, {4,3}, {4,5} }
+    assert(x.rank() == 2);
+
+    // Operations
+    std::cout << x.area() << std::endl;  // will print "6"
+
+    // Iteration
+    for(auto& v: r3) {
+      std::cout << v << " "; // will print "1 3 5 "
+    }
+    @endcode
+*/
