@@ -67,15 +67,16 @@ int main(int argc, char **argv) {
   TA::TiledRange
     trange(blocking2.begin(), blocking2.end());
 
-  typedef btas::Tensor<double, btas::varray<double>, TA::Range > DenseTensor;
+//  typedef btas::Tensor<double, btas::varray<double>, TA::Range > DenseTensor;
+  typedef btas::Tensor<double, btas::varray<double> > DenseTensor;
 //  typedef TA::Array<double, 2, btas::varray<double> > TArray;
   typedef TA::Array<double, 2, DenseTensor > TArray;
 
   TArray a(world, trange);
   TArray b(world, trange);
   TArray c(world, trange);
-#if 0
   a.set_all_local(1.0);
+#if 0
   b.set_all_local(1.0);
 
   // Start clock
