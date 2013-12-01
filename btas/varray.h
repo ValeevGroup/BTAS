@@ -28,30 +28,13 @@ public:
    typedef typename container::const_reverse_iterator const_reverse_iterator;
    typedef typename container::difference_type difference_type;
    typedef typename container::size_type size_type;
+   typedef varray<T> eval_type;
 
 private:
 
-   friend class boost::serialization::access;
-   /// boost serialization: load as varray
-   template<class Archive>
-   void load (Archive& ar, varray& x, const unsigned int version)
-   {
-      size_type n; ar >> n;
-      x.resize(n);
-      for (value_type& xi : x) ar >> xi;
-   }
-
-   /// boost serialization: save as varray
-   template<class Archive>
-   void save (Archive& ar, const varray& x, const unsigned int version)
-   {
-      ar << x.size();
-      for (const value_type& xi : x) ar << xi;
-   }
-
-protected:
-
    container data_;
+
+   friend class boost::serialization::access;
 
 public:
 
@@ -280,6 +263,28 @@ public:
       }
    }
 };
+
+namespace boost {
+namespace serialization {
+
+  /// boost serialization: load as varray
+  template<class Archive, typename T>
+  void load (Archive& ar, btas::varray<T>& x, const unsigned int version)
+  {
+      typename btas::varray<T>::size_type n; ar >> n;
+      x.resize(n);
+      for (typename btas::varray<T>::value_type& xi : x) ar >> xi;
+  }
+
+  /// boost serialization: save as varray
+  template<class Archive, typename T>
+  void save (Archive& ar, const btas::varray<T>& x, const unsigned int version)
+  {
+      ar << x.size();
+      for (const typename btas::varray<T>::value_type& xi : x) ar << xi;
+  }
+}
+}
 
 };
 
