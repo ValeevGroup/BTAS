@@ -50,8 +50,8 @@ a sufficiently-wide scalar </td>
    <tr>
     <td> \c iterator </td>
     <td> iterator over indices in the Range; dereferences to <code>index_type</code> </td>
-    <td> according to the <a href="http://www.sgi.com/tech/stl/Iterators.html">STL classification</a> of iterators,
-this is a const Bidirectional Iterator; in other words it supports increment and decrement operators </td>
+    <td> this type model the constant Bidirectional Iterator concept defined in
+    <a href="">C++ Standard, Section 24.2</a> </td>
    </tr>
 
   </table>
