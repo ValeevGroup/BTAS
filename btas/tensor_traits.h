@@ -45,12 +45,12 @@ public:
    static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
 };
 
-/// test T has shape_type
+/// test T has range_type
 template<class T>
-class has_shape_type {
+class has_range_type {
    /// true case
    template<class U>
-   static std::true_type __test(typename U::shape_type*);
+   static std::true_type __test(typename U::range_type*);
    /// false case
    template<class>
    static std::false_type __test(...);
@@ -60,10 +60,10 @@ public:
 
 /// test T has container_type
 template<class T>
-class has_container_type {
+class has_storage_type {
    /// true case
    template<class U>
-   static std::true_type __test(typename U::container_type*);
+   static std::true_type __test(typename U::storage_type*);
    /// false case
    template<class>
    static std::false_type __test(...);
@@ -77,8 +77,8 @@ template<class _Tensor>
 class is_tensor {
 public:
    static constexpr const bool
-   value = has_value_type<_Tensor>::value & has_shape_type<_Tensor>::value &
-           has_container_type<_Tensor>::value & has_rank<_Tensor>::value;
+   value = has_value_type<_Tensor>::value & has_range_type<_Tensor>::value &
+           has_storage_type<_Tensor>::value & has_rank<_Tensor>::value;
 };
 
 } // namespace btas

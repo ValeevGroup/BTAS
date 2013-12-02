@@ -13,6 +13,15 @@ using namespace btas;
 
 int main()
 {
+  // test 0
+  {
+    Tensor<double> T0;
+    Tensor<int> T1(2);
+    Tensor<bool> T2(2, 2);
+    Tensor<std::complex<int> > T3(2, 2, 2);
+    Tensor<std::complex<double> > T4(2, 2, 2, 2);
+  }
+
    // test 1
    Tensor<double> T(2,2,2); T.fill(0.0);
 
@@ -24,11 +33,11 @@ int main()
    for(double x : T) cout << x << endl;
 
    // test 2
-   typedef Tensor<float, varray<float>, varray<int>> MyTensor;
-   MyTensor::shape_type shape = { 4, 4 };
-   MyTensor Q(shape); Q.fill(2.0);
+   typedef Tensor<float, btas::DEFAULT_RANGE, varray<float>> MyTensor;
+   MyTensor::range_type range(4, 4);
+   MyTensor Q(range); Q.fill(2.0);
 
-   MyTensor::shape_type index = { 1, 2 };
+   MyTensor::index_type index = {1, 2};
 
    Q(index) = -0.5;
    ++index[0];
@@ -49,17 +58,19 @@ int main()
    for(double x : S) cout << x << endl;
 
    Tensor<double> U;
-   axpy(0.5, S, U);
+   axpy(0.5, S, U); // this segfaults because U is not initialized yet?
 
    cout << "printing U: size = " << U.size() << " objsize = " << sizeof(U) << endl;
    for(double x : U) cout << x << endl;
 
+#if 0
    // test 4
    Tensor<double> V(0, 0);
    gemm(CblasNoTrans, CblasNoTrans, 1.0, T, S, 1.0, V);
 
    cout << "printing V: size = " << V.size() << " objsize = " << sizeof(V) << endl;
    for(double x : V) cout << x << endl;
+#endif
 
    // test 5
    cout << boolalpha;
@@ -67,6 +78,7 @@ int main()
    cout << "is_tensor<Tensor<Tensor<double>>> = " << is_tensor<Tensor<Tensor<double>>>::value << endl;
    cout << "is_tensor<vector<double>> = " << is_tensor<vector<double>>::value << endl;
 
+#if 0
    // test 6
    Tensor<Tensor<double>> A(4,4); A.fill(Tensor<double>(0,0));
    A(0,0) = Tensor<double>(2,2);
@@ -110,6 +122,7 @@ int main()
    for(double x : v) cout << x << endl;
 
    TArray<double,3,std::set<double>> u;
+#endif
 
    return 0;
 }

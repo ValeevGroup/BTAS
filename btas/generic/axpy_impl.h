@@ -58,11 +58,11 @@ void axpy(const _T& alpha, const _Tensor& x, _Tensor& y)
 
    if (y.empty())
    {
-      y.resize(x.shape());
+      y.resize(x.range());
    }
    else
    {
-      assert(std::equal(x.shape().begin(), x.shape().end(), y.shape().begin()));
+      assert( x.range() == y.range() );
    }
 
 // static_assert(std::is_same<typename std::iterator_traits<typename _Tensor::iterator>::iterator_category, std::random_access_iterator_tag>::value, "axpy: _Tensor::iterator must be random-access iterator");
