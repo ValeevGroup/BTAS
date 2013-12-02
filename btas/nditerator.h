@@ -353,15 +353,9 @@ private:
       }
 
       // reaching the last
-      if(i == 0)
-      {
-         ++index_[i];
-         current_ = __get__address();
-      }
-      else
-      {
-         current_ += offset;
-      }
+      if(i == 0) ++index_[i];
+
+      current_ += offset;
    }
 
    /// decrement
@@ -394,15 +388,9 @@ private:
       }
 
       // reaching the last
-      if(i == 0)
-      {
-         --index_[i];
-         current_ = __get__address();
-      }
-      else
-      {
-         current_ -= offset;
-      }
+      if(i == 0) --index_[i];
+
+      current_ -= offset;
    }
 
 };
