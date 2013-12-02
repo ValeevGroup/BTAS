@@ -120,6 +120,12 @@ public:
       return *this;
    }
 
+   /// \return true if operator* references valid tensor element
+   bool valid() const 
+   { 
+      return index_[0] < shape_[0]; 
+   }
+
    //
    // comparison: general iterator requirements
    //

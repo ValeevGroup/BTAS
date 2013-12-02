@@ -166,14 +166,14 @@ int main()
    NDIterator<double*, shape_type> it_slice_E(E.data()+offset, slice_shape, E.stride());
 
    // get iterator to the end, i.e. index = { cnew_shape[0], 0, 0 }
-   shape_type index_last = slice_shape;
-   fill(index_last.begin()+1, index_last.end(), 0);
-   NDIterator<double*, shape_type> it_slice_E_end(E.data()+offset, slice_shape, E.stride(), index_last);
+   //shape_type index_last = slice_shape;
+   //fill(index_last.begin()+1, index_last.end(), 0);
+   //NDIterator<double*, shape_type> it_slice_E_end(E.data()+offset, slice_shape, E.stride(), index_last);
 
    // get iterator to permute within slice (using NDIterator of NDIterator)
    NDIterator<NDIterator<double*, shape_type>, shape_type> it_slice_permt_A(NDIterator<double*, shape_type>(A.data()+offset, slice_shape, A.stride()), cnew_shape, cnew_stride);
 
-   for(; it_slice_E != it_slice_E_end; ++it_slice_E, ++it_slice_permt_A)
+   for(; it_slice_E.valid(); ++it_slice_E, ++it_slice_permt_A)
    {
       *it_slice_E = *it_slice_permt_A;
    }
