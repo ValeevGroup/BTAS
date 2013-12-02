@@ -126,6 +126,13 @@ public:
       return index_[0] < shape_[0]; 
    }
 
+   /// \return n-th index
+   const typename shape_type::value_type&
+   index (const size_type& n) const
+   {
+      return index_[n];
+   }
+
    //
    // comparison: general iterator requirements
    //
