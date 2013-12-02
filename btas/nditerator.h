@@ -118,6 +118,13 @@ public:
    : start_ (x.start_), current_ (x.current_), shape_ (x.shape_), stride_ (x.stride_), index_ (x.index_)
    { }
 
+   /// conversion from NDIterator with convertible _Iterator type
+   template <typename _nc_iterator>
+   NDIterator (const NDIterator<_nc_iterator,_Shape,true>& x)
+   : start_ (x.start_), current_ (x.current_), shape_ (x.shape_), stride_ (x.stride_), index_ (x.index_)
+   { }
+
+
    //
    //  assignment
    //
@@ -440,6 +447,9 @@ private:
           current_ -= offset;
           }
    }
+
+   template <typename _i, typename _s, bool _ir>
+   friend class NDIterator;
 
 };
 
