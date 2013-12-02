@@ -396,7 +396,7 @@ private:
       // reaching the last
       if(i == 0)
       {
-         ++index_[i];
+         --index_[i];
          current_ = __get__address();
       }
       else
