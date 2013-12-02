@@ -140,6 +140,43 @@ public:
       return *this;
    }
 
+   /// \return base iterator
+   _Iterator
+   start() const { return start_; }
+
+   /// \return array of index shapes
+   const shape_type& 
+   shape() const { return shape_; }
+
+   /// \return nth shape (index(n) < shape(n))
+   const typename shape_type::value_type& 
+   shape(const size_type& n) const { return shape_[n]; }
+
+   /// \return stride of indices
+   const shape_type& stride() const { return stride_; }
+
+   /// \return nth stride 
+   const typename shape_type::value_type& 
+   stride(const size_type& n) const { return stride_[n]; }
+
+   /// \return number of elements traversed during full iteration
+   size_type
+   size() const { return stride_[0]*shape_[0]; }
+
+   /// \return NDIterator set to ending state
+   NDIterator
+   end() const
+   {
+      NDIterator<_Iterator, _Shape, true> _end;
+      _end.start_ = start_;
+      _end.current_ = start_ + size();
+      _end.shape_ = shape_;
+      _end.stride_ = stride_;
+      _end.index_ = shape_;
+      std::fill(_end.index_.begin()+1,_end.index_.end(),0);
+      return _end;
+   }
+
    /// \return true if operator* references valid tensor element
    bool valid() const 
    { 
