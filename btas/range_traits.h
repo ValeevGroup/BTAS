@@ -1,0 +1,95 @@
+#ifndef __BTAS_RANGE_TRAITS_H
+#define __BTAS_RANGE_TRAITS_H 1
+
+#include <iterator>
+#include <type_traits>
+
+namespace btas {
+
+/// test T has rank() member
+template<class T>
+class has_rank {
+   /// true case
+   template<class U>
+   static auto __test(U* p) -> decltype(p->rank(), std::true_type());
+   /// false case
+   template<class>
+   static std::false_type __test(...);
+public:
+   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
+};
+
+/// test T has index_type
+template<class T>
+class has_index_type {
+   /// true case
+   template<class U>
+   static std::true_type __test(typename U::index_type*);
+   /// false case
+   template<class>
+   static std::false_type __test(...);
+public:
+   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
+};
+
+/// test T has ordinal_type
+template<class T>
+class has_ordinal_type {
+   /// true case
+   template<class U>
+   static std::true_type __test(typename U::ordinal_type*);
+   /// false case
+   template<class>
+   static std::false_type __test(...);
+public:
+   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
+};
+
+/// test _Range conforms the TWG.Range concept
+/// check only index_type, ordinal_type, and rank() member
+template<class _Range>
+class is_range {
+public:
+   static constexpr const bool
+   value = has_index_type<_Range>::value & has_ordinal_type<_Range>::value &
+           has_rank<_Range>::value;
+};
+
+/// test T has size() member
+template<class T>
+class has_size {
+   /// true case
+   template<class U>
+   static auto __test(U* p) -> decltype(p->size(), std::true_type());
+   /// false case
+   template<class>
+   static std::false_type __test(...);
+public:
+   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
+};
+
+/// test T has range_size_type
+template<class T>
+class has_range_size_type {
+   /// true case
+   template<class U>
+   static std::true_type __test(typename U::range_size_type*);
+   /// false case
+   template<class>
+   static std::false_type __test(...);
+public:
+   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
+};
+
+/// test _Range conforms the TWG.BoxRange concept
+/// in addition to Range, check size() member
+template<class _Range>
+class is_boxrange {
+public:
+   static constexpr const bool
+   value = is_range<_Range>::value & has_size<_Range>::value & has_range_size_type<_Range>::value;
+};
+
+} // namespace btas
+
+#endif // __BTAS_TENSOR_TRAITS_H

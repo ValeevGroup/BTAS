@@ -4,6 +4,8 @@
 #include <iterator>
 #include <type_traits>
 
+#include <btas/range_traits.h>
+
 namespace btas {
 
 /// test T has data() member
@@ -12,19 +14,6 @@ class has_data {
    /// true case
    template<class U>
    static auto __test(U* p) -> decltype(p->data(), std::true_type());
-   /// false case
-   template<class>
-   static std::false_type __test(...);
-public:
-   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
-};
-
-/// test T has rank() member
-template<class T>
-class has_rank {
-   /// true case
-   template<class U>
-   static auto __test(U* p) -> decltype(p->rank(), std::true_type());
    /// false case
    template<class>
    static std::false_type __test(...);
