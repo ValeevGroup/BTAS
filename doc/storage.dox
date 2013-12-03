@@ -2,8 +2,8 @@
   @addtogroup TWG_Storage
 
   \section sec_TWG_Storage_Concept_Storage Storage Concept
-  Storage is a Container (the standard Container concept is defined in
-    <a href="">C++ Standard, Section 23.2</a>, with efficient (constant cost) access to the elements.
+  Storage is similar to the sequence sontainer defined in
+    <a href="">C++ Standard, Section 23.2.3</a>, with efficient (constant cost) access to the elements.
   The following standard containers meet the Storage requirements:
   <ul>
    <li> \c std::vector </li>
