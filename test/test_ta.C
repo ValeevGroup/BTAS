@@ -67,22 +67,20 @@ int main(int argc, char **argv) {
   TA::TiledRange
     trange(blocking2.begin(), blocking2.end());
 
-//  typedef btas::Tensor<double, btas::varray<double>, TA::Range > DenseTensor;
-  typedef btas::Tensor<double, btas::varray<double> > DenseTensor;
-//  typedef TA::Array<double, 2, btas::varray<double> > TArray;
+  typedef btas::Tensor<double, btas::Range, btas::varray<double> > DenseTensor;
   typedef TA::Array<double, 2, DenseTensor > TArray;
 
   TArray a(world, trange);
   TArray b(world, trange);
   TArray c(world, trange);
   a.set_all_local(1.0);
-#if 0
   b.set_all_local(1.0);
 
   // Start clock
   world.gop.fence();
   const double wall_time_start = madness::wall_time();
 
+#if 0
   // Do matrix multiplication
   {
     c("m,n") = a("m,k") * b("k,n");
