@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include <btas/tensor_traits.h>
+#include <btas/range_traits.h>
 #include <btas/generic/types.h>
 
 namespace btas {
@@ -45,7 +46,8 @@ template<
       std::is_same<
          typename std::iterator_traits<typename _Tensor::iterator>::iterator_category,
          std::random_access_iterator_tag
-      >::value
+      >::value &
+      is_boxrange<typename _Tensor::range_type>::value
    >::type
 >
 void axpy(const _T& alpha, const _Tensor& x, _Tensor& y)

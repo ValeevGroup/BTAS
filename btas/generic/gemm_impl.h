@@ -197,7 +197,7 @@ template<> struct gemm_impl<false>
 /// \param a input tensor
 /// \param b input tensor
 /// \param beta scalar value to be multiplied to \param c
-/// \param c output tensor which can be empty tensor but needs to have rank info (= size of shape).
+/// \param c output tensor which can be empty tensor but needs to have rank info
 /// Iterator is assumed to be consecutive (or, random_access_iterator) , thus e.g. iterator to map doesn't work.
 template<
    typename _T,
@@ -206,6 +206,9 @@ template<
       is_tensor<_TensorA>::value &
       is_tensor<_TensorB>::value &
       is_tensor<_TensorC>::value &
+      is_boxrange<typename _TensorA::range_type>::value &
+      is_boxrange<typename _TensorB::range_type>::value &
+      is_boxrange<typename _TensorC::range_type>::value &
       std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value &
       std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value &
       std::is_same<typename std::iterator_traits<typename _TensorA::iterator>::iterator_category, std::random_access_iterator_tag>::value &
