@@ -78,7 +78,6 @@ int main()
    cout << "is_tensor<Tensor<Tensor<double>>> = " << is_tensor<Tensor<Tensor<double>>>::value << endl;
    cout << "is_tensor<vector<double>> = " << is_tensor<vector<double>>::value << endl;
 
-#if 0
    // test 6
    Tensor<Tensor<double>> A(4,4); A.fill(Tensor<double>(0,0));
    A(0,0) = Tensor<double>(2,2);
@@ -93,6 +92,7 @@ int main()
    B(3,3) = Tensor<double>(2,2);
 
    Tensor<Tensor<double>> C(4,4); C.fill(Tensor<double>(0,0)); // rank info is required to determine contraction ranks at gemm
+#if 0
    gemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 1.0, C);
 
    // test 7

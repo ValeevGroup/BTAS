@@ -145,8 +145,8 @@ namespace btas {
       Tensor&
       operator= (Tensor&& x)
       {
-        swap(range_, x.range_);
-        swap(data_, x.data_);
+        std::swap(range_, x.range_);
+        std::swap(data_, x.data_);
         return *this;
       }
 
