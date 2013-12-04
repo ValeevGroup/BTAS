@@ -161,7 +161,12 @@ public:
 
    /// \return number of elements traversed during full iteration
    size_type
-   size() const { return stride_[0]*shape_[0]; }
+   size() const 
+       { 
+       size_type res = 1;
+       for(const auto& s : shape_) res *= s;
+       return res;
+       }
 
    /// \return NDIterator set to ending state
    NDIterator
@@ -169,7 +174,7 @@ public:
    {
       NDIterator<_Iterator, _Shape, true> _end;
       _end.start_ = start_;
-      _end.current_ = start_ + size();
+      _end.current_ = start_ + stride_[0]*shape_[0];
       _end.shape_ = shape_;
       _end.stride_ = stride_;
       _end.index_ = shape_;
