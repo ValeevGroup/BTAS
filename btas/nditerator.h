@@ -105,6 +105,19 @@ public:
    : start_ (x.start_), current_ (x.current_), shape_ (x.shape_), stride_ (x.stride_), index_ (x.index_)
    { }
 
+   /// move constructor
+   NDIterator (NDIterator&& x) { swap(x); }
+
+   /// move assignment
+   NDIterator&
+   operator=(NDIterator&& x) { swap(x); }
+
+   /// conversion from NDIterator with convertible _Iterator type
+   template <typename _nc_iterator>
+   NDIterator (const NDIterator<_nc_iterator,_Shape,true>& x)
+   : start_ (x.start_), current_ (x.current_), shape_ (x.shape_), stride_ (x.stride_), index_ (x.index_)
+   { }
+
    //
    //  assignment
    //
@@ -271,6 +284,16 @@ public:
       NDIterator __it(*this);
       __it -= n;
       return __it;
+   }
+
+   void
+   swap (NDIterator& x)
+   {
+      start_ = x.start_; 
+      current_ = x.current_; 
+      shape_.swap(x.shape_);
+      stride_.swap(x.stride_);
+      index_.swap(x.index_);
    }
 
 private:
