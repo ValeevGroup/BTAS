@@ -21,7 +21,7 @@ namespace btas {
   /// default range type
   using DEFAULT_RANGE = btas::Range;
 
-  /** BTAS implementation of tensor class that models \ref labelTWGTensor "TWG.Tensor" concept
+  /** BTAS implementation of "dense" tensor class that models \ref labelTWGTensor "TWG.BoxTensor" concept
       @tparam _T element type, Tensor contains values of this type
       @tparam _Range Range type, models \ref labelTWGRange "TWG.Range" concept
       @tparam _Storage Storage type, models \ref labelTWGStorage "TWG.Storage" concept
@@ -68,7 +68,7 @@ namespace btas {
       /// destructor
       ~Tensor () { }
 
-      /// constructor with index shape
+      /// constructor with index extent
       template<typename... _args>
       explicit
       Tensor (const size_type& first, const _args&... rest) :
@@ -288,7 +288,7 @@ namespace btas {
         return data_[ range_.ordinal(index) ];
       }
 
-      /// access element without shape check (rank() == general)
+      /// access element without range check (rank() == general)
       value_type&
       at (const index_type& index)
       {
@@ -296,7 +296,7 @@ namespace btas {
         return data_[ range_.ordinal(index) ];
       }
    
-      /// resize array with shape object
+      /// resize array with range object
       void
       resize (const range_type& range)
       {
@@ -398,6 +398,20 @@ namespace btas {
       storage_type data_;///< data
 
   }; // end of Tensor
+
+  /// maps Tensor -> Range
+  template <typename _T, typename _Range, typename _Storage>
+  btas::Range
+  range (const btas::Tensor<_T, _Range, _Storage>& t) {
+    return t.range();
+  }
+
+  /// maps Tensor -> Range extent
+  template <typename _T, typename _Range, typename _Storage>
+  btas::Range::extent_type
+  extent (const btas::Tensor<_T, _Range, _Storage>& t) {
+    return t.range().extent();
+  }
 
 } // namespace btas
 

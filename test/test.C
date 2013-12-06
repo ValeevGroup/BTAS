@@ -63,9 +63,9 @@ int main()
    cout << "printing U: size = " << U.size() << " objsize = " << sizeof(U) << endl;
    for(double x : U) cout << x << endl;
 
-#if 0
+#if 1
    // test 4
-   Tensor<double> V(0, 0);
+   Tensor<double> V(0,0);
    gemm(CblasNoTrans, CblasNoTrans, 1.0, T, S, 1.0, V);
 
    cout << "printing V: size = " << V.size() << " objsize = " << sizeof(V) << endl;
@@ -79,24 +79,14 @@ int main()
    cout << "is_tensor<vector<double>> = " << is_tensor<vector<double>>::value << endl;
 
    // test 6
-   Tensor<Tensor<double>> A(4,4); A.fill(Tensor<double>(0,0));
-   A(0,0) = Tensor<double>(2,2);
-   A(1,1) = Tensor<double>(2,2);
-   A(2,2) = Tensor<double>(2,2);
-   A(3,3) = Tensor<double>(2,2);
-
-   Tensor<Tensor<double>> B(4,4); B.fill(Tensor<double>(0,0));
-   B(0,0) = Tensor<double>(2,2);
-   B(1,1) = Tensor<double>(2,2);
-   B(2,2) = Tensor<double>(2,2);
-   B(3,3) = Tensor<double>(2,2);
-
-   Tensor<Tensor<double>> C(4,4); C.fill(Tensor<double>(0,0)); // rank info is required to determine contraction ranks at gemm
-#if 0
+   Tensor<Tensor<double>> A(4,4);
+   Tensor<double> aval(2,2); aval.fill(1.0); A.fill(aval);
+   Tensor<Tensor<double>> B(4,4);
+   Tensor<double> bval(2,2); bval.fill(2.0); B.fill(bval);
+   Tensor<Tensor<double>> C(4,4); C.fill(Tensor<double>(2,2)); // rank info is required to determine contraction ranks at gemm
    gemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 1.0, C);
 
    // test 7
-
    Tensor<double> a(4,4); a.fill(1.0);
 // gemm(CblasNoTrans, CblasNoTrans, 1.0, A, a, 1.0, C); // this will give a compile-time error, since gemm for "tensor of tensor" and "tensor" is not supported
 
@@ -110,6 +100,7 @@ int main()
    cout << "printing t: size = " << t.size() << " objsize = " << sizeof(t) << endl;
    for(double x : t) cout << x << endl;
 
+#if 0 // TArray not implemented
    TArray<double,3> s(S);
 
    cout << "printing s: size = " << s.size() << " objsize = " << sizeof(s) << endl;

@@ -403,6 +403,24 @@ private:
 
 };
 
+template<typename _T, unsigned long _N, class _Container>
+struct is_boxtensor<TArray<_T, _N, _Container> > {
+    static constexpr const bool value = true;
+};
+
+template<typename _T, unsigned long _N, class _Container>
+struct boxtensor_storage_order<TArray<_T, _N, _Container> > {
+    enum {row_major = -1, other = 0, column_major = 1};
+    static constexpr const int
+    value = row_major;
+};
+
+template<typename _T, unsigned long _N, class _Container>
+typename TArray<_T, _N, _Container>::shape_type
+extent(const TArray<_T, _N, _Container>& x) {
+  return x.shape();
+}
+
 } // namespace btas
 
 #endif // __BTAS_TARRAY_H

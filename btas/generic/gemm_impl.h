@@ -6,6 +6,7 @@
 #include <iterator>
 #include <type_traits>
 
+#include <btas/tensor.h>
 #include <btas/tensor_traits.h>
 #include <btas/numerictype.h>
 #include <btas/generic/types.h>
@@ -203,12 +204,9 @@ template<
    typename _T,
    class _TensorA, class _TensorB, class _TensorC,
    class = typename std::enable_if<
-      is_tensor<_TensorA>::value &
-      is_tensor<_TensorB>::value &
-      is_tensor<_TensorC>::value &
-      is_boxrange<typename _TensorA::range_type>::value &
-      is_boxrange<typename _TensorB::range_type>::value &
-      is_boxrange<typename _TensorC::range_type>::value &
+      is_boxtensor<_TensorA>::value &
+      is_boxtensor<_TensorB>::value &
+      is_boxtensor<_TensorC>::value &
       std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value &
       std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value &
       std::is_same<typename std::iterator_traits<typename _TensorA::iterator>::iterator_category, std::random_access_iterator_tag>::value &
@@ -221,10 +219,17 @@ void gemm(CBLAS_TRANSPOSE transA, CBLAS_TRANSPOSE transB, const _T& alpha, const
    typedef unsigned long size_type;
 
    if (a.empty() || b.empty()) return;
+   assert (c.rank() != 0);
 
 // // check element types
 // static_assert(std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value, "type of A and B mismatches");
 // static_assert(std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value, "type of A and C mismatches");
+
+   // only row-major BoxTensors are supported now
+   static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorA>::row_major &&
+                 boxtensor_storage_order<_TensorB>::value == boxtensor_storage_order<_TensorB>::row_major &&
+                 boxtensor_storage_order<_TensorC>::value == boxtensor_storage_order<_TensorC>::row_major
+                 , "only row-major tensors are accepted right now");
 
    // get contraction rank
    const size_type rankA = a.rank();
@@ -235,10 +240,10 @@ void gemm(CBLAS_TRANSPOSE transA, CBLAS_TRANSPOSE transB, const _T& alpha, const
    const size_type M = rankA-K;
    const size_type N = rankB-K;
 
-   // get shapes
-   const typename _TensorA::shape_type& shapeA = a.shape();
-   const typename _TensorB::shape_type& shapeB = b.shape();
-         typename _TensorC::shape_type  shapeC = c.shape(); // if C is empty, this gives { 0,...,0 }
+   // get extents
+   auto extentA = extent(a);
+   auto extentB = extent(b);
+   auto extentC = extent(c); // if C is empty, this gives { }, will need to allocate
 
    size_type Msize = 0; // Rows count of C
    size_type Nsize = 0; // Cols count of C
@@ -246,38 +251,56 @@ void gemm(CBLAS_TRANSPOSE transA, CBLAS_TRANSPOSE transB, const _T& alpha, const
 
    if (transA == CblasNoTrans)
    {
-      Msize = std::accumulate(shapeA.begin(), shapeA.begin()+M, 1ul, std::multiplies<size_type>());
-      Ksize = std::accumulate(shapeA.begin()+M, shapeA.end(),   1ul, std::multiplies<size_type>());
-
-      for (size_type i = 0; i < M; ++i) shapeC[i] = shapeA[i];
+      Msize = std::accumulate(extentA.begin(), extentA.begin()+M, 1ul, std::multiplies<size_type>());
+      Ksize = std::accumulate(extentA.begin()+M, extentA.end(),   1ul, std::multiplies<size_type>());
 
       if (transB == CblasNoTrans)
-         assert(std::equal(shapeA.begin()+M, shapeA.end(), shapeB.begin()));
+         assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()));
       else
-         assert(std::equal(shapeA.begin()+M, shapeA.end(), shapeB.begin()));
+         assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()));
    }
    else
    {
-      Msize = std::accumulate(shapeA.begin()+K, shapeA.end(),   1ul, std::multiplies<size_type>());
-      Ksize = std::accumulate(shapeA.begin(), shapeA.begin()+K, 1ul, std::multiplies<size_type>());
+      Msize = std::accumulate(extentA.begin()+K, extentA.end(),   1ul, std::multiplies<size_type>());
+      Ksize = std::accumulate(extentA.begin(), extentA.begin()+K, 1ul, std::multiplies<size_type>());
 
-      for (size_type i = 0; i < M; ++i) shapeC[i] = shapeA[K+i];
+      for (size_type i = 0; i < M; ++i) extentC[i] = extentA[K+i];
 
       if (transB == CblasNoTrans)
-         assert(std::equal(shapeA.begin()+M, shapeA.end(), shapeB.begin()+N));
+         assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()+N));
       else
-         assert(std::equal(shapeA.begin()+M, shapeA.end(), shapeB.begin()+N));
+         assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()+N));
    }
 
    if (transB == CblasNoTrans)
    {
-      Nsize = std::accumulate(shapeB.begin()+K, shapeB.end(),   1ul, std::multiplies<size_type>());
-      for (size_type i = 0; i < N; ++i) shapeC[M+i] = shapeB[K+i];
+      Nsize = std::accumulate(extentB.begin()+K, extentB.end(),   1ul, std::multiplies<size_type>());
    }
    else
    {
-      Nsize = std::accumulate(shapeB.begin(), shapeB.begin()+N, 1ul, std::multiplies<size_type>());
-      for (size_type i = 0; i < N; ++i) shapeC[M+i] = shapeB[i];
+      Nsize = std::accumulate(extentB.begin(), extentB.begin()+N, 1ul, std::multiplies<size_type>());
+   }
+
+   if (c.empty()) {     // C empty -> compute extentC
+     extentC = decltype(extentC)(M+N);
+     if (transA == CblasNoTrans)
+       for (size_type i = 0; i < M; ++i) extentC[i] = extentA[i];
+     else
+       for (size_type i = 0; i < M; ++i) extentC[i] = extentA[K+i];
+     if (transB == CblasNoTrans)
+       for (size_type i = 0; i < N; ++i) extentC[M+i] = extentB[K+i];
+     else
+       for (size_type i = 0; i < N; ++i) extentC[M+i] = extentB[i];
+   }
+   else { // C not empty -> validate extentC
+     if (transA == CblasNoTrans)
+       assert(std::equal(extentA.begin(), extentA.begin()+M, extentC.begin()));
+     else
+       assert(std::equal(extentA.begin()+K, extentA.end(), extentC.begin()));
+     if (transB == CblasNoTrans)
+       assert(std::equal(extentB.begin()+K, extentB.end(), extentC.begin()+M));
+     else
+       assert(std::equal(extentB.begin(), extentB.begin()+N, extentC.begin()+M));
    }
 
 // // check iterator is "random-access" iterator
@@ -290,12 +313,12 @@ void gemm(CBLAS_TRANSPOSE transA, CBLAS_TRANSPOSE transB, const _T& alpha, const
    // resize / scale
    if (c.empty())
    {
-      c.resize(shapeC);
+      c.resize(extentC);
       NumericType<value_type>::fill(c.begin(), c.end(), NumericType<value_type>::zero());
    }
    else
    {
-      assert(std::equal(shapeC.begin(), shapeC.end(), c.shape().begin()));
+      assert(std::equal(extentC.begin(), extentC.end(), extent(c).begin()));
       NumericType<value_type>::scal(c.begin(), c.end(), beta);
    }
 

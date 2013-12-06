@@ -5,8 +5,8 @@
 #include <iterator>
 #include <type_traits>
 
+#include <btas/tensor.h>
 #include <btas/tensor_traits.h>
-#include <btas/range_traits.h>
 #include <btas/generic/types.h>
 
 namespace btas {
@@ -42,12 +42,11 @@ template<> struct axpy_impl<false>
 template<
    typename _T, class _Tensor,
    class = typename std::enable_if<
-      is_tensor<_Tensor>::value &
+      is_boxtensor<_Tensor>::value &
       std::is_same<
          typename std::iterator_traits<typename _Tensor::iterator>::iterator_category,
          std::random_access_iterator_tag
-      >::value &
-      is_boxrange<typename _Tensor::range_type>::value
+      >::value
    >::type
 >
 void axpy(const _T& alpha, const _Tensor& x, _Tensor& y)
@@ -60,11 +59,11 @@ void axpy(const _T& alpha, const _Tensor& x, _Tensor& y)
 
    if (y.empty())
    {
-      y.resize(x.range());
+      y.resize(btas::extent(x));
    }
    else
    {
-      assert( x.range() == y.range() );
+      assert( range(x) == range(y) );
    }
 
 // static_assert(std::is_same<typename std::iterator_traits<typename _Tensor::iterator>::iterator_category, std::random_access_iterator_tag>::value, "axpy: _Tensor::iterator must be random-access iterator");

@@ -55,12 +55,12 @@ public:
            has_rank<_Range>::value;
 };
 
-/// test T has size() member
+/// test T has extents() member
 template<class T>
-class has_size {
+class has_extent {
    /// true case
    template<class U>
-   static auto __test(U* p) -> decltype(p->size(), std::true_type());
+   static auto __test(U* p) -> decltype(p->extent(), std::true_type());
    /// false case
    template<class>
    static std::false_type __test(...);
@@ -70,10 +70,10 @@ public:
 
 /// test T has range_size_type
 template<class T>
-class has_range_size_type {
+class has_extent_type {
    /// true case
    template<class U>
-   static std::true_type __test(typename U::range_size_type*);
+   static std::true_type __test(typename U::extent_type*);
    /// false case
    template<class>
    static std::false_type __test(...);
@@ -82,12 +82,23 @@ public:
 };
 
 /// test _Range conforms the TWG.BoxRange concept
-/// in addition to Range, check size() member
+/// in addition to Range, check extent() member and extent_type
 template<class _Range>
 class is_boxrange {
 public:
    static constexpr const bool
-   value = is_range<_Range>::value & has_size<_Range>::value & has_range_size_type<_Range>::value;
+   value = is_range<_Range>::value &
+           has_extent<_Range>::value &
+           has_extent_type<_Range>::value;
+};
+
+template <class _Range>
+class boxrange_iteration_order {
+  public:
+    enum {row_major = -1, other = 0, column_major = 1};
+
+    static constexpr const int
+    value = row_major;
 };
 
 } // namespace btas
