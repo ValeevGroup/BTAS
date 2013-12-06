@@ -35,7 +35,7 @@
    <tr>
     <td> \c index_type </td>
     <td> the type of indices contained by the Range </td>
-    <td> a regular type; a directly-addressable sequence container (\b ELABORATE) </td>
+    <td> an "array", a directly-addressable sequence container of integrals (\b ELABORATE); a regular type </td>
    </tr>
 
    <tr>
@@ -197,15 +197,19 @@
   </table>
 
   where we used the following notation:
-  \li <code>uint</code> is an unsigned integral type.
+  \li <code>uint</code> is an unsigned integral type, i.e.
+  @code
+  std::is_integral<uint>::value && std::is_unsigned<uint>::value
+  @endcode
+  is true.
 
   \subsection sec_TWG_Range_Concept_Range_Box BoxRange
   <em>BoxRange</em> is a special kind of Range that can be viewed as a box in the tuple space.
   It is characterized by two corner indices: front, with the smallest ordinal, and back, with the largest ordinal.
   Aside from this condition, any iteration order is allowed.
 
-  BoxRange must define the followin types.
-    <table>
+  BoxRange must define the following types.
+  <table>
    <tr>
     <th> type </th>
     <th> description </th>
@@ -213,9 +217,9 @@
    </tr>
 
    <tr>
-    <td> \c range_size_type </td>
-    <td> describes size of each dimension of the box </td>
-    <td> a regular type; a directly-addressable sequence container of unsigned integrals (\b ELABORATE) </td>
+    <td> \c extent_type </td>
+    <td> describes extent of each dimension of the box </td>
+    <td> an "array" of uints, a directly-addressable sequence container of unsigned integrals (\b ELABORATE) </td>
    </tr>
 
   </table>
@@ -241,23 +245,23 @@
    </tr>
 
    <tr>
-    <td> \c BoxRange(const range_size_type& sizes) </td>
+    <td> \c BoxRange(const extent_type& extent) </td>
     <td> </td>
     <td>
      @code
      @endcode
     </td>
-    <td> creates a tuple range [0, sizes) </td>
+    <td> creates a tuple range [0, extent) </td>
    </tr>
 
    <tr>
-    <td> \c BoxRange(const uint&... sizes) </td>
+    <td> <code> BoxRange(const uint&... extent) </code> </td>
     <td> </td>
     <td>
      @code
      @endcode
     </td>
-    <td> creates a tuple range [0, sizes) </td>
+    <td> creates a tuple range [0, extent) </td>
    </tr>
 
    <tr>
@@ -281,13 +285,13 @@
    </tr>
 
    <tr>
-    <td> \c size() </td>
-    <td> const range_size_type& </td>
+    <td> \c extent() </td>
+    <td> const extent_type& </td>
     <td>
      @code
      @endcode
     </td>
-    <td> returns range size </td>
+    <td> returns range extent </td>
    </tr>
 
    </table>
