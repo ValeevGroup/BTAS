@@ -6,70 +6,137 @@
 #include <type_traits>
 
 #include <btas/tensor_traits.h>
-#include <btas/generic/types.h>
+#include <btas/types.h>
+
+#include <btas/generic/tensor_iterator_wrapper.h>
 
 namespace btas {
 
+//  ================================================================================================
+
 /// Call BLAS depending on type of Tensor class
-template<bool _DoAxpy> struct axpy_impl { };
+template<bool _Finalize> struct axpy_impl { };
 
 /// Case that alpha is trivially multipliable to elements
 template<> struct axpy_impl<true>
 {
-   typedef unsigned long size_type;
-
    template<typename _T, class _IteratorX, class _IteratorY>
-   axpy_impl(const size_type& Nsize, const _T& alpha, _IteratorX itrX, _IteratorY itrY)
+   static void call (
+      const unsigned long& Nsize,
+      const _T& alpha,
+            _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
+            _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
    {
-      for (size_type i = 0; i < Nsize; ++i, ++itrX, ++itrY) (*itrY) += alpha * (*itrX);
+      for (unsigned long i = 0; i < Nsize; ++i, itrX += incX, itrY += incY)
+      {
+         (*itrY) += alpha * (*itrX);
+      }
    }
+
+#ifdef _HAS_CBLAS
+   static void call (
+      const unsigned long& Nsize,
+      const float& alpha,
+      const float* itrX, const typename std::iterator_traits<float*>::difference_type& incX,
+            float* itrY, const typename std::iterator_traits<float*>::difference_type& incY)
+   {
+      cblas_saxpy(Nsize, alpha, itrX, incX, itrY, incY);
+   }
+
+   static void call (
+      const unsigned long& Nsize,
+      const double& alpha,
+      const double* itrX, const typename std::iterator_traits<double*>::difference_type& incX,
+            double* itrY, const typename std::iterator_traits<double*>::difference_type& incY)
+   {
+      cblas_daxpy(Nsize, alpha, itrX, incX, itrY, incY);
+   }
+
+   static void call (
+      const unsigned long& Nsize,
+      const std::complex<float>& alpha,
+      const std::complex<float>* itrX, const typename std::iterator_traits<std::complex<float>*>::difference_type& incX,
+            std::complex<float>* itrY, const typename std::iterator_traits<std::complex<float>*>::difference_type& incY)
+   {
+      cblas_caxpy(Nsize, alpha, itrX, incX, itrY, incY);
+   }
+
+   static void call (
+      const unsigned long& Nsize,
+      const std::complex<double>& alpha,
+      const std::complex<double>* itrX, const typename std::iterator_traits<std::complex<double>*>::difference_type& incX,
+            std::complex<double>* itrY, const typename std::iterator_traits<std::complex<double>*>::difference_type& incY)
+   {
+      cblas_zaxpy(Nsize, alpha, itrX, incX, itrY, incY);
+   }
+#endif
 };
 
 /// Case that alpha is multiplied recursively by AXPY
+/// Note that incX and incY are disabled for recursive call
 template<> struct axpy_impl<false>
 {
-   typedef unsigned long size_type;
-
    template<typename _T, class _IteratorX, class _IteratorY>
-   axpy_impl(const size_type& Nsize, const _T& alpha, _IteratorX itrX, _IteratorY itrY)
+   static void call (
+      const unsigned long& Nsize,
+      const _T& alpha,
+            _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
+            _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
    {
-      for (size_type i = 0; i < Nsize; ++i, ++itrX, ++itrY) axpy(alpha, *itrX, *itrY);
+      for (unsigned long i = 0; i < Nsize; ++i, itrX += incX, itrY += incY)
+      {
+         axpy(alpha, *itrX, *itrY);
+      }
    }
 };
 
-/// Generic implementation of BLAS-AXPY
-/// tensor iterator must provide consecutive increment operator or never skip index
-/// i.e. disable "std::set<T>::iterator" or something like that...
-/// TODO: is there any missing type traits?
-template<
-   typename _T, class _TensorX, class _TensorY,
-   class = typename std::enable_if<
-      is_tensor<_TensorX>::value &
-      is_tensor<_TensorY>::value &
-      std::is_same<typename _TensorX::value_type,
-                   typename _TensorY::value_type
-      >::value
-   >::type
->
-void axpy(const _T& alpha, const _TensorX& x, _TensorY& y)
+//  ================================================================================================
+
+/// Generic implementation of BLAS AXPY in terms of C++ iterator
+template<typename _T, class _IteratorX, class _IteratorY>
+void axpy (
+   const unsigned long& Nsize,
+   const _T& alpha,
+         _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
+         _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
 {
-   if (x.empty())
+   typedef std::iterator_traits<_IteratorX> __traits_X;
+   typedef std::iterator_traits<_IteratorY> __traits_Y;
+
+   static_assert(std::is_same<typename __traits_X::value_type, typename __traits_Y::value_type>::value, "value type of Y must be the same as that of X");
+   static_assert(std::is_same<typename __traits_X::iterator_category, std::random_access_iterator_tag>::value, "iterator X must be a random access iterator");
+   static_assert(std::is_same<typename __traits_Y::iterator_category, std::random_access_iterator_tag>::value, "iterator Y must be a random access iterator");
+
+   axpy_impl<std::is_same<typename __traits_X::value_type, _T>::value>::call(Nsize, alpha, itrX, incX, itrY, incY);
+}
+
+//  ================================================================================================
+
+/// Convenient wrapper to call BLAS AXPY from tensor objects
+template<typename _T, class _TensorX, class _TensorY, class = typename std::enable_if<is_tensor<_TensorX>::value & is_tensor<_TensorY>::value>::type>
+void axpy (const _T& alpha, const _TensorX& X, _TensorY& Y)
+{
+   static_assert(std::is_same<typename _TensorX::value_type, typename _TensorY::value_type>::value, "value type of Y must be the same as that of X");
+
+   if (X.empty())
    {
-      y.clear();
+      Y.clear();
       return;
    }
 
-   if (y.empty())
+   if (Y.empty())
    {
-      y.resize(x.shape());
+      Y.resize(X.shape());
    }
    else
    {
-      assert(std::equal(x.shape().begin(), x.shape().end(), y.shape().begin()));
+      assert(std::equal(X.shape().begin(), X.shape().end(), Y.shape().begin()));
    }
 
-   typedef typename std::iterator_traits<typename _TensorX::iterator>::value_type value_type;
-   axpy_impl<std::is_convertible<_T, value_type>::value> call(x.size(), alpha, x.begin(), y.begin());
+   auto itrX = tensor_iterator_wrapper<has_data<_TensorX>::value>::begin(X);
+   auto itrY = tensor_iterator_wrapper<has_data<_TensorY>::value>::begin(Y);
+
+   axpy (X.size(), alpha, itrX, 1, itrY, 1);
 }
 
 } // namespace btas

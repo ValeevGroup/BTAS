@@ -3,9 +3,7 @@
 #include <set>
 using namespace std;
 
-//namespace btas { enum CBLAS_TRANSPOSE { CblasNoTrans, CblasTrans, CblasConjTrans }; };
-
-#include <btas/varray.h>
+#include <btas/varray/varray.h>
 #include <btas/btas.h>
 #include <btas/tensor.h>
 #include <btas/tarray.h>
@@ -24,7 +22,7 @@ int main()
    for(double x : T) cout << x << endl;
 
    // test 2
-   typedef Tensor<float, varray<float>, varray<int>> MyTensor;
+   typedef Tensor<float, CblasRowMajor, varray<float>> MyTensor;
    MyTensor::shape_type shape = { 4, 4 };
    MyTensor Q(shape); Q.fill(2.0);
 
@@ -54,6 +52,7 @@ int main()
    cout << "printing U: size = " << U.size() << " objsize = " << sizeof(U) << endl;
    for(double x : U) cout << x << endl;
 
+/*
    // test 4
    Tensor<double> V(0, 0);
    gemm(CblasNoTrans, CblasNoTrans, 1.0, T, S, 1.0, V);
@@ -110,6 +109,6 @@ int main()
    for(double x : v) cout << x << endl;
 
    TArray<double,3,std::set<double>> u;
-
+*/
    return 0;
 }

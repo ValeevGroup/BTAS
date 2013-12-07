@@ -6,6 +6,6 @@
 #include <btas/generic/axpy_impl.h>
 #include <btas/generic/gemm_impl.h>
 
-#include <btas/contract.h>
+#include <btas/generic/contract.h>
 
 #endif // __BTAS_BTAS_H

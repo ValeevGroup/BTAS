@@ -5,7 +5,7 @@
 
 #include <boost/serialization/serialization.hpp>
 
-#include <btas/memory_reference.h>
+#include <btas/varray/memory_reference.h>
 
 namespace btas {
 

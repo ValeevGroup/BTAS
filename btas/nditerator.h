@@ -1,28 +1,35 @@
 #ifndef __BTAS_NDITERATOR_H
 #define __BTAS_NDITERATOR_H 1
 
+#include <algorithm>
 #include <iterator>
 #include <type_traits>
-//#include <algorithm>
 
 #include <btas/tensor_traits.h>
-#include <btas/resize.h>
+#include <btas/util/resize.h>
+#include <btas/util/dot.h>
 
 namespace btas {
 
-template<typename _Iterator, class _Shape, bool _IsResizable = is_resizable<_Shape>::value> class NDIterator { };
-
-/// multi-dimensional iterator (similar to nditer in NumPy???) with variable-size shape object
-/// provides iterator over tensor elements with specific shape & stride
-/// which enables to doing permutation, reshape, tie, slicing, etc...
-/// to enable NDIteration, _Iterator must be a random-access iterator
-template<typename _Iterator, class _Shape>
-class NDIterator<_Iterator, _Shape, true>
+/// multi-dimensional iterator (similar to nditer in NumPy)
+/// design revised on 12/07/2013
+/// \tparam _Iterator iterator type, e.g. vector<T>::iterator, const T*, etc., required to be random-access iterator
+/// \tparam _Tensor container of iterator
+template<
+   class _Tensor,
+   class _Iterator = typename std::conditional<
+                        std::is_const<typename std::remove_reference<_Tensor>::type>::value,
+                        typename _Tensor::const_iterator,
+                        typename _Tensor::iterator
+                     >::type,
+   class = typename std::enable_if<is_tensor<_Tensor>::value>::type
+>
+class NDIterator
 {
-
 private:
 
    typedef std::iterator_traits<_Iterator> __traits_type;
+   typedef typename std::remove_reference<_Tensor>::type __tensor_type;
 
 public:
 
@@ -32,9 +39,8 @@ public:
    typedef typename __traits_type::reference reference;
    typedef typename __traits_type::pointer pointer;
 
-   typedef _Shape shape_type;
-
-   typedef unsigned long size_type;
+   typedef typename __tensor_type::shape_type shape_type;
+   typedef typename __tensor_type::size_type size_type;
 
 private:
 
@@ -48,14 +54,18 @@ private:
    /// iterator to current (keep to make fast access)
    _Iterator current_;
 
+   /// current index (relative index w.r.t. slice)
+   shape_type index_;
+
    /// shape of tensor
    shape_type shape_;
 
    /// stride of tensor
    shape_type stride_;
 
-   /// current index (relative index w.r.t. slice)
-   shape_type index_;
+   /// whether or not iterator is contiguous
+   /// currently, suppose to be always contiguous
+   //bool contiguous_;
 
 public:
 
@@ -71,38 +81,55 @@ public:
   ~NDIterator ()
    { }
 
-   /// construct with the least arguments
-   NDIterator (_Iterator start, const shape_type& shape)
-   : start_ (start), current_ (start), shape_ (shape)
+   /// construct from tensor object
+   explicit
+   NDIterator (_Tensor& x)
+   : start_ (x.begin()), current_ (x.begin()), shape_ (x.shape()), stride_ (x.stride)
    {
-      index_.resize(shape_.size());
-      std::fill(index_.begin(), index_.end(), 0);
-      __set__stride ();
-   }
-
-   /// construct with stride hack
-   NDIterator (_Iterator start, const shape_type& shape, const shape_type& stride)
-   : start_ (start), current_ (start), shape_ (shape), stride_ (stride)
-   {
-      index_.resize(shape_.size());
+      resize(index_, x.rank());
       std::fill(index_.begin(), index_.end(), 0);
    }
 
-   /// construct with specific index position
-   NDIterator (_Iterator start, const shape_type& shape, const shape_type& stride, const shape_type& index)
-   : start_ (start), shape_ (shape), stride_ (stride), index_ (index)
+   /// shape and stride are delegated
+   /// this gives a normal iterator
+   /// \param index current index position
+   NDIterator (_Tensor& x, const shape_type& index)
+   : NDIterator (x.begin(), index, x.shape(), x.stride())
+   { }
+
+   /// stride is delegated, convenient usage for block-slice
+   /// \param lower lower bound of iterating area
+   /// \param shape size of iterating area
+   NDIterator (_Tensor& x, const shape_type& index, const shape_type& lower, const shape_type& shape)
+   : NDIterator (x, index, lower, shape, x.stride())
+   { }
+
+   /// construct from tensor object with specific index, shape, and stride
+   NDIterator (_Tensor& x, const shape_type& index, const shape_type& lower, const shape_type& shape, const shape_type& stride)
+   : index_ (index), shape_ (shape), stride_ (stride)
    {
-      assert(index_[0] <= shape_[0]);
-      for(size_type i = 1; i < shape_.size(); ++i)
-      {
-         assert(index_[i] < shape_[i]);
-      }
-      current_ = __get__address();
+      start_ = x.begin()+dot(x.stride(), lower);
+      current_ = __get_address();
+   }
+
+   /// current is delegated to set current to be start upon construction
+   NDIterator (const shape_type& shape, const shape_type& stride, _Iterator start)
+   : NDIterator (shape, stride, start, start)
+   { }
+
+   /// construct with specific iterator type, i.e. enables NDIterator<double*, Tensor<double>> it(A.shape(), A.stride(), A.data())
+   /// since shape and stride must be given in arguments, they appear in front of iterator specifications
+   NDIterator (const shape_type& shape, const shape_type& stride, _Iterator start, _Iterator current)
+   : start_ (start), shape_ (shape), stride_ (stride)
+   {
+      // to keep consistency, i.e. if current > [ptr to end] then set current_ to be end
+      index_ = __get_index(current-start);
+      current_ = __get_address();
    }
 
    /// copy constructor
    NDIterator (const NDIterator& x)
-   : start_ (x.start_), current_ (x.current_), shape_ (x.shape_), stride_ (x.stride_), index_ (x.index_)
+   : start_ (x.start_), current_ (x.current_), index_ (x.index_), shape_ (x.shape_), stride_ (x.stride_)
    { }
 
    /// move constructor
@@ -110,12 +137,18 @@ public:
 
    /// move assignment
    NDIterator&
-   operator=(NDIterator&& x) { swap(x); }
+   operator= (NDIterator&& x) { swap(x); }
 
-   /// conversion from NDIterator with convertible _Iterator type
-   template <typename _nc_iterator>
-   NDIterator (const NDIterator<_nc_iterator,_Shape,true>& x)
-   : start_ (x.start_), current_ (x.current_), shape_ (x.shape_), stride_ (x.stride_), index_ (x.index_)
+   /// allow conversion NDIterator<Iter, Tensor> -> NDIterator<const Iter, Tensor>
+   template<class _Iter>
+   NDIterator (const NDIterator<
+                  _Iter,
+                  typename std::enable_if<
+                     std::is_same<_Iter, typename std::remove_const<_Iterator>::type>::value,
+                     _Tensor
+                  >::type
+               >& x)
+   : start_ (x.start_), current_ (x.current_), index_ (x.index_), shape_ (x.shape_), stride_ (x.stride_)
    { }
 
    //
@@ -127,9 +160,9 @@ public:
    {
       start_ = x.start_;
       current_ = x.current_;
+      index_ = x.index_;
       shape_ = x.shape_;
       stride_ = x.stride_;
-      index_ = x.index_;
       return *this;
    }
 
@@ -179,6 +212,13 @@ public:
    bool valid() const 
    { 
       return index_[0] < shape_[0]; 
+   }
+
+   /// \return index
+   const shape_type&
+   index () const
+   {
+      return index_;
    }
 
    /// \return n-th index
@@ -304,7 +344,7 @@ public:
 
    NDIterator& operator+= (const difference_type& n)
    {
-      __diff__index(n);
+      __diff_index(n);
       return *this;
    }
 
@@ -317,7 +357,7 @@ public:
 
    NDIterator& operator-= (const difference_type& n)
    {
-      __diff__index(-n);
+      __diff_index(-n);
       return *this;
    }
 
@@ -328,14 +368,49 @@ public:
       return __it;
    }
 
+   difference_type operator- (const NDIterator<_Tensor, _Iterator>& x) const
+   {
+      assert(start_ == x.start_);
+      assert(std::equal(shape_.begin(), shape_.end(), x.shape_.begin()));
+      assert(std::equal(stride_.begin(), stride_.end(), x.stride_.begin()));
+
+      size_type n = index_.size();
+      assert(n == x.index_.size());
+
+      difference_type offset = index_[0]-x.index_[0];
+      for(size_type i = 1; i < 0; ++i)
+      {
+         offset += shape_[i]*offset + index_[i]-x.index_[i];
+      }
+      return offset + index_[n-1]-x.index_[n-1];
+   }
+
    void
    swap (NDIterator& x)
    {
-      start_ = x.start_; 
-      current_ = x.current_; 
+      std::swap(start_, x.start_);
+      std::swap(current_, x.current_);
       shape_.swap(x.shape_);
       stride_.swap(x.stride_);
       index_.swap(x.index_);
+   }
+
+   //
+   // functions to set begin and end
+   //
+
+   /// \return iterator to begin
+   friend
+   NDIterator<_Tensor, _Iterator> begin (const NDIterator<_Tensor, _Iterator>& x)
+   {
+      return NDIterator<_Tensor, _Iterator>(x.shape_, x.stride_, x.start_);
+   }
+
+   /// \return iterator to end
+   friend
+   NDIterator<_Tensor, _Iterator> end (const NDIterator<_Tensor, _Iterator>& x)
+   {
+      return NDIterator<_Tensor, _Iterator>(x.shape_, x.stride_, x.start_, x.start_+x.shape_[0]*x.stride_[0]);
    }
 
 private:
@@ -344,32 +419,38 @@ private:
    // supportive functions
    //
 
-   /// calculate stride from shape
-   void __set__stride ()
+   /// calculate absolute address (lots of overheads? so I have current_ for fast access)
+   _Iterator __get_address () const
    {
-      stride_.resize(shape_.size());
-      size_type str = 1;
-      for(size_type i = shape_.size()-1; i > 0; --i)
-      {
-         stride_[i] = str;
-         str *= shape_[i];
-      }
-      stride_[0] = str;
+      return start_+dot(stride_, index_);
    }
 
-   /// calculate absolute address (lots of overheads? so I have current_ for fast access)
-   _Iterator __get__address () const
+   /// calculate index from address
+   shape_type __get_index (difference_type n) const
    {
-      difference_type offset = 0;
-      for(size_type i = 0; i < stride_.size(); ++i)
+      shape_type index;
+      resize(index, shape_.size());
+
+      for(size_type i = shape_.size()-1; i > 0; --i)
       {
-         offset += stride_[i]*index_[i];
+         index[i] = n % shape_[i];
+         n /= shape_[i];
       }
-      return start_+offset;
+      if(n < shape_[0])
+      {
+         index[0] = n;
+      }
+      else
+      {
+         // index to the last
+         index[0] = shape_[0];
+         std::fill(index.begin()+1, index.end(), 0);
+      }
+      return index;
    }
 
    /// calculate index from step size
-   void __diff__index (difference_type n)
+   void __diff_index (difference_type n)
    {
       // calculate absolute position to add diff. step n
       difference_type pos = index_[0];
@@ -385,24 +466,10 @@ private:
       }
       else {
          // calculate index from new position
-         for(size_type i = shape_.size()-1; i > 0; --i)
-         {
-            index_[i] = pos % shape_[i];
-            pos /= shape_[i];
-         }
-         if(pos < shape_[0])
-         {
-            index_[0] = pos;
-         }
-         else
-         {
-            // index to the last
-            index_[0] = shape_[0];
-            std::fill(index_.begin()+1, index_.end(), 0);
-         }
+         index_ = __get_index(pos);
       }
       // update current iterator
-      current_ = __get__address();
+      current_ = __get_address();
    }
 
    /// increment
@@ -434,7 +501,7 @@ private:
       if(i == 0) 
           {
           ++index_[i];
-          current_ = __get__address();
+          current_ = __get_address();
           }
       else
           {
@@ -475,7 +542,7 @@ private:
       if(i == 0) 
           {
           --index_[i];
-          current_ = __get__address();
+          current_ = __get_address();
           }
       else
           {

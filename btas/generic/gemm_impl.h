@@ -7,8 +7,9 @@
 #include <type_traits>
 
 #include <btas/tensor_traits.h>
-#include <btas/numerictype.h>
-#include <btas/generic/types.h>
+#include <btas/types.h>
+
+#include <btas/generic/numerictype.h>
 
 namespace btas {
 
@@ -24,6 +25,11 @@ template<> struct gemm_impl<true>
          const size_type& Msize, const size_type& Nsize, const size_type& Ksize,
          const _T& alpha, _IteratorA beginA, _IteratorB beginB, const _T& beta, _IteratorC beginC)
    {
+      // check iterator category
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorA>::iterator_category, std::random_access_iterator_tag>::value, "iterator A must be a random access iterator");
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorB>::iterator_category, std::random_access_iterator_tag>::value, "iterator B must be a random access iterator");
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorC>::iterator_category, std::random_access_iterator_tag>::value, "iterator C must be a random access iterator");
+
       // A:NoTrans / B:NoTrans
       if (transA == CblasNoTrans && transB == CblasNoTrans)
       {
@@ -108,12 +114,29 @@ template<> struct gemm_impl<false>
 
    template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
    gemm_impl (
-         CBLAS_TRANSPOSE transA, CBLAS_TRANSPOSE transB,
-         const size_type& Msize, const size_type& Nsize, const size_type& Ksize,
-         const _T& alpha, _IteratorA beginA, _IteratorB beginB, const _T& beta, _IteratorC beginC)
+         const CBLAS_ORDER& order,
+         const CBLAS_TRANSPOSE& transA,
+         const CBLAS_TRANSPOSE& transB,
+         const unsigned long& Msize,
+         const unsigned long& Nsize,
+         const unsigned long& Ksize,
+         const _T& alpha,
+               _IteratorA beginA, const typename std::iterator_traits<_IteratorA>::difference_type& ldA,
+               _IteratorB beginB, const typename std::iterator_traits<_IteratorB>::difference_type& ldB,
+         const _T& beta,
+               _IteratorC beginC, const typename std::iterator_traits<_IteratorC>::difference_type& ldC)
    {
+      // check iterator category
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorA>::iterator_category, std::random_access_iterator_tag>::value, "iterator A must be a random access iterator");
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorB>::iterator_category, std::random_access_iterator_tag>::value, "iterator B must be a random access iterator");
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorC>::iterator_category, std::random_access_iterator_tag>::value, "iterator C must be a random access iterator");
+
+      if (order == CblasColMajor)
+      {
+         gemm_impl(CblasRowMajor, transB, transA, Nsize, Msize, Ksize, alpha, beginB, ldB, beginA, ldA, beta, beginC, ldC);
+      }
       // A:NoTrans / B:NoTrans
-      if (transA == CblasNoTrans && transB == CblasNoTrans)
+      else if (transA == CblasNoTrans && transB == CblasNoTrans)
       {
          auto itrA      = beginA;
          auto itrC_save = beginC;
@@ -125,7 +148,7 @@ template<> struct gemm_impl<false>
                auto itrC = itrC_save;
                for (size_type j = 0; j < Nsize; ++j, ++itrB, ++itrC)
                {
-                  gemm(transA, transB, alpha, *itrA, *itrB, beta, *itrC);
+                  gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
                }
             }
             itrC_save += Nsize;
@@ -144,7 +167,7 @@ template<> struct gemm_impl<false>
                auto itrA = itrA_save;
                for (size_type k = 0; k < Ksize; ++k, ++itrA, ++itrB)
                {
-                  gemm(transA, transB, alpha, *itrA, *itrB, beta, *itrC);
+                  gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
                }
             }
             itrA_save += Ksize;
@@ -163,7 +186,7 @@ template<> struct gemm_impl<false>
                auto itrB = itrB_save;
                for (size_type j = 0; j < Nsize; ++j, ++itrB, ++itrC)
                {
-                  gemm(transA, transB, alpha, *itrA, *itrB, beta, *itrC);
+                  gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
                }
             }
             itrB_save += Nsize;
@@ -182,7 +205,7 @@ template<> struct gemm_impl<false>
                auto itrC = itrC_save;
                for (size_type i = 0; i < Msize; ++i, ++itrA, itrC += Nsize)
                {
-                  gemm(transA, transB, alpha, *itrA, *itrB, beta, *itrC);
+                  gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
                }
             }
          }
@@ -191,13 +214,14 @@ template<> struct gemm_impl<false>
 };
 
 /// Generic implementation of BLAS-GEMM
-/// \param transA transpose directive for tensor \param a (CblasNoTrans, CblasTrans, CblasConjTrans)
-/// \param transB transpose directive for tensor \param b (CblasNoTrans, CblasTrans, CblasConjTrans)
-/// \param alpha scalar value to be multiplied to \param a * \param b
-/// \param a input tensor
-/// \param b input tensor
-/// \param beta scalar value to be multiplied to \param c
-/// \param c output tensor which can be empty tensor but needs to have rank info (= size of shape).
+/// \param order storage order of tensor in matrix view (CblasRowMajor, CblasColMajor)
+/// \param transA transpose directive for tensor A (CblasNoTrans, CblasTrans, CblasConjTrans)
+/// \param transB transpose directive for tensor B (CblasNoTrans, CblasTrans, CblasConjTrans)
+/// \param alpha scalar value to be multiplied to A * B
+/// \param A input tensor
+/// \param B input tensor
+/// \param beta scalar value to be multiplied to C
+/// \param C output tensor which can be empty tensor but needs to have rank info (= size of shape).
 /// Iterator is assumed to be consecutive (or, random_access_iterator) , thus e.g. iterator to map doesn't work.
 template<
    typename _T,
@@ -205,23 +229,26 @@ template<
    class = typename std::enable_if<
       is_tensor<_TensorA>::value &
       is_tensor<_TensorB>::value &
-      is_tensor<_TensorC>::value &
-      std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value &
-      std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value &
-      std::is_same<typename std::iterator_traits<typename _TensorA::iterator>::iterator_category, std::random_access_iterator_tag>::value &
-      std::is_same<typename std::iterator_traits<typename _TensorB::iterator>::iterator_category, std::random_access_iterator_tag>::value &
-      std::is_same<typename std::iterator_traits<typename _TensorC::iterator>::iterator_category, std::random_access_iterator_tag>::value
+      is_tensor<_TensorC>::value
    >::type
 >
-void gemm(CBLAS_TRANSPOSE transA, CBLAS_TRANSPOSE transB, const _T& alpha, const _TensorA& a, const _TensorB& b, const _T& beta, _TensorC& c)
+void gemm (
+   const CBLAS_ORDER& order,
+   const CBLAS_TRANSPOSE& transA,
+   const CBLAS_TRANSPOSE& transB,
+   const _T& alpha,
+   const _TensorA& a,
+   const _TensorB& b,
+   const _T& beta,
+         _TensorC& c)
 {
    typedef unsigned long size_type;
 
-   if (a.empty() || b.empty()) return;
+   // check element type
+   static_assert(std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value, "value type of B must be the same as that of A");
+   static_assert(std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value, "value type of C must be the same as that of A");
 
-// // check element types
-// static_assert(std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value, "type of A and B mismatches");
-// static_assert(std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value, "type of A and C mismatches");
+   if (a.empty() || b.empty()) return;
 
    // get contraction rank
    const size_type rankA = a.rank();
