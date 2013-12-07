@@ -194,20 +194,6 @@ public:
        return res;
        }
 
-   /// \return NDIterator set to ending state
-   NDIterator
-   end() const
-   {
-      NDIterator<_Iterator, _Shape, true> _end;
-      _end.start_ = start_;
-      _end.current_ = start_ + stride_[0]*shape_[0];
-      _end.shape_ = shape_;
-      _end.stride_ = stride_;
-      _end.index_ = shape_;
-      std::fill(_end.index_.begin()+1,_end.index_.end(),0);
-      return _end;
-   }
-
    /// \return true if operator* references valid tensor element
    bool valid() const 
    { 
@@ -549,9 +535,6 @@ private:
           current_ -= offset;
           }
    }
-
-   template <typename _i, typename _s, bool _ir>
-   friend class NDIterator;
 
 };
 
