@@ -100,7 +100,6 @@ int main()
    cout << "printing t: size = " << t.size() << " objsize = " << sizeof(t) << endl;
    for(double x : t) cout << x << endl;
 
-#if 0 // TArray not implemented
    TArray<double,3> s(S);
 
    cout << "printing s: size = " << s.size() << " objsize = " << sizeof(s) << endl;
@@ -113,7 +112,6 @@ int main()
    for(double x : v) cout << x << endl;
 
    TArray<double,3,std::set<double>> u;
-#endif
 
    return 0;
 }

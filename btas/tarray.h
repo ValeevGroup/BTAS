@@ -84,17 +84,16 @@ public:
    }
 
    /// copy constructor
-   template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
+   template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
    explicit
    TArray(const _Tensor& x)
    {
       // x is assumed to be dynamic (i.e. variable-rank) tensor
       assert(x.rank() == _N);
       // set shape_ and stride_
-      std::copy(x.shape ().begin(), x.shape ().end(), shape_.begin());
-      std::copy(x.stride().begin(), x.stride().end(), stride_.begin());
-      // resize data_ and take deep copy from x
-      data_.resize(x.size());
+      auto x_shape = extent(x);
+      std::copy(x_shape.begin(), x_shape.end(), shape_.begin());
+      resize(shape_);
       std::copy(x.begin(), x.end(), data_.begin());
    }
 
