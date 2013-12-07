@@ -6,12 +6,18 @@
 #include <algorithm>
 #include <type_traits>
 
+#include <btas/types.h>
 #include <btas/tensor_traits.h>
+
+#include <btas/util/stride.h>
 
 namespace btas {
 
 /// tensor class which has fixed-size rank as a template parameter
-template<typename _T, unsigned long _N, class _Container = std::vector<_T>>
+template<typename _T,
+         unsigned long _N,
+         CBLAS_ORDER _Order = CblasRowMajor,
+         class _Container = DEFAULT::storage<_T>>
 class TArray {
 
 public:
@@ -24,16 +30,16 @@ public:
    typedef _T value_type;
 
    /// container type
-   typedef _Container container_type;
+   typedef _Container container;
 
    /// size_type
-   typedef typename container_type::size_type size_type;
+   typedef typename container::size_type size_type;
 
    /// iterator
-   typedef typename container_type::iterator iterator;
+   typedef typename container::iterator iterator;
 
    /// const iterator
-   typedef typename container_type::const_iterator const_iterator;
+   typedef typename container::const_iterator const_iterator;
 
    /// shape type
    typedef std::array<size_type, _N> shape_type;
@@ -264,7 +270,7 @@ public:
    void resize(const shape_type& shape)
    {
       shape_ = shape;
-      __set_stride();
+      __normal_stride<_Order>::set(shape_, stride_);
       data_.resize(shape_[0]*stride_[0]);
    }
 
@@ -299,23 +305,30 @@ public:
    //  Non-standard member functions ===============================================================
    //
 
+   /// return major order directive
+   static constexpr CBLAS_ORDER order() { return _Order; }
+
+   /// fill elements with const value
    void fill(const value_type& val)
    {
       std::fill(data_.begin(), data_.end(), val);
    }
 
+   /// fill elements with gen()
    template<class _Generator>
    void generate(_Generator gen)
    {
       std::generate(data_.begin(), data_.end(), gen);
    }
 
+   /// access to bare pointer
    value_type*
    data()
    {
       return data_.data();
    }
 
+   /// access to bare pointer
    const value_type*
    data() const
    {
@@ -377,17 +390,6 @@ private:
       return __address;
    }
 
-   /// calculate stride from shape
-   void __set_stride()
-   {
-      size_type __str = 1ul;
-      for(size_type i = _N-1; i > 0; --i) {
-         stride_[i] = __str;
-         __str *= shape_[i];
-      }
-      stride_[0] = __str;
-   }
-
    //
    //  Member variables ============================================================================
    //
@@ -399,7 +401,7 @@ private:
    shape_type stride_;
 
    /// data
-   container_type data_;
+   container data_;
 
 };
 

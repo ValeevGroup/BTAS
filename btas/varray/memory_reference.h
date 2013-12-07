@@ -4,7 +4,7 @@
 #include <iterator>
 #include <type_traits>
 
-#include <btas/btas_iterator.h>
+#include <btas/varray/btas_iterator.h>
 
 namespace btas {
 

@@ -1,23 +1,23 @@
 #ifndef __BTAS_NDITERATOR_H
 #define __BTAS_NDITERATOR_H 1
 
+#include <algorithm>
 #include <iterator>
 #include <type_traits>
-//#include <algorithm>
 
 #include <btas/tensor_traits.h>
-#include <btas/resize.h>
+#include <btas/util/resize.h>
 
 namespace btas {
 
 /// multi-dimensional iterator (similar to nditer in NumPy)
-/// design revised on 11/29/2013
+/// design revised on 12/07/2013
 /// provides iterator over tensor elements using shape & stride
 /// this is useful to implement permutation, reshape, tie, slicing, etc...
 /// _Iterator is required to be random-access iterator
 template<
+   class _Iterator,
    class _Tensor,
-   class _Iterator = typename _Tensor::iterator,
    class = typename std::enable_if<is_tensor<_Tensor>::value>::type
 >
 class NDIterator
@@ -25,6 +25,7 @@ class NDIterator
 private:
 
    typedef std::iterator_traits<_Iterator> __traits_type;
+   typedef typename std::remove_reference<_Tensor>::type __tensor_type;
 
 public:
 
@@ -34,8 +35,8 @@ public:
    typedef typename __traits_type::reference reference;
    typedef typename __traits_type::pointer pointer;
 
-   typedef typename _Tensor::shape_type shape_type;
-   typedef typename _Tensor::size_type size_type;
+   typedef typename __tensor_type::shape_type shape_type;
+   typedef typename __tensor_type::size_type size_type;
 
 private:
 
@@ -59,7 +60,8 @@ private:
    shape_type index_;
 
    /// whether or not iterator is contiguous
-   bool contiguous_;
+   /// currently, suppose to be always contiguous
+   //bool contiguous_;
 
 public:
 
@@ -77,7 +79,14 @@ public:
 
    /// construct from tensor object
    explicit
-   NDIterator (_Tensor& x, _Iterator start = x.begin())
+   NDIterator (_Tensor& x)
+   : start_ (x.begin()), current_ (x.begin()), shape_ (x.shape()), stride_ (x.stride)
+   {
+      resize(index_, x.rank());
+      std::fill(index.begin(), index.end(), 0);
+   }
+
+   NDIterator (_Tensor& x, const shape_type& lower, const shape_type& index, const shape_type& shape = x.shape(), const shape_type& stride = x.stride())
    : start_ (start), 
 
    /// construct with the least arguments

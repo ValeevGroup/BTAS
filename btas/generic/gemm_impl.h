@@ -8,7 +8,7 @@
 
 #include <btas/tensor_traits.h>
 #include <btas/numerictype.h>
-#include <btas/generic/types.h>
+#include <btas/types.h>
 
 namespace btas {
 

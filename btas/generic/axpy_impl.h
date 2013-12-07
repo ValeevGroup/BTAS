@@ -6,7 +6,7 @@
 #include <type_traits>
 
 #include <btas/tensor_traits.h>
-#include <btas/generic/types.h>
+#include <btas/types.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
 
 namespace btas {

@@ -25,11 +25,11 @@ public:
 };
 
 /// decl.
-template<bool _IsResizable> struct __resize__wrapper { };
+template<bool _IsResizable> struct __resize_wrapper { };
 
 /// wrapper for variable size vector
 template<>
-struct __resize__wrapper<true>
+struct __resize_wrapper<true>
 {
    /// resize x by n
    template<class _Vector>
@@ -38,7 +38,7 @@ struct __resize__wrapper<true>
 
 /// wrapper for fixed-size vector
 template<>
-struct __resize__wrapper<false>
+struct __resize_wrapper<false>
 {
    /// nothing to do
    template<class _Vector>
@@ -50,7 +50,7 @@ struct __resize__wrapper<false>
 template<class _Vector>
 void resize (_Vector& x, const typename _Vector::size_type& n)
 {
-   __resize__wrapper<is_resizable<_Vector>::value>::resize(x, n);
+   __resize_wrapper<is_resizable<_Vector>::value>::resize(x, n);
 }
 
 } // namespace btas
