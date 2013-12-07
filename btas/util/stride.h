@@ -13,7 +13,7 @@ template<>
 struct __normal_stride<CblasRowMajor>
 {
    template<class _Shape>
-   set (const _Shape& shape_, _Shape& stride_)
+   static void set (const _Shape& shape_, _Shape& stride_)
    {
       typedef typename _Shape::value_type size_type;
       size_type str = 1;
@@ -29,7 +29,7 @@ template<>
 struct __normal_stride<CblasColMajor>
 {
    template<class _Shape>
-   set (const _Shape& shape_, _Shape& stride_)
+   static void set (const _Shape& shape_, _Shape& stride_)
    {
       typedef typename _Shape::value_type size_type;
       size_type str = 1;

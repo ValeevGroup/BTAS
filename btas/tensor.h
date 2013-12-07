@@ -11,6 +11,7 @@
 #include <btas/tensor_traits.h>
 
 #include <btas/util/stride.h>
+#include <btas/util/dot.h>
 
 namespace btas {
 
@@ -478,12 +479,7 @@ private:
    size_type
    __get_address (const shape_type& index) const
    {
-      assert(index.size() == rank());
-      size_type adr = 0;
-      for(size_type i = 0; i < rank(); ++i) {
-          adr += stride_[i]*index[i];
-      }
-      return adr;
+      return dot(stride_, index);
    }
 
    /// test whether index is in range

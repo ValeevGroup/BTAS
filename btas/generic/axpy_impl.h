@@ -7,6 +7,7 @@
 
 #include <btas/tensor_traits.h>
 #include <btas/types.h>
+
 #include <btas/generic/tensor_iterator_wrapper.h>
 
 namespace btas {
@@ -115,7 +116,7 @@ void axpy (
 template<typename _T, class _TensorX, class _TensorY, class = typename std::enable_if<is_tensor<_TensorX>::value & is_tensor<_TensorY>::value>::type>
 void axpy (const _T& alpha, const _TensorX& X, _TensorY& Y)
 {
-   static_assert(std::is_same<typename __TensorX::value_type, typename __TensorY::value_type>::value, "value type of Y must be the same as that of X");
+   static_assert(std::is_same<typename _TensorX::value_type, typename _TensorY::value_type>::value, "value type of Y must be the same as that of X");
 
    if (X.empty())
    {

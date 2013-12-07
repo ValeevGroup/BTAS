@@ -10,6 +10,7 @@
 #include <btas/tensor_traits.h>
 
 #include <btas/util/stride.h>
+#include <btas/util/dot.h>
 
 namespace btas {
 
@@ -354,7 +355,7 @@ private:
    template<int _i, class = typename std::enable_if<(_i == _N)>::type>
    void __resize_by_args()
    {
-      __set_stride();
+      __normal_stride<_Order>::set(shape_, stride_);
       data_.resize(shape_[0]*stride_[0]);
    }
 
@@ -384,10 +385,7 @@ private:
    /// calculate address from index shape
    size_type __index_to_address(const shape_type& index)
    {
-      size_type __address = index[0]*stride_[0];
-      for(size_type i = 1; i < _N; ++i)
-         __address += index[i]*stride_[i];
-      return __address;
+      return dot(stride_, index);
    }
 
    //

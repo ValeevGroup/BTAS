@@ -7,17 +7,13 @@
 #include <type_traits>
 
 #include <btas/tensor_traits.h>
-#include <btas/numerictype.h>
 #include <btas/types.h>
+
+#include <btas/generic/numerictype.h>
 
 namespace btas {
 
 template<bool _DoGemm> struct gemm_impl { };
-
-   // check iterator category
-   static_assert(std::is_same<typename std::iterator_traits<typename _TensorA::iterator>::iterator_category, std::random_access_iterator_tag>::value>::value, "iterator A must be a random access iterator");
-   static_assert(std::is_same<typename std::iterator_traits<typename _TensorB::iterator>::iterator_category, std::random_access_iterator_tag>::value>::value, "iterator B must be a random access iterator");
-   static_assert(std::is_same<typename std::iterator_traits<typename _TensorC::iterator>::iterator_category, std::random_access_iterator_tag>::value>::value, "iterator C must be a random access iterator");
 
 template<> struct gemm_impl<true>
 {
@@ -29,6 +25,11 @@ template<> struct gemm_impl<true>
          const size_type& Msize, const size_type& Nsize, const size_type& Ksize,
          const _T& alpha, _IteratorA beginA, _IteratorB beginB, const _T& beta, _IteratorC beginC)
    {
+      // check iterator category
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorA>::iterator_category, std::random_access_iterator_tag>::value, "iterator A must be a random access iterator");
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorB>::iterator_category, std::random_access_iterator_tag>::value, "iterator B must be a random access iterator");
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorC>::iterator_category, std::random_access_iterator_tag>::value, "iterator C must be a random access iterator");
+
       // A:NoTrans / B:NoTrans
       if (transA == CblasNoTrans && transB == CblasNoTrans)
       {
@@ -109,6 +110,8 @@ template<> struct gemm_impl<true>
 
 template<> struct gemm_impl<false>
 {
+   typedef unsigned long size_type;
+
    template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
    gemm_impl (
          const CBLAS_ORDER& order,
@@ -123,6 +126,11 @@ template<> struct gemm_impl<false>
          const _T& beta,
                _IteratorC beginC, const typename std::iterator_traits<_IteratorC>::difference_type& ldC)
    {
+      // check iterator category
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorA>::iterator_category, std::random_access_iterator_tag>::value, "iterator A must be a random access iterator");
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorB>::iterator_category, std::random_access_iterator_tag>::value, "iterator B must be a random access iterator");
+      static_assert(std::is_same<typename std::iterator_traits<_IteratorC>::iterator_category, std::random_access_iterator_tag>::value, "iterator C must be a random access iterator");
+
       if (order == CblasColMajor)
       {
          gemm_impl(CblasRowMajor, transB, transA, Nsize, Msize, Ksize, alpha, beginB, ldB, beginA, ldA, beta, beginC, ldC);
@@ -221,7 +229,7 @@ template<
    class = typename std::enable_if<
       is_tensor<_TensorA>::value &
       is_tensor<_TensorB>::value &
-      is_tensor<_TensorC>::value &
+      is_tensor<_TensorC>::value
    >::type
 >
 void gemm (
@@ -229,10 +237,10 @@ void gemm (
    const CBLAS_TRANSPOSE& transA,
    const CBLAS_TRANSPOSE& transB,
    const _T& alpha,
-   const _TensorA& A,
-   const _TensorB& B,
+   const _TensorA& a,
+   const _TensorB& b,
    const _T& beta,
-         _TensorC& C)
+         _TensorC& c)
 {
    typedef unsigned long size_type;
 

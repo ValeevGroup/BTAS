@@ -33,7 +33,7 @@ void print(const Tensor<string>& X)
 
 // =================================================================================================
 //
-// This is for checking how NDIterator works by monitoring explicit indexing
+// Use cases of NDIterator
 //
 // =================================================================================================
 
@@ -41,25 +41,22 @@ int main()
 {
    typedef Tensor<string>::shape_type shape_type;
 
-// mt19937 rgen;
-// uniform_real_distribution<string> dist(-1.0, 1.0);
-
 // =================================================================================================
 //
 // create random tensor
 //
 // =================================================================================================
 
-   Tensor<string> A(4,4,4); // A.generate(bind(dist, rgen));
-   for(size_t i = 0; i < A.shape(0); ++i) {
-      for(size_t j = 0; j < A.shape(1); ++j) {
-         for(size_t k = 0; k < A.shape(2); ++k) {
-            ostringstream sout;
-            sout << "[" << i << "," << j << "," << k << "]";
-            A(i,j,k) = sout.str();
+   Tensor<string> A(4,4,4);
+
+   for(size_t i = 0; i < A.shape(0); ++i)
+      for(size_t j = 0; j < A.shape(1); ++j)
+         for(size_t k = 0; k < A.shape(2); ++k)
+         {
+            ostringstream so;
+            so << i << "," << j << "," << k;
+            A(i,j,k) = so.str();
          }
-      }
-   }
 
    cout.precision(2);
    cout << "Printing A: "; print(A);
@@ -78,19 +75,20 @@ int main()
    shape_type new_stride(A.rank());
    for(size_t i = 0; i < A.rank(); ++i)
    {
-      new_shape[i] = A.shape(permutation[i]);
+      new_shape [i] = A.shape(permutation[i]);
       new_stride[i] = A.stride(permutation[i]);
    }
 
    // resize B with permuted shape
    Tensor<string> B(new_shape);
 
-   // NDIterator ([pointer to start], [new shape], [stride hack], [current index]);
-   NDIterator<string*, shape_type> it_permt(A.data(), new_shape, new_stride);
-
-   for(auto ib = B.begin(); ib != B.end(); ++ib, ++it_permt)
+   // NDIterator ([shape], [stride], [start (iterator)], [current = start]);
    {
-      *ib = *it_permt;
+      NDIterator<Tensor<string>> ita(new_shape, new_stride, A.begin());
+      for(auto itb = B.begin(); itb != B.end(); ++ita, ++itb)
+      {
+         *itb = *ita;
+      }
    }
 
    cout.precision(2);
@@ -104,23 +102,19 @@ int main()
 
    shape_type lower_bound = { 1, 1, 1 };
    shape_type slice_shape = { 2, 2, 2 };
-
-   // calculate offset of starting address
-   size_t offset = 0;
-   for(size_t i = 0; i < A.rank(); ++i)
-   {
-      offset += lower_bound[i]*A.stride(i);
-   }
+   shape_type start_index = { 0, 0, 0 };
 
    // resize C with sliced shape
    Tensor<string> C(slice_shape);
 
-   // NDIterator ([pointer to start], [new shape], [stride hack], [current index]);
-   NDIterator<string*, shape_type> it_slice(A.data()+offset, slice_shape, A.stride());
-
-   for(auto ic = C.begin(); ic != C.end(); ++ic, ++it_slice)
+   // NDIterator ([tensor], [start], [lower], [shape], [stride = tensor.stride()]);
    {
-      *ic = *it_slice;
+      NDIterator<Tensor<string>> ita(A, start_index, lower_bound, slice_shape);
+
+      for(auto itc = C.begin(); itc != C.end(); ++ita, ++itc)
+      {
+         *itc = *ita;
+      }
    }
 
    cout.precision(2);
@@ -143,12 +137,14 @@ int main()
    // resize D with tied shape
    Tensor<string> D(tie_shape);
 
-   // NDIterator ([pointer to start], [new shape], [stride hack], [current index]);
-   NDIterator<string*, shape_type> it_tie(A.data(), tie_shape, tie_stride);
-
-   for(auto ic = D.begin(); ic != D.end(); ++ic, ++it_tie)
+   // NDIterator ([shape], [stride], [start (pointer)], [current = start]);
    {
-      *ic = *it_tie;
+      NDIterator<Tensor<string>, const string*> ita(tie_shape, tie_stride, A.data());
+
+      for(auto itd = D.begin(); itd != D.end(); ++itd, ++ita)
+      {
+         *itd = *ita;
+      }
    }
 
    cout.precision(2);
@@ -165,32 +161,31 @@ int main()
    shape_type cnew_stride(C.rank());
    for(size_t i = 0; i < C.rank(); ++i)
    {
-      cnew_shape[i] = C.shape(permutation[i]);
+      cnew_shape [i] = C.shape (permutation[i]);
       cnew_stride[i] = C.stride(permutation[i]);
    }
 
    // copy A into E
    Tensor<string> E(A);
 
-   // NDIterator ([pointer to start], [new shape], [stride hack], [current index]);
-   // get iterator to the first
-   NDIterator<string*, shape_type> it_slice_E(E.data()+offset, slice_shape, E.stride());
-
-   // get iterator to the end, i.e. index = { cnew_shape[0], 0, 0 }
-   shape_type index_last = slice_shape;
-   fill(index_last.begin()+1, index_last.end(), 0);
-   NDIterator<string*, shape_type> it_slice_E_end(E.data()+offset, slice_shape, E.stride(), index_last);
-
-   // get iterator to permute within slice (using NDIterator of NDIterator)
-   NDIterator<NDIterator<string*, shape_type>, shape_type> it_slice_permt_A(NDIterator<string*, shape_type>(A.data()+offset, slice_shape, A.stride()), cnew_shape, cnew_stride);
-
-   for(; it_slice_E != it_slice_E_end; ++it_slice_E, ++it_slice_permt_A)
+   // iterator for slice of E
    {
-      *it_slice_E = *it_slice_permt_A;
+      NDIterator<Tensor<string>> ite(E, start_index, lower_bound, slice_shape);
+      NDIterator<Tensor<string>> ite_last = end(ite);
+
+      // iterator for permute of slice of A
+      NDIterator<Tensor<string>, NDIterator<Tensor<string>>> ita(cnew_shape, cnew_stride, NDIterator<Tensor<string>>(A, start_index, lower_bound, slice_shape));
+
+      for(; ite != ite_last; ++ite, ++ita)
+      {
+         *ite = *ita;
+      }
    }
 
    cout.precision(2);
    cout << "Printing E: "; print(E);
 
    return 0;
-}
+} /*
+
+*/
