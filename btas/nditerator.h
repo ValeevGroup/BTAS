@@ -139,21 +139,10 @@ public:
    NDIterator&
    operator= (NDIterator&& x) { swap(x); }
 
-   template <typename _T, typename _I, typename __>
-   friend class NDIterator;
-
-   /// allow conversion NDIterator<Iter, Tensor> -> NDIterator<const Iter, Tensor>
-   template<class _Iter>
-   NDIterator (const NDIterator<
-                  _Tensor,   
-                  _Iter
-                  //,typename std::enable_if<
-                  //   std::is_same<_Iter, typename std::remove_const<_Iterator>::type>::value,
-                  //   _Tensor
-                  //>::type
-               >& x)
-   : start_ (x.start_), current_ (x.current_), index_ (x.index_), shape_ (x.shape_), stride_ (x.stride_)
-   { }
+   operator NDIterator<_Tensor,typename _Tensor::const_iterator>() const
+       {
+       return NDIterator<_Tensor,typename _Tensor::const_iterator>(shape_,stride_,start_,current_);
+       }
 
    //
    //  assignment
