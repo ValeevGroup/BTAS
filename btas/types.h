@@ -38,6 +38,10 @@ enum CBLAS_SIDE { CblasLeft, CblasRight };
 }
 #endif // __cplusplus
 
+#ifdef _HAS_CBLAS
+#include <complex>
+#endif // _HAS_CBLAS
+
 //
 //  Default types
 //

@@ -11,6 +11,7 @@ namespace btas {
 
 /// variable size array class without capacity info
 /// NOTE: to reduce object size, this doesn't have the virtual destructor
+/// TODO: add allocator to template parameter
 template <typename T>
 class varray {
 public:

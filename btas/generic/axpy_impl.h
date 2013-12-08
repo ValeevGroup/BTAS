@@ -49,6 +49,7 @@ template<> struct axpy_impl<true>
       const double* itrX, const typename std::iterator_traits<double*>::difference_type& incX,
             double* itrY, const typename std::iterator_traits<double*>::difference_type& incY)
    {
+std::cout << "calling CBLAS" << std::endl;
       cblas_daxpy(Nsize, alpha, itrX, incX, itrY, incY);
    }
 
@@ -58,7 +59,7 @@ template<> struct axpy_impl<true>
       const std::complex<float>* itrX, const typename std::iterator_traits<std::complex<float>*>::difference_type& incX,
             std::complex<float>* itrY, const typename std::iterator_traits<std::complex<float>*>::difference_type& incY)
    {
-      cblas_caxpy(Nsize, alpha, itrX, incX, itrY, incY);
+      cblas_caxpy(Nsize, &alpha, itrX, incX, itrY, incY);
    }
 
    static void call (
@@ -67,7 +68,7 @@ template<> struct axpy_impl<true>
       const std::complex<double>* itrX, const typename std::iterator_traits<std::complex<double>*>::difference_type& incX,
             std::complex<double>* itrY, const typename std::iterator_traits<std::complex<double>*>::difference_type& incY)
    {
-      cblas_zaxpy(Nsize, alpha, itrX, incX, itrY, incY);
+      cblas_zaxpy(Nsize, &alpha, itrX, incX, itrY, incY);
    }
 #endif
 };
@@ -133,8 +134,8 @@ void axpy (const _T& alpha, const _TensorX& X, _TensorY& Y)
       assert(std::equal(X.shape().begin(), X.shape().end(), Y.shape().begin()));
    }
 
-   auto itrX = tensor_iterator_wrapper<has_data<_TensorX>::value>::begin(X);
-   auto itrY = tensor_iterator_wrapper<has_data<_TensorY>::value>::begin(Y);
+   auto itrX = tbegin(X);
+   auto itrY = tbegin(Y);
 
    axpy (X.size(), alpha, itrX, 1, itrY, 1);
 }
