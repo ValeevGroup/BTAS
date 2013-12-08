@@ -10,7 +10,7 @@
 #include <btas/tensor_traits.h>
 #include <btas/numerictype.h>
 #include <btas/generic/types.h>
-#include <btas/index.h>
+#include <btas/array_adaptor.h>
 
 namespace btas {
 
@@ -283,7 +283,7 @@ void gemm(CBLAS_TRANSPOSE transA, CBLAS_TRANSPOSE transB, const _T& alpha, const
    }
 
    if (c.empty()) {     // C empty -> compute extentC
-     extentC = btas::construct<decltype(extentC)>::call(M+N);
+     extentC = btas::array_adaptor<decltype(extentC)>::construct(M+N);
      if (transA == CblasNoTrans)
        for (size_type i = 0; i < M; ++i) extentC[i] = extentA[i];
      else

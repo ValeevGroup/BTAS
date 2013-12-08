@@ -9,6 +9,7 @@
 
 #include <btas/tensor_traits.h>
 #include <btas/range.h>
+#include <btas/array_adaptor.h>
 
 #include <boost/serialization/serialization.hpp>
 
@@ -74,7 +75,7 @@ namespace btas {
       Tensor (const size_type& first, const _args&... rest) :
       range_(range_type(first, rest...))
       {
-        data_.resize(range_.area());
+        array_adaptor<storage_type>::resize(data_, range_.area());
       }
 
       /// construct from \c range, allocate data, but not initialized
@@ -82,7 +83,7 @@ namespace btas {
       Tensor (const range_type& range) :
       range_(range)
       {
-        data_.resize(range_.area());
+        array_adaptor<storage_type>::resize(data_, range_.area());
       }
 
       /// construct from \c range object, set all elements to \c v
@@ -91,7 +92,7 @@ namespace btas {
               value_type v) :
               range_(range)
       {
-        data_.resize(range_.area());
+        array_adaptor<storage_type>::resize(data_, range_.area());
         std::fill(begin(), end(), v);
       }
 
@@ -119,7 +120,7 @@ namespace btas {
       operator= (const _Tensor& x)
       {
           range_ = x.range();
-          data_.resize(range_.area());
+          array_adaptor<storage_type>::resize(data_, range_.area());
           std::copy(x.begin(), x.end(), data_.begin());
           return *this;
       }
@@ -161,7 +162,7 @@ namespace btas {
       size_type
       size () const
       {
-        return data_.size();
+        return range_.area();
       }
 
       /// \return range object
@@ -175,7 +176,7 @@ namespace btas {
       bool
       empty() const
       {
-        return data_.empty();
+        return range_.area() == 0;
       }
 
       /// \return const iterator begin
@@ -301,7 +302,7 @@ namespace btas {
       resize (const range_type& range)
       {
         range_ = range;
-        data_.resize(range_.area());
+        array_adaptor<storage_type>::resize(data_, range_.area());
       }
 
       /// swap this and x

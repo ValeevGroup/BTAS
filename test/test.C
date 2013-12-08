@@ -13,7 +13,7 @@ using namespace btas;
 
 int main()
 {
-  // test 0
+  // test 0: constructors
   {
     Tensor<double> T0;
     Tensor<int> T1(2);
@@ -22,7 +22,7 @@ int main()
     Tensor<std::complex<double> > T4(2, 2, 2, 2);
   }
 
-   // test 1
+   // test 1: random access
    Tensor<double> T(2,2,2); T.fill(0.0);
 
    T(1,0,1) = -0.5;
@@ -32,7 +32,7 @@ int main()
    cout << "printing T: size = " << T.size() << " objsize = " << sizeof(T) << endl;
    for(double x : T) cout << x << endl;
 
-   // test 2
+   // test 2: iteration
    typedef Tensor<float, btas::DEFAULT_RANGE, varray<float>> MyTensor;
    MyTensor::range_type range(4, 4);
    MyTensor Q(range); Q.fill(2.0);
@@ -50,7 +50,7 @@ int main()
    cout << "printing Q (=T): size = " << Q.size() << " objsize = " << sizeof(Q) << endl;
    for(double x : Q) cout << x << endl;
 
-   // test 3
+   // test 3: axpy
    Tensor<double> S(2,2,2); S.fill(1.0);
    axpy(0.5, T, S);
 
@@ -63,22 +63,20 @@ int main()
    cout << "printing U: size = " << U.size() << " objsize = " << sizeof(U) << endl;
    for(double x : U) cout << x << endl;
 
-#if 1
-   // test 4
+   // test 4: gemm
    Tensor<double> V(0,0);
    gemm(CblasNoTrans, CblasNoTrans, 1.0, T, S, 1.0, V);
 
    cout << "printing V: size = " << V.size() << " objsize = " << sizeof(V) << endl;
    for(double x : V) cout << x << endl;
-#endif
 
-   // test 5
+   // test 5: tensor of tensor (ToT)
    cout << boolalpha;
    cout << "is_tensor<Tensor<double>> = " << is_tensor<Tensor<double>>::value << endl;
    cout << "is_tensor<Tensor<Tensor<double>>> = " << is_tensor<Tensor<Tensor<double>>>::value << endl;
    cout << "is_tensor<vector<double>> = " << is_tensor<vector<double>>::value << endl;
 
-   // test 6
+   // test 6: ToT operations
    Tensor<Tensor<double>> A(4,4);
    Tensor<double> aval(2,2); aval.fill(1.0); A.fill(aval);
    Tensor<Tensor<double>> B(4,4);
@@ -86,11 +84,11 @@ int main()
    Tensor<Tensor<double>> C(4,4); C.fill(Tensor<double>(2,2)); // rank info is required to determine contraction ranks at gemm
    gemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 1.0, C);
 
-   // test 7
+   // test 7: argument checking in gemm
    Tensor<double> a(4,4); a.fill(1.0);
 // gemm(CblasNoTrans, CblasNoTrans, 1.0, A, a, 1.0, C); // this will give a compile-time error, since gemm for "tensor of tensor" and "tensor" is not supported
 
-   // test 8
+   // test 8: fixed-rank tensor
    TArray<double,3> t(2,2,2); t.fill(0.0);
 
    t(1,0,1) = -0.5;
@@ -112,6 +110,14 @@ int main()
    for(double x : v) cout << x << endl;
 
    TArray<double,3,std::set<double>> u;
+
+   // test 9: fixed-size tensor
+   {
+     typedef Tensor<double, btas::DEFAULT_RANGE, std::array<double, 9> > MyTensor;
+     MyTensor::range_type range(3, 3);
+     //MyTensor::range_type range(4, 4); // runtime-error with this range -- bigger than storage
+     MyTensor Q(range); Q.fill(2.0);
+   }
 
    return 0;
 }
