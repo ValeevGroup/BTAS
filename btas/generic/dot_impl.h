@@ -13,13 +13,26 @@
 
 namespace btas {
 
+template<typename _T>
+struct __dot_result_type {
+   typedef typename __dot_result_type<typename _T::value_type>::type type;
+};
+
+template<> struct __dot_result_type<float> { typedef float type; };
+
+template<> struct __dot_result_type<double> { typedef double type; };
+
+template<> struct __dot_result_type<std::complex<float>> { typedef std::complex<float> type; };
+
+template<> struct __dot_result_type<std::complex<double>> { typedef std::complex<double> type; };
+
 //  ================================================================================================
 
 /// For general case
 template<typename _T>
 struct dot_impl
 {
-   typedef decltype(dot(_T, _T)) return_type;
+   typedef typename __dot_result_type<_T>::type return_type;
 
    template<class _IteratorX, class _IteratorY>
    static return_type call (
@@ -34,7 +47,7 @@ struct dot_impl
       }
       return val;
    }
-}
+};
 
 template<>
 struct dot_impl<float>
@@ -82,33 +95,15 @@ struct dot_impl<double>
    }
 };
 
-/// Case that alpha is multiplied recursively by DOT
-/// Note that incX and incY are disabled for recursive call
-template<> struct dot_impl<false>
-{
-   template<typename _T, class _IteratorX, class _IteratorY>
-   static void call (
-      const unsigned long& Nsize,
-      const _T& alpha,
-            _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
-            _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
-   {
-      for (unsigned long i = 0; i < Nsize; ++i, itrX += incX, itrY += incY)
-      {
-         dot(alpha, *itrX, *itrY);
-      }
-   }
-};
-
 //  ================================================================================================
 
 /// Generic implementation of BLAS DOT in terms of C++ iterator
-template<typename _T, class _IteratorX, class _IteratorY>
-auto dot (
+template<class _IteratorX, class _IteratorY>
+typename __dot_result_type<typename std::iterator_traits<_IteratorX>::value_type>::type
+dot (
    const unsigned long& Nsize,
          _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
          _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
-   -> decltype(dot_impl<typename std::iterator_traits<_IteratorX>::value_type>::call(Nsize, itrX, incX, itrY, incY))
 {
    typedef std::iterator_traits<_IteratorX> __traits_X;
    typedef std::iterator_traits<_IteratorY> __traits_Y;
@@ -131,9 +126,8 @@ template<
       is_tensor<_TensorY>::value
    >::type
 >
-auto dot (
-   const _TensorX& X,
-         _TensorY& Y) -> decltype(dot(typename _Tensor::size_type, typename _Tensor::iterator, 1, typename _Tensor::iterator, 1))
+typename __dot_result_type<typename _TensorX::value_type>::type
+dot (const _TensorX& X, _TensorY& Y)
 {
    typedef typename _TensorX::value_type value_type;
    static_assert(std::is_same<value_type, typename _TensorY::value_type>::value, "value type of Y must be the same as that of X");

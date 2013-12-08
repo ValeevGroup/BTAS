@@ -40,7 +40,7 @@ template<> struct gemv_impl<true>
    {
       if (beta != NumericType<_T>::one())
       {
-         if (transA == NoTrans)
+         if (transA == CblasNoTrans)
             scal (Msize, beta, itrY, incY);
          else
             scal (Nsize, beta, itrY, incY);

@@ -16,9 +16,19 @@
 namespace btas {
 
 /// reference implementation of dense tensor class (variable rank)
+/// TODO: copy semantics b/w row-major and column-major tensors has not yet been supported...
+///       one can do this is wrapping by NDIterator,
+///
+///          Tensor<T, CblasRowMajor> A(...);
+///          Tensor<T, CblasColMajor> B(...);
+///          copy(A.begin(), A.end(), NDIterator<Tensor<T, CblasColMajor>>(B));
+///
+///       since NDIterator has implemented in terms of row-major order, so far.
+///       this implies that NDIterator should have major-order directive...
+///
 /// \tparam _T type of element
 /// \tparam _Order major order directive, reused CBLAS_ORDER, i.e. CblasRowMajor or CblasColMajor
-/// \tparam _Container storage type, iterator is provided by container 
+/// \tparam _Container storage type, iterator is provided by container
 template<typename _T,
          CBLAS_ORDER _Order = CblasRowMajor,
          class _Container = DEFAULT::storage<_T>>
