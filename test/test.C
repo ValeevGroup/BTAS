@@ -52,10 +52,9 @@ int main()
    cout << "printing U: size = " << U.size() << " objsize = " << sizeof(U) << endl;
    for(double x : U) cout << x << endl;
 
-/*
    // test 4
    Tensor<double> V(0, 0);
-   gemm(CblasNoTrans, CblasNoTrans, 1.0, T, S, 1.0, V);
+   gemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 1.0, T, S, 1.0, V);
 
    cout << "printing V: size = " << V.size() << " objsize = " << sizeof(V) << endl;
    for(double x : V) cout << x << endl;
@@ -80,12 +79,12 @@ int main()
    B(3,3) = Tensor<double>(2,2);
 
    Tensor<Tensor<double>> C(4,4); C.fill(Tensor<double>(0,0)); // rank info is required to determine contraction ranks at gemm
-   gemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 1.0, C);
+   gemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 1.0, A, B, 1.0, C);
 
    // test 7
 
    Tensor<double> a(4,4); a.fill(1.0);
-// gemm(CblasNoTrans, CblasNoTrans, 1.0, A, a, 1.0, C); // this will give a compile-time error, since gemm for "tensor of tensor" and "tensor" is not supported
+// gemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 1.0, A, a, 1.0, C); // this will give a compile-time error, since gemm for "tensor of tensor" and "tensor" is not supported
 
    // test 8
    TArray<double,3> t(2,2,2); t.fill(0.0);
@@ -103,12 +102,12 @@ int main()
    for(double x : s) cout << x << endl;
 
    TArray<double,2> v;
-   gemm(CblasNoTrans, CblasNoTrans, 1.0, t, s, 1.0, v);
+   gemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 1.0, t, s, 1.0, v);
 
    cout << "printing v: size = " << v.size() << " objsize = " << sizeof(v) << endl;
    for(double x : v) cout << x << endl;
 
-   TArray<double,3,std::set<double>> u;
-*/
+   TArray<double,3,CblasRowMajor,std::set<double>> u;
+
    return 0;
 }

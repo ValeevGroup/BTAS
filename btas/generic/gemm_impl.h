@@ -12,6 +12,8 @@
 #include <btas/generic/numeric_type.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
 
+#include <btas/generic/scal_impl.h>
+
 namespace btas {
 
 template<bool _Finalize> struct gemm_impl { };
@@ -22,7 +24,7 @@ template<> struct gemm_impl<true>
 
    /// GEMM implementation
    template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
-   void gemm_impl (
+   static void call (
       const CBLAS_ORDER& order,
       const CBLAS_TRANSPOSE& transA,
       const CBLAS_TRANSPOSE& transB,
@@ -30,36 +32,38 @@ template<> struct gemm_impl<true>
       const unsigned long& Nsize,
       const unsigned long& Ksize,
       const _T& alpha,
-      const _IteratorA& itrA,
+            _IteratorA itrA,
       const unsigned long& LDA,
-      const _IteratorB& itrB,
+            _IteratorB itrB,
       const unsigned long& LDB,
       const _T& beta,
-            _IteratorC& itrC,
+            _IteratorC itrC,
       const unsigned long& LDC)
    {
       // For column-major order, recall this as C^T = B^T * A^T in row-major order
       if (order == CblasColMajor)
       {
-         gemm_impl(CblasRowMajor, transB, transA, Nsize, Msize, Ksize, alpha, itrB, LDB, itrA, LDA, beta, itrC, LDC);
+         gemm_impl<true>::call(CblasRowMajor, transB, transA, Nsize, Msize, Ksize, alpha, itrB, LDB, itrA, LDA, beta, itrC, LDC);
+
+         return;
       }
 
       if (beta != NumericType<_T>::one())
       {
-//       scal (Msize*Nsize, 
+         scal (Msize*Nsize, beta, itrC, 1);
       }
 
       // A:NoTrans / B:NoTrans
       if (transA == CblasNoTrans && transB == CblasNoTrans)
       {
-         auto itrA      = beginA;
-         auto itrC_save = beginC;
+         auto itrB_save = itrB;
+         auto itrC_save = itrC;
          for (size_type i = 0; i < Msize; ++i)
          {
-            auto itrB = beginB;
+            itrB = itrB_save;
             for (size_type k = 0; k < Ksize; ++k, ++itrA)
             {
-               auto itrC = itrC_save;
+               itrC = itrC_save;
                for (size_type j = 0; j < Nsize; ++j, ++itrB, ++itrC)
                {
                   (*itrC) += alpha * (*itrA) * (*itrB);
@@ -71,14 +75,14 @@ template<> struct gemm_impl<true>
       // A:NoTrans / B:Trans
       else if (transA == CblasNoTrans && transB != CblasNoTrans)
       {
-         auto itrA_save = beginA;
-         auto itrC      = beginC;
+         auto itrA_save = itrA;
+         auto itrB_save = itrB;
          for (size_type i = 0; i < Nsize; ++i)
          {
-            auto itrB = beginB;
+            itrB = itrB_save;
             for (size_type j = 0; j < Msize; ++j, ++itrC)
             {
-               auto itrA = itrA_save;
+               itrA = itrA_save;
                for (size_type k = 0; k < Ksize; ++k, ++itrA, ++itrB)
                {
                   (*itrC) += alpha * (*itrA) * (*itrB);
@@ -90,14 +94,14 @@ template<> struct gemm_impl<true>
       // A:Trans / B:NoTrans
       else if (transA != CblasNoTrans && transB == CblasNoTrans)
       {
-         auto itrA      = beginA;
-         auto itrB_save = beginB;
+         auto itrB_save = itrB;
+         auto itrC_save = itrC;
          for (size_type k = 0; k < Ksize; ++k)
          {
-            auto itrC = beginC;
+            itrC = itrC_save;
             for (size_type i = 0; i < Msize; ++i, ++itrA)
             {
-               auto itrB = itrB_save;
+               itrB = itrB_save;
                for (size_type j = 0; j < Nsize; ++j, ++itrB, ++itrC)
                {
                   (*itrC) += alpha * (*itrA) * (*itrB);
@@ -109,14 +113,14 @@ template<> struct gemm_impl<true>
       // A:Trans / B:Trans
       else if (transA != CblasNoTrans && transB != CblasNoTrans)
       {
-         auto itrB      = beginB;
-         auto itrC_save = beginC;
+         auto itrA_save = itrA;
+         auto itrC_save = itrC;
          for (size_type j = 0; j < Nsize; ++j, ++itrC_save)
          {
-            auto itrA = beginA;
+            itrA = itrA_save;
             for (size_type k = 0; k < Ksize; ++k, ++itrB)
             {
-               auto itrC = itrC_save;
+               itrC = itrC_save;
                for (size_type i = 0; i < Msize; ++i, ++itrA, itrC += Nsize)
                {
                   (*itrC) += alpha * (*itrA) * (*itrB);
@@ -125,6 +129,87 @@ template<> struct gemm_impl<true>
          }
       }
    }
+
+#ifdef _HAS_CBLAS
+
+   static void call (
+      const CBLAS_ORDER& order,
+      const CBLAS_TRANSPOSE& transA,
+      const CBLAS_TRANSPOSE& transB,
+      const unsigned long& Msize,
+      const unsigned long& Nsize,
+      const unsigned long& Ksize,
+      const float& alpha,
+      const float* itrA,
+      const unsigned long& LDA,
+      const float* itrB,
+      const unsigned long& LDB,
+      const float& beta,
+            float* itrC,
+      const unsigned long& LDC)
+   {
+      cblas_sgemm(order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
+   }
+
+   static void call (
+      const CBLAS_ORDER& order,
+      const CBLAS_TRANSPOSE& transA,
+      const CBLAS_TRANSPOSE& transB,
+      const unsigned long& Msize,
+      const unsigned long& Nsize,
+      const unsigned long& Ksize,
+      const double& alpha,
+      const double* itrA,
+      const unsigned long& LDA,
+      const double* itrB,
+      const unsigned long& LDB,
+      const double& beta,
+            double* itrC,
+      const unsigned long& LDC)
+   {
+      cblas_dgemm(order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
+   }
+
+   static void call (
+      const CBLAS_ORDER& order,
+      const CBLAS_TRANSPOSE& transA,
+      const CBLAS_TRANSPOSE& transB,
+      const unsigned long& Msize,
+      const unsigned long& Nsize,
+      const unsigned long& Ksize,
+      const std::complex<float>& alpha,
+      const std::complex<float>* itrA,
+      const unsigned long& LDA,
+      const std::complex<float>* itrB,
+      const unsigned long& LDB,
+      const std::complex<float>& beta,
+            std::complex<float>* itrC,
+      const unsigned long& LDC)
+   {
+      cblas_cgemm(order, transA, transB, Msize, Nsize, Ksize, &alpha, itrA, LDA, itrB, LDB, &beta, itrC, LDC);
+   }
+
+   static void call (
+      const CBLAS_ORDER& order,
+      const CBLAS_TRANSPOSE& transA,
+      const CBLAS_TRANSPOSE& transB,
+      const unsigned long& Msize,
+      const unsigned long& Nsize,
+      const unsigned long& Ksize,
+      const std::complex<double>& alpha,
+      const std::complex<double>* itrA,
+      const unsigned long& LDA,
+      const std::complex<double>* itrB,
+      const unsigned long& LDB,
+      const std::complex<double>& beta,
+            std::complex<double>* itrC,
+      const unsigned long& LDC)
+   {
+      cblas_zgemm(order, transA, transB, Msize, Nsize, Ksize, &alpha, itrA, LDA, itrB, LDB, &beta, itrC, LDC);
+   }
+
+#endif // _HAS_CBLAS
+
 };
 
 template<> struct gemm_impl<false>
@@ -132,35 +217,36 @@ template<> struct gemm_impl<false>
    typedef unsigned long size_type;
 
    template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
-   gemm_impl (
-         const CBLAS_ORDER& order,
-         const CBLAS_TRANSPOSE& transA,
-         const CBLAS_TRANSPOSE& transB,
-         const unsigned long& Msize,
-         const unsigned long& Nsize,
-         const unsigned long& Ksize,
-         const _T& alpha,
-               _IteratorA beginA, const typename std::iterator_traits<_IteratorA>::difference_type& ldA,
-               _IteratorB beginB, const typename std::iterator_traits<_IteratorB>::difference_type& ldB,
-         const _T& beta,
-               _IteratorC beginC, const typename std::iterator_traits<_IteratorC>::difference_type& ldC)
+   static void call (
+      const CBLAS_ORDER& order,
+      const CBLAS_TRANSPOSE& transA,
+      const CBLAS_TRANSPOSE& transB,
+      const unsigned long& Msize,
+      const unsigned long& Nsize,
+      const unsigned long& Ksize,
+      const _T& alpha,
+            _IteratorA itrA,
+      const unsigned long& LDA,
+            _IteratorB itrB,
+      const unsigned long& LDB,
+      const _T& beta,
+            _IteratorC itrC,
+      const unsigned long& LDC)
    {
-      if (order == CblasColMajor)
-      {
-         gemm_impl(CblasRowMajor, transB, transA, Nsize, Msize, Ksize, alpha, beginB, ldB, beginA, ldA, beta, beginC, ldC);
-      }
+      // currently, column-major order has not yet been supported at this level
+      assert(order == CblasRowMajor);
 
       // A:NoTrans / B:NoTrans
-      else if (transA == CblasNoTrans && transB == CblasNoTrans)
+      if (transA == CblasNoTrans && transB == CblasNoTrans)
       {
-         auto itrA      = beginA;
-         auto itrC_save = beginC;
+         auto itrB_save = itrB;
+         auto itrC_save = itrC;
          for (size_type i = 0; i < Msize; ++i)
          {
-            auto itrB = beginB;
+            itrB = itrB_save;
             for (size_type k = 0; k < Ksize; ++k, ++itrA)
             {
-               auto itrC = itrC_save;
+               itrC = itrC_save;
                for (size_type j = 0; j < Nsize; ++j, ++itrB, ++itrC)
                {
                   gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
@@ -172,14 +258,14 @@ template<> struct gemm_impl<false>
       // A:NoTrans / B:Trans
       else if (transA == CblasNoTrans && transB != CblasNoTrans)
       {
-         auto itrA_save = beginA;
-         auto itrC      = beginC;
+         auto itrA_save = itrA;
+         auto itrB_save = itrB;
          for (size_type i = 0; i < Nsize; ++i)
          {
-            auto itrB = beginB;
+            itrB = itrB_save;
             for (size_type j = 0; j < Msize; ++j, ++itrC)
             {
-               auto itrA = itrA_save;
+               itrA = itrA_save;
                for (size_type k = 0; k < Ksize; ++k, ++itrA, ++itrB)
                {
                   gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
@@ -191,14 +277,14 @@ template<> struct gemm_impl<false>
       // A:Trans / B:NoTrans
       else if (transA != CblasNoTrans && transB == CblasNoTrans)
       {
-         auto itrA      = beginA;
-         auto itrB_save = beginB;
+         auto itrB_save = itrB;
+         auto itrC_save = itrC;
          for (size_type k = 0; k < Ksize; ++k)
          {
-            auto itrC = beginC;
+            itrC = itrC_save;
             for (size_type i = 0; i < Msize; ++i, ++itrA)
             {
-               auto itrB = itrB_save;
+               itrB = itrB_save;
                for (size_type j = 0; j < Nsize; ++j, ++itrB, ++itrC)
                {
                   gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
@@ -210,14 +296,14 @@ template<> struct gemm_impl<false>
       // A:Trans / B:Trans
       else if (transA != CblasNoTrans && transB != CblasNoTrans)
       {
-         auto itrB      = beginB;
-         auto itrC_save = beginC;
+         auto itrA_save = itrA;
+         auto itrC_save = itrC;
          for (size_type j = 0; j < Nsize; ++j, ++itrC_save)
          {
-            auto itrA = beginA;
+            itrA = itrA_save;
             for (size_type k = 0; k < Ksize; ++k, ++itrB)
             {
-               auto itrC = itrC_save;
+               itrC = itrC_save;
                for (size_type i = 0; i < Msize; ++i, ++itrA, itrC += Nsize)
                {
                   gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
@@ -240,12 +326,12 @@ void gemm (
    const unsigned long& Nsize,
    const unsigned long& Ksize,
    const _T& alpha,
-   const _IteratorA& itrA,
+         _IteratorA itrA,
    const unsigned long& LDA,
-   const _IteratorB& itrB,
+         _IteratorB itrB,
    const unsigned long& LDB,
    const _T& beta,
-         _IteratorC& itrC,
+         _IteratorC itrC,
    const unsigned long& LDC)
 {
    typedef unsigned long size_type;
@@ -436,17 +522,15 @@ void gemm (
       LDC = Msize;
    }
 
-   typedef typename std::iterator_traits<typename _TensorA::iterator>::value_type value_type;
-
    // resize / scale
-   if (c.empty())
+   if (C.empty())
    {
-      c.resize(shapeC);
-      NumericType<value_type>::fill(c.begin(), c.end(), NumericType<value_type>::zero());
+      C.resize(shapeC);
+      NumericType<value_type>::fill(C.begin(), C.end(), NumericType<value_type>::zero());
    }
    else
    {
-      assert(std::equal(shapeC.begin(), shapeC.end(), c.shape().begin()));
+      assert(std::equal(shapeC.begin(), shapeC.end(), C.shape().begin()));
    }
 
    auto itrA = tbegin(A);
