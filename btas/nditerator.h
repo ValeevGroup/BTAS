@@ -139,17 +139,10 @@ public:
    NDIterator&
    operator= (NDIterator&& x) { swap(x); }
 
-   /// allow conversion NDIterator<Iter, Tensor> -> NDIterator<const Iter, Tensor>
-   template<class _Iter>
-   NDIterator (const NDIterator<
-                  _Iter,
-                  typename std::enable_if<
-                     std::is_same<_Iter, typename std::remove_const<_Iterator>::type>::value,
-                     _Tensor
-                  >::type
-               >& x)
-   : start_ (x.start_), current_ (x.current_), index_ (x.index_), shape_ (x.shape_), stride_ (x.stride_)
-   { }
+   operator NDIterator<_Tensor,typename _Tensor::const_iterator>() const
+       {
+       return NDIterator<_Tensor,typename _Tensor::const_iterator>(shape_,stride_,start_,current_);
+       }
 
    //
    //  assignment
@@ -165,6 +158,34 @@ public:
       stride_ = x.stride_;
       return *this;
    }
+
+   /// \return base iterator
+   _Iterator
+   start() const { return start_; }
+
+   /// \return array of index shapes
+   const shape_type& 
+   shape() const { return shape_; }
+
+   /// \return nth shape (index(n) < shape(n))
+   const typename shape_type::value_type& 
+   shape(const size_type& n) const { return shape_[n]; }
+
+   /// \return stride of indices
+   const shape_type& stride() const { return stride_; }
+
+   /// \return nth stride 
+   const typename shape_type::value_type& 
+   stride(const size_type& n) const { return stride_[n]; }
+
+   /// \return number of elements traversed during full iteration
+   size_type
+   size() const 
+       { 
+       size_type res = 1;
+       for(const auto& s : shape_) res *= s;
+       return res;
+       }
 
    /// \return true if operator* references valid tensor element
    bool valid() const 
@@ -359,16 +380,18 @@ public:
 
    /// \return iterator to begin
    friend
-   NDIterator<_Tensor, _Iterator> begin (const NDIterator<_Tensor, _Iterator>& x)
+   NDIterator
+   begin (const NDIterator& x)
    {
-      return NDIterator<_Tensor, _Iterator>(x.shape_, x.stride_, x.start_);
+      return NDIterator(x.shape_, x.stride_, x.start_);
    }
 
    /// \return iterator to end
    friend
-   NDIterator<_Tensor, _Iterator> end (const NDIterator<_Tensor, _Iterator>& x)
+   NDIterator
+   end (const NDIterator& x)
    {
-      return NDIterator<_Tensor, _Iterator>(x.shape_, x.stride_, x.start_, x.start_+x.shape_[0]*x.stride_[0]);
+      return NDIterator(x.shape_, x.stride_, x.start_, x.start_+x.shape_[0]*x.stride_[0]);
    }
 
 private:
