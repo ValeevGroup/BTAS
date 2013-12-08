@@ -8,6 +8,7 @@
 #include <btas/tensor_traits.h>
 #include <btas/types.h>
 
+#include <btas/generic/numeric_type.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
 
 namespace btas {
@@ -49,7 +50,6 @@ template<> struct axpy_impl<true>
       const double* itrX, const typename std::iterator_traits<double*>::difference_type& incX,
             double* itrY, const typename std::iterator_traits<double*>::difference_type& incY)
    {
-std::cout << "calling CBLAS" << std::endl;
       cblas_daxpy(Nsize, alpha, itrX, incX, itrY, incY);
    }
 
@@ -114,10 +114,21 @@ void axpy (
 //  ================================================================================================
 
 /// Convenient wrapper to call BLAS AXPY from tensor objects
-template<typename _T, class _TensorX, class _TensorY, class = typename std::enable_if<is_tensor<_TensorX>::value & is_tensor<_TensorY>::value>::type>
-void axpy (const _T& alpha, const _TensorX& X, _TensorY& Y)
+template<
+   typename _T,
+   class _TensorX, class _TensorY,
+   class = typename std::enable_if<
+      is_tensor<_TensorX>::value &
+      is_tensor<_TensorY>::value
+   >::type
+>
+void axpy (
+   const _T& alpha,
+   const _TensorX& X,
+         _TensorY& Y)
 {
-   static_assert(std::is_same<typename _TensorX::value_type, typename _TensorY::value_type>::value, "value type of Y must be the same as that of X");
+   typedef typename _TensorX::value_type value_type;
+   static_assert(std::is_same<value_type, typename _TensorY::value_type>::value, "value type of Y must be the same as that of X");
 
    if (X.empty())
    {
@@ -128,6 +139,7 @@ void axpy (const _T& alpha, const _TensorX& X, _TensorY& Y)
    if (Y.empty())
    {
       Y.resize(X.shape());
+      NumericType<value_type>::fill(Y.begin(), Y.end(), NumericType<value_type>::zero());
    }
    else
    {
