@@ -387,16 +387,18 @@ public:
 
    /// \return iterator to begin
    friend
-   NDIterator<_Tensor, _Iterator> begin (const NDIterator<_Tensor, _Iterator>& x)
+   NDIterator
+   begin (const NDIterator& x)
    {
-      return NDIterator<_Tensor, _Iterator>(x.shape_, x.stride_, x.start_);
+      return NDIterator(x.shape_, x.stride_, x.start_);
    }
 
    /// \return iterator to end
    friend
-   NDIterator<_Tensor, _Iterator> end (const NDIterator<_Tensor, _Iterator>& x)
+   NDIterator
+   end (const NDIterator& x)
    {
-      return NDIterator<_Tensor, _Iterator>(x.shape_, x.stride_, x.start_, x.start_+x.shape_[0]*x.stride_[0]);
+      return NDIterator(x.shape_, x.stride_, x.start_, x.start_+x.shape_[0]*x.stride_[0]);
    }
 
 private:
