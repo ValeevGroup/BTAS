@@ -510,6 +510,10 @@ private:
 
 };
 
+/// alias to iterator to const value type
+template<class _Tensor>
+using NDConstIterator = NDIterator<_Tensor, typename _Tensor::const_iterator>;
+
 } // namespace btas
 
 #endif // __BTAS_NDITERATOR_H
