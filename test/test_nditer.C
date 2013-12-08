@@ -177,7 +177,9 @@ int main()
    cout.precision(2);
    cout << "Printing E: "; print(E);
 
-   return 0;
-} /*
+   NDIterator<Tensor<double>> it1(E.shape(), E.stride(), E.begin());
 
-*/
+   NDConstIterator<Tensor<double>> it2(it1);
+
+   return 0;
+}

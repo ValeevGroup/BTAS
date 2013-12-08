@@ -354,7 +354,7 @@ void gemm (
    static_assert(std::is_same<typename __traits_C::iterator_category, std::random_access_iterator_tag>::value,
                  "iterator C must be a random access iterator");
 
-   gemm_impl<std::is_same<value_type, _T>::value>::call(order, transB, transA, Nsize, Msize, Ksize, alpha, itrB, LDB, itrA, LDA, beta, itrC, LDC);
+   gemm_impl<std::is_same<value_type, _T>::value>::call(order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
 }
 
 //  ================================================================================================

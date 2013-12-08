@@ -3,6 +3,7 @@
 
 #include <cassert>
 
+#include <btas/generic/scal_impl.h>
 #include <btas/generic/axpy_impl.h>
 #include <btas/generic/gemm_impl.h>
 

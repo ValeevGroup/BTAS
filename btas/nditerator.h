@@ -127,26 +127,27 @@ public:
       current_ = __get_address();
    }
 
-   /// copy constructor
-   NDIterator (const NDIterator& x)
-   : start_ (x.start_), current_ (x.current_), index_ (x.index_), shape_ (x.shape_), stride_ (x.stride_)
-   { }
+// /// copy constructor
+// NDIterator (const NDIterator& x)
+// : start_ (x.start_), current_ (x.current_), index_ (x.index_), shape_ (x.shape_), stride_ (x.stride_)
+// { }
 
-   /// move constructor
-   NDIterator (NDIterator&& x) { swap(x); }
+// /// move constructor
+// NDIterator (NDIterator&& x) { swap(x); }
 
-   /// move assignment
-   NDIterator&
-   operator= (NDIterator&& x) { swap(x); }
+// /// move assignment
+// NDIterator&
+// operator= (NDIterator&& x) { swap(x); }
 
    /// allow conversion NDIterator<Iter, Tensor> -> NDIterator<const Iter, Tensor>
    template<class _Iter>
+   explicit
    NDIterator (const NDIterator<
-                  _Iter,
                   typename std::enable_if<
                      std::is_same<_Iter, typename std::remove_const<_Iterator>::type>::value,
                      _Tensor
-                  >::type
+                  >::type,
+                  _Iter
                >& x)
    : start_ (x.start_), current_ (x.current_), index_ (x.index_), shape_ (x.shape_), stride_ (x.stride_)
    { }

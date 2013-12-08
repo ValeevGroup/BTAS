@@ -109,5 +109,7 @@ int main()
 
    TArray<double,3,CblasRowMajor,std::set<double>> u;
 
+   cout << "dot(a, a) = " << dot(a, a) << endl;
+
    return 0;
 }
