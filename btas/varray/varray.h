@@ -5,12 +5,13 @@
 
 #include <boost/serialization/serialization.hpp>
 
-#include <btas/memory_reference.h>
+#include <btas/varray/memory_reference.h>
 
 namespace btas {
 
 /// variable size array class without capacity info
 /// NOTE: to reduce object size, this doesn't have the virtual destructor
+/// TODO: add allocator to template parameter
 template <typename T>
 class varray {
 public:

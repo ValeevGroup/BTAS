@@ -1,5 +1,5 @@
-#ifndef __BTAS_REFERENCE_TENSOR_H
-#define __BTAS_REFERENCE_TENSOR_H 1
+#ifndef __BTAS_TENSOR_H
+#define __BTAS_TENSOR_H 1
 
 #include <cassert>
 #include <algorithm>
@@ -7,21 +7,31 @@
 #include <type_traits>
 #include <vector>
 
+#include <btas/types.h>
 #include <btas/tensor_traits.h>
 
-/// default storage type
-template<typename _T>
-using DEFAULT_STORAGE = std::vector<_T>;
-
-/// default shape type
-using DEFAULT_SHAPE   = std::vector<unsigned long>;
+#include <btas/util/stride.h>
+#include <btas/util/dot.h>
 
 namespace btas {
 
 /// reference implementation of dense tensor class (variable rank)
+/// TODO: copy semantics b/w row-major and column-major tensors has not yet been supported...
+///       one can do this is wrapping by NDIterator,
+///
+///          Tensor<T, CblasRowMajor> A(...);
+///          Tensor<T, CblasColMajor> B(...);
+///          copy(A.begin(), A.end(), NDIterator<Tensor<T, CblasColMajor>>(B));
+///
+///       since NDIterator has implemented in terms of row-major order, so far.
+///       this implies that NDIterator should have major-order directive...
+///
+/// \tparam _T type of element
+/// \tparam _Order major order directive, reused CBLAS_ORDER, i.e. CblasRowMajor or CblasColMajor
+/// \tparam _Container storage type, iterator is provided by container
 template<typename _T,
-         class _Container = DEFAULT_STORAGE<_T>,
-         class _Shape = DEFAULT_SHAPE>
+         CBLAS_ORDER _Order = CblasRowMajor,
+         class _Container = DEFAULT::storage<_T>>
 class Tensor {
 
 public:
@@ -36,20 +46,21 @@ public:
    typedef _T value_type;
 
    /// type of array storing data as 1D array
-   typedef _Container container_type;
+   /// container is actually not the concept of tensor
+   typedef _Container container;
 
    /// size type
-   typedef typename container_type::size_type size_type;
+   typedef typename container::size_type size_type;
 
    /// iterator
-   typedef typename container_type::iterator iterator;
+   typedef typename container::iterator iterator;
 
    /// const iterator
-   typedef typename container_type::const_iterator const_iterator;
+   typedef typename container::const_iterator const_iterator;
 
    /// type of array for index shapes
    /// shape_type requires, default-constructible, resizable, accessible by operator[]
-   typedef _Shape shape_type;
+   typedef DEFAULT::shape shape_type;
 
 public:
 
@@ -256,14 +267,14 @@ public:
    const value_type& 
    operator() (const size_type& first, const _args&... rest) const
    {
-      return data_[_address<0>(first, rest...)];
+      return data_[__get_address<0>(first, rest...)];
    }
 
    /// \return element without shape check (rank() == general)
    const value_type& 
    operator() (const shape_type& index) const
    {
-      return data_[_address(index)];
+      return data_[__get_address(index)];
    }
 
    /// access element without shape check
@@ -271,14 +282,14 @@ public:
    value_type& 
    operator() (const size_type& first, const _args&... rest)
    {
-      return data_[_address<0>(first, rest...)];
+      return data_[__get_address<0>(first, rest...)];
    }
 
    /// access element without shape check (rank() == general)
    value_type& 
    operator() (const shape_type& index)
    {
-      return data_[_address(index)];
+      return data_[__get_address(index)];
    }
    
    /// \return element without shape check
@@ -286,16 +297,16 @@ public:
    const value_type& 
    at (const size_type& first, const _args&... rest) const
    {
-      assert(_check_range<0>(first, rest...));
-      return data_[_address<0>(first, rest...)];
+      assert(__check_range<0>(first, rest...));
+      return data_[__get_address<0>(first, rest...)];
    }
 
    /// \return element without shape check (rank() == general)
    const value_type& 
    at (const shape_type& index) const
    {
-      assert(_check_range(index));
-      return data_[_address(index)];
+      assert(__check_range(index));
+      return data_[__get_address(index)];
    }
 
    /// access element without shape check
@@ -303,16 +314,16 @@ public:
    value_type& 
    at (const size_type& first, const _args&... rest)
    {
-      assert(_check_range<0>(first, rest...));
-      return data_[_address<0>(first, rest...)];
+      assert(__check_range<0>(first, rest...));
+      return data_[__get_address<0>(first, rest...)];
    }
 
    /// access element without shape check (rank() == general)
    value_type& 
    at (const shape_type& index)
    {
-      assert(_check_range(index));
-      return data_[_address(index)];
+      assert(__check_range(index));
+      return data_[__get_address(index)];
    }
    
    /// resize array with shape
@@ -321,9 +332,13 @@ public:
    resize (const size_type& first, const _args&... rest)
    {
       shape_.resize(1u+sizeof...(rest));
-      _set_shape<0>(first, rest...);
-      _set_stride();
-      data_.resize(shape_[0]*stride_[0]);
+      __set_shape<0>(first, rest...);
+
+      stride_.resize(shape_.size());
+//    __normal_stride<_Order>::set(shape_, stride_);
+
+//    data_.resize(shape_[0]*stride_[0]);
+      data_.resize(__normal_stride<_Order>::set(shape_, stride_));
    }
 
    /// resize array with shape object
@@ -331,9 +346,14 @@ public:
    resize (const shape_type& shape)
    {
       assert(shape.size() > 0);
+
       shape_ = shape;
-      _set_stride();
-      data_.resize(shape_[0]*stride_[0]);
+
+      stride_.resize(shape_.size());
+//    __normal_stride<_Order>::set(shape_, stride_);
+
+//    data_.resize(shape_[0]*stride_[0]);
+      data_.resize(__normal_stride<_Order>::set(shape_, stride_));
    }
 
    /// swap this and x
@@ -359,6 +379,9 @@ public:
    //
    //  Here comes Non-Standard members (to be discussed)
    //
+
+   /// return major order directive
+   static constexpr CBLAS_ORDER order() { return _Order; }
 
    /// addition assignment
    Tensor&
@@ -434,16 +457,16 @@ private:
    /// set shape object
    template<size_type i, typename... _args>
    void
-   _set_shape (const size_type& first, const _args&... rest)
+   __set_shape (const size_type& first, const _args&... rest)
    {
       shape_[i] = first;
-      _set_shape<i+1>(rest...);
+      __set_shape<i+1>(rest...);
    }
 
    /// set shape object (specialized)
    template<size_type i>
    void
-   _set_shape (const size_type& first)
+   __set_shape (const size_type& first)
    {
       shape_[i] = first;
    }
@@ -451,63 +474,45 @@ private:
    /// \return address pointed by index
    template<size_type i, typename... _args>
    size_type
-   _address (const size_type& first, const _args&... rest) const
+   __get_address (const size_type& first, const _args&... rest) const
    {
-      return first*stride_[i] + _address<i+1>(rest...);
+      return first*stride_[i] + __get_address<i+1>(rest...);
    }
 
    /// \return address pointed by index
    template<size_type i>
    size_type
-   _address (const size_type& first) const
+   __get_address (const size_type& first) const
    {
       return first*stride_[i];
    }
 
    /// \return address pointed by index
    size_type
-   _address (const shape_type& index) const
+   __get_address (const shape_type& index) const
    {
-      assert(index.size() == rank());
-      size_type adr = 0;
-      for(size_type i = 0; i < rank(); ++i) {
-          adr += stride_[i]*index[i];
-      }
-      return adr;
-   }
-
-   /// calculate stride_ from given shape_
-   void
-   _set_stride ()
-   {
-      stride_.resize(shape_.size());
-      size_type str = 1;
-      for(size_type i = shape_.size()-1; i > 0; --i) {
-         stride_[i] = str;
-         str *= shape_[i];
-      }
-      stride_[0] = str;
+      return dot(stride_, index);
    }
 
    /// test whether index is in range
    template<size_type i, typename... _args>
    bool
-   _check_range (const size_type& first, const _args&... rest) const
+   __check_range (const size_type& first, const _args&... rest) const
    {
-      return (first >= 0 && first < shape_[i] && _check_range<i+1>(rest...));
+      return (first >= 0 && first < shape_[i] && __check_range<i+1>(rest...));
    }
 
    /// test whether index is in range
    template<size_type i>
    bool
-   _check_range (const size_type& first) const
+   __check_range (const size_type& first) const
    {
       return (first >= 0 && first < shape_[i]);
    }
 
    /// test whether index is in range
    bool
-   _check_range (const shape_type& index)
+   __check_range (const shape_type& index)
    {
       assert(index.size() == rank());
       typename shape_type::iterator r = shape_.begin();
@@ -524,10 +529,10 @@ private:
 
    shape_type stride_; ///< stride
 
-   container_type data_; ///< data stored as 1D array
+   container data_; ///< data stored as 1D array
 
 };
 
 } // namespace btas
 
-#endif // __BTAS_REFERENCE_TENSOR_H
+#endif // __BTAS_TENSOR_H
