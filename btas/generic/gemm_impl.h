@@ -20,8 +20,6 @@ template<bool _Finalize> struct gemm_impl { };
 
 template<> struct gemm_impl<true>
 {
-   typedef unsigned long size_type;
-
    /// GEMM implementation
    template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
    static void call (
@@ -214,8 +212,6 @@ template<> struct gemm_impl<true>
 
 template<> struct gemm_impl<false>
 {
-   typedef unsigned long size_type;
-
    template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
    static void call (
       const CBLAS_ORDER& order,
@@ -334,8 +330,6 @@ void gemm (
          _IteratorC itrC,
    const unsigned long& LDC)
 {
-   typedef unsigned long size_type;
-
    typedef std::iterator_traits<_IteratorA> __traits_A;
    typedef std::iterator_traits<_IteratorB> __traits_B;
    typedef std::iterator_traits<_IteratorC> __traits_C;
@@ -388,8 +382,6 @@ void gemm (
    const _T& beta,
          _TensorC& C)
 {
-   typedef unsigned long size_type;
-
    // check element type
    typedef typename _TensorA::value_type value_type;
    static_assert(std::is_same<value_type, typename _TensorB::value_type>::value, "value type of B must be the same as that of A");

@@ -20,8 +20,6 @@ template<bool _Finalize> struct gemv_impl { };
 
 template<> struct gemv_impl<true>
 {
-   typedef unsigned long size_type;
-
    /// GEMV implementation
    template<typename _T, class _IteratorA, class _IteratorX, class _IteratorY>
    static void call (
@@ -176,8 +174,6 @@ template<> struct gemv_impl<true>
 
 template<> struct gemv_impl<false>
 {
-   typedef unsigned long size_type;
-
    /// GEMV implementation
    template<typename _T, class _IteratorA, class _IteratorX, class _IteratorY>
    static void call (
@@ -268,8 +264,6 @@ void gemv (
          _IteratorY itrY,
    const typename std::iterator_traits<_IteratorY>::difference_type& incY)
 {
-   typedef unsigned long size_type;
-
    typedef std::iterator_traits<_IteratorA> __traits_A;
    typedef std::iterator_traits<_IteratorX> __traits_X;
    typedef std::iterator_traits<_IteratorY> __traits_Y;
@@ -320,8 +314,6 @@ void gemv (
    const _T& beta,
          _TensorY& Y)
 {
-   typedef unsigned long size_type;
-
    // check element type
    typedef typename _TensorA::value_type value_type;
    static_assert(std::is_same<value_type, typename _TensorX::value_type>::value, "value type of X must be the same as that of A");

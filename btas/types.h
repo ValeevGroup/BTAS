@@ -61,6 +61,13 @@ using shape = std::vector<unsigned long>;
 
 } // namespace DEFAULT
 
+//
+//  Other aliases for convenience
+//
+
+/// default size type
+typedef unsigned long size_type;
+
 } // namespace btas
 
 #endif // __BTAS_TYPES_H

@@ -28,7 +28,7 @@ template<> struct __dot_result_type<std::complex<double>> { typedef std::complex
 
 //  ================================================================================================
 
-/// For general case
+/// Dot with conjugation for general case
 template<typename _T>
 struct dotc_impl
 {
@@ -49,9 +49,22 @@ struct dotc_impl
    }
 };
 
-/// FIXME: not sure whether this works or not
+/// Dot without conjugation for general case
 template<typename _T>
-using dotu_impl = dotc_impl<_T>;
+struct dotu_impl
+{
+   typedef typename __dot_result_type<_T>::type return_type;
+
+   template<class _IteratorX, class _IteratorY>
+   static return_type call (
+      const unsigned long& Nsize,
+            _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
+            _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
+   {
+      // redirect to dotc, otherwise must be specialized
+      return dotc_impl<_T>::call(Nsize, itrX, incX, itrY, incY);
+   }
+};
 
 template<>
 struct dotc_impl<float>

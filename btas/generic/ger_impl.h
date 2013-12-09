@@ -18,8 +18,6 @@ template<bool _Finalize> struct ger_impl { };
 
 template<> struct ger_impl<true>
 {
-   typedef unsigned long size_type;
-
    /// GER implementation
    template<typename _T, class _IteratorX, class _IteratorY, class _IteratorA>
    static void call (
@@ -130,8 +128,6 @@ template<> struct ger_impl<true>
 
 template<> struct ger_impl<false>
 {
-   typedef unsigned long size_type;
-
    /// GER implementation
    template<typename _T, class _IteratorX, class _IteratorY, class _IteratorA>
    static void call (
@@ -192,8 +188,6 @@ void ger (
          _IteratorA itrA,
    const unsigned long& LDA)
 {
-   typedef unsigned long size_type;
-
    typedef std::iterator_traits<_IteratorX> __traits_X;
    typedef std::iterator_traits<_IteratorY> __traits_Y;
    typedef std::iterator_traits<_IteratorA> __traits_A;
@@ -240,8 +234,6 @@ void ger (
    const _TensorY& Y,
          _TensorA& A)
 {
-   typedef unsigned long size_type;
-
    // check element type
    typedef typename _TensorA::value_type value_type;
    static_assert(std::is_same<value_type, typename _TensorX::value_type>::value, "value type of X must be the same as that of A");
@@ -284,7 +276,7 @@ void ger (
    auto itrY = tbegin(Y);
    auto itrA = tbegin(A);
 
-   ger (order, Msize, Nsize, alpha, itrX, 1, beta, itrY, 1, itrA, LDA);
+   ger (order, Msize, Nsize, alpha, itrX, 1, itrY, 1, itrA, LDA);
 }
 
 } // namespace btas
