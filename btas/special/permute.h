@@ -6,6 +6,8 @@
 
 #include <btas/types.h>
 #include <btas/tarray.h>
+
+#include <btas/generic/permute.h>
 #include <btas/special/reindex.h>
 
 namespace btas {

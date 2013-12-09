@@ -68,6 +68,9 @@ using shape = std::vector<unsigned long>;
 /// default size type
 typedef unsigned long size_type;
 
+/// null deleter
+struct nulldeleter { void operator() (void const*) { } };
+
 } // namespace btas
 
 #endif // __BTAS_TYPES_H

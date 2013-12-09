@@ -251,8 +251,8 @@ void ger (
 
    // get shapes
    const typename _TensorX::shape_type& shapeX = X.shape();
-   const typename _TensorY::shape_type  shapeY = Y.shape();
-         typename _TensorA::shape_type& shapeA = A.shape();
+   const typename _TensorY::shape_type& shapeY = Y.shape();
+         typename _TensorA::shape_type  shapeA = A.shape();
 
    size_type Msize = std::accumulate(shapeX.begin(), shapeX.end(), 1ul, std::multiplies<size_type>());
    size_type Nsize = std::accumulate(shapeY.begin(), shapeY.end(), 1ul, std::multiplies<size_type>());
