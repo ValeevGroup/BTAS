@@ -12,8 +12,10 @@ template<CBLAS_ORDER _Order> struct __normal_stride;
 template<>
 struct __normal_stride<CblasRowMajor>
 {
+   /// set stride from shape in row-major order
+   /// \return total size for convenience
    template<class _Shape>
-   static void set (const _Shape& shape_, _Shape& stride_)
+   static typename _Shape::value_type set (const _Shape& shape_, _Shape& stride_)
    {
       typedef typename _Shape::value_type size_type;
       size_type str = 1;
@@ -22,14 +24,17 @@ struct __normal_stride<CblasRowMajor>
          str *= shape_[i];
       }
       stride_[0] = str;
+      return str*shape_[0];
    }
 };
 
 template<>
 struct __normal_stride<CblasColMajor>
 {
+   /// set stride from shape in row-major order
+   /// \return total size for convenience
    template<class _Shape>
-   static void set (const _Shape& shape_, _Shape& stride_)
+   static typename _Shape::value_type set (const _Shape& shape_, _Shape& stride_)
    {
       typedef typename _Shape::value_type size_type;
       size_type str = 1;
@@ -37,6 +42,7 @@ struct __normal_stride<CblasColMajor>
          stride_[i] = str;
          str *= shape_[i];
       }
+      return str;
    }
 };
 

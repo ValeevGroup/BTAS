@@ -271,8 +271,9 @@ public:
    void resize(const shape_type& shape)
    {
       shape_ = shape;
-      __normal_stride<_Order>::set(shape_, stride_);
-      data_.resize(shape_[0]*stride_[0]);
+//    __normal_stride<_Order>::set(shape_, stride_);
+//    data_.resize(shape_[0]*stride_[0]);
+      data_.resize(__normal_stride<_Order>::set(shape_, stride_));
    }
 
    /// resize from shape with init. value
@@ -355,8 +356,9 @@ private:
    template<int _i, class = typename std::enable_if<(_i == _N)>::type>
    void __resize_by_args()
    {
-      __normal_stride<_Order>::set(shape_, stride_);
-      data_.resize(shape_[0]*stride_[0]);
+//    __normal_stride<_Order>::set(shape_, stride_);
+//    data_.resize(shape_[0]*stride_[0]);
+      data_.resize(__normal_stride<_Order>::set(shape_, stride_));
    }
 
    /// specialized for the last argument (case having init. value)

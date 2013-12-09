@@ -335,9 +335,10 @@ public:
       __set_shape<0>(first, rest...);
 
       stride_.resize(shape_.size());
-      __normal_stride<_Order>::set(shape_, stride_);
+//    __normal_stride<_Order>::set(shape_, stride_);
 
-      data_.resize(shape_[0]*stride_[0]);
+//    data_.resize(shape_[0]*stride_[0]);
+      data_.resize(__normal_stride<_Order>::set(shape_, stride_));
    }
 
    /// resize array with shape object
@@ -349,9 +350,10 @@ public:
       shape_ = shape;
 
       stride_.resize(shape_.size());
-      __normal_stride<_Order>::set(shape_, stride_);
+//    __normal_stride<_Order>::set(shape_, stride_);
 
-      data_.resize(shape_[0]*stride_[0]);
+//    data_.resize(shape_[0]*stride_[0]);
+      data_.resize(__normal_stride<_Order>::set(shape_, stride_));
    }
 
    /// swap this and x
