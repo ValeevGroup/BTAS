@@ -407,4 +407,6 @@ private:
 
 } // namespace btas
 
+#include <btas/special/permute.h>
+
 #endif // __BTAS_TARRAY_H

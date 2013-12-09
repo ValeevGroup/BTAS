@@ -3,28 +3,34 @@
 
 #include <type_traits>
 
-#include <btas/btas_types.h>
-#include <btas/tarray.h>
-#include <btas/reindex.h>
+#include <btas/types.h>
+#include <btas/nditerator.h>
+#include <btas/util/resize.h>
 
 namespace btas {
 
-template<typename _T, size_type _N>
-TVector<_T, _N> permute (const TVector<_T, _N>& x, const Index<_N>& index)
+template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
+void permute (const _Tensor& X, const typename _Tensor::shape_type& index, _Tensor& Y)
 {
-   TVector<_T, _N> y;
-   for (size_type i = 0; i < _N; ++i)
-   {
-      y[i] = x[index[i]];
-   }
-   return indexY;
-}
+   typedef typename _Tensor::shape_type shape_type;
 
-template<typename _T, size_type _N>
-void permute (const TArray<_T, _N>& x, const Index<_N>& index, TArray<_T, _N>& y)
-{
-   y.resize(permute(x.shape(), index));
-   Reindex(x.data(), y.data(), permute(x.stride(), index), y.shape());
+   shape_type shapeY; resize(shapeY, index.size());
+   shape_type strX2Y; resize(strX2Y, index.size());
+
+   for (size_type i = 0; i < index.size(); ++i)
+   {
+      shapeY[i] = X.shape (index[i]);
+      strX2Y[i] = X.stride(index[i]);
+   }
+
+   Y.resize(shapeY);
+
+   NDIterator<_Tensor, typename _Tensor::const_iterator> itrX(shapeY, strX2Y, X.begin());
+
+   for (auto itrY = Y.begin(); itrY != Y.end(); ++itrX, ++itrY)
+   {
+      *itrY = *itrX;
+   }
 }
 
 } // namespace btas
