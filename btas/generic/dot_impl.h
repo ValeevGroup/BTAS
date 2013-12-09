@@ -100,7 +100,7 @@ struct dotc_impl<double>
             double* itrY, const typename std::iterator_traits<double*>::difference_type& incY)
    {
 #ifdef _HAS_CBLAS
-      return cblas_sdot(Nsize, itrX, incX, itrY, incY);
+      return cblas_ddot(Nsize, itrX, incX, itrY, incY);
 #else
       return_type val = (*itrX) * (*itrY);
       for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)

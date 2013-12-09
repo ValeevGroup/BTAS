@@ -26,8 +26,10 @@ void permute (const _Tensor& X, const typename _Tensor::shape_type& index, _Tens
       strX2Y[i] = X.stride(index[i]);
    }
 
-   Y.resize(shapeY);
+   Y.resize(shapeY); if (Y.empty()) return; // size of X = 0
 
+   // FIXME: when size of X = 0, NDIterator construction fails with INTEL compiler...
+   //        something should not be safe in NDIterator implementation
    NDIterator<_Tensor, typename _Tensor::const_iterator> itrX(shapeY, strX2Y, X.begin());
 
    for (auto itrY = Y.begin(); itrY != Y.end(); ++itrX, ++itrY)

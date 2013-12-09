@@ -69,9 +69,9 @@ template<> struct ger_impl<true>
       const float& alpha,
       const float* itrX,
       const typename std::iterator_traits<float*>::difference_type& incX,
-            float* itrY,
+      const float* itrY,
       const typename std::iterator_traits<float*>::difference_type& incY,
-      const float* itrA,
+            float* itrA,
       const unsigned long& LDA)
    {
       cblas_sger(order, Msize, Nsize, alpha, itrX, incX, itrY, incY, itrA, LDA);
@@ -84,9 +84,9 @@ template<> struct ger_impl<true>
       const double& alpha,
       const double* itrX,
       const typename std::iterator_traits<double*>::difference_type& incX,
-            double* itrY,
+      const double* itrY,
       const typename std::iterator_traits<double*>::difference_type& incY,
-      const double* itrA,
+            double* itrA,
       const unsigned long& LDA)
    {
       cblas_dger(order, Msize, Nsize, alpha, itrX, incX, itrY, incY, itrA, LDA);
@@ -99,12 +99,13 @@ template<> struct ger_impl<true>
       const std::complex<float>& alpha,
       const std::complex<float>* itrX,
       const typename std::iterator_traits<std::complex<float>*>::difference_type& incX,
-            std::complex<float>* itrY,
+      const std::complex<float>* itrY,
       const typename std::iterator_traits<std::complex<float>*>::difference_type& incY,
-      const std::complex<float>* itrA,
+            std::complex<float>* itrA,
       const unsigned long& LDA)
    {
-      cblas_cger(order, Msize, Nsize, alpha, itrX, incX, itrY, incY, itrA, LDA);
+      // FIXME: implement cgerc and cgeru separately.
+      cblas_cgeru(order, Msize, Nsize, &alpha, itrX, incX, itrY, incY, itrA, LDA);
    }
 
    static void call (
@@ -114,12 +115,13 @@ template<> struct ger_impl<true>
       const std::complex<double>& alpha,
       const std::complex<double>* itrX,
       const typename std::iterator_traits<std::complex<double>*>::difference_type& incX,
-            std::complex<double>* itrY,
+      const std::complex<double>* itrY,
       const typename std::iterator_traits<std::complex<double>*>::difference_type& incY,
-      const std::complex<double>* itrA,
+            std::complex<double>* itrA,
       const unsigned long& LDA)
    {
-      cblas_zger(order, Msize, Nsize, alpha, itrX, incX, itrY, incY, itrA, LDA);
+      // FIXME: implement zgerc and zgeru separately.
+      cblas_zgeru(order, Msize, Nsize, &alpha, itrX, incX, itrY, incY, itrA, LDA);
    }
 
 #endif // _HAS_CBLAS
