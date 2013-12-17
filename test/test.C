@@ -3,9 +3,7 @@
 #include <set>
 using namespace std;
 
-//namespace btas { enum CBLAS_TRANSPOSE { CblasNoTrans, CblasTrans, CblasConjTrans }; };
-
-#include <btas/varray.h>
+#include <btas/varray/varray.h>
 #include <btas/btas.h>
 #include <btas/tensor.h>
 #include <btas/tarray.h>
@@ -33,10 +31,9 @@ int main()
    for(double x : T) cout << x << endl;
 
    // test 2: iteration
-   typedef Tensor<float, btas::DEFAULT_RANGE, varray<float>> MyTensor;
+   typedef Tensor<float, btas::DEFAULT::range, varray<float>> MyTensor;
    MyTensor::range_type range(4, 4);
    MyTensor Q(range); Q.fill(2.0);
-
    MyTensor::index_type index = {1, 2};
 
    Q(index) = -0.5;
@@ -86,7 +83,7 @@ int main()
 
    // test 7: argument checking in gemm
    Tensor<double> a(4,4); a.fill(1.0);
-// gemm(CblasNoTrans, CblasNoTrans, 1.0, A, a, 1.0, C); // this will give a compile-time error, since gemm for "tensor of tensor" and "tensor" is not supported
+// gemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 1.0, A, a, 1.0, C); // this will give a compile-time error, since gemm for "tensor of tensor" and "tensor" is not supported
 
    // test 8: fixed-rank tensor
    TArray<double,3> t(2,2,2); t.fill(0.0);
@@ -109,11 +106,13 @@ int main()
    cout << "printing v: size = " << v.size() << " objsize = " << sizeof(v) << endl;
    for(double x : v) cout << x << endl;
 
-   TArray<double,3,std::set<double>> u;
+   TArray<double,3,CblasRowMajor,std::set<double>> u;
+
+   cout << "dot(a, a) = " << dot(a, a) << endl;
 
    // test 9: fixed-size tensor
    {
-     typedef Tensor<double, btas::DEFAULT_RANGE, std::array<double, 9> > MyTensor;
+     typedef Tensor<double, btas::DEFAULT::range, std::array<double, 9> > MyTensor;
      MyTensor::range_type range(3, 3);
      //MyTensor::range_type range(4, 4); // runtime-error with this range -- bigger than storage
      MyTensor Q(range); Q.fill(2.0);

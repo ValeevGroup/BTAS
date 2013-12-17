@@ -11,8 +11,8 @@ namespace btas {
 /// Numeric value functions
 template<typename _T> struct NumericType
 {
-   const static int zero () { return 0; }
-   const static int one  () { return 1; }
+   static int zero () { return 0; }
+   static int one  () { return 1; }
 
    template<class _Iterator>
    static void fill(_Iterator, _Iterator, int) { }

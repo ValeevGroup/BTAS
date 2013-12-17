@@ -9,6 +9,7 @@
 namespace btas {
 
 /// test T has data() member
+/// this will be used to detect whether or not the storage is consecutive
 template<class T>
 class has_data {
    /// true case
@@ -47,7 +48,7 @@ public:
    static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
 };
 
-/// test T has container_type
+/// test T has storage_type
 template<class T>
 class has_storage_type {
    /// true case
@@ -61,7 +62,7 @@ public:
 };
 
 /// checks _Tensor meets the TWG.Tensor concept requirements
-/// checks only value_type, shape_type, container_type, and rank() member TODO chck the rest
+/// checks only value_type, shape_type, storage_type, and rank() member TODO check the rest
 template<class _Tensor>
 class is_tensor {
 public:

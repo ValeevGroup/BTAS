@@ -5,7 +5,7 @@
 
 #include <vector>
 #include <array>
-#include <btas/numerictype.h>
+#include <btas/generic/numeric_type.h>
 
 namespace btas {
 

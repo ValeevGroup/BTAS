@@ -1,5 +1,5 @@
-#ifndef __BTAS_REFERENCE_TENSOR_H
-#define __BTAS_REFERENCE_TENSOR_H 1
+#ifndef __BTAS_TENSOR_H
+#define __BTAS_TENSOR_H 1
 
 #include <cassert>
 #include <algorithm>
@@ -7,20 +7,13 @@
 #include <type_traits>
 #include <vector>
 
+#include <btas/types.h>
 #include <btas/tensor_traits.h>
-#include <btas/range.h>
 #include <btas/array_adaptor.h>
 
 #include <boost/serialization/serialization.hpp>
 
 namespace btas {
-
-  /// default storage type
-  template<typename _T>
-  using DEFAULT_STORAGE = std::vector<_T>;
-
-  /// default range type
-  using DEFAULT_RANGE = btas::Range;
 
   /** BTAS implementation of "dense" tensor class that models \ref labelTWGTensor "TWG.BoxTensor" concept
       @tparam _T element type, Tensor contains values of this type
@@ -28,8 +21,8 @@ namespace btas {
       @tparam _Storage Storage type, models \ref labelTWGStorage "TWG.Storage" concept
   */
   template<typename _T,
-           class _Range = DEFAULT_RANGE,
-           class _Storage = DEFAULT_STORAGE<_T>
+           class _Range = btas::DEFAULT::range,
+           class _Storage = btas::DEFAULT::storage<_T>
            >
   class Tensor {
 
@@ -429,4 +422,4 @@ namespace serialization {
 }
 }
 
-#endif // __BTAS_REFERENCE_TENSOR_H
+#endif // __BTAS_TENSOR_H
