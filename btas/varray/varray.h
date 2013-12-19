@@ -284,4 +284,16 @@ public:
 
 };
 
+template <typename T>
+inline bool operator== (const btas::varray<T>& a,
+                        const btas::varray<T>& b) {
+  return std::equal(a.begin(), a.end(), b.begin());
+}
+
+template <typename T>
+inline bool operator!= (const btas::varray<T>& a,
+                        const btas::varray<T>& b) {
+  return not (a == b);
+}
+
 #endif // __BTAS_VARRAY_H
