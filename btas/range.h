@@ -5,8 +5,8 @@
  *      Author: evaleev
  */
 
-#ifndef RANGE_H_
-#define RANGE_H_
+#ifndef BTAS_RANGE_H_
+#define BTAS_RANGE_H_
 
 #include <algorithm>
 #include <vector>
@@ -17,6 +17,7 @@
 #include <btas/array_adaptor.h>
 #include <btas/types.h>
 #include <btas/index_traits.h>
+#include <btas/range_traits.h>
 
 //#include <TiledArray/range.h>
 
@@ -121,7 +122,7 @@ namespace btas {
 
         std::size_t volume = 1ul;
         lobound_ = array_adaptor<index_type>::construct(n);
-        extent_ = array_adaptor<extent_type>::construct(n);
+        upbound_ = array_adaptor<index_type>::construct(n);
         weight_ = array_adaptor<extent_type>::construct(n);
 
         // Compute range data
@@ -129,18 +130,18 @@ namespace btas {
           for(int i = n - 1; i >= 0; --i) {
             assert(lobound[i] <= upbound[i]);
             lobound_[i] = lobound[i];
-            extent_[i] = upbound[i] - lobound[i];
+            upbound_[i] = upbound[i];
             weight_[i] = volume;
-            volume *= extent_[i];
+            volume *= (upbound_[i] - lobound_[i]);
           }
         }
         else {
           for(auto i = 0; i != n; ++i) {
             assert(lobound[i] <= upbound[i]);
             lobound_[i] = lobound[i];
-            extent_[i] = upbound[i] - lobound[i];
+            upbound_[i] = upbound[i];
             weight_[i] = volume;
-            volume *= extent_[i];
+            volume *= (upbound_[i] - lobound_[i]);
           }
         }
       }
@@ -151,28 +152,26 @@ namespace btas {
         auto n = rank(extent);
         if (n == 0) return;
 
+        // now I know the rank
+        lobound_ = array_adaptor<index_type>::construct(n, 0ul);
+
         std::size_t volume = 1ul;
-        lobound_ = array_adaptor<index_type>::construct(n);
-        extent_ = array_adaptor<extent_type>::construct(n);
+        upbound_ = array_adaptor<index_type>::construct(n);
         weight_ = array_adaptor<extent_type>::construct(n);
 
         // Compute range data
         if (_Order == CblasRowMajor) {
           for(int i = n - 1; i >= 0; --i) {
-            assert(extent[i] > 0);
-            lobound_[i] = 0ul;
-            extent_[i] = extent[i];
+            upbound_[i] = extent[i];
             weight_[i] = volume;
-            volume *= extent_[i];
+            volume *= upbound_[i];
           }
         }
         else {
           for(auto i = 0; i != n; ++i) {
-            assert(extent[i] > 0);
-            lobound_[i] = 0ul;
-            extent_[i] = extent[i];
+            upbound_[i] = extent[i];
             weight_[i] = volume;
-            volume *= extent_[i];
+            volume *= upbound_[i];
           }
         }
 
@@ -184,7 +183,7 @@ namespace btas {
 
       /// Construct a range with size and dimensions equal to zero.
       Range() :
-        lobound_(), extent_(), weight_()
+        lobound_(), upbound_(), weight_()
       { }
 
       /// Constructor defined by an upper and lower bound
@@ -199,7 +198,7 @@ namespace btas {
       template <typename Index>
       Range(const Index& lobound, const Index& upbound,
             typename std::enable_if<btas::is_index<Index>::value, Enabler>::type = Enabler()) :
-        lobound_(), extent_(), weight_()
+        lobound_(), upbound_(), weight_()
       {
         using btas::rank;
         auto n = rank(lobound);
@@ -213,12 +212,13 @@ namespace btas {
       /// \param extent An array with the extent of each dimension
       /// \throw std::bad_alloc When memory allocation fails.
       template <typename SizeArray>
-      Range(const SizeArray& extent) :
-        lobound_(), extent_(), weight_()
+      Range(const SizeArray& extent,
+            typename std::enable_if<btas::is_index<SizeArray>::value, Enabler>::type = Enabler()) :
+        lobound_(), upbound_(), weight_()
       {
         using btas::rank;
-        extent_ = array_adaptor<index_type>::construct(rank(extent));
-        std::copy(extent.begin(), extent.end(), extent_.begin());
+        upbound_ = array_adaptor<index_type>::construct(rank(extent));
+        std::copy(extent.begin(), extent.end(), upbound_.begin());
         init(extent);
       }
 
@@ -231,7 +231,7 @@ namespace btas {
       /// \throw std::bad_alloc When memory allocation fails.
       template<typename... _sizes>
       explicit Range(const size_type& size0, const _sizes&... sizes) :
-      lobound_(), extent_(), weight_()
+      lobound_(), upbound_(), weight_()
       {
         const size_type n = sizeof...(_sizes) + 1;
         size_type range_extent[n] = {size0, static_cast<size_type>(sizes)...};
@@ -243,7 +243,7 @@ namespace btas {
       /// \param other The range to be copied
       /// \throw std::bad_alloc When memory allocation fails.
       Range(const Range_& other) :
-        lobound_(other.lobound_), extent_(other.extent_), weight_(other.weight_)
+        lobound_(other.lobound_), upbound_(other.upbound_), weight_(other.weight_)
       {
       }
 
@@ -257,13 +257,33 @@ namespace btas {
       /// \throw std::bad_alloc When memory allocation fails.
       Range_& operator=(const Range_& other) {
         lobound_ = other.lobound_;
-        extent_ = other.extent_;
+        upbound_ = other.upbound_;
         weight_ = other.weight_;
 
         return *this;
       }
 
-      /// Dimension accessor
+      /// Resize range to a new upper and lower bound
+
+      /// This can be used to avoid memory allocation
+      /// \tparam Index An array type
+      /// \param lobound The lower bounds of the N-dimensional range
+      /// \param upbound The upper bound of the N-dimensional range
+      /// \throw TiledArray::Exception When the size of \c lobound is not equal to
+      /// that of \c upbound.
+      /// \throw TiledArray::Exception When lobound[i] >= upbound[i]
+      /// \throw std::bad_alloc When memory allocation fails.
+      template <typename Index>
+      Range_& resize(const Index& lobound, const Index& upbound) {
+        using btas::rank;
+        auto n = rank(lobound);
+        assert(n == rank(upbound));
+        init(lobound, upbound);
+        return *this;
+      }
+
+
+      /// Rank accessor
 
       /// \return The rank (number of dimensions) of this range
       /// \throw nothing
@@ -278,22 +298,30 @@ namespace btas {
       /// \throw nothing
       const index_type& lobound() const { return lobound_; }
 
+      /// Range lobound coordinate accessor
+
+      /// \return A \c size_array that contains the first index in this range
+      /// \throw nothing
+      const index_type& front() const { return lobound_; }
+
       /// Range upbound coordinate accessor
 
       /// \return A \c size_array that contains the upper bound of this range
       /// \throw nothing
       index_type upbound() const {
-        index_type up = array_adaptor<index_type>::construct(rank());
-        for(auto i=0; i<rank(); ++i)
-          up[i] = lobound_[i] + extent_[i];
-        return up;
+        return upbound_;
       }
 
       /// Range size accessor
 
       /// \return A \c extent_type that contains the extent of each dimension
       /// \throw nothing
-      extent_type extent() const { return extent_; }
+      extent_type extent() const {
+        index_type ex = array_adaptor<extent_type>::construct(rank());
+        for(auto i=0; i<rank(); ++i)
+          ex[i] = upbound_[i] - lobound_[i];
+        return ex;
+      }
 
       /// Range weight accessor
 
@@ -308,13 +336,12 @@ namespace btas {
       size_type area() const {
         if (rank())
           return _Order == CblasRowMajor ?
-              weight_[0] * extent_[0] :
-              weight_[rank()-1] * extent_[rank()-1];
+              weight_[0] * (upbound_[0] - lobound_[0]) :
+              weight_[rank()-1] * (upbound_[rank()-1] - lobound_[rank()-1]);
         else
           return 0;
       }
 
-#if 0
       /// Index iterator factory
 
       /// The iterator dereferences to an index. The order of iteration matches
@@ -331,6 +358,27 @@ namespace btas {
       /// \throw nothing
       const_iterator end() const { return const_iterator(upbound_, this); }
 
+      /// calculate the ordinal index of \c i
+
+      /// Convert a coordinate index to an ordinal index.
+      /// \tparam Index A coordinate index type (array type)
+      /// \param index The index to be converted to an ordinal index
+      /// \return The ordinal index of \c index
+      /// \throw When \c index is not included in this range.
+      template <typename Index>
+      typename std::enable_if<btas::is_index<Index>::value, size_type>::type
+      ordinal(const Index& index) const {
+        using btas::rank;
+        assert(rank(index) == this->rank());
+        assert(this->includes(index));
+        size_type o = 0;
+        const auto end = this->rank();
+        for(auto i = 0ul; i < end; ++i)
+          o += (index[i] - lobound_[i]) * weight_[i];
+
+        return o;
+      }
+
       /// Check the coordinate to make sure it is within the range.
 
       /// \tparam Index The coordinate index array type
@@ -340,177 +388,27 @@ namespace btas {
       /// \throw TildedArray::Exception When the dimension of this range is not
       /// equal to the size of the index.
       template <typename Index>
-      typename madness::disable_if<std::is_integral<Index>, bool>::type
+      typename std::enable_if<btas::is_index<Index>::value, bool>::type
       includes(const Index& index) const {
-        TA_ASSERT(detail::size(index) == dim());
-        const unsigned int end = dim();
-        for(unsigned int i = 0ul; i < end; ++i)
+        using btas::rank;
+        assert(rank(index) == this->rank());
+        const auto end = this->rank();
+        for(auto i = 0ul; i < end; ++i)
           if((index[i] < lobound_[i]) || (index[i] >= upbound_[i]))
             return false;
 
         return true;
       }
 
-      /// Check the ordinal index to make sure it is within the range.
-
-      /// \param i The ordinal index to check for inclusion in the range
-      /// \return \c true when \c i \c >= \c 0 and \c i \c < \c volume
-      /// \throw nothing
-      template <typename Ordinal>
-      typename madness::enable_if<std::is_integral<Ordinal>, bool>::type
-      includes(Ordinal i) const {
-        return include_ordinal_(i);
-      }
-
-      /// Resize range to a new upper and lower bound
-
-      /// \tparam Index An array type
-      /// \param lobound The lower bounds of the N-dimensional range
-      /// \param upbound The upper bound of the N-dimensional range
-      /// \throw TiledArray::Exception When the size of \c lobound is not equal to
-      /// that of \c upbound.
-      /// \throw TiledArray::Exception When lobound[i] >= upbound[i]
-      /// \throw std::bad_alloc When memory allocation fails.
-      template <typename Index>
-      Range_& resize(const Index& lobound, const Index& upbound) {
-        const size_type n = detail::size(lobound);
-        TA_ASSERT(n == detail::size(upbound));
-
-        // Reallocate memory for range arrays
-        realloc_arrays(n);
-        if(n > 0ul)
-          compute_range_data(n, lobound, upbound);
-        else
-          volume_ = 0ul;
-
-        return *this;
-      }
-
-      /// calculate the ordinal index of \c i
-
-      /// This function is just a pass-through so the user can call \c ord() on
-      /// a template parameter that can be a coordinate index or an integral.
-      /// \param index Ordinal index
-      /// \return \c index (unchanged)
-      /// \throw When \c index is not included in this range
-      size_type ord(const size_type index) const {
-        TA_ASSERT(includes(index));
-        return index;
-      }
-
-      /// calculate the ordinal index of \c i
-
-      /// Convert a coordinate index to an ordinal index.
-      /// \tparam Index A coordinate index type (array type)
-      /// \param index The index to be converted to an ordinal index
-      /// \return The ordinal index of \c index
-      /// \throw When \c index is not included in this range.
-      template <typename Index>
-      typename madness::disable_if<std::is_integral<Index>, size_type>::type
-      ord(const Index& index) const {
-        TA_ASSERT(detail::size(index) == dim());
-        TA_ASSERT(includes(index));
-        size_type o = 0;
-        const unsigned int end = dim();
-        for(unsigned int i = 0ul; i < end; ++i)
-          o += (index[i] - lobound_[i]) * weight_[i];
-
-        return o;
-      }
-
-      /// alias to ord<Index>(), to conform with the TWG spec \sa ord()
-      template <typename Index>
-      typename madness::disable_if<std::is_integral<Index>, size_type>::type
-      ordinal(const Index& index) const {
-        return ord<Index>(index);
-      }
-
-      /// calculate the coordinate index of the ordinal index, \c index.
-
-      /// Convert an ordinal index to a coordinate index.
-      /// \param index Ordinal index
-      /// \return The index of the ordinal index
-      /// \throw TiledArray::Exception When \c index is not included in this range
-      /// \throw std::bad_alloc When memory allocation fails
-      index idx(size_type index) const {
-        // Check that o is contained by range.
-        TA_ASSERT(includes(index));
-
-        // Construct result coordinate index object and allocate its memory.
-        Range_::index result;
-        result.reserve(dim());
-
-        // Compute the coordinate index of o in range.
-        for(std::size_t i = 0ul; i < dim(); ++i) {
-          const size_type s = index / weight_[i]; // Compute the size of result[i]
-          index %= weight_[i];
-          result.push_back(s + lobound_[i]);
-        }
-
-        return result;
-      }
-
-      /// calculate the index of \c i
-
-      /// This function is just a pass-through so the user can call \c idx() on
-      /// a template parameter that can be an index or a size_type.
-      /// \param i The index
-      /// \return \c i (unchanged)
-      template <typename Index>
-      typename madness::disable_if<std::is_integral<Index>, const index&>::type
-      idx(const Index& i) const {
-        TA_ASSERT(includes(i));
-        return i;
-      }
-
-      template <typename Archive>
-      typename madness::enable_if<madness::archive::is_input_archive<Archive> >::type
-      serialize(const Archive& ar) {
-        // Get number of dimensions
-        size_type n = 0ul;
-        ar & n;
-
-        // Get range data
-        realloc_arrays(n);
-        ar & madness::archive::wrap(lobound_.data(), n * 4ul) & volume_;
-      }
-
-      template <typename Archive>
-      typename madness::enable_if<madness::archive::is_output_archive<Archive> >::type
-      serialize(const Archive& ar) const {
-        const size_type n = dim();
-        ar & n & madness::archive::wrap(lobound_.data(), n * 4ul) & volume_;
-      }
-
-#endif
 
       void swap(Range_& other) {
         std::swap(lobound_, other.lobound_);
-        std::swap(extent_, other.extent_);
+        std::swap(upbound_, other.upbound_);
         std::swap(weight_, other.weight_);
       }
 
-    private:
-
-#if 0
-      /// Check that a signed integral value is include in this range
-
-      /// \tparam Index A signed integral type
-      /// \param i The ordinal index to check
-      /// \return \c true when <tt>i >= 0</tt> and <tt>i < volume_</tt>, otherwise
-      /// \c false.
-      template <typename Index>
-      typename madness::enable_if<std::is_signed<Index>, bool>::type
-      include_ordinal_(Index i) const { return (i >= Index(0)) && (i < Index(volume_)); }
-
-      /// Check that an unsigned integral value is include in this range
-
-      /// \tparam Index An unsigned integral type
-      /// \param i The ordinal index to check
-      /// \return \c true when  <tt>i < volume_</tt>, otherwise \c false.
-      template <typename Index>
-      typename madness::disable_if<std::is_signed<Index>, bool>::type
-      include_ordinal_(Index i) const { return i < volume_; }
+    //private:
+    public:
 
       /// Increment the coordinate index \c i in this range
 
@@ -518,25 +416,40 @@ namespace btas {
       /// \throw TiledArray::Exception When the dimension of i is not equal to
       /// that of this range
       /// \throw TiledArray::Exception When \c i or \c i+n is outside this range
-      void increment(index& i) const {
-        TA_ASSERT(includes(i));
-        for(int d = int(dim()) - 1; d >= 0; --d) {
-          // increment coordinate
-          ++i[d];
+      void increment(index_type& i) const {
 
-          // break if done
-          if(i[d] < upbound_[d])
-            return;
+        if (_Order == CblasRowMajor) {
+          for(int d = int(rank()) - 1; d >= 0; --d) {
+            // increment coordinate
+            ++i[d];
 
-          // Reset current index to lobound value.
-          i[d] = lobound_[d];
+            // break if done
+            if(i[d] < upbound_[d])
+              return;
+
+            // Reset current index to lobound value.
+            i[d] = lobound_[d];
+          }
+        }
+        else { // col-major
+          for(auto d = 0ul; d != rank(); ++d) {
+            // increment coordinate
+            ++i[d];
+
+            // break if done
+            if(i[d] < upbound_[d])
+              return;
+
+            // Reset current index to lobound value.
+            i[d] = lobound_[d];
+          }
         }
 
-        // if the current location was set to lobound then it was at the end and
-        // needs to be reset to equal upbound.
+        // if the current location is outside the range, make it equal to range end iterator
         std::copy(upbound_.begin(), upbound_.end(), i.begin());
       }
 
+#if 0
       /// Advance the coordinate index \c i by \c n in this range
 
       /// \param[in,out] i The coordinate index to be advanced
@@ -545,9 +458,7 @@ namespace btas {
       /// that of this range
       /// \throw TiledArray::Exception When \c i or \c i+n is outside this range
       void advance(index& i, std::ptrdiff_t n) const {
-        TA_ASSERT(includes(i));
         const size_type o = ord(i) + n;
-        TA_ASSERT(includes(o));
         i = idx(o);
       }
 
@@ -567,7 +478,7 @@ namespace btas {
 #endif
 
       index_type lobound_; ///< range origin
-      extent_type extent_; ///< range extent
+      index_type upbound_; ///< range extent
 
       // optimization details
       extent_type weight_; ///< Dimension weights (strides)
@@ -621,6 +532,37 @@ namespace btas {
       return os;
     }
 
+#if 0
+      template <typename Archive>
+      typename madness::enable_if<madness::archive::is_input_archive<Archive> >::type
+      serialize(const Archive& ar) {
+        // Get number of dimensions
+        size_type n = 0ul;
+        ar & n;
+
+        // Get range data
+        realloc_arrays(n);
+        ar & madness::archive::wrap(lobound_.data(), n * 4ul) & volume_;
+      }
+
+      template <typename Archive>
+      typename madness::enable_if<madness::archive::is_output_archive<Archive> >::type
+      serialize(const Archive& ar) const {
+        const size_type n = dim();
+        ar & n & madness::archive::wrap(lobound_.data(), n * 4ul) & volume_;
+      }
+
+#endif
+
+
+      template <CBLAS_ORDER _Order,
+                typename _Index>
+      class boxrange_iteration_order< btas::Range<_Order,_Index> > {
+        public:
+          enum {row_major = -1, other = 0, column_major = 1};
+
+          static constexpr int value = (_Order == CblasRowMajor) ? row_major : column_major;
+      };
 }
 
-#endif /* RANGE_H_ */
+#endif /* BTAS_RANGE_H_ */

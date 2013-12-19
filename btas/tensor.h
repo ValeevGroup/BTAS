@@ -396,14 +396,14 @@ namespace btas {
 
   /// maps Tensor -> Range
   template <typename _T, typename _Range, typename _Storage>
-  btas::Range
+  _Range
   range (const btas::Tensor<_T, _Range, _Storage>& t) {
     return t.range();
   }
 
   /// maps Tensor -> Range extent
   template <typename _T, typename _Range, typename _Storage>
-  btas::Range::extent_type
+  typename _Range::extent_type
   extent (const btas::Tensor<_T, _Range, _Storage>& t) {
     return t.range().extent();
   }

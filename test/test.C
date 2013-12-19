@@ -4,28 +4,75 @@
 using namespace std;
 
 #include <btas/range.h>
-//#include <btas/varray/varray.h>
-//#include <btas/btas.h>
-//#include <btas/tensor.h>
-//#include <btas/tarray.h>
+#include <btas/btas.h>
+#include <btas/tensor.h>
+#include <btas/tarray.h>
 using namespace btas;
 
 int main()
 {
+  //////////////////////////////////////////////////////////////////////////////
+  // Range tests
+  //////////////////////////////////////////////////////////////////////////////
 
   std::array<std::size_t, 3> begin = {1,1,1};
   std::array<std::size_t, 3> size = {3,2,3};
   btas::Range<> x0;
-  cout << x0 << " area=" << x0.area() << endl;
-  btas::Range<> x1(size);
-  cout << x1 << " area=" << x1.area() << endl;
-  btas::Range<> x2(begin, size);
-  cout << x2 << " area=" << x2.area() << endl;
+  cout << "x0 = " << x0 << " area=" << x0.area() << endl;
 
-  btas::Range<CblasColMajor> x3(size);
-  cout << x3 << " area=" << x3.area() << endl;
+  btas::Range<> x1(3, 2, 3);
+  cout << "x1 = " << x1 << " area=" << x1.area() << endl;
+  {
+    cout << "Iterating through x1" << endl;
+    auto ind = x1.front();
+    for(size_t i=0; i!=x1.area()+2; ++i) {
+      cout << "iter " << i << ": " << ind << endl;
+      x1.increment(ind);
+    }
+  }
 
-#if 0
+  // fixed-rank Range
+  btas::Range<CblasRowMajor, std::array<size_t, 3> > x2(begin, size);
+  cout << "x2 = " << x2 << " area=" << x2.area() << endl;
+  {
+    cout << "Iterating through x2" << endl;
+    auto ind = x2.front();
+    for(size_t i=0; i!=x2.area()+2; ++i) {
+      cout << "iter " << i << ": " << ind << endl;
+      x2.increment(ind);
+    }
+  }
+
+  // col-major std::vector-based Range
+  btas::Range<CblasColMajor, std::vector<size_t> > x3(size);
+  cout << "x3 = " << x3 << " area=" << x3.area() << endl;
+  {
+    cout << "Iterating through x3" << endl;
+    auto ind = x3.front();
+    for(size_t i=0; i!=x3.area()+2; ++i) {
+      cout << "iter " << i << ": " << ind << endl;
+      x3.increment(ind);
+    }
+  }
+
+  {
+    cout << "Iterating through x1 using iterator-based for" << endl;
+    for(auto i=x1.begin(); i!=x1.end(); ++i) {
+      cout << *i << endl;
+    }
+  }
+
+  {
+    cout << "Iterating through x2 using range-based for" << endl;
+    for(auto i: x2) {
+      cout << i << endl;
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Tensor tests
+  //////////////////////////////////////////////////////////////////////////////
+
   // test 0: constructors
   {
     Tensor<double> T0;
@@ -132,7 +179,6 @@ int main()
      //MyTensor::range_type range(4, 4); // runtime-error with this range -- bigger than storage
      MyTensor Q(range); Q.fill(2.0);
    }
-#endif
 
    return 0;
 }

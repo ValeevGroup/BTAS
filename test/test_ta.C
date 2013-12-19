@@ -5,7 +5,7 @@
  *      Author: evaleev
  */
 
-#include <btas/varray.h>
+#include <btas/varray/varray.h>
 #include <btas/tensor.h>
 
 #include <tiled_array.h>
@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
   TA::TiledRange
     trange(blocking2.begin(), blocking2.end());
 
-  typedef btas::Tensor<double, btas::Range, btas::varray<double> > DenseTensor;
+  typedef btas::Tensor<double, TA::Range, btas::varray<double> > DenseTensor;
   typedef TA::Array<double, 2, DenseTensor > TArray;
 
   TArray a(world, trange);

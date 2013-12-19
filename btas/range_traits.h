@@ -94,11 +94,11 @@ public:
 
 template <class _Range>
 class boxrange_iteration_order {
-  public:
-    enum {row_major = -1, other = 0, column_major = 1};
-
-    static constexpr const int
-    value = row_major;
+public:
+  enum {row_major = -1, other = 0, column_major = 1};
+  // must specialize this trait
+  static constexpr const int
+  value = other;
 };
 
 } // namespace btas

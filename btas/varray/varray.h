@@ -157,6 +157,11 @@ public:
       return data_.begin();
    }
 
+   const_iterator cbegin () const noexcept
+   {
+      return data_.cbegin();
+   }
+
    iterator end () noexcept
    {
       return data_.end();
@@ -165,6 +170,11 @@ public:
    const_iterator end () const noexcept
    {
       return data_.end();
+   }
+
+   const_iterator cend () const noexcept
+   {
+      return data_.cend();
    }
 
    reverse_iterator rbegin () noexcept
@@ -264,6 +274,18 @@ public:
       }
    }
 };
+
+template <typename T>
+inline bool operator== (const btas::varray<T>& a,
+                        const btas::varray<T>& b) {
+  return std::equal(a.begin(), a.end(), b.begin());
+}
+
+template <typename T>
+inline bool operator!= (const btas::varray<T>& a,
+                        const btas::varray<T>& b) {
+  return not (a == b);
+}
 
 namespace boost {
 namespace serialization {

@@ -17,8 +17,8 @@
  *
  */
 
-#ifndef TILEDARRAY_RANGE_ITERATOR_H__INCLUDED
-#define TILEDARRAY_RANGE_ITERATOR_H__INCLUDED
+#ifndef BTAS_RANGE_ITERATOR_H__INCLUDED
+#define BTAS_RANGE_ITERATOR_H__INCLUDED
 
 #include <iterator>
 
@@ -188,4 +188,4 @@ namespace std {
 
 } // namespace std
 
-#endif // TILEDARRAY_RANGE_ITERATOR_H__INCLUDED
+#endif // BTAS_RANGE_ITERATOR_H__INCLUDED

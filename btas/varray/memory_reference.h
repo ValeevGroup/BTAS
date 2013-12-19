@@ -86,12 +86,22 @@ struct memory_reference {
       return const_iterator (_M_start);
    }
 
+   const_iterator cbegin () const noexcept
+   {
+      return const_iterator (_M_start);
+   }
+
    iterator end () noexcept
    {
       return iterator (_M_finish);
    }
 
    const_iterator end () const noexcept
+   {
+      return const_iterator (_M_finish);
+   }
+
+   const_iterator cend () const noexcept
    {
       return const_iterator (_M_finish);
    }
