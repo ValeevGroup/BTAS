@@ -73,6 +73,7 @@ struct memory_reference {
    {
       _M_start = x._M_start;
       _M_finish = x._M_finish;
+      return *this;
    }
 
    iterator begin () noexcept

@@ -3,14 +3,29 @@
 #include <set>
 using namespace std;
 
-#include <btas/varray/varray.h>
-#include <btas/btas.h>
-#include <btas/tensor.h>
-#include <btas/tarray.h>
+#include <btas/range.h>
+//#include <btas/varray/varray.h>
+//#include <btas/btas.h>
+//#include <btas/tensor.h>
+//#include <btas/tarray.h>
 using namespace btas;
 
 int main()
 {
+
+  std::array<std::size_t, 3> begin = {1,1,1};
+  std::array<std::size_t, 3> size = {3,2,3};
+  btas::Range<> x0;
+  cout << x0 << " area=" << x0.area() << endl;
+  btas::Range<> x1(size);
+  cout << x1 << " area=" << x1.area() << endl;
+  btas::Range<> x2(begin, size);
+  cout << x2 << " area=" << x2.area() << endl;
+
+  btas::Range<CblasColMajor> x3(size);
+  cout << x3 << " area=" << x3.area() << endl;
+
+#if 0
   // test 0: constructors
   {
     Tensor<double> T0;
@@ -117,6 +132,7 @@ int main()
      //MyTensor::range_type range(4, 4); // runtime-error with this range -- bigger than storage
      MyTensor Q(range); Q.fill(2.0);
    }
+#endif
 
    return 0;
 }

@@ -7,6 +7,7 @@
 #include <type_traits>
 
 #include <btas/types.h>
+#include <btas/defaults.h>
 #include <btas/tensor_traits.h>
 
 #include <btas/util/stride.h>

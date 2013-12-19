@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <btas/types.h>
+#include <btas/defaults.h>
 #include <btas/tensor_traits.h>
 #include <btas/array_adaptor.h>
 

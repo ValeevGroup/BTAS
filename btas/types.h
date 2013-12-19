@@ -42,25 +42,7 @@ enum CBLAS_SIDE { CblasLeft, CblasRight };
 #include <complex>
 #endif // _HAS_CBLAS
 
-//
-//  Default types
-//
-
-#include <vector>
-#include <btas/range.h>
-
 namespace btas {
-
-namespace DEFAULT {
-
-/// default storage class
-template<typename _T>
-using storage = std::vector<_T>;
-
-/// default range type
-using range = btas::Range;
-
-} // namespace DEFAULT
 
 //
 //  Other aliases for convenience

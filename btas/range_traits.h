@@ -103,4 +103,4 @@ class boxrange_iteration_order {
 
 } // namespace btas
 
-#endif // __BTAS_TENSOR_TRAITS_H
+#endif // __BTAS_RANGE_TRAITS_H

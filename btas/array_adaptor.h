@@ -5,42 +5,28 @@
 
 #include <vector>
 #include <array>
+#include <cassert>
 #include <btas/generic/numeric_type.h>
+#include <btas/varray/varray.h>
 
 namespace btas {
 
-  /// Adaptor to sequence container, e.g. std::vector and btas::varray.
-  template <typename Array>
-  struct array_adaptor {
-      typedef Array array;
-      typedef typename Array::value_type value_type;
+  template <typename Array> struct array_adaptor;
 
-      static Array construct(std::size_t N) {
-        return array(N);
-      }
-      static Array construct(std::size_t N,
-                             value_type value) {
-        return array(N, value);
-      }
-      static void resize(Array& x, std::size_t N) {
-        x.resize(N);
-      }
-  };
-
-  /// Adaptor to array
+  /// Adaptor from array
   template <typename T, size_t N>
   struct array_adaptor< std::array<T, N> > {
       typedef std::array<T, N> array;
       typedef typename array::value_type value_type;
 
-      static std::array<T, N> construct(std::size_t n) {
+      static array construct(std::size_t n) {
         assert(n <= N);
-        std::array<T, N> result;
+        array result;
         return result;
       }
-      static std::array<T, N> construct(std::size_t n, T value) {
+      static array construct(std::size_t n, T value) {
         assert(n <= N);
-        std::array<T, N> result;
+        array result;
         std::fill_n(result.begin(), n, value);
         return result;
       }
@@ -50,7 +36,80 @@ namespace btas {
         assert(x.size() >= n);
       }
 
+      static void print(const array& a, std::ostream& os) {
+        os << "{";
+        for(std::size_t i = 0; i != N; ++i) {
+          os << a[i];
+          if (i != (N - 1))
+            os << ",";
+        }
+        os << "}";
+      }
   };
+
+  template <typename T, size_t N>
+  std::size_t rank(const std::array<T, N>& x) {
+    return N;
+  }
+
+#if 0
+  /// Adaptor from btas::varray
+  template <typename T>
+  struct array_adaptor< btas::varray<T> > {
+      typedef btas::varray<T> array;
+      typedef typename array::value_type value_type;
+
+      static array construct(std::size_t n) {
+        return array(n);
+      }
+      static array construct(std::size_t n, T value) {
+        return array(n, value);
+      }
+
+      static void resize(array& x, std::size_t n) {
+        x.resize(n);
+      }
+
+  };
+
+  template <typename T>
+  std::size_t rank(const btas::varray<T>& x) {
+    return x.size();
+  }
+#endif
+
+  /// Adaptor from sequence container, e.g. std::vector and btas::varray.
+  template <typename Array>
+  struct array_adaptor {
+      typedef Array array;
+      typedef typename Array::value_type value_type;
+
+      static array construct(std::size_t N) {
+        return array(N);
+      }
+      static array construct(std::size_t N,
+                             value_type value) {
+        return array(N, value);
+      }
+      static void resize(array& x, std::size_t N) {
+        x.resize(N);
+      }
+      static void print(const array& a, std::ostream& os) {
+        std::size_t n = rank(a);
+        os << "{";
+        for(std::size_t i = 0; i != n; ++i) {
+          os << a[i];
+          if (i != (n - 1))
+            os << ",";
+        }
+        os << "}";
+      }
+  };
+
+  template <typename Array>
+  std::size_t rank(const Array& x) {
+    return x.size();
+  }
 
 }
 
