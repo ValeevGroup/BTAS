@@ -64,7 +64,7 @@ struct memory_reference {
    {
       static_assert(std::is_same<typename _Container::value_type, value_type>::value, "Error: mismatched value_type's");
       if (!x.empty()) {
-         _M_start (x.data());
+         _M_start = x.data();
          _M_finish = _M_start + x.size();
       }
    }
