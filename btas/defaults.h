@@ -24,7 +24,7 @@ template<typename _T>
 using storage = std::vector<_T>;
 
 /// default range type
-using range = btas::Range<>;
+using range = btas::Range;
 
 } // namespace DEFAULT
 

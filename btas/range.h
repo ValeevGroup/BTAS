@@ -32,10 +32,10 @@
     and not all of these operations will model the concept, but it is useful for discussion; will eventually be moved elsewhere.
     @code
     // Constructors
-    Range<1> r0;         // empty = {}
-    Range<1> r1(5);      // [0,5) = {0, 1, 2, 3, 4}
-    Range<1> r2(2,4);    // [2,4) = {2, 3}
-    Range<1> r3(1,7,2);  // [1,7) with stride 2 = {1, 3, 5}
+    Range1 r0;         // empty = {}
+    Range1 r1(5);      // [0,5) = {0, 1, 2, 3, 4}
+    Range1 r2(2,4);    // [2,4) = {2, 3}
+    Range1 r3(1,7,2);  // [1,7) with stride 2 = {1, 3, 5}
     assert(r3.rank() == 1);
     Range x(r2,r3);   // r1 x r2 = { {2,1}, {2,3}, {2,5}, {4,1}, {4,3}, {4,5} }
     assert(x.rank() == 2);
@@ -72,40 +72,109 @@ namespace btas {
 
     }  // namespace detail
 
-    class Range1 {
+    template <typename Index = std::size_t>
+    class Range1d {
       public:
-        Range1(std::size_t extent = 0ul) :
-          begin_(0ul), end_(extent), stride_(1ul) {}
+        typedef Index index_type;
+        typedef index_type value_type;
+        typedef const value_type const_reference_type;
 
-        Range1(std::size_t begin, std::size_t end, std::size_t stride_ = 1ul) :
-        begin_(begin), end_(end), stride_(1ul) {}
+        typedef RangeIterator<index_type, Range1d> const_iterator; ///< Index iterator
+        friend class RangeIterator<index_type, Range1d>;
 
-        Range1(const Range1& other) :
-          begin_(other.begin_), end_(other.end_), stride_(other.stride_)
+        Range1d(index_type extent = 0ul) :
+          lobound_(0ul), upbound_(extent), stride_(1ul) {}
+
+        Range1d(index_type begin, index_type end, index_type stride = 1ul) :
+        lobound_(begin), upbound_(end), stride_(stride) {}
+
+        Range1d(const Range1d& other) :
+          lobound_(other.lobound_), upbound_(other.upbound_), stride_(other.stride_)
         { }
 
-        Range1& operator=(const Range1& other) {
-          begin_ = other.begin_;
-          end_ = other.end_;
+        Range1d& operator=(const Range1d& other) {
+          lobound_ = other.lobound_;
+          upbound_ = other.upbound_;
           stride_ = other.stride_;
           return *this;
         }
 
-      private:
-        std::size_t begin_;
-        std::size_t end_;
-        std::size_t stride_;
-    };
+        /// \return The rank (number of dimensions) of this range
+        /// \throw nothing
+        size_t rank() const {
+          return 1ul;
+        }
 
-    /// Range data of an N-dimensional tensor
+        const_reference_type lobound() const { return lobound_; }
+        index_type front() const { return lobound_; }
+        const_reference_type upbound() const { return upbound_; }
+        index_type back() const { return upbound_ - 1; }
+
+        const_reference_type stride() const { return stride_; }
+
+        /// Index iterator factory
+
+        /// The iterator dereferences to an index. The order of iteration matches
+        /// the data layout of a dense tensor.
+        /// \return An iterator that holds the lobound element index of a tensor
+        /// \throw nothing
+        const_iterator begin() const { return const_iterator(lobound_, this); }
+
+        /// Index iterator factory
+
+        /// The iterator dereferences to an index. The order of iteration matches
+        /// the data layout of a dense tensor.
+        /// \return An iterator that holds the upbound element index of a tensor
+        /// \throw nothing
+        const_iterator end() const { return const_iterator(upbound_, this); }
+
+
+      private:
+        index_type lobound_;
+        index_type upbound_;
+        index_type stride_;
+
+        /// Increment the coordinate index \c i in this range
+
+        /// \param[in,out] i The coordinate index to be incremented
+        void increment(index_type& i) const {
+          i += stride_;
+          if(i < upbound_)
+            return;
+          // if ended up outside the range, set to end
+          i = upbound_;
+        }
+
+
+    }; // Range1d
+    using Range1 = Range1d<>;
+
+    /// Range1d output operator
+
+    /// \param os The output stream that will be used to print \c r
+    /// \param r The range to be printed
+    /// \return A reference to the output stream
+    template <typename _Index>
+    inline std::ostream& operator<<(std::ostream& os, const Range1d<_Index>& r) {
+      os << "[" << r.lobound() << "," << r.upbound();
+      if (r.stride() != 1ul)
+        os << "," << r.stride();
+      os << ")";
+      return os;
+    }
+
+
+    /// RangeNd data of an N-dimensional tensor
     /// Index rank is a runtime parameter
     template <CBLAS_ORDER _Order = CblasRowMajor,
               typename _Index = btas::varray<std::size_t> >
-    class Range {
+    class RangeNd {
     public:
-      typedef Range Range_; ///< This object type
+      typedef RangeNd Range_; ///< This object type
       typedef std::size_t size_type; ///< Size type
       typedef _Index index_type; ///< Coordinate index type
+      typedef index_type value_type; ///< Range can be viewed as a Container of value_type
+      typedef const value_type const_reference_type;
       typedef index_type extent_type;    ///< Range extent type
       typedef std::size_t ordinal_type; ///< Ordinal type
       typedef RangeIterator<index_type, Range_> const_iterator; ///< Index iterator
@@ -182,7 +251,7 @@ namespace btas {
       /// Default constructor
 
       /// Construct a range with size and dimensions equal to zero.
-      Range() :
+      RangeNd() :
         lobound_(), upbound_(), weight_()
       { }
 
@@ -196,7 +265,7 @@ namespace btas {
       /// \throw TiledArray::Exception When lobound[i] >= upbound[i]
       /// \throw std::bad_alloc When memory allocation fails.
       template <typename Index>
-      Range(const Index& lobound, const Index& upbound,
+      RangeNd(const Index& lobound, const Index& upbound,
             typename std::enable_if<btas::is_index<Index>::value, Enabler>::type = Enabler()) :
         lobound_(), upbound_(), weight_()
       {
@@ -212,7 +281,7 @@ namespace btas {
       /// \param extent An array with the extent of each dimension
       /// \throw std::bad_alloc When memory allocation fails.
       template <typename SizeArray>
-      Range(const SizeArray& extent,
+      RangeNd(const SizeArray& extent,
             typename std::enable_if<btas::is_index<SizeArray>::value, Enabler>::type = Enabler()) :
         lobound_(), upbound_(), weight_()
       {
@@ -230,7 +299,7 @@ namespace btas {
       /// \param sizes A pack of sizes for dimensions 1+
       /// \throw std::bad_alloc When memory allocation fails.
       template<typename... _sizes>
-      explicit Range(const size_type& size0, const _sizes&... sizes) :
+      explicit RangeNd(const size_type& size0, const _sizes&... sizes) :
       lobound_(), upbound_(), weight_()
       {
         const size_type n = sizeof...(_sizes) + 1;
@@ -242,13 +311,13 @@ namespace btas {
 
       /// \param other The range to be copied
       /// \throw std::bad_alloc When memory allocation fails.
-      Range(const Range_& other) :
+      RangeNd(const Range_& other) :
         lobound_(other.lobound_), upbound_(other.upbound_), weight_(other.weight_)
       {
       }
 
       /// Destructor
-      ~Range() { }
+      ~RangeNd() { }
 
       /// Copy assignment operator
 
@@ -274,7 +343,8 @@ namespace btas {
       /// \throw TiledArray::Exception When lobound[i] >= upbound[i]
       /// \throw std::bad_alloc When memory allocation fails.
       template <typename Index>
-      Range_& resize(const Index& lobound, const Index& upbound) {
+      typename std::enable_if<btas::is_index<Index>::value, Range_&>::type
+      resize(const Index& lobound, const Index& upbound) {
         using btas::rank;
         auto n = rank(lobound);
         assert(n == rank(upbound));
@@ -296,19 +366,19 @@ namespace btas {
 
       /// \return A \c size_array that contains the lower bound of this range
       /// \throw nothing
-      const index_type& lobound() const { return lobound_; }
+      const_reference_type lobound() const { return lobound_; }
 
       /// Range lobound coordinate accessor
 
       /// \return A \c size_array that contains the first index in this range
       /// \throw nothing
-      const index_type& front() const { return lobound_; }
+      index_type front() const { return lobound_; }
 
       /// Range upbound coordinate accessor
 
       /// \return A \c size_array that contains the upper bound of this range
       /// \throw nothing
-      index_type upbound() const {
+      const_reference_type upbound() const {
         return upbound_;
       }
 
@@ -407,8 +477,7 @@ namespace btas {
         std::swap(weight_, other.weight_);
       }
 
-    //private:
-    public:
+    private:
 
       /// Increment the coordinate index \c i in this range
 
@@ -482,12 +551,14 @@ namespace btas {
 
       // optimization details
       extent_type weight_; ///< Dimension weights (strides)
-    }; // class Range
+    }; // class RangeNd
+
+    using Range = RangeNd<>;
 
     /// Exchange the values of the give two ranges.
     template <CBLAS_ORDER _Order,
               typename _Index>
-    inline void swap(Range<_Order,_Index>& r0, Range<_Order,_Index>& r1) { // no throw
+    inline void swap(RangeNd<_Order,_Index>& r0, RangeNd<_Order,_Index>& r1) { // no throw
       r0.swap(r1);
     }
 
@@ -500,7 +571,7 @@ namespace btas {
     /// \c false.
     template <CBLAS_ORDER _Order,
               typename _Index>
-    inline bool operator ==(const Range<_Order,_Index>& r1, const Range<_Order,_Index>& r2) {
+    inline bool operator ==(const RangeNd<_Order,_Index>& r1, const RangeNd<_Order,_Index>& r2) {
       return ((r1.lobound() == r2.lobound()) && (r1.extent() == r2.extent()));
     }
 
@@ -512,7 +583,7 @@ namespace btas {
     /// otherwise \c false.
     template <CBLAS_ORDER _Order,
               typename _Index>
-    inline bool operator !=(const Range<_Order,_Index>& r1, const Range<_Order,_Index>& r2) {
+    inline bool operator !=(const RangeNd<_Order,_Index>& r1, const RangeNd<_Order,_Index>& r2) {
       return ! operator ==(r1, r2);
     }
 
@@ -523,7 +594,7 @@ namespace btas {
     /// \return A reference to the output stream
     template <CBLAS_ORDER _Order,
               typename _Index>
-    inline std::ostream& operator<<(std::ostream& os, const Range<_Order,_Index>& r) {
+    inline std::ostream& operator<<(std::ostream& os, const RangeNd<_Order,_Index>& r) {
       os << "[ ";
       array_adaptor<_Index>::print(r.lobound(), os);
       os << ", ";
@@ -532,37 +603,28 @@ namespace btas {
       return os;
     }
 
-#if 0
-      template <typename Archive>
-      typename madness::enable_if<madness::archive::is_input_archive<Archive> >::type
-      serialize(const Archive& ar) {
-        // Get number of dimensions
-        size_type n = 0ul;
-        ar & n;
+    namespace boost {
+    namespace serialization {
 
-        // Get range data
-        realloc_arrays(n);
-        ar & madness::archive::wrap(lobound_.data(), n * 4ul) & volume_;
+      /// boost serialization
+      template<class Archive, CBLAS_ORDER _Order,
+               typename _Index>
+      void serialize(Archive& ar, btas::RangeNd<_Order, _Index>& t,
+                     const unsigned int version) {
+        ar & t.lobound() & t.upbound() & t.weight();
       }
 
-      template <typename Archive>
-      typename madness::enable_if<madness::archive::is_output_archive<Archive> >::type
-      serialize(const Archive& ar) const {
-        const size_type n = dim();
-        ar & n & madness::archive::wrap(lobound_.data(), n * 4ul) & volume_;
-      }
+    }
+    }
 
-#endif
+    template <CBLAS_ORDER _Order,
+              typename _Index>
+    class boxrange_iteration_order< btas::RangeNd<_Order,_Index> > {
+      public:
+        enum {row_major = -1, other = 0, column_major = 1};
 
-
-      template <CBLAS_ORDER _Order,
-                typename _Index>
-      class boxrange_iteration_order< btas::Range<_Order,_Index> > {
-        public:
-          enum {row_major = -1, other = 0, column_major = 1};
-
-          static constexpr int value = (_Order == CblasRowMajor) ? row_major : column_major;
-      };
+        static constexpr int value = (_Order == CblasRowMajor) ? row_major : column_major;
+    };
 }
 
 #endif /* BTAS_RANGE_H_ */

@@ -12,48 +12,44 @@ using namespace btas;
 int main()
 {
   //////////////////////////////////////////////////////////////////////////////
+  // Range1 tests
+  //////////////////////////////////////////////////////////////////////////////
+  {
+    Range1 r0;         // empty = {}
+    cout << "r0 = " << r0 << endl;
+    Range1 r1(5);      // [0,5) = {0, 1, 2, 3, 4}
+    cout << "r1 = " << r1 << endl;
+    Range1 r2(2,4);    // [2,4) = {2, 3}
+    cout << "r2 = " << r2 << endl;
+    Range1 r3(1,7,2);  // [1,7) with stride 2 = {1, 3, 5}
+    cout << "r3 = " << r3 << endl;
+    {
+      cout << "Iterating through r3 using range-based for" << endl;
+      for(auto i: r3) {
+        cout << i << endl;
+      }
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
   // Range tests
   //////////////////////////////////////////////////////////////////////////////
 
   std::array<std::size_t, 3> begin = {1,1,1};
   std::array<std::size_t, 3> size = {3,2,3};
-  btas::Range<> x0;
+  Range x0;
   cout << "x0 = " << x0 << " area=" << x0.area() << endl;
 
-  btas::Range<> x1(3, 2, 3);
+  Range x1(3, 2, 3);
   cout << "x1 = " << x1 << " area=" << x1.area() << endl;
-  {
-    cout << "Iterating through x1" << endl;
-    auto ind = x1.front();
-    for(size_t i=0; i!=x1.area()+2; ++i) {
-      cout << "iter " << i << ": " << ind << endl;
-      x1.increment(ind);
-    }
-  }
 
   // fixed-rank Range
-  btas::Range<CblasRowMajor, std::array<size_t, 3> > x2(begin, size);
+  RangeNd<CblasRowMajor, array<size_t, 3> > x2(begin, size);
   cout << "x2 = " << x2 << " area=" << x2.area() << endl;
-  {
-    cout << "Iterating through x2" << endl;
-    auto ind = x2.front();
-    for(size_t i=0; i!=x2.area()+2; ++i) {
-      cout << "iter " << i << ": " << ind << endl;
-      x2.increment(ind);
-    }
-  }
 
   // col-major std::vector-based Range
-  btas::Range<CblasColMajor, std::vector<size_t> > x3(size);
+  RangeNd<CblasColMajor, vector<size_t> > x3(size);
   cout << "x3 = " << x3 << " area=" << x3.area() << endl;
-  {
-    cout << "Iterating through x3" << endl;
-    auto ind = x3.front();
-    for(size_t i=0; i!=x3.area()+2; ++i) {
-      cout << "iter " << i << ": " << ind << endl;
-      x3.increment(ind);
-    }
-  }
 
   {
     cout << "Iterating through x1 using iterator-based for" << endl;
@@ -93,7 +89,7 @@ int main()
    for(double x : T) cout << x << endl;
 
    // test 2: iteration
-   typedef Tensor<float, btas::DEFAULT::range, varray<float>> MyTensor;
+   typedef Tensor<float, Range, varray<float>> MyTensor;
    MyTensor::range_type range(4, 4);
    MyTensor Q(range); Q.fill(2.0);
    MyTensor::index_type index = {1, 2};
@@ -174,10 +170,21 @@ int main()
 
    // test 9: fixed-size tensor
    {
-     typedef Tensor<double, btas::DEFAULT::range, std::array<double, 9> > MyTensor;
+     typedef Tensor<double, Range, std::array<double, 9> > MyTensor;
      MyTensor::range_type range(3, 3);
      //MyTensor::range_type range(4, 4); // runtime-error with this range -- bigger than storage
      MyTensor Q(range); Q.fill(2.0);
+   }
+
+   // test 10: gemm with col-major tensors
+   {
+     typedef RangeNd<CblasColMajor> CMRange;
+     typedef Tensor<double, Range   > RMTensor;
+     typedef Tensor<double, CMRange > CMTensor;
+     RMTensor xr(2, 3); xr.fill(1.0);
+     CMTensor xc(4, 3); xc.fill(2.0);
+     CMTensor res(2,4);
+     gemm(CblasNoTrans, CblasNoTrans, 1.0, xr, xc, 0.0, res);
    }
 
    return 0;

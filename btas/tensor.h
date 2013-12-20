@@ -394,6 +394,16 @@ namespace btas {
 
   }; // end of Tensor
 
+  template <typename _T, typename _Range, typename _Storage>
+  auto cbegin(const btas::Tensor<_T, _Range, _Storage>& x) -> decltype(x.cbegin()) {
+    return x.cbegin();
+  }
+  template <typename _T, typename _Range, typename _Storage>
+  auto cend(const btas::Tensor<_T, _Range, _Storage>& x) -> decltype(x.cbegin()) {
+    return x.cend();
+  }
+
+
   /// maps Tensor -> Range
   template <typename _T, typename _Range, typename _Storage>
   _Range

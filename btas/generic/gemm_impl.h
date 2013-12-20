@@ -396,12 +396,6 @@ void gemm (
       return;
    }
 
-   // only row-major BoxTensors are supported now
-   static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorA>::row_major &&
-                 boxtensor_storage_order<_TensorB>::value == boxtensor_storage_order<_TensorB>::row_major &&
-                 boxtensor_storage_order<_TensorC>::value == boxtensor_storage_order<_TensorC>::row_major
-                 , "only row-major tensors are accepted right now");
-
    // get contraction rank
    const size_type rankA = A.rank();
    const size_type rankB = B.rank();
