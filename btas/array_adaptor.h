@@ -80,38 +80,13 @@ namespace btas {
     return os;
   }
 
-#if 0
-  /// Adaptor from btas::varray
-  template <typename T>
-  struct array_adaptor< btas::varray<T> > {
-      typedef btas::varray<T> array;
-      typedef typename array::value_type value_type;
-
-      static array construct(std::size_t n) {
-        return array(n);
-      }
-      static array construct(std::size_t n, T value) {
-        return array(n, value);
-      }
-
-      static void resize(array& x, std::size_t n) {
-        x.resize(n);
-      }
-
-  };
-
-  template <typename T>
-  std::size_t rank(const btas::varray<T>& x) {
-    return x.size();
-  }
-#endif
+  /// Adaptors for sequence container, e.g. std::vector, btas::varray, and std::initializer_list
 
   template <typename Array>
   std::size_t rank(const Array& x) {
     return x.size();
   }
 
-  /// Adaptor from sequence container, e.g. std::vector and btas::varray.
   template <typename Array>
   struct array_adaptor {
       typedef Array array;
@@ -151,6 +126,11 @@ namespace btas {
     return os;
   }
 
+  template <typename T>
+  std::ostream& operator<<(std::ostream& os, const std::initializer_list<T>& x) {
+    array_adaptor<std::vector<T> >::print(x,os);
+    return os;
+  }
 }
 
 namespace std {
@@ -202,6 +182,10 @@ namespace std {
   template <typename T>
   struct make_unsigned<std::vector<T> > {
       typedef std::vector<typename make_unsigned<T>::type > type;
+  };
+  template <typename T>
+  struct make_unsigned<std::initializer_list<T> > {
+      typedef std::initializer_list<typename make_unsigned<T>::type > type;
   };
   template <typename T, size_t N>
   struct make_unsigned<std::array<T, N> > {

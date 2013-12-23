@@ -250,18 +250,22 @@ namespace btas {
         // Compute range data
         if (_Order == CblasRowMajor) {
           for(int i = n - 1; i >= 0; --i) {
-            assert(static_cast<ctype>(lobound[i]) <= static_cast<ctype>(upbound[i]));
-            lobound_[i] = lobound[i];
-            upbound_[i] = upbound[i];
+            auto li = *(lobound.begin() + i);
+            auto ui = *(upbound.begin() + i);
+            assert(static_cast<ctype>(li) <= static_cast<ctype>(ui));
+            lobound_[i] = li;
+            upbound_[i] = ui;
             weight_[i] = volume;
             volume *= (upbound_[i] - lobound_[i]);
           }
         }
         else {
           for(auto i = 0; i != n; ++i) {
-            assert(static_cast<ctype>(lobound[i]) <= static_cast<ctype>(upbound[i]));
-            lobound_[i] = lobound[i];
-            upbound_[i] = upbound[i];
+            auto li = *(lobound.begin() + i);
+            auto ui = *(upbound.begin() + i);
+            assert(static_cast<ctype>(li) <= static_cast<ctype>(ui));
+            lobound_[i] = li;
+            upbound_[i] = ui;
             weight_[i] = volume;
             volume *= (upbound_[i] - lobound_[i]);
           }
@@ -284,14 +288,14 @@ namespace btas {
         // Compute range data
         if (_Order == CblasRowMajor) {
           for(int i = n - 1; i >= 0; --i) {
-            upbound_[i] = extent[i];
+            upbound_[i] = *(extent.begin() + i);
             weight_[i] = volume;
             volume *= upbound_[i];
           }
         }
         else {
           for(auto i = 0; i != n; ++i) {
-            upbound_[i] = extent[i];
+            upbound_[i] = *(extent.begin() + i);
             weight_[i] = volume;
             volume *= upbound_[i];
           }
@@ -335,16 +339,13 @@ namespace btas {
       /// \throw std::bad_alloc When memory allocation fails.
       template <typename Extent>
       RangeNd(const Extent& extent,
-            typename std::enable_if<btas::is_index<Extent>::value, Enabler>::type = Enabler()) :
+              typename std::enable_if<btas::is_index<Extent>::value, Enabler>::type = Enabler()) :
         lobound_(), upbound_(), weight_()
       {
-        using btas::rank;
-        upbound_ = array_adaptor<index_type>::construct(rank(extent));
-        std::copy(extent.begin(), extent.end(), upbound_.begin());
         init(extent);
       }
 
-      /// Range constructor from a pack of sizes for each dimension
+      /// Range constructor from a pack of extents for each dimension
 
       /// \tparam _extent0 A
       /// \tparam _extents A pack of unsigned integers
@@ -356,7 +357,8 @@ namespace btas {
       lobound_(), upbound_(), weight_()
       {
         const size_type n = sizeof...(_extents) + 1;
-        size_type range_extent[n] = {static_cast<size_type>(extent0), static_cast<size_type>(extents)...};
+        // make initializer_list
+        auto range_extent = {static_cast<size_type>(extent0), static_cast<size_type>(extents)...};
         init(range_extent);
       }
 
@@ -365,8 +367,7 @@ namespace btas {
       RangeNd(std::initializer_list<T> extents) :
       lobound_(), upbound_(), weight_()
       {
-        extent_type x(extents);
-        init(x);
+        init(extents);
       }
 
       /// to construct from an initializer list give it as {extent0, extent1, ... extentN}
@@ -374,12 +375,8 @@ namespace btas {
       RangeNd(std::initializer_list<T1> lobound, std::initializer_list<T2> upbound) :
       lobound_(), upbound_(), weight_()
       {
-        index_type l(lobound);
-        index_type u(upbound);
-        using btas::rank;
-        auto n = rank(l);
-        assert(n == rank(u));
-        init(l, u);
+        assert(lobound.size() == upbound.size());
+        init(lobound, upbound);
       }
 
       /// Copy Constructor
@@ -424,6 +421,21 @@ namespace btas {
         auto n = rank(lobound);
         assert(n == rank(upbound));
         init(lobound, upbound);
+        return *this;
+      }
+
+      /// This can be used to avoid memory allocation
+      /// \tparam Index An array type
+      /// \param lobound The lower bounds of the N-dimensional range
+      /// \param upbound The upper bound of the N-dimensional range
+      /// \throw TiledArray::Exception When the size of \c lobound is not equal to
+      /// that of \c upbound.
+      /// \throw TiledArray::Exception When lobound[i] >= upbound[i]
+      /// \throw std::bad_alloc When memory allocation fails.
+      template <typename Extent>
+      typename std::enable_if<btas::is_index<Extent>::value, Range_&>::type
+      resize(const Extent& extent) {
+        init(extent);
         return *this;
       }
 
