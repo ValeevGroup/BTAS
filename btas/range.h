@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <vector>
 #include <functional>
+#include <initializer_list>
 
 #include <btas/varray/varray.h>
 #include <btas/range_iterator.h>
@@ -88,6 +89,20 @@ namespace btas {
         Range1d(index_type begin, index_type end, index_type stride = 1) :
         lobound_(begin), upbound_(end), stride_(stride) {}
 
+        /// to construct from an initializer list give it as {}, {extent}, {begin,end}, or {begin,end,stride}
+        template <typename T> Range1d(std::initializer_list<T> x) : lobound_(0), upbound_(0), stride_(1) {
+          assert(x.size() <= 3 //, "Range1d initializer-list constructor requires at most 3 parameters"
+                 );
+          if (x.size() == 1)
+            upbound_ = *x.begin();
+          else if (x.size() >= 2) {
+            lobound_ = *x.begin();
+            upbound_ = *(x.begin()+1);
+            if (x.size() == 3)
+              stride_ = *(x.begin()+2);
+          }
+        }
+
         Range1d(const Range1d& other) :
           lobound_(other.lobound_), upbound_(other.upbound_), stride_(other.stride_)
         { }
@@ -96,6 +111,31 @@ namespace btas {
           lobound_ = other.lobound_;
           upbound_ = other.upbound_;
           stride_ = other.stride_;
+          return *this;
+        }
+
+        /// to construct from an initializer list give it as {}, {extent}, {begin,end}, or {begin,end,stride}
+        template <typename T>
+        Range1d& operator=(std::initializer_list<T> x) {
+          assert(x.size() <= 3 //, "Range1d initializer-list constructor requires at most 3 parameters"
+                 );
+          if (x.size() == 0) {
+            lobound_ = upbound_ = 0;
+            stride_ = 1;
+          }
+          if (x.size() == 1) {
+            lobound_ = 0;
+            upbound_ = *x.begin();
+            stride_ = 1;
+          }
+          else if (x.size() >= 2) {
+            lobound_ = *x.begin();
+            upbound_ = *(x.begin()+1);
+            if (x.size() == 3)
+              stride_ = *(x.begin()+2);
+            else
+              stride_ = 1;
+          }
           return *this;
         }
 
@@ -318,6 +358,28 @@ namespace btas {
         const size_type n = sizeof...(_extents) + 1;
         size_type range_extent[n] = {static_cast<size_type>(extent0), static_cast<size_type>(extents)...};
         init(range_extent);
+      }
+
+      /// to construct from an initializer list give it as {extent0, extent1, ... extentN}
+      template <typename T>
+      RangeNd(std::initializer_list<T> extents) :
+      lobound_(), upbound_(), weight_()
+      {
+        extent_type x(extents);
+        init(x);
+      }
+
+      /// to construct from an initializer list give it as {extent0, extent1, ... extentN}
+      template <typename T1, typename T2>
+      RangeNd(std::initializer_list<T1> lobound, std::initializer_list<T2> upbound) :
+      lobound_(), upbound_(), weight_()
+      {
+        index_type l(lobound);
+        index_type u(upbound);
+        using btas::rank;
+        auto n = rank(l);
+        assert(n == rank(u));
+        init(l, u);
       }
 
       /// Copy Constructor

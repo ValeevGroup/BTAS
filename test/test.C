@@ -29,6 +29,12 @@ int main()
         cout << i << endl;
       }
     }
+
+    Range1 r4 = {};           r4 = {};
+    Range1 r5 = {3};          r5 = {2};
+    Range1 r6 = {-3, 3};      r6 = {2, 7};
+    Range1 r7 = {-3, 13, 2};  r7 = {-1, 10, 2};
+
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -71,6 +77,17 @@ int main()
       cout << i << endl;
     }
   }
+
+  cout << "Iterating through " << Range(2,3,4) << " using range-based for" << endl;
+  for(auto i: Range(2,3,4)) {
+    cout << i << endl;
+  }
+
+  Range x5 = {2, 3, 4};
+  cout << "x5 = " << x5 << " area=" << x5.area() << endl;
+
+  Range x6 ({-1, -1, -1}, {2, 3, 4});
+  cout << "x6 = " << x6 << " area=" << x6.area() << endl;
 
   //////////////////////////////////////////////////////////////////////////////
   // Tensor tests

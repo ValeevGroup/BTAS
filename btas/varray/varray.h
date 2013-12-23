@@ -98,7 +98,8 @@ public:
       x.data_._M_finish = nullptr;
    }
 
-   varray (std::initializer_list<value_type> il)
+   template <typename U, class = typename std::enable_if< std::is_convertible<U, value_type>::value >::type >
+   varray (std::initializer_list<U> il)
    : data_ (nullptr, nullptr)
    {
       size_type n = il.size();
@@ -131,7 +132,8 @@ public:
       return *this;
    }
 
-   varray& operator= (std::initializer_list<value_type> il)
+   template <typename U, class = typename std::enable_if< std::is_convertible<U, value_type>::value >::type >
+   varray& operator= (std::initializer_list<U> il)
    {
       if (!empty()) {
          delete [] data_._M_start;
