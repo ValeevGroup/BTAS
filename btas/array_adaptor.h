@@ -198,6 +198,25 @@ namespace std {
   const T* cend(const T (&x)[N]) {
     return &x[0] + N;
   }
+
+  template <typename T>
+  struct make_unsigned<std::vector<T> > {
+      typedef std::vector<typename make_unsigned<T>::type > type;
+  };
+  template <typename T, size_t N>
+  struct make_unsigned<std::array<T, N> > {
+      typedef std::array<typename make_unsigned<T>::type, N> type;
+  };
+  template <typename T>
+  struct make_unsigned<btas::varray<T> > {
+      typedef btas::varray<typename make_unsigned<T>::type > type;
+  };
+  template <typename T, size_t N>
+  struct make_unsigned<T[N]> {
+      typedef typename make_unsigned<T>::type uT;
+      typedef uT (type)[N];
+  };
+
 }
 
 #endif /* __BTAS_ARRAYADAPTOR_H_ */

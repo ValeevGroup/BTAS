@@ -19,9 +19,9 @@ int main()
     cout << "r0 = " << r0 << endl;
     Range1 r1(5);      // [0,5) = {0, 1, 2, 3, 4}
     cout << "r1 = " << r1 << endl;
-    Range1 r2(2,4);    // [2,4) = {2, 3}
+    Range1 r2(-1,4);    // [-1,4) = {-1, 0, 1, 2, 3}
     cout << "r2 = " << r2 << endl;
-    Range1 r3(1,7,2);  // [1,7) with stride 2 = {1, 3, 5}
+    Range1 r3(-1,7,2);  // [-1,7) with stride 2 = {-1, 1, 3, 5}
     cout << "r3 = " << r3 << endl;
     {
       cout << "Iterating through r3 using range-based for" << endl;
@@ -35,21 +35,28 @@ int main()
   // Range tests
   //////////////////////////////////////////////////////////////////////////////
 
-  std::array<std::size_t, 3> begin = {1,1,1};
+  std::array<long, 3> begin = {-1,-1,-1};
   std::array<std::size_t, 3> size = {3,2,3};
+  // default (empty) Range
   Range x0;
   cout << "x0 = " << x0 << " area=" << x0.area() << endl;
 
+  // Range initialized by extents of each dimension
   Range x1(3, 2, 3);
   cout << "x1 = " << x1 << " area=" << x1.area() << endl;
 
+  // Range initialized by extents of each dimension, given as an initializer list
+  //Range x2 = {2, 3, 2};  // same as 'Range x2({2, 3, 2});'
+  Range x2(2, 3, 2);
+  cout << "x2 = " << x2 << " area=" << x1.area() << endl;
+
   // fixed-rank Range
-  RangeNd<CblasRowMajor, array<size_t, 3> > x2(begin, size);
-  cout << "x2 = " << x2 << " area=" << x2.area() << endl;
+  RangeNd<CblasRowMajor, array<long, 3> > x3(begin, size);
+  cout << "x3 = " << x3 << " area=" << x3.area() << endl;
 
   // col-major std::vector-based Range
-  RangeNd<CblasColMajor, vector<size_t> > x3(size);
-  cout << "x3 = " << x3 << " area=" << x3.area() << endl;
+  RangeNd<CblasColMajor, vector<long> > x4(size);
+  cout << "x4 = " << x4 << " area=" << x4.area() << endl;
 
   {
     cout << "Iterating through x1 using iterator-based for" << endl;

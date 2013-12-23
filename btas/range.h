@@ -51,7 +51,6 @@
 */
 
 namespace btas {
-  //using TiledArray::Range;
 
     namespace detail {
 
@@ -72,7 +71,7 @@ namespace btas {
 
     }  // namespace detail
 
-    template <typename Index = std::size_t>
+    template <typename Index = long>
     class Range1d {
       public:
         typedef Index index_type;
@@ -82,10 +81,11 @@ namespace btas {
         typedef RangeIterator<index_type, Range1d> const_iterator; ///< Index iterator
         friend class RangeIterator<index_type, Range1d>;
 
-        Range1d(index_type extent = 0ul) :
-          lobound_(0ul), upbound_(extent), stride_(1ul) {}
+        Range1d(size_t extent = 0ul) :
+          lobound_(0), upbound_(extent), stride_(1) {}
 
-        Range1d(index_type begin, index_type end, index_type stride = 1ul) :
+        /// [begin, end)
+        Range1d(index_type begin, index_type end, index_type stride = 1) :
         lobound_(begin), upbound_(end), stride_(stride) {}
 
         Range1d(const Range1d& other) :
@@ -167,27 +167,40 @@ namespace btas {
     /// RangeNd data of an N-dimensional tensor
     /// Index rank is a runtime parameter
     template <CBLAS_ORDER _Order = CblasRowMajor,
-              typename _Index = btas::varray<std::size_t> >
+              typename _Index = btas::varray<long>,
+              class = typename std::enable_if<
+                is_index<_Index>::value
+              >::type>
     class RangeNd {
     public:
       typedef RangeNd Range_; ///< This object type
+      typedef _Index index_type; ///< index type
       typedef std::size_t size_type; ///< Size type
-      typedef _Index index_type; ///< Coordinate index type
       typedef index_type value_type; ///< Range can be viewed as a Container of value_type
-      typedef const value_type const_reference_type;
-      typedef index_type extent_type;    ///< Range extent type
-      typedef std::size_t ordinal_type; ///< Ordinal type
+      typedef index_type& reference_type;
+      typedef const value_type& const_reference_type;
       typedef RangeIterator<index_type, Range_> const_iterator; ///< Index iterator
+      typedef const_iterator iterator; ///< interator = const_iterator
+      typedef typename std::make_unsigned<index_type>::type extent_type;    ///< Range extent type
+      typedef std::size_t ordinal_type; ///< Ordinal type
+
       friend class RangeIterator<index_type, Range_>;
 
     private:
       struct Enabler {};
 
-      template <typename Index>
-      void init(const Index& lobound, const Index& upbound) {
+      template <typename Index1, typename Index2>
+      void init(const Index1& lobound, const Index2& upbound) {
         using btas::rank;
         auto n = rank(lobound);
         if (n == 0) return;
+
+        typedef typename std::common_type<typename Index1::value_type, typename Index2::value_type>::type common_type;
+        typedef typename std::conditional<
+            std::is_signed<typename Index1::value_type>::value || std::is_signed<typename Index2::value_type>::value,
+            typename std::make_signed<common_type>::type,
+            common_type
+          >::type ctype;
 
         std::size_t volume = 1ul;
         lobound_ = array_adaptor<index_type>::construct(n);
@@ -197,7 +210,7 @@ namespace btas {
         // Compute range data
         if (_Order == CblasRowMajor) {
           for(int i = n - 1; i >= 0; --i) {
-            assert(lobound[i] <= upbound[i]);
+            assert(static_cast<ctype>(lobound[i]) <= static_cast<ctype>(upbound[i]));
             lobound_[i] = lobound[i];
             upbound_[i] = upbound[i];
             weight_[i] = volume;
@@ -206,7 +219,7 @@ namespace btas {
         }
         else {
           for(auto i = 0; i != n; ++i) {
-            assert(lobound[i] <= upbound[i]);
+            assert(static_cast<ctype>(lobound[i]) <= static_cast<ctype>(upbound[i]));
             lobound_[i] = lobound[i];
             upbound_[i] = upbound[i];
             weight_[i] = volume;
@@ -215,14 +228,14 @@ namespace btas {
         }
       }
 
-      template <typename Index>
-      void init(const Index& extent) {
+      template <typename Extent>
+      void init(const Extent& extent) {
         using btas::rank;
         auto n = rank(extent);
         if (n == 0) return;
 
         // now I know the rank
-        lobound_ = array_adaptor<index_type>::construct(n, 0ul);
+        lobound_ = array_adaptor<index_type>::construct(n, 0);
 
         std::size_t volume = 1ul;
         upbound_ = array_adaptor<index_type>::construct(n);
@@ -264,9 +277,9 @@ namespace btas {
       /// that of \c upbound.
       /// \throw TiledArray::Exception When lobound[i] >= upbound[i]
       /// \throw std::bad_alloc When memory allocation fails.
-      template <typename Index>
-      RangeNd(const Index& lobound, const Index& upbound,
-            typename std::enable_if<btas::is_index<Index>::value, Enabler>::type = Enabler()) :
+      template <typename Index1, typename Index2>
+      RangeNd(const Index1& lobound, const Index2& upbound,
+              typename std::enable_if<btas::is_index<Index1>::value && btas::is_index<Index2>::value, Enabler>::type = Enabler()) :
         lobound_(), upbound_(), weight_()
       {
         using btas::rank;
@@ -277,12 +290,12 @@ namespace btas {
 
       /// Range constructor from size array
 
-      /// \tparam SizeArray An array type
+      /// \tparam Extent convertible to extent_type
       /// \param extent An array with the extent of each dimension
       /// \throw std::bad_alloc When memory allocation fails.
-      template <typename SizeArray>
-      RangeNd(const SizeArray& extent,
-            typename std::enable_if<btas::is_index<SizeArray>::value, Enabler>::type = Enabler()) :
+      template <typename Extent>
+      RangeNd(const Extent& extent,
+            typename std::enable_if<btas::is_index<Extent>::value, Enabler>::type = Enabler()) :
         lobound_(), upbound_(), weight_()
       {
         using btas::rank;
@@ -293,17 +306,17 @@ namespace btas {
 
       /// Range constructor from a pack of sizes for each dimension
 
-      /// \tparam _size0 A
-      /// \tparam _sizes A pack of unsigned integers
-      /// \param sizes The size of dimensions 0
+      /// \tparam _extent0 A
+      /// \tparam _extents A pack of unsigned integers
+      /// \param extent0 The size of dimensions 0
       /// \param sizes A pack of sizes for dimensions 1+
       /// \throw std::bad_alloc When memory allocation fails.
-      template<typename... _sizes>
-      explicit RangeNd(const size_type& size0, const _sizes&... sizes) :
+      template<typename _extent0, typename... _extents>
+      explicit RangeNd(const _extent0& extent0, const _extents&... extents) :
       lobound_(), upbound_(), weight_()
       {
-        const size_type n = sizeof...(_sizes) + 1;
-        size_type range_extent[n] = {size0, static_cast<size_type>(sizes)...};
+        const size_type n = sizeof...(_extents) + 1;
+        size_type range_extent[n] = {static_cast<size_type>(extent0), static_cast<size_type>(extents)...};
         init(range_extent);
       }
 
@@ -387,7 +400,7 @@ namespace btas {
       /// \return A \c extent_type that contains the extent of each dimension
       /// \throw nothing
       extent_type extent() const {
-        index_type ex = array_adaptor<extent_type>::construct(rank());
+        extent_type ex = array_adaptor<extent_type>::construct(rank());
         for(auto i=0; i<rank(); ++i)
           ex[i] = upbound_[i] - lobound_[i];
         return ex;
