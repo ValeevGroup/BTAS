@@ -40,10 +40,10 @@ namespace btas {
 
       // TODO Do we need refinement of Storage iterators???
 
-      /// iterator
+      /// element iterator
       typedef typename storage_type::iterator iterator;
 
-      /// constant iterator
+      /// constant element iterator
       typedef typename storage_type::const_iterator const_iterator;
 
       /// type of Range
