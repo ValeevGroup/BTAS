@@ -52,25 +52,6 @@
 
 namespace btas {
 
-    namespace detail {
-
-      template <typename Index, typename WeightArray, typename StartArray>
-      inline std::size_t calc_ordinal(const Index& index, const WeightArray& weight, const StartArray& lobound) {
-        // Check that the dimensions of the arrays are equal.
-        const std::size_t n = rank(index);
-        assert(rank(weight) == n);
-        assert(rank(lobound) == n);
-
-        // Compute ordinal
-        std::size_t o = 0ul;
-        for(std::size_t i = 0ul; i < n; ++i)
-          o += (index[i] - lobound[i]) * weight[i];
-
-        return o;
-      }
-
-    }  // namespace detail
-
     template <typename Index = long>
     class Range1d {
       public:
@@ -504,7 +485,7 @@ namespace btas {
 
       /// calculate the ordinal index of \c i
 
-      /// Convert a coordinate index to an ordinal index.
+      /// Convert an index to its ordinal.
       /// \tparam Index A coordinate index type (array type)
       /// \param index The index to be converted to an ordinal index
       /// \return The ordinal index of \c index
