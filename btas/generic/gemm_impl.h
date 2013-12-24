@@ -76,10 +76,10 @@ template<> struct gemm_impl<true>
       {
          auto itrA_save = itrA;
          auto itrB_save = itrB;
-         for (size_type i = 0; i < Nsize; ++i)
+         for (size_type i = 0; i < Msize; ++i)
          {
             itrB = itrB_save;
-            for (size_type j = 0; j < Msize; ++j, ++itrC)
+            for (size_type j = 0; j < Nsize; ++j, ++itrC)
             {
                itrA = itrA_save;
                for (size_type k = 0; k < Ksize; ++k, ++itrA, ++itrB)
