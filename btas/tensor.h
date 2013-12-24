@@ -38,8 +38,6 @@ namespace btas {
       /// size type
       typedef typename storage_type::size_type size_type;
 
-      // TODO Do we need refinement of Storage iterators???
-
       /// element iterator
       typedef typename storage_type::iterator iterator;
 
@@ -52,8 +50,8 @@ namespace btas {
       /// type of index
       typedef typename _Range::index_type index_type;
 
-      /// TiledArray-specific additions, will go away soon
-      typedef Tensor eval_type;
+    private:
+      struct Enabler {};
 
     public:
 
@@ -216,86 +214,104 @@ namespace btas {
       }
 
       /// \return element without range check
-      template<typename... _args>
-      const value_type&
-      operator() (const size_type& first, const _args&... rest) const
+      template<typename index0, typename... _args>
+      typename std::enable_if<std::is_integral<index0>::value, const value_type&>::type
+      operator() (const index0& first, const _args&... rest) const
       {
-        const size_t n = sizeof...(_args) + 1;
-        const size_type indexv[n] = {first, static_cast<size_type>(rest)...};
-        const index_type index(indexv, indexv+n);
+        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
+        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
+        index_type index = array_adaptor<index_type>::construct(indexv.size());
+        std::copy(indexv.begin(), indexv.end(), index.begin());
         return data_[ range_.ordinal(index) ];
       }
 
       /// \return element without range check (rank() == general)
-      const value_type&
-      operator() (const index_type& index) const
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value, const value_type&>::type
+      operator() (const Index& index) const
       {
         return data_[range_.ordinal(index)];
       }
 
       /// access element without range check
-      template<typename... _args>
-      value_type&
-      operator() (const size_type& first, const _args&... rest)
+      template<typename index0, typename... _args>
+      typename std::enable_if<std::is_integral<index0>::value, value_type&>::type
+      operator() (const index0& first, const _args&... rest)
       {
-        const size_t n = sizeof...(_args) + 1;
-        const size_type indexv[n] = {first, static_cast<size_type>(rest)...};
-        const index_type index(indexv, indexv+n);
+        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
+        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
+        index_type index = array_adaptor<index_type>::construct(indexv.size());
+        std::copy(indexv.begin(), indexv.end(), index.begin());
         return data_[ range_.ordinal(index) ];
       }
 
       /// access element without range check (rank() == general)
-      value_type&
-      operator() (const index_type& index)
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value, value_type&>::type
+      operator() (const Index& index)
       {
         return data_[range_.ordinal(index)];
       }
    
       /// \return element without range check
-      template<typename... _args>
-      const value_type&
-      at (const size_type& first, const _args&... rest) const
+      template<typename index0, typename... _args>
+      typename std::enable_if<std::is_integral<index0>::value, const value_type&>::type
+      at (const index0& first, const _args&... rest) const
       {
-        const size_t n = sizeof...(_args) + 1;
-        const size_type indexv[n] = {first, static_cast<size_type>(rest)...};
-        const index_type index(indexv, indexv+n);
+        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
+        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
+        index_type index = array_adaptor<index_type>::construct(indexv.size());
+        std::copy(indexv.begin(), indexv.end(), index.begin());
         assert( range_.includes(index) );
         return data_[ range_.ordinal(index) ];
       }
 
       /// \return element without range check (rank() == general)
-      const value_type&
-      at (const index_type& index) const
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value, const value_type&>::type
+      at (const Index& index) const
       {
         assert( range_.includes(index) );
         return data_[ range_.ordinal(index) ];
       }
 
       /// access element without range check
-      template<typename... _args>
-      value_type&
-      at (const size_type& first, const _args&... rest)
+      template<typename index0, typename... _args>
+      typename std::enable_if<std::is_integral<index0>::value, value_type&>::type
+      at (const index0& first, const _args&... rest)
       {
-        const size_t n = sizeof...(_args) + 1;
-        const size_type indexv[n] = {first, static_cast<size_type>(rest)...};
-        const index_type index(indexv, indexv+n);
+        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
+        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
+        index_type index = array_adaptor<index_type>::construct(indexv.size());
+        std::copy(indexv.begin(), indexv.end(), index.begin());
         assert( range_.includes(index) );
         return data_[ range_.ordinal(index) ];
       }
 
       /// access element without range check (rank() == general)
-      value_type&
-      at (const index_type& index)
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value, value_type&>::type
+      at (const Index& index)
       {
         assert( range_.includes(index) );
         return data_[ range_.ordinal(index) ];
       }
    
       /// resize array with range object
+      template <typename Range>
       void
-      resize (const range_type& range)
+      resize (const Range& range, typename std::enable_if<is_boxrange<Range>::value,Enabler>::type = Enabler())
       {
         range_ = range;
+        array_adaptor<storage_type>::resize(data_, range_.area());
+      }
+
+      /// resize array with extent object
+      template <typename Extent>
+      void
+      resize (const Extent& extent, typename std::enable_if<is_index<Extent>::value,Enabler>::type = Enabler())
+      {
+        range_ = range_type(extent);
         array_adaptor<storage_type>::resize(data_, range_.area());
       }
 
@@ -406,17 +422,26 @@ namespace btas {
 
   /// maps Tensor -> Range
   template <typename _T, typename _Range, typename _Storage>
-  _Range
-  range (const btas::Tensor<_T, _Range, _Storage>& t) {
+  auto
+  range (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.range()) {
     return t.range();
   }
 
   /// maps Tensor -> Range extent
   template <typename _T, typename _Range, typename _Storage>
-  typename _Range::extent_type
-  extent (const btas::Tensor<_T, _Range, _Storage>& t) {
+  auto
+  extent (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.range().extent()) {
     return t.range().extent();
   }
+
+  /// Tensor stream output operator
+
+  /// prints Tensor in row-major form. To be implemented elsewhere using slices.
+  /// \param os The output stream that will be used to print \c t
+  /// \param t The Tensor to be printed
+  /// \return A reference to the output stream
+  template <typename _T, typename _Range, typename _Storage>
+  std::ostream& operator<<(std::ostream& os, const btas::Tensor<_T, _Range, _Storage>& t);
 
 } // namespace btas
 

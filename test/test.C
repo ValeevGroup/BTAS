@@ -148,7 +148,6 @@ int main()
 
    cout << "printing V: size = " << V.size() << " objsize = " << sizeof(V) << endl;
    for(double x : V) cout << x << endl;
-
    // test 5: tensor of tensor (ToT)
    cout << boolalpha;
    cout << "is_tensor<Tensor<double>> = " << is_tensor<Tensor<double>>::value << endl;
@@ -194,7 +193,8 @@ int main()
 
    // test 9: fixed-size tensor
    {
-     typedef Tensor<double, Range, std::array<double, 9> > MyTensor;
+     // to avoid dynamic allocation and memory overheads, use std::array
+     typedef Tensor<double, RangeNd<CblasRowMajor, std::array<char, 2> >, std::array<double, 9> > MyTensor;
      MyTensor::range_type range(3, 3);
      //MyTensor::range_type range(4, 4); // runtime-error with this range -- bigger than storage
      MyTensor Q(range); Q.fill(2.0);
@@ -202,13 +202,20 @@ int main()
 
    // test 10: gemm with col-major tensors
    {
-     typedef RangeNd<CblasColMajor> CMRange;
-     typedef Tensor<double, Range   > RMTensor;
+     const CBLAS_ORDER order = CblasColMajor;
+     typedef RangeNd<order> CMRange;
      typedef Tensor<double, CMRange > CMTensor;
-     RMTensor xr(2, 3); xr.fill(1.0);
-     CMTensor xc(4, 3); xc.fill(2.0);
-     CMTensor res(2,4);
-     gemm(CblasNoTrans, CblasNoTrans, 1.0, xr, xc, 0.0, res);
+
+     CMTensor a(2, 3);
+     auto v = 0.0;
+     a.generate( [&v]() { v += 1.0; return v; } );
+
+     CMTensor b(3, 3);
+     v = 0.0;
+     b.generate( [&v]() { v += 1.0; return v; } );
+
+     CMTensor c(2, 3);
+     gemm(CblasNoTrans, CblasTrans, 1.0, a, b, 0.0, c);
    }
 
    return 0;

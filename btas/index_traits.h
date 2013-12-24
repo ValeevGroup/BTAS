@@ -78,7 +78,7 @@ template<class _Index>
 class is_index {
 public:
    static constexpr const bool
-   value = has_value_type<_Index>::value &
+   value = has_integral_value_type<_Index>::value &
            has_begin<_Index>::value &
            has_end<_Index>::value;
 };

@@ -17,10 +17,9 @@
 #include <btas/range_iterator.h>
 #include <btas/array_adaptor.h>
 #include <btas/types.h>
+#include <btas/type_traits.h>
 #include <btas/index_traits.h>
 #include <btas/range_traits.h>
-
-//#include <TiledArray/range.h>
 
 /** @addtogroup BTAS_Range
 
@@ -235,12 +234,7 @@ namespace btas {
         auto n = rank(lobound);
         if (n == 0) return;
 
-        typedef typename std::common_type<typename Index1::value_type, typename Index2::value_type>::type common_type;
-        typedef typename std::conditional<
-            std::is_signed<typename Index1::value_type>::value || std::is_signed<typename Index2::value_type>::value,
-            typename std::make_signed<common_type>::type,
-            common_type
-          >::type ctype;
+        typedef typename common_signed_type<typename Index1::value_type, typename Index2::value_type>::type ctype;
 
         std::size_t volume = 1ul;
         lobound_ = array_adaptor<index_type>::construct(n);
@@ -317,10 +311,6 @@ namespace btas {
       /// \tparam Index An array type
       /// \param lobound The lower bounds of the N-dimensional range
       /// \param upbound The upper bound of the N-dimensional range
-      /// \throw TiledArray::Exception When the size of \c lobound is not equal to
-      /// that of \c upbound.
-      /// \throw TiledArray::Exception When lobound[i] >= upbound[i]
-      /// \throw std::bad_alloc When memory allocation fails.
       template <typename Index1, typename Index2>
       RangeNd(const Index1& lobound, const Index2& upbound,
               typename std::enable_if<btas::is_index<Index1>::value && btas::is_index<Index2>::value, Enabler>::type = Enabler()) :
@@ -336,10 +326,9 @@ namespace btas {
 
       /// \tparam Extent convertible to extent_type
       /// \param extent An array with the extent of each dimension
-      /// \throw std::bad_alloc When memory allocation fails.
-      template <typename Extent>
-      RangeNd(const Extent& extent,
-              typename std::enable_if<btas::is_index<Extent>::value, Enabler>::type = Enabler()) :
+      template <typename Extent,
+                class = typename std::enable_if<btas::is_index<Extent>::value>::type>
+      RangeNd(const Extent& extent) :
         lobound_(), upbound_(), weight_()
       {
         init(extent);
@@ -347,18 +336,17 @@ namespace btas {
 
       /// Range constructor from a pack of extents for each dimension
 
-      /// \tparam _extent0 A
-      /// \tparam _extents A pack of unsigned integers
-      /// \param extent0 The size of dimensions 0
+      /// \tparam _extent0 An integer
+      /// \tparam _extents A pack of integers
+      /// \param extent0 The extent of first dimension (0)
       /// \param sizes A pack of sizes for dimensions 1+
-      /// \throw std::bad_alloc When memory allocation fails.
-      template<typename _extent0, typename... _extents>
+      template<typename _extent0, typename... _extents, class = typename std::enable_if<std::is_integral<_extent0>::value>::type>
       explicit RangeNd(const _extent0& extent0, const _extents&... extents) :
       lobound_(), upbound_(), weight_()
       {
-        const size_type n = sizeof...(_extents) + 1;
+        typedef typename std::common_type<_extent0, typename extent_type::value_type>::type common_type;
         // make initializer_list
-        auto range_extent = {static_cast<size_type>(extent0), static_cast<size_type>(extents)...};
+        auto range_extent = {static_cast<common_type>(extent0), static_cast<common_type>(extents)...};
         init(range_extent);
       }
 
@@ -382,10 +370,17 @@ namespace btas {
       /// Copy Constructor
 
       /// \param other The range to be copied
-      /// \throw std::bad_alloc When memory allocation fails.
       RangeNd(const Range_& other) :
         lobound_(other.lobound_), upbound_(other.upbound_), weight_(other.weight_)
       {
+      }
+
+      /// copy constructor from another instantiation of Range
+      template <CBLAS_ORDER Order,
+                typename Index>
+      RangeNd (const RangeNd<Order,Index>& x)
+      {
+          init(x.lobound(), x.upbound());
       }
 
       /// Destructor
@@ -410,10 +405,6 @@ namespace btas {
       /// \tparam Index An array type
       /// \param lobound The lower bounds of the N-dimensional range
       /// \param upbound The upper bound of the N-dimensional range
-      /// \throw TiledArray::Exception When the size of \c lobound is not equal to
-      /// that of \c upbound.
-      /// \throw TiledArray::Exception When lobound[i] >= upbound[i]
-      /// \throw std::bad_alloc When memory allocation fails.
       template <typename Index>
       typename std::enable_if<btas::is_index<Index>::value, Range_&>::type
       resize(const Index& lobound, const Index& upbound) {
@@ -428,10 +419,6 @@ namespace btas {
       /// \tparam Index An array type
       /// \param lobound The lower bounds of the N-dimensional range
       /// \param upbound The upper bound of the N-dimensional range
-      /// \throw TiledArray::Exception When the size of \c lobound is not equal to
-      /// that of \c upbound.
-      /// \throw TiledArray::Exception When lobound[i] >= upbound[i]
-      /// \throw std::bad_alloc When memory allocation fails.
       template <typename Extent>
       typename std::enable_if<btas::is_index<Extent>::value, Range_&>::type
       resize(const Extent& extent) {
@@ -569,9 +556,6 @@ namespace btas {
       /// Increment the coordinate index \c i in this range
 
       /// \param[in,out] i The coordinate index to be incremented
-      /// \throw TiledArray::Exception When the dimension of i is not equal to
-      /// that of this range
-      /// \throw TiledArray::Exception When \c i or \c i+n is outside this range
       void increment(index_type& i) const {
 
         if (_Order == CblasRowMajor) {
@@ -610,9 +594,6 @@ namespace btas {
 
       /// \param[in,out] i The coordinate index to be advanced
       /// \param n The distance to advance \c i
-      /// \throw TiledArray::Exception When the dimension of i is not equal to
-      /// that of this range
-      /// \throw TiledArray::Exception When \c i or \c i+n is outside this range
       void advance(index& i, std::ptrdiff_t n) const {
         const size_type o = ord(i) + n;
         i = idx(o);
@@ -623,9 +604,6 @@ namespace btas {
       /// \param first The lobounding position in the range
       /// \param last The ending position in the range
       /// \return The difference between first and last, in terms of range positions
-      /// \throw TiledArray::Exception When the dimension of \c first or \c last
-      /// is not equal to that of this range
-      /// \throw TiledArray::Exception When \c first or \c last is outside this range
       std::ptrdiff_t distance_to(const index& first, const index& last) const {
         TA_ASSERT(includes(first));
         TA_ASSERT(includes(last));
