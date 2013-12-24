@@ -234,6 +234,11 @@ template<> struct gemm_impl<false>
       // currently, column-major order has not yet been supported at this level
       assert(order == CblasRowMajor);
 
+      if (beta != NumericType<_T>::one())
+      {
+         scal (Msize*Nsize, beta, itrC, 1);
+      }
+
       // A:NoTrans / B:NoTrans
       if (transA == CblasNoTrans && transB == CblasNoTrans)
       {
