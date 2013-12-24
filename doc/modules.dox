@@ -1,0 +1,35 @@
+/**
+   @defgroup TWG_Index TWG.Index
+   @anchor labelTWGIndex
+   Index.
+*/
+
+/**
+   @defgroup TWG_Range TWG.Range
+   @anchor labelTWGRange
+   Index Range and associated concepts.
+*/
+
+/**
+   @defgroup TWG_Storage TWG.Storage
+   @anchor labelTWGStorage
+   Data storage.
+*/
+
+/**
+   @defgroup TWG_Tensor TWG.Tensor
+   @anchor labelTWGTensor
+   Local (non-distributed) tensor.
+*/
+
+/**
+   @defgroup BTAS_Range BTAS.Range
+   @anchor labelBTASRange
+   BTAS implementation of Range.
+*/
+
+/**
+   @defgroup BTAS_Tensor BTAS.Tensor
+   @anchor labelBTASTensor
+   BTAS implementation of Tensor.
+*/

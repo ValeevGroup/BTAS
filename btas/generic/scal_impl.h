@@ -107,7 +107,9 @@ void scal (
 template<
    typename _T,
    class _TensorX,
-   class = typename std::enable_if<is_tensor<_TensorX>::value>::type
+   class = typename std::enable_if<
+      is_boxtensor<_TensorX>::value
+   >::type
 >
 void scal (
    const _T& alpha,
@@ -118,7 +120,7 @@ void scal (
       return;
    }
 
-   auto itrX = tbegin(X);
+   auto itrX = std::begin(X);
 
    scal (X.size(), alpha, itrX, 1);
 }

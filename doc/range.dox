@@ -1,0 +1,300 @@
+/**
+  @addtogroup TWG_Range
+
+  \section sec_TWG_Range_Concept_Range Range Concept
+  Range represents a (dense or sparse) space of indices (<i>n</i>-tuples of integral types; <i>n</i> is the index <em>rank</em>).
+  The rank of indices in a Range is, simply, the Range rank.
+  Range also provides a deterministic ordering of indices.
+
+  The concept of Range naturally arises in the context of iteration on data structures.
+  Thus its examples appear in many contexts:
+  <ul>
+   <li> <a href="http://www.boost.org/doc/libs/1_55_0/libs/range/doc/html/index.html">Boost.Range</a> library </li>
+   <li> Intel <a href="http://www.threadingbuildingblocks.org/docs/help/index.htm#reference/containers_overview/container_range_concept.htm">
+        Thread Building Blocks</a> (TBB) library </li>
+  </ul>
+  Our Range should be viewed as a specialization of the general concept of Range to the context of tensor algebra.
+  Existing examples of types that model the tensor Range concept can be found in <a href="https://github.com/ValeevGroup/tiledarray/blob/master/src/TiledArray/range.h">TiledArray</a>
+  and <a href="https://github.com/ValeevGroup/mpqc/blob/master/src/lib/mpqc/range.hpp">MPQC</a>.
+
+  \subsection sec_TWG_Range_Concept_Range_Synopsis Synopsis
+  See \ref sec_BTAS_Range_Synopsis for example uses of Range concept types.
+
+  \subsection sec_TWG_Range_Concept_Range_Description Description
+  To be a valid Range, class must be a <a href="http://www.stepanovpapers.com/DeSt98.pdf"><em>regular type</em></a>, define
+  types, and support expresisons specified below.
+
+  \subsubsection sec_TWG_Range_Concept_Range_Description_Types Associated Types
+  <table>
+   <tr>
+    <th> type </th>
+    <th> description </th>
+    <th> comments </th>
+   </tr>
+
+   <tr>
+    <td> \c index_type </td>
+    <td> the type of indices contained by the Range </td>
+    <td> a sequence container that satisfies the \ref labelTWGIndex "TWG.Index" concept </td>
+   </tr>
+
+   <tr>
+    <td> \c ordinal_type </td>
+    <td> the type of ordinals for the indices in the Range; usually \c index_type will not have ordering operators, hence
+    conversion to ordinal_type is necessary to define the order of indices in Range. The map from index to ordinal is one-to-one.
+    </td>
+    <td> a regular type; for fast computation this will typically be a sufficiently-wide scalar </td>
+   </tr>
+
+   <tr>
+    <td> \c const_iterator </td>
+    <td> const iterator over indices in the Range; dereferences to <code>const index_type</code> </td>
+    <td> this type model the constant Bidirectional Iterator concept defined in
+    <a href="">C++ Standard, Section 24.2</a> </td>
+   </tr>
+
+  </table>
+
+  \subsubsection sec_TWG_Range_Concept_Range_Description_Expressions Valid Expressions
+  To be a valid Range, a type must support the following expressions.
+   <table>
+   <tr>
+    <th> expression </th>
+    <th> return type </th>
+    <th> specification </th>
+    <th> comments </th>
+   </tr>
+
+   <tr>
+    <td> \c Range() </td>
+    <td> </td>
+    <td>
+     @code
+      Range r0;
+      assert(r0.area() == 0);
+     @endcode
+    </td>
+    <td> creates an empty range: { } </td>
+   </tr>
+
+   <tr>
+    <td> \c Range(const Range&) </td>
+    <td> </td>
+    <td>
+     @code
+      Range r1(r0);
+      assert(r0 == r1);
+     @endcode
+    </td>
+    <td> must be deep-copy </td>
+   </tr>
+
+   <tr>
+    <td> \c Range(Range&&) </td>
+    <td> </td>
+    <td> </td>
+    <td> move ctor </td>
+   </tr>
+
+   <tr>
+    <td> \c operator=(const Range&) </td>
+    <td> \c Range& </td>
+    <td>
+     @code
+      Range r2 = r0;
+      assert(r2 == r0);
+     @endcode
+    </td>
+    <td> must be deep-copy </td>
+   </tr>
+
+   <tr>
+    <td> \c operator=(Range&&) </td>
+    <td> \c Range& </td>
+    <td> </td>
+    <td> </td>
+   </tr>
+
+   <tr>
+    <td> \c operator==(const Range&, const Range&) </td>
+    <td> \c bool </td>
+    <td>
+     @code
+      assert(r0 == r0);
+      r1 = r0;
+      mutate(r1); // changes state of r1
+      assert(!(r1 == r0));
+     @endcode
+    </td>
+    <td> member or non-member </td>
+   </tr>
+
+   <tr>
+    <td> \c begin() </td>
+    <td> \c const_iterator </td>
+    <td> </td>
+    <td> returns the iterator to the first index in Range; if Range is empty, <code>begin() == end()</code> is true </td>
+   </tr>
+
+   <tr>
+    <td> \c end() </td>
+    <td> \c const_iterator </td>
+    <td> </td>
+    <td> returns the iterator past the last index in Range; if Range is empty, <code>begin() == end()</code> is true </td>
+   </tr>
+
+   <tr>
+    <td> \c rank() </td>
+    <td> \c uint </td>
+    <td> </td>
+    <td> returns the rank of Range; const </td>
+   </tr>
+
+   <tr>
+    <td> \c area() </td>
+    <td> \c uint </td>
+    <td>
+     @code
+      uint c = 0;
+      for(auto& i: r0) { ++c; }
+      assert(c == r0.area());
+     @endcode
+    </td>
+    <td> returns the area of Range, i.e. the number of indices; const </td>
+   </tr>
+
+   <tr>
+    <td> \c contains(const index_type&) </td>
+    <td> \c bool </td>
+    <td>
+     @code
+      assert(r0.contains(* r0.begin()));
+     @endcode
+    </td>
+    <td> queries whether an index is in Range; const </td>
+   </tr>
+
+   <tr>
+    <td>
+      \c ordinal(const index_type&)
+    </td>
+    <td> \c ordinal_type </td>
+    <td>
+     @code
+      // assuming non-empty r0
+      ordinal_type o0 =
+        r0.ordinal(* r0.begin());
+      for(auto& i: r0) {
+        ordinal_type o1 = r0.ordinal(i);
+        assert(o1 > o0);
+        swap(o0,o1);
+      }
+     @endcode
+    </td>
+    <td> const </td>
+   </tr>
+
+  </table>
+
+  where we used the following notation:
+  \li <code>uint</code> is an unsigned integral type, i.e.
+  @code
+  std::is_integral<uint>::value && std::is_unsigned<uint>::value
+  @endcode
+  is true.
+
+  \subsection sec_TWG_Range_Concept_Range_Box BoxRange
+  <em>BoxRange</em> is a special kind of Range that can be viewed as a box in the tuple space.
+  It is characterized by two corner indices: lobound, with the smallest ordinal, and back, with the largest ordinal.
+  Aside from this condition, any iteration order is allowed.
+
+  BoxRange must define the following types.
+  <table>
+   <tr>
+    <th> type </th>
+    <th> description </th>
+    <th> comments </th>
+   </tr>
+
+   <tr>
+    <td> \c extent_type </td>
+    <td> describes extent of each dimension of the box </td>
+    <td> an "array" of uints, a directly-addressable sequence container of unsigned integrals (\b ELABORATE) </td>
+   </tr>
+
+  </table>
+
+
+  BoxRange must support the following expressions.  
+  <table>
+   <tr>
+    <th> expression </th>
+    <th> return type </th>
+    <th> specification </th>
+    <th> comments </th>
+   </tr>
+
+   <tr>
+    <td> \c BoxRange(const index_type& front, const index_type& back) </td>
+    <td> </td>
+    <td>
+     @code
+     @endcode
+    </td>
+    <td> creates a tuple range [front, back] </td>
+   </tr>
+
+   <tr>
+    <td> \c BoxRange(const extent_type& extent) </td>
+    <td> </td>
+    <td>
+     @code
+     @endcode
+    </td>
+    <td> creates a tuple range [0, extent) </td>
+   </tr>
+
+   <tr>
+    <td> <code> BoxRange(const uint&... extent) </code> </td>
+    <td> </td>
+    <td>
+     @code
+     @endcode
+    </td>
+    <td> creates a tuple range [0, extent) </td>
+   </tr>
+
+   <tr>
+    <td> \c lobound() </td>
+    <td> const index_type& </td>
+    <td>
+     @code
+     @endcode
+    </td>
+    <td> returns lower bound </td>
+   </tr>
+
+   <tr>
+    <td> \c upbound() </td>
+    <td> const index_type& </td>
+    <td>
+     @code
+     @endcode
+    </td>
+    <td> returns upper bound </td>
+   </tr>
+
+   <tr>
+    <td> \c extent() </td>
+    <td> const extent_type& </td>
+    <td>
+     @code
+     @endcode
+    </td>
+    <td> returns range extent </td>
+   </tr>
+
+   </table>
+
+*/
+

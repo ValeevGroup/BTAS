@@ -1,0 +1,152 @@
+/**
+  @addtogroup TWG_Tensor
+
+  \section sec_TWG_Tensor_Concept_Tensor Tensor Concept
+  Tensor represents a set of values addressed by a \ref sec_TWG_Range_Concept_Range "Range" of indices.
+
+  \subsection sec_TWG_Tensor_Concept_Tensor_Synopsis Synopsis
+  See \ref synopsis for example uses of Tensor concept types.
+
+  \subsection sec_TWG_Tensor_Concept_Tensor_Description Description
+  To be a valid Tensor, class must be a <a href="http://www.stepanovpapers.com/DeSt98.pdf"><em>regular type</em></a>, define
+  types, and support expresisons specified below.
+
+  \subsubsection sec_TWG_Tensor_Concept_Tensor_Description_Types Associated Types
+  <table>
+   <tr>
+    <th> type </th>
+    <th> description </th>
+    <th> comments </th>
+   </tr>
+
+   <tr>
+    <td> \c value_type </td>
+    <td> the type of Tensor element values </td>
+    <td> an "array", a directly-addressable sequence container of integrals (\b ELABORATE); a regular type </td>
+   </tr>
+
+   <tr>
+    <td> \c range_type </td>
+    <td> the type of Range describing this Tensor (conforming to \ref sec_TWG_Range_Concept_Range "TWG.Range" concept)
+    </td>
+    <td> </td>
+   </tr>
+
+   <tr>
+    <td> \c iterator </td>
+    <td> iterator over Tensor elements, dereference to <code>value_type</code> </td>
+    <td> this type model the constant Bidirectional Iterator concept defined in
+    <a href="">C++ Standard, Section 24.2</a> </td>
+   </tr>
+
+   <tr>
+    <td> \c const_iterator </td>
+    <td> const iterator over Tensor elements, dereference to <code>const value_type</code> </td>
+    <td> this type model the constant Bidirectional Iterator concept defined in
+    <a href="">C++ Standard, Section 24.2</a> </td>
+   </tr>
+
+  </table>
+
+  \subsubsection sec_TWG_Tensor_Concept_Tensor_Description_Expressions Valid Expressions
+  To be a valid Tensor, a type must support the following expressions.
+   <table>
+   <tr>
+    <th> expression </th>
+    <th> return type </th>
+    <th> specification </th>
+    <th> comments </th>
+   </tr>
+
+   <tr>
+    <td> \c Tensor() </td>
+    <td> </td>
+    <td>
+     @code
+      Tensor t0;
+      assert(t0.range().area() == 0);
+     @endcode
+    </td>
+    <td> creates an empty Tensor of rank-0 </td>
+   </tr>
+
+   <tr>
+    <td> \c Tensor(const Tensor&) </td>
+    <td> </td>
+    <td>
+     @code
+      Tensor t1(t0);
+      assert(t0 == t1);
+     @endcode
+    </td>
+    <td> must be deep-copy </td>
+   </tr>
+
+   <tr>
+    <td> \c Tensor(Tensor&&) </td>
+    <td> </td>
+    <td> </td>
+    <td> move ctor </td>
+   </tr>
+
+   <tr>
+    <td> \c operator=(const Tensor&) </td>
+    <td> \c Tensor& </td>
+    <td>
+     @code
+      Tensor t2 = t0;
+      assert(t2 == t0);
+     @endcode
+    </td>
+    <td> must be deep-copy </td>
+   </tr>
+
+   <tr>
+    <td> \c operator=(Tensor&&) </td>
+    <td> \c Tensor& </td>
+    <td> </td>
+    <td> </td>
+   </tr>
+
+   <tr>
+    <td> \c operator==(const Tensor&, const Tensor&) </td>
+    <td> \c bool </td>
+    <td>
+     @code
+      assert(t0 == t0);
+      t1 = t0;
+      mutate(t1); // changes state of t1
+      assert(!(t1 == t0));
+     @endcode
+    </td>
+    <td> member or non-member </td>
+   </tr>
+
+   <tr>
+    <td> \c begin() </td>
+    <td> \c const_iterator </td>
+    <td> </td>
+    <td> returns the iterator to the first element in Tensor; if Tensor's Range is empty, <code>begin() == end()</code> is true </td>
+   </tr>
+
+   <tr>
+    <td> \c end() </td>
+    <td> \c const_iterator </td>
+    <td> </td>
+    <td> returns the iterator past the last index in Tensor; if Tensor's Range is empty, <code>begin() == end()</code> is true </td>
+   </tr>
+
+   <tr>
+    <td> \c range() </td>
+    <td> \c range_type </td>
+    <td> </td>
+    <td> returns the Range describing the Tensor </td>
+   </tr>
+
+  </table>
+
+  \subsection sec_TWG_Tensor_Concept_Tensor_Box BoxTensor
+  <em>BoxTensor</em> is a kind of Tensor represented by a Range conforming to the \ref sec_TWG_Range_Concept_Range_Box "TWG.BoxRange"
+  concept. This is the most common type of Tensors encountered in practice.
+
+*/

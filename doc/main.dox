@@ -1,0 +1,46 @@
+
+/**
+   \mainpage Basic Tensor Algebra Software (BTAS)
+   
+   BTAS is a modern C++ software framework for general computation on tensor data. It includes the Tensor Working Group (TWG)
+   specification of concepts, and a reference tensor framework that conforms to the TWG specification.
+
+   \section synopsis Synopsis
+   Here's a short C++ example of what will be possible with BTAS: 
+   @code
+    Range<1> O(5);              // [0, 5)
+    Range<1> U(5, 15);          // [5, 15)
+    auto P = O + U;             // [0, 15)
+    Range    OOUU(O, O, U, U);  // direct product range
+    Range    PPPP(P, P, P, P);
+
+    // "dense" Tensor with data stored in std::vector
+    typedef Tensor<double, std::vector, Range> DenseTensor;
+
+    // make a few Tensors
+    DenseTensor t2(OOUU);
+    std::fill(t2.begin(), t2.end(), 1.0); // fill t2 with ones
+    DenseTensor v(PPPP);
+    std::fill(v.begin(), v.end(), 2.0); // fill v with twos
+
+    // Tensor slices
+    Slice<DenseTensor> v_uuuu = v(U, U, U, U);
+    auto t2v = t2("i,j,a,b") * v_uuuu("a,b,c,d");
+   @endcode
+
+
+   \section twg Tensor Working Group Specification
+   <ul>
+    <li> \ref labelTWGIndex "TWG.Index" </li>
+    <li> \ref labelTWGRange "TWG.Range" </li>
+    <li> \ref labelTWGStorage "TWG.Storage" </li>
+    <li> \ref labelTWGTensor "TWG.Tensor" </li>
+   </ul>
+
+   \section btas Basic Tensor Algebra Software
+   <ul>
+    <li> \ref labelBTASRange "BTAS.Range" </li>
+    <li> \ref labelBTASTensor "BTAS.Tensor" </li>
+   </ul>
+
+*/

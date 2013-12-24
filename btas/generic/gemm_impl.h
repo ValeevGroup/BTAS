@@ -6,10 +6,11 @@
 #include <iterator>
 #include <type_traits>
 
+#include <btas/tensor.h>
 #include <btas/tensor_traits.h>
-#include <btas/types.h>
-
 #include <btas/generic/numeric_type.h>
+#include <btas/types.h>
+#include <btas/array_adaptor.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
 
 #include <btas/generic/scal_impl.h>
@@ -75,10 +76,10 @@ template<> struct gemm_impl<true>
       {
          auto itrA_save = itrA;
          auto itrB_save = itrB;
-         for (size_type i = 0; i < Nsize; ++i)
+         for (size_type i = 0; i < Msize; ++i)
          {
             itrB = itrB_save;
-            for (size_type j = 0; j < Msize; ++j, ++itrC)
+            for (size_type j = 0; j < Nsize; ++j, ++itrC)
             {
                itrA = itrA_save;
                for (size_type k = 0; k < Ksize; ++k, ++itrA, ++itrB)
@@ -210,6 +211,7 @@ template<> struct gemm_impl<true>
 
 };
 
+#if 1
 template<> struct gemm_impl<false>
 {
    template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
@@ -232,6 +234,11 @@ template<> struct gemm_impl<false>
       // currently, column-major order has not yet been supported at this level
       assert(order == CblasRowMajor);
 
+      if (beta != NumericType<_T>::one())
+      {
+         scal (Msize*Nsize, beta, itrC, 1);
+      }
+
       // A:NoTrans / B:NoTrans
       if (transA == CblasNoTrans && transB == CblasNoTrans)
       {
@@ -245,7 +252,7 @@ template<> struct gemm_impl<false>
                itrC = itrC_save;
                for (size_type j = 0; j < Nsize; ++j, ++itrB, ++itrC)
                {
-                  gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
+                   gemm(transA, transB, alpha, *itrA, *itrB, beta, *itrC);
                }
             }
             itrC_save += Nsize;
@@ -264,7 +271,7 @@ template<> struct gemm_impl<false>
                itrA = itrA_save;
                for (size_type k = 0; k < Ksize; ++k, ++itrA, ++itrB)
                {
-                  gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
+                  gemm(transA, transB, alpha, *itrA, *itrB, beta, *itrC);
                }
             }
             itrA_save += Ksize;
@@ -283,7 +290,7 @@ template<> struct gemm_impl<false>
                itrB = itrB_save;
                for (size_type j = 0; j < Nsize; ++j, ++itrB, ++itrC)
                {
-                  gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
+                  gemm(transA, transB, alpha, *itrA, *itrB, beta, *itrC);
                }
             }
             itrB_save += Nsize;
@@ -302,13 +309,14 @@ template<> struct gemm_impl<false>
                itrC = itrC_save;
                for (size_type i = 0; i < Msize; ++i, ++itrA, itrC += Nsize)
                {
-                  gemm(order, transA, transB, alpha, *itrA, *itrB, beta, *itrC);
+                  gemm(transA, transB, alpha, *itrA, *itrB, beta, *itrC);
                }
             }
          }
       }
    }
 };
+#endif
 
 //  ================================================================================================
 
@@ -353,27 +361,26 @@ void gemm (
 
 //  ================================================================================================
 
-/// Generic interface of BLAS-GEMM
-/// \param order storage order of tensor in matrix view (CblasRowMajor, CblasColMajor)
-/// \param transA transpose directive for tensor A (CblasNoTrans, CblasTrans, CblasConjTrans)
-/// \param transB transpose directive for tensor B (CblasNoTrans, CblasTrans, CblasConjTrans)
-/// \param alpha scalar value to be multiplied to A * B
-/// \param A input tensor
-/// \param B input tensor
-/// \param beta scalar value to be multiplied to C
-/// \param C output tensor which can be empty tensor but needs to have rank info (= size of shape).
-/// Iterator is assumed to be consecutive (or, random_access_iterator) , thus e.g. iterator to map doesn't work.
+/// Generic implementation of BLAS-GEMM
+/// \param transA transpose directive for tensor \param a (CblasNoTrans, CblasTrans, CblasConjTrans)
+/// \param transB transpose directive for tensor \param b (CblasNoTrans, CblasTrans, CblasConjTrans)
+/// \param alpha scalar value to be multiplied to \param a * \param b
+/// \param a input tensor
+/// \param b input tensor
+/// \param beta scalar value to be multiplied to \param c
+/// \param c output tensor which can be empty tensor but needs to have rank info
 template<
    typename _T,
    class _TensorA, class _TensorB, class _TensorC,
    class = typename std::enable_if<
-      is_tensor<_TensorA>::value &
-      is_tensor<_TensorB>::value &
-      is_tensor<_TensorC>::value
+      is_boxtensor<_TensorA>::value &
+      is_boxtensor<_TensorB>::value &
+      is_boxtensor<_TensorC>::value &
+      std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value &
+      std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value
    >::type
 >
 void gemm (
-   const CBLAS_ORDER& order,
    const CBLAS_TRANSPOSE& transA,
    const CBLAS_TRANSPOSE& transB,
    const _T& alpha,
@@ -382,10 +389,17 @@ void gemm (
    const _T& beta,
          _TensorC& C)
 {
-   // check element type
+    static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorC>::value &&
+                  boxtensor_storage_order<_TensorB>::value == boxtensor_storage_order<_TensorC>::value,
+                  "btas::gemm does not support mixed storage order");
+    const CBLAS_ORDER order = boxtensor_storage_order<_TensorC>::value == boxtensor_storage_order<_TensorC>::row_major ?
+                              CblasRowMajor : CblasColMajor;
+
+   typedef unsigned long size_type;
+
+   if (A.empty() || B.empty()) return;
+   assert (C.rank() != 0);
    typedef typename _TensorA::value_type value_type;
-   static_assert(std::is_same<value_type, typename _TensorB::value_type>::value, "value type of B must be the same as that of A");
-   static_assert(std::is_same<value_type, typename _TensorC::value_type>::value, "value type of C must be the same as that of A");
 
    if (A.empty() || B.empty())
    {
@@ -398,14 +412,14 @@ void gemm (
    const size_type rankB = B.rank();
    const size_type rankC = C.rank();
 
-   const size_type K = (rankA+rankB-rankC)/2;
+   const size_type K = (rankA+rankB-rankC)/2; assert((rankA+rankB-rankC) % 2 == 0);
    const size_type M = rankA-K;
    const size_type N = rankB-K;
 
-   // get shapes
-   const typename _TensorA::shape_type& shapeA = A.shape();
-   const typename _TensorB::shape_type& shapeB = B.shape();
-         typename _TensorC::shape_type  shapeC = C.shape(); // if C is empty, this gives { 0,...,0 }
+   // get extents
+   auto extentA = extent(A);
+   auto extentB = extent(B);
+   auto extentC = extent(C); // if C is empty, this gives { }, will need to allocate
 
    size_type Msize = 0; // Rows count of C
    size_type Nsize = 0; // Cols count of C
@@ -415,119 +429,83 @@ void gemm (
    size_type LDB = 0; // Leading dims of B
    size_type LDC = 0; // Leading dims of C
 
-   // to minimize forks by if?
-   if      (transA == CblasNoTrans && transB == CblasNoTrans)
+   Msize = (transA == CblasNoTrans)
+           ? std::accumulate(extentA.begin(), extentA.begin()+M, 1ul, std::multiplies<size_type>())
+           : std::accumulate(extentA.begin()+K, extentA.end(),   1ul, std::multiplies<size_type>())
+   ;
+   Ksize = (transA == CblasNoTrans)
+           ? std::accumulate(extentA.begin()+M, extentA.end(),   1ul, std::multiplies<size_type>())
+           : std::accumulate(extentA.begin(), extentA.begin()+K, 1ul, std::multiplies<size_type>())
+   ;
+
+   // check that contraction dimensions match
+   auto Barea = range(B).area();
    {
-      Msize = std::accumulate(shapeA.begin(), shapeA.begin()+M, 1ul, std::multiplies<size_type>());
-      Nsize = std::accumulate(shapeB.begin()+K, shapeB.end(),   1ul, std::multiplies<size_type>());
-      Ksize = std::accumulate(shapeA.begin()+M, shapeA.end(),   1ul, std::multiplies<size_type>());
+     // weak check
+     assert(Barea % Ksize == 0);
 
-      for (size_type i = 0; i < M; ++i) shapeC[i]   = shapeA[i];
-      for (size_type i = 0; i < N; ++i) shapeC[M+i] = shapeB[K+i];
-
-      assert(std::equal(shapeA.begin()+M, shapeA.end(), shapeB.begin()));
-
-      if(order == CblasRowMajor)
-      {
-         LDA = Ksize;
-         LDB = Nsize;
-      }
-      else
-      {
-         LDA = Msize;
-         LDB = Ksize;
-      }
-   }
-   else if (transA == CblasNoTrans && transB != CblasNoTrans)
-   {
-      Msize = std::accumulate(shapeA.begin(), shapeA.begin()+M, 1ul, std::multiplies<size_type>());
-      Nsize = std::accumulate(shapeB.begin(), shapeB.begin()+N, 1ul, std::multiplies<size_type>());
-      Ksize = std::accumulate(shapeA.begin()+M, shapeA.end(),   1ul, std::multiplies<size_type>());
-
-      for (size_type i = 0; i < M; ++i) shapeC[i]   = shapeA[i];
-      for (size_type i = 0; i < N; ++i) shapeC[M+i] = shapeB[i];
-
-      assert(std::equal(shapeA.begin()+M, shapeA.end(), shapeB.begin()+N));
-
-      if(order == CblasRowMajor)
-      {
-         LDA = Ksize;
-         LDB = Ksize;
-      }
-      else
-      {
-         LDA = Msize;
-         LDB = Nsize;
-      }
-   }
-   else if (transA != CblasNoTrans && transB == CblasNoTrans)
-   {
-      Msize = std::accumulate(shapeA.begin()+K, shapeA.end(),   1ul, std::multiplies<size_type>());
-      Nsize = std::accumulate(shapeB.begin()+K, shapeB.end(),   1ul, std::multiplies<size_type>());
-      Ksize = std::accumulate(shapeA.begin(), shapeA.begin()+K, 1ul, std::multiplies<size_type>());
-
-      for (size_type i = 0; i < M; ++i) shapeC[i]   = shapeA[K+i];
-      for (size_type i = 0; i < N; ++i) shapeC[M+i] = shapeB[K+i];
-
-      assert(std::equal(shapeA.begin(), shapeA.begin()+K, shapeB.begin()));
-
-      if(order == CblasRowMajor)
-      {
-         LDA = Msize;
-         LDB = Nsize;
-      }
-      else
-      {
-         LDA = Ksize;
-         LDB = Ksize;
-      }
-   }
-   else if (transA != CblasNoTrans && transB != CblasNoTrans)
-   {
-      Msize = std::accumulate(shapeA.begin()+K, shapeA.end(),   1ul, std::multiplies<size_type>());
-      Nsize = std::accumulate(shapeB.begin(), shapeB.begin()+N, 1ul, std::multiplies<size_type>());
-      Ksize = std::accumulate(shapeA.begin(), shapeA.begin()+K, 1ul, std::multiplies<size_type>());
-
-      for (size_type i = 0; i < M; ++i) shapeC[i]   = shapeA[K+i];
-      for (size_type i = 0; i < N; ++i) shapeC[M+i] = shapeB[i];
-
-      assert(std::equal(shapeA.begin(), shapeA.begin()+K, shapeB.begin()+N));
-
-      if(order == CblasRowMajor)
-      {
-         LDA = Msize;
-         LDB = Ksize;
-      }
-      else
-      {
-         LDA = Ksize;
-         LDB = Nsize;
-      }
+     // strong checks
+     if (transA == CblasNoTrans && transB == CblasNoTrans)
+       assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()));
+     if (transA == CblasNoTrans && transB != CblasNoTrans)
+       assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()+N));
+     if (transA != CblasNoTrans && transB == CblasNoTrans)
+       assert(std::equal(extentA.begin(), extentA.begin()+K, extentB.begin()));
+     if (transA != CblasNoTrans && transB != CblasNoTrans)
+       assert(std::equal(extentA.begin(), extentA.begin()+K, extentB.begin()+N));
    }
 
-   if(order == CblasRowMajor)
-   {
-      LDC = Nsize;
+   Nsize = Barea / Ksize;
+
+   if(order == CblasRowMajor) {
+     LDA = Ksize;
+     LDB = Nsize;
+     LDC = Nsize;
    }
-   else
-   {
-      LDC = Msize;
+   else {
+     LDA = Msize;
+     LDB = Ksize;
+     LDC = Msize;
+   }
+
+   if (C.empty()) {     // C empty -> compute extentC
+     extentC = btas::array_adaptor<decltype(extentC)>::construct(M+N);
+     if (transA == CblasNoTrans)
+       for (size_type i = 0; i < M; ++i) extentC[i] = extentA[i];
+     else
+       for (size_type i = 0; i < M; ++i) extentC[i] = extentA[K+i];
+     if (transB == CblasNoTrans)
+       for (size_type i = 0; i < N; ++i) extentC[M+i] = extentB[K+i];
+     else
+       for (size_type i = 0; i < N; ++i) extentC[M+i] = extentB[i];
+   }
+   else { // C not empty -> validate extentC
+     if (transA == CblasNoTrans)
+       assert(std::equal(extentA.begin(), extentA.begin()+M, extentC.begin()));
+     else
+       assert(std::equal(extentA.begin()+K, extentA.end(), extentC.begin()));
+     if (transB == CblasNoTrans)
+       assert(std::equal(extentB.begin()+K, extentB.end(), extentC.begin()+M));
+     else
+       assert(std::equal(extentB.begin(), extentB.begin()+N, extentC.begin()+M));
    }
 
    // resize / scale
    if (C.empty())
    {
-      C.resize(shapeC);
+      C.resize(extentC);
       NumericType<value_type>::fill(C.begin(), C.end(), NumericType<value_type>::zero());
    }
    else
    {
-      assert(std::equal(shapeC.begin(), shapeC.end(), C.shape().begin()));
+      assert(std::equal(extentC.begin(), extentC.end(), extent(C).begin()));
+      if (beta == NumericType<value_type>::zero())
+        NumericType<value_type>::fill(C.begin(), C.end(), NumericType<value_type>::zero());
    }
 
-   auto itrA = tbegin(A);
-   auto itrB = tbegin(B);
-   auto itrC = tbegin(C);
+   auto itrA = std::begin(A);
+   auto itrB = std::begin(B);
+   auto itrC = std::begin(C);
 
    gemm (order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
 }

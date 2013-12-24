@@ -5,6 +5,7 @@
 #include <iterator>
 #include <type_traits>
 
+#include <btas/tensor.h>
 #include <btas/tensor_traits.h>
 #include <btas/types.h>
 
@@ -118,8 +119,8 @@ template<
    typename _T,
    class _TensorX, class _TensorY,
    class = typename std::enable_if<
-      is_tensor<_TensorX>::value &
-      is_tensor<_TensorY>::value
+      is_boxtensor<_TensorX>::value &
+      is_boxtensor<_TensorY>::value
    >::type
 >
 void axpy (
@@ -138,16 +139,16 @@ void axpy (
 
    if (Y.empty())
    {
-      Y.resize(X.shape());
+      Y.resize(btas::extent(X));
       NumericType<value_type>::fill(Y.begin(), Y.end(), NumericType<value_type>::zero());
    }
    else
    {
-      assert(std::equal(X.shape().begin(), X.shape().end(), Y.shape().begin()));
+      assert( range(X) == range(Y) );
    }
 
-   auto itrX = tbegin(X);
-   auto itrY = tbegin(Y);
+   auto itrX = begin(X);
+   auto itrY = begin(Y);
 
    axpy (X.size(), alpha, itrX, 1, itrY, 1);
 }

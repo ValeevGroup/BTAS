@@ -42,24 +42,7 @@ enum CBLAS_SIDE { CblasLeft, CblasRight };
 #include <complex>
 #endif // _HAS_CBLAS
 
-//
-//  Default types
-//
-
-#include <vector>
-
 namespace btas {
-
-namespace DEFAULT {
-
-/// default storage class
-template<typename _T>
-using storage = std::vector<_T>;
-
-/// default shape class
-using shape = std::vector<unsigned long>;
-
-} // namespace DEFAULT
 
 //
 //  Other aliases for convenience

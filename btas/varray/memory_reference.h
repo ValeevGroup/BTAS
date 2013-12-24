@@ -64,7 +64,7 @@ struct memory_reference {
    {
       static_assert(std::is_same<typename _Container::value_type, value_type>::value, "Error: mismatched value_type's");
       if (!x.empty()) {
-         _M_start = x.data();
+         _M_start  = x.data();
          _M_finish = _M_start + x.size();
       }
    }
@@ -73,6 +73,7 @@ struct memory_reference {
    {
       _M_start = x._M_start;
       _M_finish = x._M_finish;
+      return *this;
    }
 
    iterator begin () noexcept
@@ -85,12 +86,22 @@ struct memory_reference {
       return const_iterator (_M_start);
    }
 
+   const_iterator cbegin () const noexcept
+   {
+      return const_iterator (_M_start);
+   }
+
    iterator end () noexcept
    {
       return iterator (_M_finish);
    }
 
    const_iterator end () const noexcept
+   {
+      return const_iterator (_M_finish);
+   }
+
+   const_iterator cend () const noexcept
    {
       return const_iterator (_M_finish);
    }

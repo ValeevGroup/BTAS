@@ -8,531 +8,454 @@
 #include <vector>
 
 #include <btas/types.h>
+#include <btas/defaults.h>
 #include <btas/tensor_traits.h>
+#include <btas/array_adaptor.h>
 
-#include <btas/util/stride.h>
-#include <btas/util/dot.h>
+#include <boost/serialization/serialization.hpp>
 
 namespace btas {
 
-/// reference implementation of dense tensor class (variable rank)
-/// TODO: copy semantics b/w row-major and column-major tensors has not yet been supported...
-///       one can do this is wrapping by NDIterator,
-///
-///          Tensor<T, CblasRowMajor> A(...);
-///          Tensor<T, CblasColMajor> B(...);
-///          copy(A.begin(), A.end(), NDIterator<Tensor<T, CblasColMajor>>(B));
-///
-///       since NDIterator has implemented in terms of row-major order, so far.
-///       this implies that NDIterator should have major-order directive...
-///
-/// \tparam _T type of element
-/// \tparam _Order major order directive, reused CBLAS_ORDER, i.e. CblasRowMajor or CblasColMajor
-/// \tparam _Container storage type, iterator is provided by container
-template<typename _T,
-         CBLAS_ORDER _Order = CblasRowMajor,
-         class _Container = DEFAULT::storage<_T>>
-class Tensor {
+  /** BTAS implementation of "dense" tensor class that models \ref labelTWGTensor "TWG.BoxTensor" concept
+      @tparam _T element type, Tensor contains values of this type
+      @tparam _Range Range type, models \ref labelTWGRange "TWG.Range" concept
+      @tparam _Storage Storage type, models \ref labelTWGStorage "TWG.Storage" concept
+  */
+  template<typename _T,
+           class _Range = btas::DEFAULT::range,
+           class _Storage = btas::DEFAULT::storage<_T>
+           >
+  class Tensor {
 
-public:
+    public:
 
-   //  ========== Starting Public Interface and Its Reference Implementations ==========
+      /// value type
+      typedef _T value_type;
 
-   //
-   //  Concepts for Standard Tensor Template Class
-   //
+      /// type of underlying data storage
+      typedef _Storage storage_type;
 
-   /// element type
-   typedef _T value_type;
+      /// size type
+      typedef typename storage_type::size_type size_type;
 
-   /// type of array storing data as 1D array
-   /// container is actually not the concept of tensor
-   typedef _Container container;
+      /// element iterator
+      typedef typename storage_type::iterator iterator;
 
-   /// size type
-   typedef typename container::size_type size_type;
+      /// constant element iterator
+      typedef typename storage_type::const_iterator const_iterator;
 
-   /// iterator
-   typedef typename container::iterator iterator;
+      /// type of Range
+      typedef _Range range_type;
 
-   /// const iterator
-   typedef typename container::const_iterator const_iterator;
+      /// type of index
+      typedef typename _Range::index_type index_type;
 
-   /// type of array for index shapes
-   /// shape_type requires, default-constructible, resizable, accessible by operator[]
-   typedef DEFAULT::shape shape_type;
+    private:
+      struct Enabler {};
 
-public:
+    public:
 
-   //
-   //  Constructors
-   //
+      /// default constructor
+      Tensor () { }
 
-   /// default constructor
-   Tensor () { }
+      /// destructor
+      ~Tensor () { }
 
-   /// destructor
-   ~Tensor () { }
+      /// constructor with index extent
+      template<typename... _args>
+      explicit
+      Tensor (const size_type& first, const _args&... rest) :
+      range_(range_type(first, rest...))
+      {
+        array_adaptor<storage_type>::resize(data_, range_.area());
+      }
 
-   /// constructor with index shape
-   template<typename... _args>
-   explicit
-   Tensor (const size_type& first, const _args&... rest)
-   {
-      resize(first, rest...);
-   }
+      /// construct from \c range, allocate data, but not initialized
+      explicit
+      Tensor (const range_type& range) :
+      range_(range)
+      {
+        array_adaptor<storage_type>::resize(data_, range_.area());
+      }
 
-   /// constructor with index shape object
-   explicit
-   Tensor (const shape_type& shape)
-   {
-      resize(shape);
-   }
+      /// construct from \c range object, set all elements to \c v
+      explicit
+      Tensor (const range_type& range,
+              value_type v) :
+              range_(range)
+      {
+        array_adaptor<storage_type>::resize(data_, range_.area());
+        std::fill(begin(), end(), v);
+      }
 
-   //
-   //  Copy semantics:
-   //  provides the interface b/w different tensor class
-   //  _Tensor must have convertible value_type and iterators for shape, stride, and data
-   //
+      /// copy constructor
+      template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
+      explicit
+      Tensor (const _Tensor& x)
+      : range_ (x.range()),
+      // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
+        data_(x.begin(), x.end())
+      {
+      }
 
-   /// copy constructor
-   template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
-   explicit
-   Tensor (const _Tensor& x)
-   : shape_ (x.rank()), stride_ (x.rank())
-   {
-      std::copy(x.shape().begin(), x.shape().end(), shape_.begin());
+      /// copy constructor
+      explicit
+      Tensor (const Tensor& x)
+      : range_ (x.range()), data_(x.data_)
+      {
+      }
 
-      std::copy(x.stride().begin(), x.stride().end(), stride_.begin());
+      /// copy assignment operator
+      // TODO I only know how to do this if _Tensor's range_type is same as mine
+      template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
+      Tensor&
+      operator= (const _Tensor& x)
+      {
+          range_ = x.range();
+          array_adaptor<storage_type>::resize(data_, range_.area());
+          std::copy(x.begin(), x.end(), data_.begin());
+          return *this;
+      }
 
-      data_.resize(x.size());
-      std::copy(x.begin(), x.end(), data_.begin());
-   }
+      /// copy assignment
+      Tensor&
+      operator= (const Tensor& x)
+      {
+        range_ = x.range_;
+        data_ = x.data_;
+        return *this;
+      }
 
-   /// copy constructor specialized (avoid implicit deletion of copy constructor)
-   /// TODO: should be implemented in terms of efficient copy.
-   explicit
-   Tensor (const Tensor& x)
-   : shape_ (x.rank()), stride_ (x.rank())
-   {
-      std::copy(x.shape().begin(), x.shape().end(), shape_.begin());
+      /// move constructor
+      explicit
+      Tensor (Tensor&& x)
+      {
+        swap(range_, x.range_);
+        swap(data_, x.data_);
+      }
 
-      std::copy(x.stride().begin(), x.stride().end(), stride_.begin());
+      /// move assignment operator
+      Tensor&
+      operator= (Tensor&& x)
+      {
+        std::swap(range_, x.range_);
+        std::swap(data_, x.data_);
+        return *this;
+      }
 
-      data_.resize(x.size());
-      std::copy(x.begin(), x.end(), data_.begin());
-   }
+      /// number of indices (tensor rank)
+      size_type
+      rank () const
+      {
+        return range_.rank();
+      }
 
-   /// copy assignment operator
-   template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
-   Tensor&
-   operator= (const _Tensor& x)
-   {
-      shape_.resize(x.rank());
-      std::copy(x.shape().begin(), x.shape().end(), shape_.begin());
+      /// \return number of elements
+      size_type
+      size () const
+      {
+        return range_.area();
+      }
 
-      stride_.resize(x.rank());
-      std::copy(x.stride().begin(), x.stride().end(), stride_.begin());
+      /// \return range object
+      const range_type&
+      range() const
+      {
+        return range_;
+      }
 
-      data_.resize(x.size());
-      std::copy(x.begin(), x.end(), data_.begin());
-      return *this;
-   }
+      /// test whether storage is empty
+      bool
+      empty() const
+      {
+        return range_.area() == 0;
+      }
 
-   /// copy assignment operator (avoid implicit deletion of copy assignment)
-   /// TODO: should be implemented in terms of efficient copy.
-   Tensor&
-   operator= (const Tensor& x)
-   {
-      shape_.resize(x.rank());
-      std::copy(x.shape().begin(), x.shape().end(), shape_.begin());
+      /// \return const iterator begin
+      const_iterator
+      begin() const
+      {
+        return data_.begin();
+      }
 
-      stride_.resize(x.rank());
-      std::copy(x.stride().begin(), x.stride().end(), stride_.begin());
+      /// \return const iterator end
+      const_iterator
+      end() const
+      {
+        return data_.end();
+      }
 
-      data_.resize(x.size());
-      std::copy(x.begin(), x.end(), data_.begin());
-      return *this;
-   }
+      /// \return const iterator begin, even if this is not itself const
+      const_iterator
+      cbegin() const
+      {
+        return data_.begin();
+      }
 
-   /// move constructor
-   explicit
-   Tensor (Tensor&& x)
-   : shape_ (x.shape_), stride_ (x.stride_), data_ (x.data_)
-   { }
+      /// \return const iterator end, even if this is not itself const
+      const_iterator
+      cend() const
+      {
+        return data_.end();
+      }
 
-   /// move assignment operator
-   Tensor&
-   operator= (Tensor&& x)
-   {
-      shape_.swap(x.shape_);
-      stride_.swap(x.stride_);
-      data_.swap(x.data_);
-      return *this;
-   }
+      /// \return iterator begin
+      iterator
+      begin()
+      {
+        return data_.begin();
+      }
 
-   /// number of indices (tensor rank)
-   size_type
-   rank () const
-   {
-      return shape_.size();
-   }
+      /// \return iterator end
+      iterator
+      end()
+      {
+        return data_.end();
+      }
 
-   /// \return number of elements
-   size_type
-   size () const
-   {
-      return data_.size();
-   }
+      /// \return element without range check
+      template<typename index0, typename... _args>
+      typename std::enable_if<std::is_integral<index0>::value, const value_type&>::type
+      operator() (const index0& first, const _args&... rest) const
+      {
+        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
+        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
+        index_type index = array_adaptor<index_type>::construct(indexv.size());
+        std::copy(indexv.begin(), indexv.end(), index.begin());
+        return data_[ range_.ordinal(index) ];
+      }
 
-   /// \return shape object
-   const shape_type&
-   shape () const
-   {
-      return shape_;
-   }
+      /// \return element without range check (rank() == general)
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value, const value_type&>::type
+      operator() (const Index& index) const
+      {
+        return data_[range_.ordinal(index)];
+      }
 
-   /// \return n-th shape
-   const typename shape_type::value_type&
-   shape (const size_type& n) const
-   {
-      return shape_[n];
-   }
+      /// access element without range check
+      template<typename index0, typename... _args>
+      typename std::enable_if<std::is_integral<index0>::value, value_type&>::type
+      operator() (const index0& first, const _args&... rest)
+      {
+        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
+        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
+        index_type index = array_adaptor<index_type>::construct(indexv.size());
+        std::copy(indexv.begin(), indexv.end(), index.begin());
+        return data_[ range_.ordinal(index) ];
+      }
 
-   /// \return stride object
-   const shape_type&
-   stride () const
-   {
-      return stride_;
-   }
-
-   /// \return n-th stride
-   const typename shape_type::value_type&
-   stride (const size_type& n) const
-   {
-      return stride_[n];
-   }
-
-   /// test whether storage is empty
-   bool
-   empty() const
-   {
-      return data_.empty();
-   }
-
-   /// \return const iterator first
-   const_iterator
-   begin() const
-   {
-      return data_.begin();
-   }
-
-   /// \return const iterator last
-   const_iterator
-   end() const
-   {
-      return data_.end();
-   }
-
-   /// \return const iterator first even if this is not itself const
-   const_iterator
-   cbegin() const
-   {
-      return data_.begin();
-   }
-
-   /// \return const iterator last even if this is not itself const
-   const_iterator
-   cend() const
-   {
-      return data_.end();
-   }
-
-   /// \return iterator first
-   iterator
-   begin()
-   {
-      return data_.begin();
-   }
-
-   /// \return iterator last
-   iterator
-   end()
-   {
-      return data_.end();
-   }
-
-   /// \return element without shape check
-   template<typename... _args>
-   const value_type& 
-   operator() (const size_type& first, const _args&... rest) const
-   {
-      return data_[__get_address<0>(first, rest...)];
-   }
-
-   /// \return element without shape check (rank() == general)
-   const value_type& 
-   operator() (const shape_type& index) const
-   {
-      return data_[__get_address(index)];
-   }
-
-   /// access element without shape check
-   template<typename... _args>
-   value_type& 
-   operator() (const size_type& first, const _args&... rest)
-   {
-      return data_[__get_address<0>(first, rest...)];
-   }
-
-   /// access element without shape check (rank() == general)
-   value_type& 
-   operator() (const shape_type& index)
-   {
-      return data_[__get_address(index)];
-   }
+      /// access element without range check (rank() == general)
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value, value_type&>::type
+      operator() (const Index& index)
+      {
+        return data_[range_.ordinal(index)];
+      }
    
-   /// \return element without shape check
-   template<typename... _args>
-   const value_type& 
-   at (const size_type& first, const _args&... rest) const
-   {
-      assert(__check_range<0>(first, rest...));
-      return data_[__get_address<0>(first, rest...)];
-   }
+      /// \return element without range check
+      template<typename index0, typename... _args>
+      typename std::enable_if<std::is_integral<index0>::value, const value_type&>::type
+      at (const index0& first, const _args&... rest) const
+      {
+        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
+        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
+        index_type index = array_adaptor<index_type>::construct(indexv.size());
+        std::copy(indexv.begin(), indexv.end(), index.begin());
+        assert( range_.includes(index) );
+        return data_[ range_.ordinal(index) ];
+      }
 
-   /// \return element without shape check (rank() == general)
-   const value_type& 
-   at (const shape_type& index) const
-   {
-      assert(__check_range(index));
-      return data_[__get_address(index)];
-   }
+      /// \return element without range check (rank() == general)
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value, const value_type&>::type
+      at (const Index& index) const
+      {
+        assert( range_.includes(index) );
+        return data_[ range_.ordinal(index) ];
+      }
 
-   /// access element without shape check
-   template<typename... _args>
-   value_type& 
-   at (const size_type& first, const _args&... rest)
-   {
-      assert(__check_range<0>(first, rest...));
-      return data_[__get_address<0>(first, rest...)];
-   }
+      /// access element without range check
+      template<typename index0, typename... _args>
+      typename std::enable_if<std::is_integral<index0>::value, value_type&>::type
+      at (const index0& first, const _args&... rest)
+      {
+        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
+        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
+        index_type index = array_adaptor<index_type>::construct(indexv.size());
+        std::copy(indexv.begin(), indexv.end(), index.begin());
+        assert( range_.includes(index) );
+        return data_[ range_.ordinal(index) ];
+      }
 
-   /// access element without shape check (rank() == general)
-   value_type& 
-   at (const shape_type& index)
-   {
-      assert(__check_range(index));
-      return data_[__get_address(index)];
-   }
+      /// access element without range check (rank() == general)
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value, value_type&>::type
+      at (const Index& index)
+      {
+        assert( range_.includes(index) );
+        return data_[ range_.ordinal(index) ];
+      }
    
-   /// resize array with shape
-   template<typename... _args>
-   void
-   resize (const size_type& first, const _args&... rest)
-   {
-      shape_.resize(1u+sizeof...(rest));
-      __set_shape<0>(first, rest...);
+      /// resize array with range object
+      template <typename Range>
+      void
+      resize (const Range& range, typename std::enable_if<is_boxrange<Range>::value,Enabler>::type = Enabler())
+      {
+        range_ = range;
+        array_adaptor<storage_type>::resize(data_, range_.area());
+      }
 
-      stride_.resize(shape_.size());
-//    __normal_stride<_Order>::set(shape_, stride_);
+      /// resize array with extent object
+      template <typename Extent>
+      void
+      resize (const Extent& extent, typename std::enable_if<is_index<Extent>::value,Enabler>::type = Enabler())
+      {
+        range_ = range_type(extent);
+        array_adaptor<storage_type>::resize(data_, range_.area());
+      }
 
-//    data_.resize(shape_[0]*stride_[0]);
-      data_.resize(__normal_stride<_Order>::set(shape_, stride_));
-   }
+      /// swap this and x
+      void
+      swap (Tensor& x)
+      {
+        std::swap(range_, x.range_);
+        std::swap(data_, x.data_);
+      }
 
-   /// resize array with shape object
-   void
-   resize (const shape_type& shape)
-   {
-      assert(shape.size() > 0);
+      /// clear all members
+      void
+      clear()
+      {
+        range_ = range_type();
+        data_ = storage_type();
+      }
 
-      shape_ = shape;
+      //  ========== Finished Public Interface and Its Reference Implementations ==========
 
-      stride_.resize(shape_.size());
-//    __normal_stride<_Order>::set(shape_, stride_);
+      //
+      //  Here come Non-Standard members (to be discussed)
+      //
 
-//    data_.resize(shape_[0]*stride_[0]);
-      data_.resize(__normal_stride<_Order>::set(shape_, stride_));
-   }
+      /// addition assignment
+      Tensor&
+      operator+= (const Tensor& x)
+      {
+        assert( std::equal(range_.begin(), range_.end(), x.range_.begin()) );
+        std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::plus<value_type>());
+        return *this;
+      }
 
-   /// swap this and x
-   void 
-   swap (Tensor& x)
-   {
-      shape_.swap(x.shape_);
-      stride_.swap(x.stride_);
-      data_.swap(x.data_);
-   }
+      /// addition of tensors
+      Tensor
+      operator+ (const Tensor& x) const
+      {
+        Tensor y(*this); y += x;
+        return y; /* automatically called move semantics */
+      }
 
-   /// clear all members
-   void 
-   clear()
-   {
-      shape_.clear();
-      stride_.clear();
-      data_.clear();
-   }
+      /// subtraction assignment
+      Tensor&
+      operator-= (const Tensor& x)
+      {
+        assert(
+            std::equal(range_.begin(), range_.end(), x.range_.begin()));
+        std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::minus<value_type>());
+        return *this;
+      }
 
-   //  ========== Finished Public Interface and Its Reference Implementations ==========
+      /// subtraction of tensors
+      Tensor
+      operator- (const Tensor& x) const
+      {
+        Tensor y(*this); y -= x;
+        return y; /* automatically called move semantics */
+      }
 
-   //
-   //  Here comes Non-Standard members (to be discussed)
-   //
+      /// \return bare const pointer to the first element of data_
+      /// this enables to call BLAS functions
+      const value_type*
+      data () const
+      {
+        return data_.data();
+      }
 
-   /// return major order directive
-   static constexpr CBLAS_ORDER order() { return _Order; }
+      /// \return bare pointer to the first element of data_
+      /// this enables to call BLAS functions
+      value_type*
+      data()
+      {
+        return data_.data();
+      }
 
-   /// addition assignment
-   Tensor&
-   operator+= (const Tensor& x)
-   {
-      assert(std::equal(shape_.begin(), shape_.end(), x.shape_.begin()));
-      std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::plus<value_type>());
-      return *this;
-   }
+      /// fill all elements by val
+      void
+      fill (const value_type& val)
+      {
+        std::fill(data_.begin(), data_.end(), val);
+      }
 
-   /// addition of tensors
-   Tensor
-   operator+ (const Tensor& x) const
-   {
-      Tensor y(*this); y += x;
-      return y; /* automatically called move semantics */
-   }
+      /// generate all elements by gen()
+      template<class Generator>
+      void
+      generate (Generator gen)
+      {
+          std::generate(data_.begin(), data_.end(), gen);
+      }
 
-   /// subtraction assignment
-   Tensor&
-   operator-= (const Tensor& x)
-   {
-      assert(std::equal(shape_.begin(), shape_.end(), x.shape_.begin()));
-      std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::minus<value_type>());
-      return *this;
-   }
+    private:
 
-   /// subtraction of tensors
-   Tensor
-   operator- (const Tensor& x) const
-   {
-      Tensor y(*this); y -= x;
-      return y; /* automatically called move semantics */
-   }
+      range_type range_;///< range object
+      storage_type data_;///< data
 
-   /// \return bare const pointer to the first element of data_
-   /// this enables to call BLAS functions
-   const value_type*
-   data () const
-   {
-      return data_.data();
-   }
+  }; // end of Tensor
 
-   /// \return bare pointer to the first element of data_
-   /// this enables to call BLAS functions
-   value_type* 
-   data()
-   {
-      return data_.data();
-   }
+  template <typename _T, typename _Range, typename _Storage>
+  auto cbegin(const btas::Tensor<_T, _Range, _Storage>& x) -> decltype(x.cbegin()) {
+    return x.cbegin();
+  }
+  template <typename _T, typename _Range, typename _Storage>
+  auto cend(const btas::Tensor<_T, _Range, _Storage>& x) -> decltype(x.cbegin()) {
+    return x.cend();
+  }
 
-   /// fill all elements by val
-   void
-   fill (const value_type& val)
-   {
-      std::fill(data_.begin(), data_.end(), val);
-   }
 
-   /// generate all elements by gen()
-   template<class Generator>
-   void 
-   generate (Generator gen)
-   {
-      std::generate(data_.begin(), data_.end(), gen);
-   }
+  /// maps Tensor -> Range
+  template <typename _T, typename _Range, typename _Storage>
+  auto
+  range (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.range()) {
+    return t.range();
+  }
 
-private:
+  /// maps Tensor -> Range extent
+  template <typename _T, typename _Range, typename _Storage>
+  auto
+  extent (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.range().extent()) {
+    return t.range().extent();
+  }
 
-   //
-   //  Supportive functions
-   //
+  /// Tensor stream output operator
 
-   /// set shape object
-   template<size_type i, typename... _args>
-   void
-   __set_shape (const size_type& first, const _args&... rest)
-   {
-      shape_[i] = first;
-      __set_shape<i+1>(rest...);
-   }
-
-   /// set shape object (specialized)
-   template<size_type i>
-   void
-   __set_shape (const size_type& first)
-   {
-      shape_[i] = first;
-   }
-   
-   /// \return address pointed by index
-   template<size_type i, typename... _args>
-   size_type
-   __get_address (const size_type& first, const _args&... rest) const
-   {
-      return first*stride_[i] + __get_address<i+1>(rest...);
-   }
-
-   /// \return address pointed by index
-   template<size_type i>
-   size_type
-   __get_address (const size_type& first) const
-   {
-      return first*stride_[i];
-   }
-
-   /// \return address pointed by index
-   size_type
-   __get_address (const shape_type& index) const
-   {
-      return dot(stride_, index);
-   }
-
-   /// test whether index is in range
-   template<size_type i, typename... _args>
-   bool
-   __check_range (const size_type& first, const _args&... rest) const
-   {
-      return (first >= 0 && first < shape_[i] && __check_range<i+1>(rest...));
-   }
-
-   /// test whether index is in range
-   template<size_type i>
-   bool
-   __check_range (const size_type& first) const
-   {
-      return (first >= 0 && first < shape_[i]);
-   }
-
-   /// test whether index is in range
-   bool
-   __check_range (const shape_type& index)
-   {
-      assert(index.size() == rank());
-      typename shape_type::iterator r = shape_.begin();
-      return std::all_of(index.begin(), index.end(), [&r] (const typename shape_type::value_type& i) { return (i >= 0 && i < *r++); });
-   }
-
-private:
-
-   //
-   // Data members go here
-   //
-
-   shape_type shape_; ///< shape
-
-   shape_type stride_; ///< stride
-
-   container data_; ///< data stored as 1D array
-
-};
+  /// prints Tensor in row-major form. To be implemented elsewhere using slices.
+  /// \param os The output stream that will be used to print \c t
+  /// \param t The Tensor to be printed
+  /// \return A reference to the output stream
+  template <typename _T, typename _Range, typename _Storage>
+  std::ostream& operator<<(std::ostream& os, const btas::Tensor<_T, _Range, _Storage>& t);
 
 } // namespace btas
+
+namespace boost {
+namespace serialization {
+
+  /// boost serialization
+  template<class Archive, typename _T, class _Storage, class _Range>
+  void serialize(Archive& ar, btas::Tensor<_T, _Range, _Storage>& t,
+                 const unsigned int version) {
+    ar & t.range() & t.stride() & t.data();
+  }
+
+}
+}
 
 #endif // __BTAS_TENSOR_H
