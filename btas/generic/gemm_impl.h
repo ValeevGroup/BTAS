@@ -389,6 +389,12 @@ void gemm (
    const _T& beta,
          _TensorC& C)
 {
+    static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorC>::value &&
+                  boxtensor_storage_order<_TensorB>::value == boxtensor_storage_order<_TensorC>::value,
+                  "btas::gemm does not support mixed storage order");
+    const CBLAS_ORDER order = boxtensor_storage_order<_TensorC>::value == boxtensor_storage_order<_TensorC>::row_major ?
+                              CblasRowMajor : CblasColMajor;
+
    typedef unsigned long size_type;
 
    if (A.empty() || B.empty()) return;
