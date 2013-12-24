@@ -35,7 +35,7 @@
    <tr>
     <td> \c index_type </td>
     <td> the type of indices contained by the Range </td>
-    <td> an "array", a directly-addressable sequence container of integrals (\b ELABORATE); a regular type </td>
+    <td> a sequence container that satisfies the \ref labelTWGIndex "TWG.Index" concept </td>
    </tr>
 
    <tr>
@@ -205,7 +205,7 @@
 
   \subsection sec_TWG_Range_Concept_Range_Box BoxRange
   <em>BoxRange</em> is a special kind of Range that can be viewed as a box in the tuple space.
-  It is characterized by two corner indices: front, with the smallest ordinal, and back, with the largest ordinal.
+  It is characterized by two corner indices: lobound, with the smallest ordinal, and back, with the largest ordinal.
   Aside from this condition, any iteration order is allowed.
 
   BoxRange must define the following types.
@@ -265,23 +265,23 @@
    </tr>
 
    <tr>
-    <td> \c front() </td>
+    <td> \c lobound() </td>
     <td> const index_type& </td>
     <td>
      @code
      @endcode
     </td>
-    <td> returns front index </td>
+    <td> returns lower bound </td>
    </tr>
 
    <tr>
-    <td> \c back() </td>
+    <td> \c upbound() </td>
     <td> const index_type& </td>
     <td>
      @code
      @endcode
     </td>
-    <td> returns back index </td>
+    <td> returns upper bound </td>
    </tr>
 
    <tr>

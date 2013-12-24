@@ -1,0 +1,135 @@
+/**
+  @addtogroup TWG_Index
+
+  \section sec_TWG_Index_Concept_Index Index Concept
+  Index represents a sequence of integers (we will also refer to it as a <em>tuple</em> of indices, implying an <em>ordered</em> tuple)
+  The number of integers in an Index is its rank.
+
+  The concept of Index naturally arises in the context of multidimensional lattices.
+
+  \subsection sec_TWG_Index_Concept_Index_Description Description
+  To be a valid Index, class must be a <a href="http://www.stepanovpapers.com/DeSt98.pdf"><em>regular type</em></a>, define
+  types, and support expresisons specified below.
+
+  \subsubsection sec_TWG_Index_Concept_Index_Description_Types Associated Types
+  <table>
+   <tr>
+    <th> type </th>
+    <th> description </th>
+    <th> comments </th>
+   </tr>
+
+   <tr>
+    <td> \c value_type </td>
+    <td> the type of indices that compose the Index </td>
+    <td> usually a signed integer type </td>
+   </tr>
+
+   <tr>
+    <td> \c const_iterator_type </td>
+    <td> the type of indices that compose the Index; dereferences to <code>const value_type</code>  </td>
+    <td> this type model the constant Random-access Iterator concept defined in
+    <a href="">C++ Standard, Section 24.2</a>  </td>
+   </tr>
+
+  </table>
+
+  \subsubsection sec_TWG_Index_Concept_Index_Description_Expressions Valid Expressions
+  To be a valid Index, a type must support the following expressions.
+   <table>
+   <tr>
+    <th> expression </th>
+    <th> return type </th>
+    <th> specification </th>
+    <th> comments </th>
+   </tr>
+
+   <tr>
+    <td> \c Index() </td>
+    <td> </td>
+    <td>
+     @code
+      Index i0;
+     @endcode
+    </td>
+    <td> creates a default Index, the value is undefined, and rank may also be undefined. </td>
+   </tr>
+
+   <tr>
+    <td> \c Index(const Index&) </td>
+    <td> </td>
+    <td>
+     @code
+      Index i1(i0);
+      assert(r0 == r1);
+     @endcode
+    </td>
+    <td> </td>
+   </tr>
+
+   <tr>
+    <td> \c operator=(const Index&) </td>
+    <td> \c Index& </td>
+    <td>
+     @code
+      Range i2 = i0;
+      assert(i2 == i0);
+     @endcode
+    </td>
+    <td> </td>
+   </tr>
+
+   <tr>
+    <td> \c operator==(const Index&, const Index&) </td>
+    <td> \c bool </td>
+    <td>
+     @code
+      assert(i0 == i0);
+      i1 = i0;
+      mutate(i1); // changes state of i1
+      assert(!(i1 == i0));
+     @endcode
+    </td>
+    <td> member or non-member </td>
+   </tr>
+
+   <tr>
+    <td> \c begin() </td>
+    <td> \c const_iterator </td>
+    <td> assert(i0.begin() == std::begin(i0)); </td>
+    <td> returns the iterator to the first element in Index; if Index is empty (rank-0), <code>begin() == end()</code> is true </td>
+   </tr>
+
+   <tr>
+    <td> \c end() </td>
+    <td> \c const_iterator </td>
+    <td> assert(i0.end() == std::end(i0)); </td>
+    <td> returns the iterator past the last element in Index; if Index is empty (rank-0), <code>begin() == end()</code> is true </td>
+   </tr>
+
+   <tr>
+    <td> \c size() </td>
+    <td> \c uint </td>
+    <td> </td>
+    <td> returns the rank of Index; const </td>
+   </tr>
+
+  </table>
+
+  where we used the following notation:
+  \li <code>uint</code> is an unsigned integral type, i.e.
+  @code
+  std::is_integral<uint>::value && std::is_unsigned<uint>::value
+  @endcode
+  is true.
+
+  The following standard containers meet the Index requirements:
+  <ul>
+   <li> \c std::vector </li>
+   <li> \c std::array </li>
+  </ul>
+  Also, \c std::initializer_list partially satisfies the Index concept. While it is not a regular type, it can be viewed
+  as a constant (unmutable) Index.
+
+*/
+

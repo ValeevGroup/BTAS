@@ -31,6 +31,7 @@
 
    \section twg Tensor Working Group Specification
    <ul>
+    <li> \ref labelTWGIndex "TWG.Index" </li>
     <li> \ref labelTWGRange "TWG.Range" </li>
     <li> \ref labelTWGStorage "TWG.Storage" </li>
     <li> \ref labelTWGTensor "TWG.Tensor" </li>

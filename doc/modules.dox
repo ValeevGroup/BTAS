@@ -1,4 +1,10 @@
 /**
+   @defgroup TWG_Index TWG.Index
+   @anchor labelTWGIndex
+   Index.
+*/
+
+/**
    @defgroup TWG_Range TWG.Range
    @anchor labelTWGRange
    Index Range and associated concepts.
