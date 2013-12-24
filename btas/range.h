@@ -708,7 +708,9 @@ namespace btas {
               typename _Index>
     class boxrange_iteration_order< btas::RangeNd<_Order,_Index> > {
       public:
-        enum {row_major = -1, other = 0, column_major = 1};
+        enum {row_major = boxrange_iteration_order<void>::row_major,
+              other = boxrange_iteration_order<void>::other,
+              column_major = boxrange_iteration_order<void>::column_major};
 
         static constexpr int value = (_Order == CblasRowMajor) ? row_major : column_major;
     };

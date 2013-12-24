@@ -70,7 +70,10 @@ public:
 template<class _Tensor>
 class boxtensor_storage_order {
 public:
-   enum {row_major = -1, other = 0, column_major = 1};
+   enum {row_major = boxrange_iteration_order<typename _Tensor::range_type>::row_major,
+         other = boxrange_iteration_order<typename _Tensor::range_type>::other,
+         column_major = boxrange_iteration_order<typename _Tensor::range_type>::column_major
+   };
    static constexpr const int
    value = boxrange_iteration_order<typename _Tensor::range_type>::value;
 };
