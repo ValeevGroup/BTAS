@@ -4,6 +4,7 @@
 #include <iterator>
 #include <type_traits>
 
+#include <btas/index_traits.h>
 #include <btas/range_traits.h>
 
 namespace btas {
