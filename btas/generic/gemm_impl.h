@@ -412,7 +412,7 @@ void gemm (
    const size_type rankB = B.rank();
    const size_type rankC = C.rank();
 
-   const size_type K = (rankA+rankB-rankC)/2;
+   const size_type K = (rankA+rankB-rankC)/2; assert((rankA+rankB-rankC) % 2 == 0);
    const size_type M = rankA-K;
    const size_type N = rankB-K;
 
@@ -429,36 +429,43 @@ void gemm (
    size_type LDB = 0; // Leading dims of B
    size_type LDC = 0; // Leading dims of C
 
-   // to minimize forks by if?
-   if      (transA == CblasNoTrans && transB == CblasNoTrans)
-   {
-      Msize = std::accumulate(extentA.begin(), extentA.begin()+M, 1ul, std::multiplies<size_type>());
-      Ksize = std::accumulate(extentA.begin()+M, extentA.end(),   1ul, std::multiplies<size_type>());
+   Msize = (transA == CblasNoTrans)
+           ? std::accumulate(extentA.begin(), extentA.begin()+M, 1ul, std::multiplies<size_type>())
+           : std::accumulate(extentA.begin()+K, extentA.end(),   1ul, std::multiplies<size_type>())
+   ;
+   Ksize = (transA == CblasNoTrans)
+           ? std::accumulate(extentA.begin()+M, extentA.end(),   1ul, std::multiplies<size_type>())
+           : std::accumulate(extentA.begin(), extentA.begin()+K, 1ul, std::multiplies<size_type>())
+   ;
 
-      if (transB == CblasNoTrans)
-         assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()));
-      else
-         assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()));
-   }
-   else if (transA == CblasNoTrans && transB != CblasNoTrans)
+   // check that contraction dimensions match
+   auto Barea = range(B).area();
    {
-      Msize = std::accumulate(extentA.begin()+K, extentA.end(),   1ul, std::multiplies<size_type>());
-      Ksize = std::accumulate(extentA.begin(), extentA.begin()+K, 1ul, std::multiplies<size_type>());
+     // weak check
+     assert(Barea % Ksize == 0);
 
-      for (size_type i = 0; i < M; ++i) extentC[i] = extentA[K+i];
+     // strong checks
+     if (transA == CblasNoTrans && transB == CblasNoTrans)
+       assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()));
+     if (transA == CblasNoTrans && transB != CblasNoTrans)
+       assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()+N));
+     if (transA != CblasNoTrans && transB == CblasNoTrans)
+       assert(std::equal(extentA.begin(), extentA.begin()+K, extentB.begin()));
+     if (transA != CblasNoTrans && transB != CblasNoTrans)
+       assert(std::equal(extentA.begin(), extentA.begin()+K, extentB.begin()+N));
+   }
 
-      if (transB == CblasNoTrans)
-         assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()+N));
-      else
-         assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()+N));
+   Nsize = Barea / Ksize;
+
+   if(order == CblasRowMajor) {
+     LDA = Ksize;
+     LDB = Nsize;
+     LDC = Nsize;
    }
-   else if (transA != CblasNoTrans && transB == CblasNoTrans)
-   {
-      Nsize = std::accumulate(extentB.begin()+K, extentB.end(),   1ul, std::multiplies<size_type>());
-   }
-   else if (transA != CblasNoTrans && transB != CblasNoTrans)
-   {
-      Nsize = std::accumulate(extentB.begin(), extentB.begin()+N, 1ul, std::multiplies<size_type>());
+   else {
+     LDA = Msize;
+     LDB = Ksize;
+     LDC = Msize;
    }
 
    if (C.empty()) {     // C empty -> compute extentC
@@ -492,14 +499,15 @@ void gemm (
    else
    {
       assert(std::equal(extentC.begin(), extentC.end(), extent(C).begin()));
-      NumericType<value_type>::scal(C.begin(), C.end(), beta);
+      if (beta == NumericType<value_type>::zero())
+        NumericType<value_type>::fill(C.begin(), C.end(), NumericType<value_type>::zero());
    }
 
    auto itrA = std::begin(A);
    auto itrB = std::begin(B);
    auto itrC = std::begin(C);
 
-   gemm (CblasRowMajor, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
+   gemm (order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
 }
 
 } // namespace btas
