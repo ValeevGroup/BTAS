@@ -54,17 +54,17 @@ namespace btas {
 
     namespace detail {
 
-      template <typename Index, typename StrideArray, typename StartArray>
-      inline std::size_t calc_ordinal(const Index& index, const StrideArray& stride, const StartArray& lobound) {
+      template <typename Index, typename WeightArray, typename StartArray>
+      inline std::size_t calc_ordinal(const Index& index, const WeightArray& weight, const StartArray& lobound) {
         // Check that the dimensions of the arrays are equal.
         const std::size_t n = rank(index);
-        assert(rank(stride) == n);
+        assert(rank(weight) == n);
         assert(rank(lobound) == n);
 
         // Compute ordinal
         std::size_t o = 0ul;
         for(std::size_t i = 0ul; i < n; ++i)
-          o += (index[i] - lobound[i]) * stride[i];
+          o += (index[i] - lobound[i]) * weight[i];
 
         return o;
       }
@@ -239,7 +239,7 @@ namespace btas {
         std::size_t volume = 1ul;
         lobound_ = array_adaptor<index_type>::construct(n);
         upbound_ = array_adaptor<index_type>::construct(n);
-        stride_ = array_adaptor<extent_type>::construct(n);
+        weight_ = array_adaptor<extent_type>::construct(n);
 
         // Compute range data
         if (_Order == CblasRowMajor) {
@@ -249,7 +249,7 @@ namespace btas {
             assert(static_cast<ctype>(li) <= static_cast<ctype>(ui));
             lobound_[i] = li;
             upbound_[i] = ui;
-            stride_[i] = volume;
+            weight_[i] = volume;
             volume *= (upbound_[i] - lobound_[i]);
           }
         }
@@ -260,7 +260,7 @@ namespace btas {
             assert(static_cast<ctype>(li) <= static_cast<ctype>(ui));
             lobound_[i] = li;
             upbound_[i] = ui;
-            stride_[i] = volume;
+            weight_[i] = volume;
             volume *= (upbound_[i] - lobound_[i]);
           }
         }
@@ -277,20 +277,20 @@ namespace btas {
 
         std::size_t volume = 1ul;
         upbound_ = array_adaptor<index_type>::construct(n);
-        stride_ = array_adaptor<extent_type>::construct(n);
+        weight_ = array_adaptor<extent_type>::construct(n);
 
         // Compute range data
         if (_Order == CblasRowMajor) {
           for(int i = n - 1; i >= 0; --i) {
             upbound_[i] = *(extent.begin() + i);
-            stride_[i] = volume;
+            weight_[i] = volume;
             volume *= upbound_[i];
           }
         }
         else {
           for(auto i = 0; i != n; ++i) {
             upbound_[i] = *(extent.begin() + i);
-            stride_[i] = volume;
+            weight_[i] = volume;
             volume *= upbound_[i];
           }
         }
@@ -303,7 +303,7 @@ namespace btas {
 
       /// Construct a range with size and dimensions equal to zero.
       RangeNd() :
-        lobound_(), upbound_(), stride_()
+        lobound_(), upbound_(), weight_()
       { }
 
       /// Constructor defined by an upper and lower bound
@@ -314,7 +314,7 @@ namespace btas {
       template <typename Index1, typename Index2>
       RangeNd(const Index1& lobound, const Index2& upbound,
               typename std::enable_if<btas::is_index<Index1>::value && btas::is_index<Index2>::value, Enabler>::type = Enabler()) :
-        lobound_(), upbound_(), stride_()
+        lobound_(), upbound_(), weight_()
       {
         using btas::rank;
         auto n = rank(lobound);
@@ -329,7 +329,7 @@ namespace btas {
       template <typename Extent,
                 class = typename std::enable_if<btas::is_index<Extent>::value>::type>
       RangeNd(const Extent& extent) :
-        lobound_(), upbound_(), stride_()
+        lobound_(), upbound_(), weight_()
       {
         init(extent);
       }
@@ -342,7 +342,7 @@ namespace btas {
       /// \param sizes A pack of sizes for dimensions 1+
       template<typename _extent0, typename... _extents, class = typename std::enable_if<std::is_integral<_extent0>::value>::type>
       explicit RangeNd(const _extent0& extent0, const _extents&... extents) :
-      lobound_(), upbound_(), stride_()
+      lobound_(), upbound_(), weight_()
       {
         typedef typename std::common_type<_extent0, typename extent_type::value_type>::type common_type;
         // make initializer_list
@@ -353,7 +353,7 @@ namespace btas {
       /// to construct from an initializer list give it as {extent0, extent1, ... extentN}
       template <typename T>
       RangeNd(std::initializer_list<T> extents) :
-      lobound_(), upbound_(), stride_()
+      lobound_(), upbound_(), weight_()
       {
         init(extents);
       }
@@ -361,7 +361,7 @@ namespace btas {
       /// to construct from an initializer list give it as {extent0, extent1, ... extentN}
       template <typename T1, typename T2>
       RangeNd(std::initializer_list<T1> lobound, std::initializer_list<T2> upbound) :
-      lobound_(), upbound_(), stride_()
+      lobound_(), upbound_(), weight_()
       {
         assert(lobound.size() == upbound.size());
         init(lobound, upbound);
@@ -371,7 +371,7 @@ namespace btas {
 
       /// \param other The range to be copied
       RangeNd(const Range_& other) :
-        lobound_(other.lobound_), upbound_(other.upbound_), stride_(other.stride_)
+        lobound_(other.lobound_), upbound_(other.upbound_), weight_(other.weight_)
       {
       }
 
@@ -394,7 +394,7 @@ namespace btas {
       Range_& operator=(const Range_& other) {
         lobound_ = other.lobound_;
         upbound_ = other.upbound_;
-        stride_ = other.stride_;
+        weight_ = other.weight_;
 
         return *this;
       }
@@ -467,17 +467,11 @@ namespace btas {
         return ex;
       }
 
-      /// \return The extent of dimension \c d
-      /// \throw nothing
-      typename extent_type::value_type extent(size_t d) const {
-          return *(upbound_.begin() + d) - *(lobound_.begin() + d);
-      }
-
-      /// Range stride accessor
+      /// Range weight accessor
 
       /// \return A \c size_array that contains the strides of each dimension
       /// \throw nothing
-      const extent_type& stride() const { return stride_; }
+      const extent_type& weight() const { return weight_; }
 
       /// Range volume accessor
 
@@ -486,8 +480,8 @@ namespace btas {
       size_type area() const {
         if (rank())
           return _Order == CblasRowMajor ?
-              stride_[0] * (upbound_[0] - lobound_[0]) :
-              stride_[rank()-1] * (upbound_[rank()-1] - lobound_[rank()-1]);
+              weight_[0] * (upbound_[0] - lobound_[0]) :
+              weight_[rank()-1] * (upbound_[rank()-1] - lobound_[rank()-1]);
         else
           return 0;
       }
@@ -524,7 +518,7 @@ namespace btas {
         size_type o = 0;
         const auto end = this->rank();
         for(auto i = 0ul; i < end; ++i)
-          o += (index[i] - lobound_[i]) * stride_[i];
+          o += (index[i] - lobound_[i]) * weight_[i];
 
         return o;
       }
@@ -554,7 +548,7 @@ namespace btas {
       void swap(Range_& other) {
         std::swap(lobound_, other.lobound_);
         std::swap(upbound_, other.upbound_);
-        std::swap(stride_, other.stride_);
+        std::swap(weight_, other.weight_);
       }
 
     private:
@@ -621,7 +615,7 @@ namespace btas {
       index_type upbound_; ///< range extent
 
       // optimization details
-      extent_type stride_; ///< Dimension strides
+      extent_type weight_; ///< Dimension weights (strides)
     }; // class RangeNd
 
     using Range = RangeNd<>;
@@ -682,7 +676,7 @@ namespace btas {
                typename _Index>
       void serialize(Archive& ar, btas::RangeNd<_Order, _Index>& t,
                      const unsigned int version) {
-        ar & t.lobound() & t.upbound() & t.stride();
+        ar & t.lobound() & t.upbound() & t.weight();
       }
 
     }
