@@ -9,28 +9,29 @@ using namespace btas;
 
 int main()
 {
-   TArray<string, 3> A(3,3,3);
+  TArray<string, 3> A(3,3,3);
 
-   for(int i = 0; i < A.shape(0); ++i) {
-      for(int j = 0; j < A.shape(1); ++j) {
-         for(int k = 0; k < A.shape(2); ++k) {
-            ostringstream so;
-            so << i << "," << j << "," << k;
-            A(i,j,k) = so.str();
-         }
-      }
-   }
+  for(auto i: A.range().dim(0) ) {
+    for(auto j: A.range().dim(1) ) {
+      for(auto k: A.range().dim(2) ) {
+           ostringstream so;
+           so << i << "," << j << "," << k;
+           A(i,j,k) = so.str();
+        }
+     }
+  }
+  std::copy(A.begin(), A.end(), std::ostream_iterator<string>(cout, " "));
 
-   TArray<string, 3> B;
-   permute(A, {2,1,0}, B);
+#if 0
+  TArray<string, 3> B;
+  permute(A, {2,1,0}, B);
 
-   auto itrA = A.begin();
-   auto itrB = B.begin();
-   while (itrA != A.end() && itrB != B.end()) {
-      cout << *itrA << " -> " << *itrB << endl;
-      ++itrA;
-      ++itrB;
-   }
-
-   return 0;
+  auto itrA = A.begin();
+  auto itrB = B.begin();
+  while (itrA != A.end() && itrB != B.end()) {
+     cout << *itrA << " -> " << *itrB << endl;
+     ++itrA;
+     ++itrB;
+  }
+#endif
 }
