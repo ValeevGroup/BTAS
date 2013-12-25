@@ -164,6 +164,20 @@ namespace btas {
         return range_;
       }
 
+      /// \return range's extent object
+      typename range_type::extent_type
+      extent() const
+      {
+        return range_.extent();
+      }
+
+      /// \return extent of range along dimension \c d
+      typename range_type::extent_type::value_type
+      extent(size_t d) const
+      {
+        return range_.extent(d);
+      }
+
       /// test whether storage is empty
       bool
       empty() const
