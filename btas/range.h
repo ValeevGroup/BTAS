@@ -496,6 +496,12 @@ namespace btas {
         return *this;
       }
 
+      /// Access a particular dimension of Range
+
+      Range1d<typename index_type::value_type> dim(size_t d) const {
+        return Range1d<typename index_type::value_type>(*(lobound_.begin()+d), *(upbound_.begin()+d));
+      }
+
       /// Resize range to a new upper and lower bound
 
       /// This can be used to avoid memory allocation
