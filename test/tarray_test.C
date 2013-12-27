@@ -5,6 +5,7 @@ using namespace std;
 
 #include <btas/btas.h>
 #include <btas/tarray.h>
+#include <btas/generic/permute.h>
 using namespace btas;
 
 int main()
@@ -17,15 +18,8 @@ int main()
     A(i) = so.str();
   }
 
-  TArray<string, 3> B(transpose(A.range(),{2,0,1}));
-  {
-  auto itrA = A.begin();
-  auto itrB = B.begin();
-  for (auto i : B.range()) {
-     *(itrB + B.range().ordinal(i)) = *itrA;
-     ++itrA;
-  }
-  }
+  TArray<string, 3> B;
+  permute(A, {2,0,1}, B);
 
   auto itrA = A.begin();
   auto itrB = B.begin();
