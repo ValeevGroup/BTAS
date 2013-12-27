@@ -11,20 +11,21 @@ int main()
 {
   TArray<string, 3> A(3,3,3);
 
-  for(auto i: A.range().dim(0) ) {
-    for(auto j: A.range().dim(1) ) {
-      for(auto k: A.range().dim(2) ) {
-           ostringstream so;
-           so << i << "," << j << "," << k;
-           A(i,j,k) = so.str();
-        }
-     }
+  for(auto i: A.range() ) {
+    ostringstream so;
+    so << i;
+    A(i) = so.str();
   }
-  std::copy(A.begin(), A.end(), std::ostream_iterator<string>(cout, " "));
 
-#if 0
-  TArray<string, 3> B;
-  permute(A, {2,1,0}, B);
+  TArray<string, 3> B(transpose(A.range(),{2,0,1}));
+  {
+  auto itrA = A.begin();
+  auto itrB = B.begin();
+  for (auto i : B.range()) {
+     *(itrB + B.range().ordinal(i)) = *itrA;
+     ++itrA;
+  }
+  }
 
   auto itrA = A.begin();
   auto itrB = B.begin();
@@ -33,5 +34,4 @@ int main()
      ++itrA;
      ++itrB;
   }
-#endif
 }

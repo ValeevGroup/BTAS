@@ -164,6 +164,14 @@ namespace btas {
         return range_;
       }
 
+      /// \param d dimension
+      /// \return subrange for dimension \d
+      const Range1d<typename index_type::value_type>
+      range(size_t d) const
+      {
+        return range_.dim(d);
+      }
+
       /// \return range's extent object
       typename range_type::extent_type
       extent() const
