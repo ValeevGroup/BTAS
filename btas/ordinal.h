@@ -17,7 +17,7 @@ namespace btas {
 
   /// BoxOrdinal is an implementation detail of BoxRange.
   /// It maps the index to its ordinal value. It also knows whether
-  /// the map is dense (i.e. whether adjacent indices have adjacent ordinal
+  /// the map is contiguous (i.e. whether adjacent indices have adjacent ordinal
   /// values).
   template <CBLAS_ORDER _Order = CblasRowMajor,
             typename _Index = btas::varray<long>,
@@ -64,7 +64,7 @@ namespace btas {
       BoxOrdinal(const BoxOrdinal& other) :
         weight_(other.weight_),
         offset_(other.offset_),
-        dense_ (other.dense_) {
+        contiguous_ (other.contiguous_) {
       }
 
       template <CBLAS_ORDER _O,
@@ -77,7 +77,7 @@ namespace btas {
           std::copy(other.weight_.begin(), other.weight_.end(),
                     weight_.begin());
           offset_ = other.offset_;
-          dense_ = other.dense_;
+          contiguous_ = other.contiguous_;
       }
 
       ~BoxOrdinal() {}
@@ -91,8 +91,8 @@ namespace btas {
         return weight_;
       }
 
-      bool dense() const {
-        return dense_;
+      bool contiguous() const {
+        return contiguous_;
       }
 
       template <typename Index>
@@ -141,7 +141,7 @@ namespace btas {
             volume *= (ui - li);
           }
         }
-        dense_ = true;
+        contiguous_ = true;
       }
 
       template <typename Index1,
@@ -163,13 +163,13 @@ namespace btas {
         weight_ = array_adaptor<weight_type>::construct(n);
         std::copy(weight.begin(), weight.end(), weight_.begin());
 
-        // Compute offset and check whether dense
-        dense_ = true;
+        // Compute offset and check whether contiguous
+        contiguous_ = true;
         weight_type tmpweight = array_adaptor<weight_type>::construct(n);
         if (order == CblasRowMajor) {
           for(int i = n - 1; i >= 0; --i) {
             tmpweight[i] = volume;
-            dense_ &= (tmpweight[i] == weight_[i]);
+            contiguous_ &= (tmpweight[i] == weight_[i]);
             auto li = *(lobound.begin() + i);
             auto ui = *(upbound.begin() + i);
             offset_ += li * weight_[i];
@@ -179,7 +179,7 @@ namespace btas {
         else {
           for(auto i = 0; i != n; ++i) {
             tmpweight[i] = volume;
-            dense_ &= (tmpweight[i] == weight_[i]);
+            contiguous_ &= (tmpweight[i] == weight_[i]);
             auto li = *(lobound.begin() + i);
             auto ui = *(upbound.begin() + i);
             offset_ += li * weight_[i];
@@ -190,7 +190,7 @@ namespace btas {
 
       weight_type weight_; // weight of each dimension (stride in the language of NumPy)
       value_type offset_; // lobound.weight => ordinal(index) = index.weight - offset
-      bool dense_; // whether index iterator traverses a dense sequence of ordinals
+      bool contiguous_; // whether index iterator traverses a contiguous sequence of ordinals
   };
 
 }

@@ -3,6 +3,7 @@
 
 #include <iterator>
 #include <type_traits>
+#include <btas/index_traits.h>
 
 namespace btas {
 
@@ -52,7 +53,7 @@ class is_range {
 public:
    static constexpr const bool
    value = has_index_type<_Range>::value & has_ordinal_type<_Range>::value &
-           has_rank<_Range>::value;
+           has_rank<_Range>::value & has_begin<_Range>::value & has_end<_Range>::value;
 };
 
 /// test T has extents() member
