@@ -9,28 +9,29 @@ using namespace btas;
 
 int main()
 {
-   TArray<string, 3> A(3,3,3);
+  TArray<string, 3> A(3,3,3);
 
-   for(int i = 0; i < A.shape(0); ++i) {
-      for(int j = 0; j < A.shape(1); ++j) {
-         for(int k = 0; k < A.shape(2); ++k) {
-            ostringstream so;
-            so << i << "," << j << "," << k;
-            A(i,j,k) = so.str();
-         }
-      }
-   }
+  for(auto i: A.range() ) {
+    ostringstream so;
+    so << i;
+    A(i) = so.str();
+  }
 
-   TArray<string, 3> B;
-   permute(A, {2,1,0}, B);
+  TArray<string, 3> B(transpose(A.range(),{2,0,1}));
+  {
+  auto itrA = A.begin();
+  auto itrB = B.begin();
+  for (auto i : B.range()) {
+     *(itrB + B.range().ordinal(i)) = *itrA;
+     ++itrA;
+  }
+  }
 
-   auto itrA = A.begin();
-   auto itrB = B.begin();
-   while (itrA != A.end() && itrB != B.end()) {
-      cout << *itrA << " -> " << *itrB << endl;
-      ++itrA;
-      ++itrB;
-   }
-
-   return 0;
+  auto itrA = A.begin();
+  auto itrB = B.begin();
+  while (itrA != A.end() && itrB != B.end()) {
+     cout << *itrA << " -> " << *itrB << endl;
+     ++itrA;
+     ++itrB;
+  }
 }

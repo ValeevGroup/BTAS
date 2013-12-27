@@ -7,19 +7,14 @@
 using namespace std;
 
 #include <btas/tensor.h>
-#include <btas/nditerator.h>
+//#include <btas/nditerator.h>
 using namespace btas;
 
 void print(const Tensor<double>& X)
 {
-   cout << "shape [";
-   for(size_t i = 0; i < X.rank()-1; ++i)
-   {
-      cout << X.shape(i) << ",";
-   }
-   cout << X.shape(X.rank()-1) << "]" << endl;
+   cout << "range = " << X.range() << endl;
 
-   size_t str = X.shape(X.rank()-1);
+   size_t str = X.extent(X.rank()-1);
    size_t ipr = 0;
    for(auto ix = X.begin(); ix != X.end(); ++ix, ++ipr)
    {
@@ -37,7 +32,7 @@ void print(const Tensor<double>& X)
 
 int main()
 {
-   typedef Tensor<double>::shape_type shape_type;
+   typedef Tensor<double>::range_type::extent_type extent_type;
 
    mt19937 rgen;
    uniform_real_distribution<double> dist(-1.0, 1.0);
@@ -60,20 +55,19 @@ int main()
 // =================================================================================================
 
    // [0,1,2] -> [2,1,0] i.e. [i,j,k] -> [k,j,i]
-   shape_type permutation = { 2, 1, 0 };
+   extent_type permutation = { 2, 1, 0 };
 
    // permuted shape and stride hack
-   shape_type new_shape (A.rank());
-   shape_type new_stride(A.rank());
+   extent_type new_extent = array_adaptor<extent_type>::construct(A.rank());
    for(size_t i = 0; i < A.rank(); ++i)
    {
-      new_shape [i] = A.shape(permutation[i]);
-      new_stride[i] = A.stride(permutation[i]);
+     new_extent [i] = A.extent(permutation[i]);
    }
 
    // resize B with permuted shape
-   Tensor<double> B(new_shape);
+   Tensor<double> B(new_extent);
 
+#if 0
    // NDIterator ([shape], [stride], [start (iterator)], [current = start]);
    {
       NDIterator<Tensor<double>> ita(new_shape, new_stride, A.begin());
@@ -180,6 +174,7 @@ int main()
    NDIterator<Tensor<double>> it1(E.shape(), E.stride(), E.begin());
 
    NDConstIterator<Tensor<double>> it2(it1);
+#endif
 
    return 0;
 }

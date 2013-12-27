@@ -53,7 +53,7 @@ int main()
 
   // Range initialized by extents of each dimension, given as an initializer list
   //Range x2 = {2, 3, 2};  // same as 'Range x2({2, 3, 2});'
-  Range x2(2, 3, 2);
+  Range x2(4, 3, 2);
   cout << "x2 = " << x2 << " area=" << x1.area() << endl;
 
   // fixed-rank Range
@@ -74,8 +74,17 @@ int main()
   {
     cout << "Iterating through x2 using range-based for" << endl;
     for(auto i: x2) {
-      cout << i << endl;
+      cout << i << " ord=" << x2.ordinal(i) << endl;
     }
+  }
+
+  array<size_t, 3> p = {2,0,1};
+  auto x2p = transpose(x2, p);
+  cout << "x2 = " << x2 << endl;
+  cout << "x2.permute(" << p << ") = " << x2p << endl;
+  cout << "Iterating through permuted x2 using range-based for" << endl;
+  for(auto i: x2p) {
+    cout << i << " ord=" << x2p.ordinal(i) << endl;
   }
 
   cout << "Iterating through " << Range(2,3,4) << " using range-based for" << endl;

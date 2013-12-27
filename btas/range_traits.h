@@ -101,6 +101,10 @@ public:
   value = other;
 };
 
+/// Range Traits
+template <typename Range>
+struct range_traits;
+
 } // namespace btas
 
 #endif // __BTAS_RANGE_TRAITS_H
