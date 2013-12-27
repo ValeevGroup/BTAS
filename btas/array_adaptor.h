@@ -162,23 +162,6 @@ namespace std {
     return x.cend();
   }
 
-  template <typename T, size_t N>
-  T* begin(T (&x)[N]) {
-    return &x[0];
-  }
-  template <typename T, size_t N>
-  T* end(T (&x)[N]) {
-    return &x[0] + N;
-  }
-  template <typename T, size_t N>
-  const T* cbegin(const T (&x)[N]) {
-    return &x[0];
-  }
-  template <typename T, size_t N>
-  const T* cend(const T (&x)[N]) {
-    return &x[0] + N;
-  }
-
   template <typename T>
   struct make_unsigned<std::vector<T> > {
       typedef std::vector<typename make_unsigned<T>::type > type;
@@ -201,6 +184,32 @@ namespace std {
       typedef uT (type)[N];
   };
 
+}
+
+namespace btas {
+  template <typename Array, typename T>
+  struct replace_value_type;
+
+  template <typename T, typename U>
+  struct replace_value_type<std::vector<T>, U> {
+      typedef std::vector<U> type;
+  };
+  template <typename T, typename U>
+  struct replace_value_type<std::initializer_list<T>,U> {
+      typedef std::initializer_list<U> type;
+  };
+  template <typename T, size_t N, typename U>
+  struct replace_value_type<std::array<T, N>,U> {
+      typedef std::array<U, N> type;
+  };
+  template <typename T, typename U>
+  struct replace_value_type<btas::varray<T>,U> {
+      typedef btas::varray<U> type;
+  };
+  template <typename T, size_t N, typename U>
+  struct replace_value_type<T[N],U> {
+      typedef U (type)[N];
+  };
 }
 
 #endif /* __BTAS_ARRAYADAPTOR_H_ */

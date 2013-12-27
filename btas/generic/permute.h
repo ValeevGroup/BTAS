@@ -9,34 +9,32 @@
 #include <btas/nditerator.h>
 #include <btas/util/resize.h>
 
+#include <btas/tensor.h>
+#include <btas/tensor_traits.h>
+#include <btas/index_traits.h>
+
 namespace btas {
 
-/// normal permutation
-template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
-void permute (const _Tensor& X, const typename _Tensor::shape_type& index, _Tensor& Y)
-{
-   typedef typename _Tensor::shape_type shape_type;
+  /// permute \c X using permutation \c p, write result to \c Y
+  template<class _Tensor, typename _Permutation,
+           class = typename std::enable_if<is_boxtensor<_Tensor>::value && is_index<_Permutation>::value>::type>
+  void permute(const _Tensor& X, const _Permutation& p, _Tensor& Y) {
+    Y = _Tensor(permute(X.range(), p));
+    auto itrX = X.begin();
+    auto itrY = Y.begin();
+    for (auto i : X.range()) {
+      *(itrY + Y.range().ordinal(i)) = *itrX;
+      ++itrX;
+    }
+  }
 
-   shape_type shapeY; resize(shapeY, index.size());
-   shape_type strX2Y; resize(strX2Y, index.size());
-
-   for (size_type i = 0; i < index.size(); ++i)
-   {
-      shapeY[i] = X.shape (index[i]);
-      strX2Y[i] = X.stride(index[i]);
-   }
-
-   Y.resize(shapeY); if (Y.empty()) return; // size of X = 0
-
-   // FIXME: when size of X = 0, NDIterator construction fails with INTEL compiler...
-   //        something should not be safe in NDIterator implementation
-   NDIterator<_Tensor, typename _Tensor::const_iterator> itrX(shapeY, strX2Y, X.begin());
-
-   for (auto itrY = Y.begin(); itrY != Y.end(); ++itrX, ++itrY)
-   {
-      *itrY = *itrX;
-   }
-}
+  /// permute \c X using permutation \c p, write result to \c Y
+  template<class _Tensor, typename _T,
+           class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
+  void permute(const _Tensor& X, std::initializer_list<_T> pi, _Tensor& Y) {
+      btas::varray<_T> p(pi);
+      permute(X,p,Y);
+  }
 
 /// indexed permutation
 template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
