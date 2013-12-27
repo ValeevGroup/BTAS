@@ -95,6 +95,13 @@ namespace btas {
           return *this;
         }
 
+        Range1d& operator=(Range1d&& other) {
+          lobound_ = other.lobound_;
+          upbound_ = other.upbound_;
+          stride_ = other.stride_;
+          return *this;
+        }
+
         /// to construct from an initializer list give it as {}, {extent}, {begin,end}, or {begin,end,stride}
         template <typename T>
         Range1d& operator=(std::initializer_list<T> x) {
