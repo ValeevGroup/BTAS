@@ -88,10 +88,34 @@ namespace btas {
         std::fill(begin(), end(), v);
       }
 
+      /// construct from \c range and \c storage
+      explicit
+      Tensor (const range_type& range, const storage_type& storage) :
+      range_(range), data_(storage)
+      {
+      }
+
+      /// move-construct from \c range and \c storage
+      explicit
+      Tensor (range_type&& range, storage_type&& storage) :
+      range_(range), data_(storage)
+      {
+      }
+
       /// copy constructor
       template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
       explicit
       Tensor (const _Tensor& x)
+      : range_ (x.range()),
+      // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
+        data_(x.begin(), x.end())
+      {
+      }
+
+      /// copy constructor
+      template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
+      explicit
+      Tensor (_Tensor& x)
       : range_ (x.range()),
       // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
         data_(x.begin(), x.end())
@@ -186,7 +210,22 @@ namespace btas {
         return range_.extent(d);
       }
 
-      /// test whether storage is empty
+      /// \return storage object
+      const storage_type&
+      storage() const
+      {
+        return data_;
+      }
+
+      /// \return storage object
+      storage_type&
+      storage()
+      {
+        return data_;
+      }
+
+
+      /// test whether Tensor is empty
       bool
       empty() const
       {
@@ -440,7 +479,6 @@ namespace btas {
   auto cend(const btas::Tensor<_T, _Range, _Storage>& x) -> decltype(x.cbegin()) {
     return x.cend();
   }
-
 
   /// maps Tensor -> Range
   template <typename _T, typename _Range, typename _Storage>
