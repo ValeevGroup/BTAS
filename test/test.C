@@ -79,7 +79,7 @@ int main()
   }
 
   array<size_t, 3> p = {2,0,1};
-  auto x2p = transpose(x2, p);
+  auto x2p = permute(x2, p);
   cout << "x2 = " << x2 << endl;
   cout << "x2.permute(" << p << ") = " << x2p << endl;
   cout << "Iterating through permuted x2 using range-based for" << endl;

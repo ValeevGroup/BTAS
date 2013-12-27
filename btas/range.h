@@ -823,7 +823,7 @@ namespace btas {
       return ! operator ==(r1, r2);
     }
 
-    /// Transposes a Range
+    /// Permutes a Range
 
     /// permutes the dimensions using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned
     /// {lb[0], lb[1], ... }, after this call \c lobound() will return {lb[p[0]], lb[p[1]], ...}.
@@ -833,8 +833,8 @@ namespace btas {
               typename _Ordinal,
               typename AxisPermutation,
               class = typename std::enable_if<btas::is_index<AxisPermutation>::value>::type>
-    RangeNd<_Order, _Index> transpose(const RangeNd<_Order, _Index, _Ordinal>& r,
-                                      const AxisPermutation& perm)
+    RangeNd<_Order, _Index> permute(const RangeNd<_Order, _Index, _Ordinal>& r,
+                                    const AxisPermutation& perm)
     {
       const auto rank = r.rank();
       auto lb = r.lobound();
@@ -859,7 +859,7 @@ namespace btas {
       return RangeNd<_Order, _Index, _Ordinal>(std::move(lobound), std::move(upbound), std::move(weight));
     }
 
-    /// Transposes a Range
+    /// Permutes a Range
 
     /// permutes the axes using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned
     /// {lb[0], lb[1], ... }, after this call \c lobound() will return {lb[p[0]], lb[p[1]], ...} .
@@ -868,12 +868,12 @@ namespace btas {
               typename _Index,
               typename _Ordinal,
               typename T>
-    RangeNd<_Order, _Index, _Ordinal> transpose(const RangeNd<_Order, _Index, _Ordinal>& r,
-                                      std::initializer_list<T> perm)
+    RangeNd<_Order, _Index, _Ordinal> permute(const RangeNd<_Order, _Index, _Ordinal>& r,
+                                              std::initializer_list<T> perm)
     {
       typename RangeNd<_Order, _Index, _Ordinal>::extent_type p = array_adaptor<decltype(p)>::construct(perm.size());
       std::copy(perm.begin(), perm.end(), p.begin());
-      return transpose(r, p);
+      return permute(r, p);
     }
 
 
