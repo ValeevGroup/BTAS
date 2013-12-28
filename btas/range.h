@@ -785,6 +785,25 @@ namespace btas {
 
     using Range = RangeNd<>;
 
+    /// Range output operator
+
+    /// \param os The output stream that will be used to print \c r
+    /// \param r The range to be printed
+    /// \return A reference to the output stream
+    template <CBLAS_ORDER _Order,
+              typename _Index,
+              typename _Ordinal,
+              typename _X>
+    inline std::ostream& operator<<(std::ostream& os, const RangeNd<_Order,_Index, _Ordinal, _X>& r) {
+      os << "[";
+      array_adaptor<_Index>::print(r.lobound(), os);
+      os << ",";
+      array_adaptor<_Index>::print(r.upbound(), os);
+      os << ")_" << (_Order == CblasRowMajor ? "R" : "C");
+      os << ":" << r.ordinal();
+      return os;
+    }
+
     /// Exchange the values of the give two ranges.
     template <CBLAS_ORDER _Order,
               typename _Index,
@@ -890,24 +909,6 @@ namespace btas {
     };
 }
 
-
-/// Range output operator
-
-/// \param os The output stream that will be used to print \c r
-/// \param r The range to be printed
-/// \return A reference to the output stream
-template <CBLAS_ORDER _Order,
-          typename _Index,
-          typename _Ordinal>
-inline std::ostream& operator<<(std::ostream& os, const btas::RangeNd<_Order,_Index, _Ordinal>& r) {
-  os << "[";
-  btas::array_adaptor<_Index>::print(r.lobound(), os);
-  os << ",";
-  btas::array_adaptor<_Index>::print(r.upbound(), os);
-  os << ")_" << (_Order == CblasRowMajor ? "R" : "C");
-  os << ":" << r.ordinal();
-  return os;
-}
 
 namespace boost {
 namespace serialization {

@@ -193,18 +193,18 @@ namespace btas {
       bool contiguous_; // whether index iterator traverses a contiguous sequence of ordinals
   };
 
-}
+  /// Range output operator
 
-/// Range output operator
+  /// \param os The output stream that will be used to print \c r
+  /// \param r The range to be printed
+  /// \return A reference to the output stream
+  template <CBLAS_ORDER _Order,
+            typename _Index>
+  inline std::ostream& operator<<(std::ostream& os, const BoxOrdinal<_Order,_Index>& ord) {
+    array_adaptor<typename BoxOrdinal<_Order,_Index>::weight_type>::print(ord.weight(), os);
+    return os;
+  }
 
-/// \param os The output stream that will be used to print \c r
-/// \param r The range to be printed
-/// \return A reference to the output stream
-template <CBLAS_ORDER _Order,
-          typename _Index>
-inline std::ostream& operator<<(std::ostream& os, const btas::BoxOrdinal<_Order,_Index>& ord) {
-  btas::array_adaptor<typename btas::BoxOrdinal<_Order,_Index>::weight_type>::print(ord.weight(), os);
-  return os;
 }
 
 

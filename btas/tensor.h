@@ -154,8 +154,8 @@ namespace btas {
       explicit
       Tensor (Tensor&& x)
       {
-        swap(range_, x.range_);
-        swap(data_, x.data_);
+        std::swap(range_, x.range_);
+        std::swap(data_, x.data_);
       }
 
       /// move assignment operator
@@ -501,7 +501,10 @@ namespace btas {
   /// \param t The Tensor to be printed
   /// \return A reference to the output stream
   template <typename _T, typename _Range, typename _Storage>
-  std::ostream& operator<<(std::ostream& os, const btas::Tensor<_T, _Range, _Storage>& t);
+  std::ostream& operator<<(std::ostream& os, const btas::Tensor<_T, _Range, _Storage>& t) {
+    os << "Tensor:\n  Range: " << t.range() << std::endl;
+    return os;
+  }
 
 } // namespace btas
 
