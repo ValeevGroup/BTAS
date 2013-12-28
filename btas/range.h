@@ -62,6 +62,7 @@ namespace btas {
         typedef const value_type const_reference_type;
 
         typedef RangeIterator<index_type, Range1d> const_iterator; ///< Index iterator
+        typedef const_iterator iterator; ///< interator = const_iterator
         friend class RangeIterator<index_type, Range1d>;
 
         Range1d(size_t extent = 0ul) :

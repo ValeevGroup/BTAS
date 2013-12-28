@@ -32,10 +32,12 @@ namespace btas {
       StorageRef& operator=(const StorageRef& other) {
         begin_ = other.begin_;
         end_ = other.end_;
+        return *this;
       }
       StorageRef& operator=(storage_type& stor) {
         begin_ = stor.begin();
         end_ = stor.end();
+        return *this;
       }
       // no point in move functionality
 
@@ -49,7 +51,13 @@ namespace btas {
       iterator begin() {
         return begin_;
       }
+      const_iterator begin() const {
+        return begin_;
+      }
       iterator end() {
+        return end_;
+      }
+      const_iterator end() const {
         return end_;
       }
 
