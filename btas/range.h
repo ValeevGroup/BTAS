@@ -598,30 +598,30 @@ namespace btas {
       {
       }
 
-      /// Constructor defined by the upper and lower bounds, and the axes weights
+      /// Constructor defined by the upper and lower bounds, and the axes strides
 
       /// \tparam Index1 An array type convertible to \c index_type
       /// \tparam Index2 An array type convertible to \c index_type
       /// \tparam Extent An array type convertible to \c extent_type
       /// \param lobound The lower bound of the N-dimensional range
       /// \param upbound The upper bound of the N-dimensional range
-      /// \param weight The axes weights of the N-dimensional range
+      /// \param stride The axes strides of the N-dimensional range
       template <typename Index1, typename Index2, typename Extent>
-      RangeNd(const Index1& lobound, const Index2& upbound, const Extent& weight,
+      RangeNd(const Index1& lobound, const Index2& upbound, const Extent& stride,
               typename std::enable_if<btas::is_index<Index1>::value &&
                                       btas::is_index<Index2>::value &&
                                       btas::is_index<Extent>::value, Enabler>::type = Enabler()) :
-        base_type(lobound, upbound), ordinal_(lobound, upbound, weight)
+        base_type(lobound, upbound), ordinal_(lobound, upbound, stride)
       {
       }
 
-      /// "Move" constructor defined by the upper and lower bounds, and the axes weights
+      /// "Move" constructor defined by the upper and lower bounds, and the axes strides
 
       /// \param lobound The lower bound of the N-dimensional range
       /// \param upbound The upper bound of the N-dimensional range
-      /// \param weight The axes weights of the N-dimensional range
-      RangeNd(index_type&& lobound, index_type&& upbound, extent_type&& weight) :
-        base_type(lobound, upbound), ordinal_(lobound, upbound, weight)
+      /// \param stride The axes strides of the N-dimensional range
+      RangeNd(index_type&& lobound, index_type&& upbound, extent_type&& stride) :
+        base_type(lobound, upbound), ordinal_(lobound, upbound, stride)
       {
       }
 
@@ -858,24 +858,24 @@ namespace btas {
       const auto rank = r.rank();
       auto lb = r.lobound();
       auto ub = r.upbound();
-      auto wt = r.ordinal().weight();
+      auto wt = r.ordinal().stride();
 
       typedef typename RangeNd<_Order, _Index, _Ordinal>::index_type index_type;
       typedef typename RangeNd<_Order, _Index, _Ordinal>::extent_type extent_type;
       index_type lobound, upbound;
-      extent_type weight;
+      extent_type stride;
       lobound = array_adaptor<index_type>::construct(rank);
       upbound = array_adaptor<index_type>::construct(rank);
-      weight = array_adaptor<extent_type>::construct(rank);
+      stride = array_adaptor<extent_type>::construct(rank);
 
       std::for_each(perm.begin(), perm.end(), [&](const typename AxisPermutation::value_type& i){
         const auto pi = *(perm.begin() + i);
         *(lobound.begin()+i) = *(lb.begin() + pi);
         *(upbound.begin()+i) = *(ub.begin() + pi);
-        *(weight.begin()+i) = *(wt.begin() + pi);
+        *(stride.begin()+i) = *(wt.begin() + pi);
       });
 
-      return RangeNd<_Order, _Index, _Ordinal>(std::move(lobound), std::move(upbound), std::move(weight));
+      return RangeNd<_Order, _Index, _Ordinal>(std::move(lobound), std::move(upbound), std::move(stride));
     }
 
     /// Permutes a Range

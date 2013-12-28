@@ -28,7 +28,7 @@ namespace btas {
       typedef _Index index_type;
       const static CBLAS_ORDER order = _Order;
       typedef int64_t value_type;
-      typedef typename btas::replace_value_type<_Index,value_type>::type weight_type;    ///< weight type
+      typedef typename btas::replace_value_type<_Index,value_type>::type stride_type;    ///< stride type
 
       template <CBLAS_ORDER _O,
                 typename _I,
@@ -56,13 +56,13 @@ namespace btas {
                >
       BoxOrdinal(const Index1& lobound,
                  const Index2& upbound,
-                 const Weight& weight) {
-          init(lobound, upbound, weight);
+                 const Weight& stride) {
+          init(lobound, upbound, stride);
       }
 
 
       BoxOrdinal(const BoxOrdinal& other) :
-        weight_(other.weight_),
+        stride_(other.stride_),
         offset_(other.offset_),
         contiguous_ (other.contiguous_) {
       }
@@ -73,9 +73,9 @@ namespace btas {
                >
       BoxOrdinal(const BoxOrdinal<_O,_I>& other) {
           auto n = other.rank();
-          weight_ = array_adaptor<weight_type>::construct(n);
-          std::copy(other.weight_.begin(), other.weight_.end(),
-                    weight_.begin());
+          stride_ = array_adaptor<stride_type>::construct(n);
+          std::copy(other.stride_.begin(), other.stride_.end(),
+                    stride_.begin());
           offset_ = other.offset_;
           contiguous_ = other.contiguous_;
       }
@@ -84,11 +84,11 @@ namespace btas {
 
       std::size_t rank() const {
         using btas::rank;
-        return rank(weight_);
+        return rank(stride_);
       }
 
-      const weight_type& weight() const {
-        return weight_;
+      const stride_type& stride() const {
+        return stride_;
       }
 
       bool contiguous() const {
@@ -101,7 +101,7 @@ namespace btas {
         value_type o = 0;
         const auto end = this->rank();
         for(auto i = 0ul; i != end; ++i)
-          o += *(index.begin() + i) * *(this->weight_.begin() + i);
+          o += *(index.begin() + i) * *(this->stride_.begin() + i);
 
         return o - offset_;
       }
@@ -120,12 +120,12 @@ namespace btas {
 
         value_type volume = 1;
         offset_ = 0;
-        weight_ = array_adaptor<weight_type>::construct(n);
+        stride_ = array_adaptor<stride_type>::construct(n);
 
         // Compute range data
         if (order == CblasRowMajor) {
           for(int i = n - 1; i >= 0; --i) {
-            weight_[i] = volume;
+            stride_[i] = volume;
             auto li = *(lobound.begin() + i);
             auto ui = *(upbound.begin() + i);
             offset_ += li * volume;
@@ -134,7 +134,7 @@ namespace btas {
         }
         else {
           for(auto i = 0; i != n; ++i) {
-            weight_[i] = volume;
+            stride_[i] = volume;
             auto li = *(lobound.begin() + i);
             auto ui = *(upbound.begin() + i);
             offset_ += li * volume;
@@ -153,43 +153,43 @@ namespace btas {
                >
       void init(const Index1& lobound,
                 const Index2& upbound,
-                const Weight& weight) {
+                const Weight& stride) {
         using btas::rank;
         auto n = rank(lobound);
         if (n == 0) return;
 
         value_type volume = 1;
         offset_ = 0;
-        weight_ = array_adaptor<weight_type>::construct(n);
-        std::copy(weight.begin(), weight.end(), weight_.begin());
+        stride_ = array_adaptor<stride_type>::construct(n);
+        std::copy(stride.begin(), stride.end(), stride_.begin());
 
         // Compute offset and check whether contiguous
         contiguous_ = true;
-        weight_type tmpweight = array_adaptor<weight_type>::construct(n);
+        stride_type tmpstride = array_adaptor<stride_type>::construct(n);
         if (order == CblasRowMajor) {
           for(int i = n - 1; i >= 0; --i) {
-            tmpweight[i] = volume;
-            contiguous_ &= (tmpweight[i] == weight_[i]);
+            tmpstride[i] = volume;
+            contiguous_ &= (tmpstride[i] == stride_[i]);
             auto li = *(lobound.begin() + i);
             auto ui = *(upbound.begin() + i);
-            offset_ += li * weight_[i];
+            offset_ += li * stride_[i];
             volume *= (ui - li);
           }
         }
         else {
           for(auto i = 0; i != n; ++i) {
-            tmpweight[i] = volume;
-            contiguous_ &= (tmpweight[i] == weight_[i]);
+            tmpstride[i] = volume;
+            contiguous_ &= (tmpstride[i] == stride_[i]);
             auto li = *(lobound.begin() + i);
             auto ui = *(upbound.begin() + i);
-            offset_ += li * weight_[i];
+            offset_ += li * stride_[i];
             volume *= (ui - li);
           }
         }
       }
 
-      weight_type weight_; // weight of each dimension (stride in the language of NumPy)
-      value_type offset_; // lobound.weight => ordinal(index) = index.weight - offset
+      stride_type stride_; // stride of each dimension (stride in the language of NumPy)
+      value_type offset_; // lobound.stride => ordinal(index) = index.stride - offset
       bool contiguous_; // whether index iterator traverses a contiguous sequence of ordinals
   };
 
@@ -201,7 +201,7 @@ namespace btas {
   template <CBLAS_ORDER _Order,
             typename _Index>
   inline std::ostream& operator<<(std::ostream& os, const BoxOrdinal<_Order,_Index>& ord) {
-    array_adaptor<typename BoxOrdinal<_Order,_Index>::weight_type>::print(ord.weight(), os);
+    array_adaptor<typename BoxOrdinal<_Order,_Index>::stride_type>::print(ord.stride(), os);
     return os;
   }
 
