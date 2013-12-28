@@ -8,6 +8,7 @@ using namespace std;
 #include <btas/tensor.h>
 #include <btas/tarray.h>
 #include <btas/storageref.h>
+#include <btas/corange.h>
 using namespace btas;
 
 template<typename T> using vectorref = StorageRef<std::vector<T> >;
@@ -271,6 +272,19 @@ int main()
       cout << "t0[" << i << "] " << t0(i) << endl;
     }
 
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // CoRange tests
+  //////////////////////////////////////////////////////////////////////////////
+
+  {
+    Tensor<double> t0(2,3,4);
+    Tensor<double> t1(1,3,4);
+    auto r = make_corange(t0.range(), t1.range());
+    for(auto i: r) {
+      cout << first(i) << " " << second(i) << endl;
+    }
   }
 
   return 0;
