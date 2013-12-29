@@ -9,6 +9,7 @@
 #define BTAS_CORANGE_H_
 
 #include <tuple>
+#include <btas/util/functional.h>
 
 namespace btas {
 
@@ -17,25 +18,9 @@ namespace btas {
   class CoRange;
 
   /// CoRangeIterator implements iteration over CoRange
+  /// it resembles Boost.Iterator's <a href="http://www.boost.org/doc/libs/1_55_0/libs/iterator/doc/zip_iterator.html">zip_iterator</a>.
   template <typename ...Ranges>
   class CoRangeIterator;
-
-  template <typename ...Types>
-  auto first(const std::tuple<Types...>& x) -> decltype(std::get<0>(x)) {
-    return std::get<0>(x);
-  }
-  template <typename ...Types>
-  auto second(const std::tuple<Types...>& x) -> decltype(std::get<1>(x)) {
-    return std::get<1>(x);
-  }
-  template <typename ...Types>
-  auto third(const std::tuple<Types...>& x) -> decltype(std::get<2>(x)) {
-    return std::get<2>(x);
-  }
-  template <typename ...Types>
-  auto fourth(const std::tuple<Types...>& x) -> decltype(std::get<3>(x)) {
-    return std::get<3>(x);
-  }
 
   /// CoRangeIterator over a pair of ranges.
   template <typename R1, typename R2>

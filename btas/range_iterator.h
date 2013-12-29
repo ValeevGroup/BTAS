@@ -30,67 +30,69 @@ namespace btas {
 } // namespace btas
 
 namespace std {
-  template <typename Value, typename Container>
-  void advance(btas::RangeIterator<Value, Container>&,
-      typename btas::RangeIterator<Value, Container>::difference_type );
+  template <typename Value, typename Range>
+  void advance(btas::RangeIterator<Value, Range>&,
+      typename btas::RangeIterator<Value, Range>::difference_type );
 
-  template <typename Value, typename Container>
-  typename btas::RangeIterator<Value, Container>::difference_type
-  distance(const btas::RangeIterator<Value, Container>&,
-      const btas::RangeIterator<Value, Container>&);
+  template <typename Value, typename Range>
+  typename btas::RangeIterator<Value, Range>::difference_type
+  distance(const btas::RangeIterator<Value, Range>&,
+      const btas::RangeIterator<Value, Range>&);
 
 } // namespace std
 
 namespace btas {
 
-    /// Coordinate index iterate
+    /// Iterates over a Range of Values
 
-    /// This is an input iterator that is used to iterate over the coordinate
-    /// indexes of a \c Range.
+    /// This is an input iterator that is used to iterate over elements of a \c Range.
     /// \tparam Value The value type of the iterator
-    /// \tparam Container The container that the iterator references
-    /// \note The container object must define the function
-    /// \c Container::increment(Value&) \c const, and be accessible to
+    /// \tparam Range The range that the iterator references
+    /// \note The range object must define the function
+    /// \c Range::increment(Value&) \c const, and be accessible to
     /// \c RangeIterator.
-    template <typename Value, typename Container>
+    template <typename Value,
+              typename Range>
     class RangeIterator {
     public:
-      typedef RangeIterator<Value,Container> RangeIterator_; ///< This class type
 
       // Standard iterator typedefs
-      typedef Value value_type; ///< Iterator value type
-      typedef const Value& reference; ///< Iterator reference type
-      typedef const Value* pointer; ///< Iterator pointer type
-      typedef std::input_iterator_tag iterator_category; /// Iterator category tag
-      typedef std::ptrdiff_t difference_type; ///< Iterator difference type
+      typedef Value value_type;                                    ///< Iterator value type
+      typedef const value_type& reference;                         ///< Iterator reference type
+      typedef const value_type* pointer;                           ///< Iterator pointer type
+      typedef std::input_iterator_tag iterator_category;           ///< Iterator category tag
+      typedef std::ptrdiff_t difference_type;                      ///< Iterator difference type
+
+      // additional typedefs
+      typedef Range range_type;                                    ///< Range type
 
       /// Copy constructor
 
       /// \param other The other iterator to be copied
-      RangeIterator(const RangeIterator_& other) :
-        container_(other.container_), current_(other.current_) {
+      RangeIterator(const RangeIterator& other) :
+        range_(other.range_), current_(other.current_) {
       }
 
       /// Construct an index iterator
 
       /// \param v The initial value of the iterator index
-      /// \param c The container that the iterator will reference
-      RangeIterator(const Value& v, const Container* c) :
-          container_(c), current_(v)
+      /// \param c The range that the iterator will reference
+      RangeIterator(const value_type& v, const range_type* c) :
+          range_(c), current_(v)
       { }
 
       /// Copy constructor
 
       /// \param other The other iterator to be copied
       /// \return A reference to this object
-      RangeIterator_& operator=(const RangeIterator_& other) {
+      RangeIterator& operator=(const RangeIterator& other) {
         current_ = other.current_;
-        container_ = other.container_;
+        range_ = other.range_;
 
         return *this;
       }
 
-      const Container* container() const { return container_; }
+      const range_type* range() const { return range_; }
 
       /// Dereference operator
 
@@ -101,8 +103,8 @@ namespace btas {
 
       /// Increment the iterator
       /// \return The modified iterator
-      RangeIterator_& operator++() {
-        container_->increment(current_);
+      RangeIterator& operator++() {
+        range_->increment(current_);
         return *this;
       }
 
@@ -110,9 +112,9 @@ namespace btas {
 
       /// Increment the iterator
       /// \return An unmodified copy of the iterator
-      RangeIterator_ operator++(int) {
-        RangeIterator_ temp(*this);
-        container_->increment(current_);
+      RangeIterator operator++(int) {
+        RangeIterator temp(*this);
+        range_->increment(current_);
         return temp;
       }
 
@@ -121,20 +123,19 @@ namespace btas {
       /// \return A \c pointer to the current data
       pointer operator->() const { return & current_; }
 
-
       void advance(difference_type n) {
-        container_->advance(current_, n);
+        range_->advance(current_, n);
       }
 
-      difference_type distance_to(const RangeIterator_& other) const {
-        TA_ASSERT(container_ == other.container_);
-        return container_->distance_to(current_, other.current_);
+      difference_type distance_to(const RangeIterator& other) const {
+        TA_ASSERT(range_ == other.range_);
+        return range_->distance_to(current_, other.current_);
       }
 
     private:
 
-      const Container* container_;  ///< The container that the iterator references
-      Value current_;               ///< The current value of the iterator
+      const range_type* range_;          ///< The range that the iterator references
+      value_type current_;               ///< The current value of the iterator
     }; // class RangeIterator
 
     /// Equality operator
@@ -142,46 +143,46 @@ namespace btas {
     /// Compares the iterators for equality. They must reference the same range
     /// object to be considered equal.
     /// \tparam Value The value type of the iterator
-    /// \tparam Container The container that the iterator references
+    /// \tparam Range The range that the iterator references
     /// \param left_it The left-hand iterator to be compared
     /// \param right_it The right-hand iterator to be compared
-    /// \return \c true if the the value and container are equal for the \c left_it
+    /// \return \c true if the the value and range are equal for the \c left_it
     /// and \c right_it , otherwise \c false .
-    template <typename Value, typename Container>
-    bool operator==(const RangeIterator<Value, Container>& left_it, const RangeIterator<Value, Container>& right_it) {
+    template <typename Value, typename Range>
+    bool operator==(const RangeIterator<Value, Range>& left_it, const RangeIterator<Value, Range>& right_it) {
       return ((*left_it) == (*right_it)) &&
-          (left_it.container() == right_it.container());
+          (left_it.range() == right_it.range());
     }
 
     /// Inequality operator
 
     /// Compares the iterators for inequality.
     /// \tparam Value The value type of the iterator
-    /// \tparam Container The container that the iterator references
+    /// \tparam Range The range that the iterator references
     /// \param left_it The left-hand iterator to be compared
     /// \param right_it The right-hand iterator to be compared
-    /// \return \c true if the the value or container are not equal for the
+    /// \return \c true if the the value or range are not equal for the
     /// \c left_it and \c right_it , otherwise \c false .
-    template <typename Value, typename Container>
-    bool operator!=(const RangeIterator<Value, Container>& left_it, const RangeIterator<Value, Container>& right_it) {
+    template <typename Value, typename Range>
+    bool operator!=(const RangeIterator<Value, Range>& left_it, const RangeIterator<Value, Range>& right_it) {
       return ((*left_it) != (*right_it)) ||
-          (left_it.container() != right_it.container());
+          (left_it.range() != right_it.range());
     }
 
 } // namespace btas
 
 namespace std {
-  template <typename Value, typename Container>
-  void advance(btas::RangeIterator<Value, Container>& it,
-      typename btas::RangeIterator<Value, Container>::difference_type n)
+  template <typename Value, typename Range>
+  void advance(btas::RangeIterator<Value, Range>& it,
+      typename btas::RangeIterator<Value, Range>::difference_type n)
   {
     it.advance(n);
   }
 
-  template <typename Value, typename Container>
-  typename btas::RangeIterator<Value, Container>::difference_type
-  distance(const btas::RangeIterator<Value, Container>& first,
-      const btas::RangeIterator<Value, Container>& last)
+  template <typename Value, typename Range>
+  typename btas::RangeIterator<Value, Range>::difference_type
+  distance(const btas::RangeIterator<Value, Range>& first,
+      const btas::RangeIterator<Value, Range>& last)
   {
     return first.distance_to(last);
   }

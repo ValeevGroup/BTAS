@@ -1,48 +1,36 @@
-#ifndef __BTAS_TENSOR_H
-#define __BTAS_TENSOR_H 1
+/*
+ * tensorview.h
+ *
+ *  Created on: Dec 28, 2013
+ *      Author: evaleev
+ */
 
-#include <cassert>
-#include <algorithm>
-#include <functional>
-#include <type_traits>
-#include <vector>
+#ifndef BTAS_TENSORVIEW_H_
+#define BTAS_TENSORVIEW_H_
 
-#include <btas/types.h>
-#include <btas/defaults.h>
-#include <btas/tensor_traits.h>
-#include <btas/array_adaptor.h>
-
-#include <boost/serialization/serialization.hpp>
+#include <btas/tensor.h>
+#include <btas/tensorview_iterator.h>
 
 namespace btas {
 
-  /** BTAS implementation of "dense" tensor class that models \ref labelTWGTensor "TWG.BoxTensor" concept
-      @tparam _T element type, Tensor contains values of this type
-      @tparam _Range Range type, models \ref labelTWGRange "TWG.Range" concept
-      @tparam _Storage Storage type, models \ref labelTWGStorage "TWG.Storage" concept
+
+  /// View (aka generalized slice) of a tensor
+
+  /**
+      @tparam _T apparent element type, TensorView will present tensor elements as values of this type
+      @tparam _Range Range type
+      @tparam _Storage Storage type
   */
   template<typename _T,
            class _Range = btas::DEFAULT::range,
            class _Storage = btas::DEFAULT::storage<_T>
            >
-  class Tensor {
+  class TensorView {
 
     public:
 
       /// value type
       typedef _T value_type;
-
-      /// type of underlying data storage
-      typedef _Storage storage_type;
-
-      /// size type
-      typedef typename storage_type::size_type size_type;
-
-      /// element iterator
-      typedef typename storage_type::iterator iterator;
-
-      /// constant element iterator
-      typedef typename storage_type::const_iterator const_iterator;
 
       /// type of Range
       typedef _Range range_type;
@@ -50,120 +38,107 @@ namespace btas {
       /// type of index
       typedef typename _Range::index_type index_type;
 
+      /// type of underlying data storage
+      typedef _Storage storage_type;
+
+      // for convenience
+      typedef typename std::remove_const<storage_type>::type nonconst_storage_type;
+
+      /// type of data storage reference
+      typedef StorageRef<storage_type> storageref_type;
+
+      /// size type
+      typedef typename storageref_type::size_type size_type;
+
+      /// element iterator
+      typedef TensorViewIterator<range_type, storage_type> iterator;
+
+      /// element iterator
+      typedef TensorViewIterator<range_type, const storage_type> const_iterator;
+
     private:
       struct Enabler {};
 
     public:
 
       /// default constructor
-      Tensor () { }
+      TensorView () { }
 
       /// destructor
-      ~Tensor () { }
+      ~TensorView () { }
 
-      /// constructor with index extent
-      template<typename... _args>
+      /// construct from \c range and \c storage
       explicit
-      Tensor (const size_type& first, const _args&... rest) :
-      range_(range_type(first, rest...))
+      TensorView (const range_type& range, const nonconst_storage_type& storage) :
+      range_(range), storageref_(storage)
       {
-        array_adaptor<storage_type>::resize(data_, range_.area());
-      }
-
-      /// construct from \c range, allocate data, but not initialized
-      explicit
-      Tensor (const range_type& range) :
-      range_(range)
-      {
-        array_adaptor<storage_type>::resize(data_, range_.area());
-      }
-
-      /// construct from \c range object, set all elements to \c v
-      explicit
-      Tensor (const range_type& range,
-              value_type v) :
-              range_(range)
-      {
-        array_adaptor<storage_type>::resize(data_, range_.area());
-        std::fill(begin(), end(), v);
       }
 
       /// construct from \c range and \c storage
       explicit
-      Tensor (const range_type& range, const storage_type& storage) :
-      range_(range), data_(storage)
+      TensorView (const range_type& range, nonconst_storage_type& storage) :
+      range_(range), storageref_(storage)
       {
       }
 
       /// move-construct from \c range and \c storage
       explicit
-      Tensor (range_type&& range, storage_type&& storage) :
-      range_(range), data_(storage)
+      TensorView (range_type&& range, storage_type&& storage) :
+      range_(range), storageref_(storage)
       {
       }
 
       /// copy constructor
       template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       explicit
-      Tensor (const _Tensor& x)
+      TensorView (const _Tensor& x)
       : range_ (x.range()),
       // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
-        data_(x.begin(), x.end())
+        storageref_(x.storage())
       {
       }
 
       /// copy constructor
       template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       explicit
-      Tensor (_Tensor&& x)
+      TensorView (_Tensor& x)
       : range_ (x.range()),
       // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
-        data_(x.begin(), x.end())
+        storageref_(x.storage())
       {
       }
+
 
       /// copy constructor
       explicit
-      Tensor (const Tensor& x)
-      : range_ (x.range()), data_(x.data_)
+      TensorView (const TensorView& x)
+      : range_ (x.range()), storageref_(x.storageref_)
       {
-      }
-
-      /// copy assignment operator
-      // TODO I only know how to do this if _Tensor's range_type is same as mine
-      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
-      Tensor&
-      operator= (const _Tensor& x)
-      {
-          range_ = x.range();
-          array_adaptor<storage_type>::resize(data_, range_.area());
-          std::copy(x.begin(), x.end(), data_.begin());
-          return *this;
       }
 
       /// copy assignment
-      Tensor&
-      operator= (const Tensor& x)
+      TensorView&
+      operator= (const TensorView& x)
       {
         range_ = x.range_;
-        data_ = x.data_;
+        storageref_ = x.storageref_;
         return *this;
       }
 
       /// move constructor
       explicit
-      Tensor (Tensor&& x)
+      TensorView (TensorView&& x)
       {
         std::swap(range_, x.range_);
-        std::swap(data_, x.data_);
+        std::swap(storageref_, x.storageref_);
       }
 
       /// move assignment operator
-      Tensor&
-      operator= (Tensor&& x)
+      TensorView&
+      operator= (TensorView&& x)
       {
         std::swap(range_, x.range_);
-        std::swap(data_, x.data_);
+        std::swap(storageref_, x.storageref_);
         return *this;
       }
 
@@ -211,21 +186,20 @@ namespace btas {
       }
 
       /// \return storage object
-      const storage_type&
+      const storageref_type&
       storage() const
       {
-        return data_;
+        return storageref_;
       }
 
       /// \return storage object
-      storage_type&
+      storageref_type&
       storage()
       {
-        return data_;
+        return storageref_;
       }
 
-
-      /// test whether Tensor is empty
+      /// test whether TensorView is empty
       bool
       empty() const
       {
@@ -236,42 +210,42 @@ namespace btas {
       const_iterator
       begin() const
       {
-        return data_.begin();
+        return cbegin();
       }
 
       /// \return const iterator end
       const_iterator
       end() const
       {
-        return data_.end();
+        return cend();
       }
 
       /// \return const iterator begin, even if this is not itself const
       const_iterator
       cbegin() const
       {
-        return data_.begin();
+        return const_iterator(range().begin(), storage());
       }
 
       /// \return const iterator end, even if this is not itself const
       const_iterator
       cend() const
       {
-        return data_.end();
+        return const_iterator(range().end(), storage());
       }
 
       /// \return iterator begin
       iterator
       begin()
       {
-        return data_.begin();
+        return iterator(range().begin(), storage());
       }
 
       /// \return iterator end
       iterator
       end()
       {
-        return data_.end();
+        return iterator(range().end(), storage());
       }
 
       /// \return element without range check
@@ -283,7 +257,7 @@ namespace btas {
         auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
         index_type index = array_adaptor<index_type>::construct(indexv.size());
         std::copy(indexv.begin(), indexv.end(), index.begin());
-        return data_[ range_.ordinal(index) ];
+        return storageref_[ range_.ordinal(index) ];
       }
 
       /// \return element without range check (rank() == general)
@@ -291,7 +265,7 @@ namespace btas {
       typename std::enable_if<is_index<Index>::value, const value_type&>::type
       operator() (const Index& index) const
       {
-        return data_[range_.ordinal(index)];
+        return storageref_[range_.ordinal(index)];
       }
 
       /// access element without range check
@@ -303,7 +277,7 @@ namespace btas {
         auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
         index_type index = array_adaptor<index_type>::construct(indexv.size());
         std::copy(indexv.begin(), indexv.end(), index.begin());
-        return data_[ range_.ordinal(index) ];
+        return storageref_[ range_.ordinal(index) ];
       }
 
       /// access element without range check (rank() == general)
@@ -311,9 +285,9 @@ namespace btas {
       typename std::enable_if<is_index<Index>::value, value_type&>::type
       operator() (const Index& index)
       {
-        return data_[range_.ordinal(index)];
+        return storageref_[range_.ordinal(index)];
       }
-   
+
       /// \return element without range check
       template<typename index0, typename... _args>
       typename std::enable_if<std::is_integral<index0>::value, const value_type&>::type
@@ -324,7 +298,7 @@ namespace btas {
         index_type index = array_adaptor<index_type>::construct(indexv.size());
         std::copy(indexv.begin(), indexv.end(), index.begin());
         assert( range_.includes(index) );
-        return data_[ range_.ordinal(index) ];
+        return storageref_[ range_.ordinal(index) ];
       }
 
       /// \return element without range check (rank() == general)
@@ -333,7 +307,7 @@ namespace btas {
       at (const Index& index) const
       {
         assert( range_.includes(index) );
-        return data_[ range_.ordinal(index) ];
+        return storageref_[ range_.ordinal(index) ];
       }
 
       /// access element without range check
@@ -346,7 +320,7 @@ namespace btas {
         index_type index = array_adaptor<index_type>::construct(indexv.size());
         std::copy(indexv.begin(), indexv.end(), index.begin());
         assert( range_.includes(index) );
-        return data_[ range_.ordinal(index) ];
+        return storageref_[ range_.ordinal(index) ];
       }
 
       /// access element without range check (rank() == general)
@@ -355,41 +329,15 @@ namespace btas {
       at (const Index& index)
       {
         assert( range_.includes(index) );
-        return data_[ range_.ordinal(index) ];
-      }
-   
-      /// resize array with range object
-      template <typename Range>
-      void
-      resize (const Range& range, typename std::enable_if<is_boxrange<Range>::value,Enabler>::type = Enabler())
-      {
-        range_ = range;
-        array_adaptor<storage_type>::resize(data_, range_.area());
-      }
-
-      /// resize array with extent object
-      template <typename Extent>
-      void
-      resize (const Extent& extent, typename std::enable_if<is_index<Extent>::value,Enabler>::type = Enabler())
-      {
-        range_ = range_type(extent);
-        array_adaptor<storage_type>::resize(data_, range_.area());
+        return storageref_[ range_.ordinal(index) ];
       }
 
       /// swap this and x
       void
-      swap (Tensor& x)
+      swap (TensorView& x)
       {
         std::swap(range_, x.range_);
-        std::swap(data_, x.data_);
-      }
-
-      /// clear all members
-      void
-      clear()
-      {
-        range_ = range_type();
-        data_ = storage_type();
+        std::swap(storageref_, x.storageref_);
       }
 
       //  ========== Finished Public Interface and Its Reference Implementations ==========
@@ -397,63 +345,47 @@ namespace btas {
       //
       //  Here come Non-Standard members (to be discussed)
       //
-
+#if 0
       /// addition assignment
-      Tensor&
-      operator+= (const Tensor& x)
+      TensorView&
+      operator+= (const TensorView& x)
       {
         assert( std::equal(range_.begin(), range_.end(), x.range_.begin()) );
-        std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::plus<value_type>());
+        std::transform(storageref_.begin(), storageref_.end(), x.storageref_.begin(), storageref_.begin(), std::plus<value_type>());
         return *this;
       }
 
       /// addition of tensors
-      Tensor
-      operator+ (const Tensor& x) const
+      TensorView
+      operator+ (const TensorView& x) const
       {
-        Tensor y(*this); y += x;
+        TensorView y(*this); y += x;
         return y; /* automatically called move semantics */
       }
 
       /// subtraction assignment
-      Tensor&
-      operator-= (const Tensor& x)
+      TensorView&
+      operator-= (const TensorView& x)
       {
         assert(
             std::equal(range_.begin(), range_.end(), x.range_.begin()));
-        std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::minus<value_type>());
+        std::transform(storageref_.begin(), storageref_.end(), x.storageref_.begin(), storageref_.begin(), std::minus<value_type>());
         return *this;
       }
 
       /// subtraction of tensors
-      Tensor
-      operator- (const Tensor& x) const
+      TensorView
+      operator- (const TensorView& x) const
       {
-        Tensor y(*this); y -= x;
+        TensorView y(*this); y -= x;
         return y; /* automatically called move semantics */
-      }
-
-      /// \return bare const pointer to the first element of data_
-      /// this enables to call BLAS functions
-      const value_type*
-      data () const
-      {
-        return data_.data();
-      }
-
-      /// \return bare pointer to the first element of data_
-      /// this enables to call BLAS functions
-      value_type*
-      data()
-      {
-        return data_.data();
       }
 
       /// fill all elements by val
       void
       fill (const value_type& val)
       {
-        std::fill(data_.begin(), data_.end(), val);
+        std::fill(storageref_.begin(), storageref_.end(), val);
       }
 
       /// generate all elements by gen()
@@ -461,64 +393,59 @@ namespace btas {
       void
       generate (Generator gen)
       {
-          std::generate(data_.begin(), data_.end(), gen);
+          std::generate(storageref_.begin(), storageref_.end(), gen);
       }
+#endif
 
     private:
 
       range_type range_;///< range object
-      storage_type data_;///< data
+      storageref_type storageref_;///< dataref
 
-  }; // end of Tensor
+  }; // end of TensorView
+
+  template <typename _T,
+            class _Range   = btas::DEFAULT::range,
+            class _Storage = btas::DEFAULT::storage<_T>
+           >
+  using TensorConstView = TensorView<_T, _Range, const _Storage>;
 
   template <typename _T, typename _Range, typename _Storage>
-  auto cbegin(const btas::Tensor<_T, _Range, _Storage>& x) -> decltype(x.cbegin()) {
+  auto cbegin(const btas::TensorView<_T, _Range, _Storage>& x) -> decltype(x.cbegin()) {
     return x.cbegin();
   }
   template <typename _T, typename _Range, typename _Storage>
-  auto cend(const btas::Tensor<_T, _Range, _Storage>& x) -> decltype(x.cbegin()) {
+  auto cend(const btas::TensorView<_T, _Range, _Storage>& x) -> decltype(x.cbegin()) {
     return x.cend();
   }
 
-  /// maps Tensor -> Range
+  /// maps TensorView -> Range
   template <typename _T, typename _Range, typename _Storage>
   auto
-  range (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.range()) {
+  range (const btas::TensorView<_T, _Range, _Storage>& t) -> decltype(t.range()) {
     return t.range();
   }
 
-  /// maps Tensor -> Range extent
+  /// maps TensorView -> Range extent
   template <typename _T, typename _Range, typename _Storage>
   auto
-  extent (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.range().extent()) {
+  extent (const btas::TensorView<_T, _Range, _Storage>& t) -> decltype(t.range().extent()) {
     return t.range().extent();
   }
 
-  /// Tensor stream output operator
+  /// TensorView stream output operator
 
-  /// prints Tensor in row-major form. To be implemented elsewhere using slices.
+  /// prints TensorView in row-major form. To be implemented elsewhere using slices.
   /// \param os The output stream that will be used to print \c t
-  /// \param t The Tensor to be printed
+  /// \param t The TensorView to be printed
   /// \return A reference to the output stream
   template <typename _T, typename _Range, typename _Storage>
-  std::ostream& operator<<(std::ostream& os, const btas::Tensor<_T, _Range, _Storage>& t) {
-    os << "Tensor:\n  Range: " << t.range() << std::endl;
+  std::ostream& operator<<(std::ostream& os, const btas::TensorView<_T, _Range, _Storage>& t) {
+    os << "TensorView:\n  Range: " << t.range() << std::endl;
     return os;
   }
 
 } // namespace btas
 
-namespace boost {
-namespace serialization {
 
-  /// boost serialization
-  template<class Archive, typename _T, class _Storage, class _Range>
-  void serialize(Archive& ar, btas::Tensor<_T, _Range, _Storage>& t,
-                 const unsigned int version) {
-    ar & t.range() & t.stride() & t.data();
-  }
-
-}
-}
-
-#endif // __BTAS_TENSOR_H
+#endif /* TENSORVIEW_H_ */

@@ -14,6 +14,8 @@
 #include <numeric>
 #include <initializer_list>
 
+#include <boost/iterator/transform_iterator.hpp>
+
 #include <btas/varray/varray.h>
 #include <btas/range_iterator.h>
 #include <btas/array_adaptor.h>
@@ -22,6 +24,7 @@
 #include <btas/index_traits.h>
 #include <btas/range_traits.h>
 #include <btas/ordinal.h>
+#include <btas/util/functional.h>
 
 /** @addtogroup BTAS_Range
 
@@ -62,6 +65,7 @@ namespace btas {
         typedef const value_type const_reference_type;
 
         typedef RangeIterator<index_type, Range1d> const_iterator; ///< Index iterator
+        typedef const_iterator iterator; ///< interator = const_iterator
         friend class RangeIterator<index_type, Range1d>;
 
         Range1d(size_t extent = 0ul) :
@@ -69,7 +73,9 @@ namespace btas {
 
         /// [begin, end)
         Range1d(index_type begin, index_type end, index_type stride = 1) :
-        lobound_(begin), upbound_(end), stride_(stride) {}
+        lobound_(begin), upbound_(end), stride_(stride) {
+          assert(stride_ != 0);
+        }
 
         /// to construct from an initializer list give it as {}, {extent}, {begin,end}, or {begin,end,stride}
         template <typename T> Range1d(std::initializer_list<T> x) : lobound_(0), upbound_(0), stride_(1) {
@@ -83,6 +89,7 @@ namespace btas {
             if (x.size() == 3)
               stride_ = *(x.begin()+2);
           }
+          assert(stride_ != 0);
         }
 
         Range1d(const Range1d& other) :
@@ -157,23 +164,28 @@ namespace btas {
         /// \throw nothing
         const_iterator end() const { return const_iterator(upbound_, this); }
 
+        /// Increment the coordinate index \c i in this range
+
+        /// \param[in,out] i The coordinate index to be incremented
+        void increment(index_type& i) const {
+          i += stride_;
+          if (not_past_end(i))
+            return;
+          // if ended up outside the range, set to end
+          i = upbound_;
+        }
 
       private:
         index_type lobound_;
         index_type upbound_;
         index_type stride_;
 
-        /// Increment the coordinate index \c i in this range
-
-        /// \param[in,out] i The coordinate index to be incremented
-        void increment(index_type& i) const {
-          i += stride_;
-          if(i < upbound_)
-            return;
-          // if ended up outside the range, set to end
-          i = upbound_;
+        bool not_past_end(const index_type& i) const {
+          if (stride_ > 0)
+            return i < upbound_;
+          else // stride_ < 0
+            return i > upbound_;
         }
-
 
     }; // Range1d
     using Range1 = Range1d<>;
@@ -192,6 +204,17 @@ namespace btas {
       return os;
     }
 
+    /// convenient to iterate over dimensions according to \c Order
+    template <CBLAS_ORDER Order = CblasRowMajor>
+    Range1
+    dim_range(size_t ndim) {
+      if (Order == CblasRowMajor)
+        return Range1(ndim-1,-1,-1);
+      if (Order == CblasColMajor)
+        return Range1(0,ndim,1);
+      assert(false); // unreachable
+    }
+
     /// BaseRangeNd is a <a href="http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern">CRTP</a>
     /// base for implementations of N-dimensional Ranges.
 
@@ -203,7 +226,8 @@ namespace btas {
      */
     template <typename _Derived>
     class BaseRangeNd {
-    protected:
+    public:
+
       const static CBLAS_ORDER order = range_traits<_Derived>::order;
       typedef typename range_traits<_Derived>::index_type index_type; ///< index type
       typedef typename std::make_unsigned<index_type>::type extent_type;    ///< Range extent type
@@ -212,10 +236,12 @@ namespace btas {
       typedef index_type value_type; ///< Range can be viewed as a Container of value_type
       typedef index_type& reference_type;
       typedef const value_type& const_reference_type;
-      typedef RangeIterator<index_type, _Derived> const_iterator; ///< Index iterator
-      typedef const_iterator iterator; ///< interator = const_iterator
-      friend class RangeIterator<index_type, _Derived>;
 
+      // index iterator
+      typedef RangeIterator<index_type, _Derived>  iterator;         ///< Index iterator
+      typedef iterator const_iterator; ///< Index interator = Index const_iterator
+
+      friend class RangeIterator<index_type, _Derived>;
       friend _Derived;
 
     private:
@@ -439,7 +465,8 @@ namespace btas {
       /// the data layout of a dense tensor.
       /// \return An iterator that holds the lobound element index of a tensor
       /// \throw nothing
-      const_iterator begin() const { return const_iterator(lobound_, static_cast<const _Derived*>(this)); }
+      const_iterator begin() const {
+        return const_iterator(lobound_, static_cast<const _Derived*>(this)); }
 
       /// Index iterator factory
 
@@ -449,60 +476,21 @@ namespace btas {
       /// \throw nothing
       const_iterator end() const { return const_iterator(upbound_, static_cast<const _Derived*>(this)); }
 
-      /// Check the coordinate to make sure it is within the range.
-
-      /// \tparam Index The coordinate index array type
-      /// \param index The coordinate index to check for inclusion in the range
-      /// \return \c true when \c i \c >= \c lobound and \c i \c < \c f, otherwise
-      /// \c false
-      /// \throw TildedArray::Exception When the dimension of this range is not
-      /// equal to the size of the index.
-      template <typename Index>
-      typename std::enable_if<btas::is_index<Index>::value, bool>::type
-      includes(const Index& index) const {
-        using btas::rank;
-        assert(rank(index) == this->rank());
-        const auto end = this->rank();
-        for(auto i = 0ul; i < end; ++i)
-          if((index[i] < lobound_[i]) || (index[i] >= upbound_[i]))
-            return false;
-
-        return true;
-      }
-
-
-    private:
-
-      /// Increment the coordinate index \c i in this range
+      /// Increment index \c i in this range
 
       /// \param[in,out] i The coordinate index to be incremented
       void increment(index_type& i) const {
 
-        if (order == CblasRowMajor) {
-          for(int d = int(rank()) - 1; d >= 0; --d) {
-            // increment coordinate
-            ++i[d];
+        for(auto d: dim_range<order>(rank())) {
+          // increment coordinate
+          ++i[d];
 
-            // break if done
-            if(i[d] < upbound_[d])
-              return;
+          // break if done
+          if(i[d] < upbound_[d])
+            return;
 
-            // Reset current index to lobound value.
-            i[d] = lobound_[d];
-          }
-        }
-        else { // col-major
-          for(auto d = 0ul; d != rank(); ++d) {
-            // increment coordinate
-            ++i[d];
-
-            // break if done
-            if(i[d] < upbound_[d])
-              return;
-
-            // Reset current index to lobound value.
-            i[d] = lobound_[d];
-          }
+          // Reset current index to lobound value.
+          i[d] = lobound_[d];
         }
 
         // if the current location is outside the range, make it equal to range end iterator
@@ -531,12 +519,52 @@ namespace btas {
       }
 #endif
 
+      /// Check the coordinate to make sure it is within the range.
+
+      /// \tparam Index The coordinate index array type
+      /// \param index The coordinate index to check for inclusion in the range
+      /// \return \c true when \c i \c >= \c lobound and \c i \c < \c f, otherwise
+      /// \c false
+      /// \throw TildedArray::Exception When the dimension of this range is not
+      /// equal to the size of the index.
+      template <typename Index>
+      typename std::enable_if<btas::is_index<Index>::value, bool>::type
+      includes(const Index& index) const {
+        using btas::rank;
+        assert(rank(index) == this->rank());
+        const auto end = this->rank();
+        for(auto i = 0ul; i < end; ++i)
+          if((index[i] < lobound_[i]) || (index[i] >= upbound_[i]))
+            return false;
+
+        return true;
+      }
+
+
+    private:
+
+      /// Validates that the index is in the Range
+      /// \tparam Index A coordinate index type (array type)
+      /// \param index The index to be converted to an ordinal index
+      /// \return The ordinal index of \c index
+      /// \throw When \c index is not included in this range.
+      template <typename Index>
+      typename std::enable_if<btas::is_index<Index>::value, void>::type
+      validate_index(const Index& index) const {
+        using btas::rank;
+        assert(rank(index) == this->rank());
+        assert(this->includes(index));
+      }
+
     private:
       index_type lobound_; ///< range origin
       index_type upbound_; ///< range extent
 
     }; // class BaseRangeNd
 
+    /// Range conforms to the \ref labelTWGRange "TWG.Range" concept
+
+    /// Extends BaseRangeNd to compute ordinals, as specified by \c _Ordinal
     template <CBLAS_ORDER _Order = CblasRowMajor,
               typename _Index = btas::varray<long>,
               typename _Ordinal = btas::BoxOrdinal<_Order,_Index>,
@@ -553,11 +581,13 @@ namespace btas {
 
       typedef typename _Ordinal::value_type ordinal_type; ///< Ordinal value type
 
-      typedef index_type value_type; ///< Range can be viewed as a Container of value_type
-      typedef index_type& reference_type;
-      typedef const value_type& const_reference_type;
-      typedef RangeIterator<index_type, RangeNd> const_iterator; ///< Index iterator
-      typedef const_iterator iterator; ///< interator = const_iterator
+      // ordinal iterator
+      // to be efficient, implemented as iterator that updates index and ordinal at the same time
+      typedef std::pair<index_type, ordinal_type> subiter_value_type;
+      typedef RangeIterator<subiter_value_type, RangeNd> ordinal_subiterator;
+      typedef ::boost::transform_iterator< btas::second_of_pair<subiter_value_type>,
+                                           ordinal_subiterator > ordinal_iterator; ///< Ordinal iterator
+      typedef ordinal_iterator const_ordinal_iterator; ///< Ordinal interator = Ordinal const_iterator
 
       typedef BaseRangeNd< RangeNd<_Order, _Index, _Ordinal> > base_type; ///< Parent type
       friend class BaseRangeNd< RangeNd<_Order, _Index, _Ordinal> >;
@@ -598,30 +628,30 @@ namespace btas {
       {
       }
 
-      /// Constructor defined by the upper and lower bounds, and the axes weights
+      /// Constructor defined by the upper and lower bounds, and the axes strides
 
       /// \tparam Index1 An array type convertible to \c index_type
       /// \tparam Index2 An array type convertible to \c index_type
       /// \tparam Extent An array type convertible to \c extent_type
       /// \param lobound The lower bound of the N-dimensional range
       /// \param upbound The upper bound of the N-dimensional range
-      /// \param weight The axes weights of the N-dimensional range
+      /// \param stride The axes strides of the N-dimensional range
       template <typename Index1, typename Index2, typename Extent>
-      RangeNd(const Index1& lobound, const Index2& upbound, const Extent& weight,
+      RangeNd(const Index1& lobound, const Index2& upbound, const Extent& stride,
               typename std::enable_if<btas::is_index<Index1>::value &&
                                       btas::is_index<Index2>::value &&
                                       btas::is_index<Extent>::value, Enabler>::type = Enabler()) :
-        base_type(lobound, upbound), ordinal_(lobound, upbound, weight)
+        base_type(lobound, upbound), ordinal_(lobound, upbound, stride)
       {
       }
 
-      /// "Move" constructor defined by the upper and lower bounds, and the axes weights
+      /// "Move" constructor defined by the upper and lower bounds, and the axes strides
 
       /// \param lobound The lower bound of the N-dimensional range
       /// \param upbound The upper bound of the N-dimensional range
-      /// \param weight The axes weights of the N-dimensional range
-      RangeNd(index_type&& lobound, index_type&& upbound, extent_type&& weight) :
-        base_type(lobound, upbound), ordinal_(lobound, upbound, weight)
+      /// \param stride The axes strides of the N-dimensional range
+      RangeNd(index_type&& lobound, index_type&& upbound, extent_type&& stride) :
+        base_type(lobound, upbound), ordinal_(lobound, upbound, stride)
       {
       }
 
@@ -748,25 +778,34 @@ namespace btas {
       template <typename Index>
       typename std::enable_if<btas::is_index<Index>::value, ordinal_type>::type
       ordinal(const Index& index) const {
-        this->validate_index(index);
         return ordinal_(index);
       }
 
-    private:
+    public:
 
-      /// calculate the ordinal index of \c i
+      using base_type::increment;
+      /// Increments <index,ordinal> pair
+      /// \param[in,out] pair<index,ordinal> to be incremented
+      void increment(subiter_value_type& i) const {
 
-      /// Convert an index to its ordinal.
-      /// \tparam Index A coordinate index type (array type)
-      /// \param index The index to be converted to an ordinal index
-      /// \return The ordinal index of \c index
-      /// \throw When \c index is not included in this range.
-      template <typename Index>
-      typename std::enable_if<btas::is_index<Index>::value, void>::type
-      validate_index(const Index& index) const {
-        using btas::rank;
-        assert(rank(index) == this->rank());
-        assert(this->includes(index));
+        for(auto d: dim_range<order>(this->rank())) {
+          // increment subindex
+          ++i.first[d];
+
+          // break if done
+          if(i.first[d] < this->upbound_[d]) {
+            i.second += ordinal_.stride()[d];
+            return;
+          }
+
+          // Reset current subindex to lobound value and move to the next
+          i.second -= (this->upbound_[d] - this->lobound_[d] - 1) * ordinal_.stride()[d];
+          i.first[d] = this->lobound_[d];
+        }
+
+        // if outside the range, point to the upper bound ... Range::end() will evaluate to upbound also! Range will use this
+        std::copy(this->upbound_.begin(), this->upbound_.end(), i.first.begin());
+        i.second = ordinal(i.first);
       }
 
       /// The Ordinal object
@@ -858,24 +897,24 @@ namespace btas {
       const auto rank = r.rank();
       auto lb = r.lobound();
       auto ub = r.upbound();
-      auto wt = r.ordinal().weight();
+      auto wt = r.ordinal().stride();
 
       typedef typename RangeNd<_Order, _Index, _Ordinal>::index_type index_type;
       typedef typename RangeNd<_Order, _Index, _Ordinal>::extent_type extent_type;
       index_type lobound, upbound;
-      extent_type weight;
+      extent_type stride;
       lobound = array_adaptor<index_type>::construct(rank);
       upbound = array_adaptor<index_type>::construct(rank);
-      weight = array_adaptor<extent_type>::construct(rank);
+      stride = array_adaptor<extent_type>::construct(rank);
 
       std::for_each(perm.begin(), perm.end(), [&](const typename AxisPermutation::value_type& i){
         const auto pi = *(perm.begin() + i);
         *(lobound.begin()+i) = *(lb.begin() + pi);
         *(upbound.begin()+i) = *(ub.begin() + pi);
-        *(weight.begin()+i) = *(wt.begin() + pi);
+        *(stride.begin()+i) = *(wt.begin() + pi);
       });
 
-      return RangeNd<_Order, _Index, _Ordinal>(std::move(lobound), std::move(upbound), std::move(weight));
+      return RangeNd<_Order, _Index, _Ordinal>(std::move(lobound), std::move(upbound), std::move(stride));
     }
 
     /// Permutes a Range
