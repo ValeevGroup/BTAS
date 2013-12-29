@@ -36,6 +36,17 @@ namespace btas {
       const type& operator()(const std::pair<T1,T2>& x) const { return x.second; }
   };
 
+  /// returns the first element of a pair
+  template <typename T1, typename T2>
+  const T1& first(const std::pair<T1,T2>& x) {
+    return x.first;
+  }
+  /// returns the second element of a pair
+  template <typename T1, typename T2>
+  const T2& second(const std::pair<T1,T2>& x) {
+    return x.second;
+  }
+
   /// returns the first element of a tuple
   template <typename ...Types>
   auto first(const std::tuple<Types...>& x) -> decltype(std::get<0>(x)) {
