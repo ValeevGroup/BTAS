@@ -36,6 +36,20 @@ public:
    static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
 };
 
+/// test T has range_type && is_boxrange<range_type>::value is true
+template<class T>
+class has_boxrange_range_type {
+   /// true case
+   template<class U>
+   static std::true_type __test(typename U::range_type*,
+                                typename std::enable_if<is_boxrange<typename U::range_type>::value, void*>::type = 0);
+   /// false case
+   template<class>
+   static std::false_type __test(...);
+public:
+   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
+};
+
 /// test T has storage_type
 template<class T>
 class has_storage_type {
@@ -64,7 +78,7 @@ template<class _Tensor>
 class is_boxtensor {
 public:
    static constexpr const bool
-   value = is_tensor<_Tensor>::value && is_boxrange<typename _Tensor::range_type>::value;
+   value = is_tensor<_Tensor>::value && has_boxrange_range_type<_Tensor>::value;
 };
 
 /// checks _Tensor meets the TWG.BoxTensor concept requirements

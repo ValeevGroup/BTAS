@@ -103,7 +103,7 @@ namespace btas {
       }
 
       /// copy constructor
-      template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
+      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       explicit
       Tensor (const _Tensor& x)
       : range_ (x.range()),
@@ -113,9 +113,9 @@ namespace btas {
       }
 
       /// copy constructor
-      template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
+      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       explicit
-      Tensor (_Tensor& x)
+      Tensor (_Tensor&& x)
       : range_ (x.range()),
       // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
         data_(x.begin(), x.end())
@@ -131,7 +131,7 @@ namespace btas {
 
       /// copy assignment operator
       // TODO I only know how to do this if _Tensor's range_type is same as mine
-      template<class _Tensor, class = typename std::enable_if<is_tensor<_Tensor>::value>::type>
+      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       Tensor&
       operator= (const _Tensor& x)
       {
