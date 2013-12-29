@@ -43,31 +43,33 @@ namespace std {
 
 namespace btas {
 
-    /// Iterate over a Range
+    /// Iterates over a Range of Values
 
-    /// This is an input iterator that is used to iterate over the
-    /// indices of a \c Range.
+    /// This is an input iterator that is used to iterate over elements of a \c Range.
     /// \tparam Value The value type of the iterator
     /// \tparam Range The range that the iterator references
     /// \note The range object must define the function
     /// \c Range::increment(Value&) \c const, and be accessible to
     /// \c RangeIterator.
-    template <typename Value, typename Range>
+    template <typename Value,
+              typename Range>
     class RangeIterator {
     public:
-      typedef RangeIterator<Value,Range> RangeIterator_; ///< This class type
 
       // Standard iterator typedefs
-      typedef Value value_type; ///< Iterator value type
-      typedef const Value& reference; ///< Iterator reference type
-      typedef const Value* pointer; ///< Iterator pointer type
-      typedef std::input_iterator_tag iterator_category; /// Iterator category tag
-      typedef std::ptrdiff_t difference_type; ///< Iterator difference type
+      typedef Value value_type;                                    ///< Iterator value type
+      typedef const value_type& reference;                         ///< Iterator reference type
+      typedef const value_type* pointer;                           ///< Iterator pointer type
+      typedef std::input_iterator_tag iterator_category;           ///< Iterator category tag
+      typedef std::ptrdiff_t difference_type;                      ///< Iterator difference type
+
+      // additional typedefs
+      typedef Range range_type;                                    ///< Range type
 
       /// Copy constructor
 
       /// \param other The other iterator to be copied
-      RangeIterator(const RangeIterator_& other) :
+      RangeIterator(const RangeIterator& other) :
         range_(other.range_), current_(other.current_) {
       }
 
@@ -75,7 +77,7 @@ namespace btas {
 
       /// \param v The initial value of the iterator index
       /// \param c The range that the iterator will reference
-      RangeIterator(const Value& v, const Range* c) :
+      RangeIterator(const value_type& v, const range_type* c) :
           range_(c), current_(v)
       { }
 
@@ -83,14 +85,14 @@ namespace btas {
 
       /// \param other The other iterator to be copied
       /// \return A reference to this object
-      RangeIterator_& operator=(const RangeIterator_& other) {
+      RangeIterator& operator=(const RangeIterator& other) {
         current_ = other.current_;
         range_ = other.range_;
 
         return *this;
       }
 
-      const Range* range() const { return range_; }
+      const range_type* range() const { return range_; }
 
       /// Dereference operator
 
@@ -101,7 +103,7 @@ namespace btas {
 
       /// Increment the iterator
       /// \return The modified iterator
-      RangeIterator_& operator++() {
+      RangeIterator& operator++() {
         range_->increment(current_);
         return *this;
       }
@@ -110,8 +112,8 @@ namespace btas {
 
       /// Increment the iterator
       /// \return An unmodified copy of the iterator
-      RangeIterator_ operator++(int) {
-        RangeIterator_ temp(*this);
+      RangeIterator operator++(int) {
+        RangeIterator temp(*this);
         range_->increment(current_);
         return temp;
       }
@@ -121,20 +123,19 @@ namespace btas {
       /// \return A \c pointer to the current data
       pointer operator->() const { return & current_; }
 
-
       void advance(difference_type n) {
         range_->advance(current_, n);
       }
 
-      difference_type distance_to(const RangeIterator_& other) const {
+      difference_type distance_to(const RangeIterator& other) const {
         TA_ASSERT(range_ == other.range_);
         return range_->distance_to(current_, other.current_);
       }
 
     private:
 
-      const Range* range_;  ///< The range that the iterator references
-      Value current_;               ///< The current value of the iterator
+      const range_type* range_;          ///< The range that the iterator references
+      value_type current_;               ///< The current value of the iterator
     }; // class RangeIterator
 
     /// Equality operator
