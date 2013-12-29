@@ -110,7 +110,6 @@ namespace btas {
 
 
       /// copy constructor
-      explicit
       TensorView (const TensorView& x)
       : range_ (x.range()), storageref_(x.storageref_)
       {
