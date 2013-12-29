@@ -9,6 +9,7 @@ using namespace std;
 #include <btas/tarray.h>
 #include <btas/storageref.h>
 #include <btas/corange.h>
+#include <btas/tensorview.h>
 using namespace btas;
 
 template<typename T> using vectorref = StorageRef<std::vector<T> >;
@@ -234,25 +235,33 @@ int main()
   //////////////////////////////////////////////////////////////////////////////
   // StorageRef tests
   //////////////////////////////////////////////////////////////////////////////
-
   {
-
     vectorref<double> vr0; // creates an empty range, safe for iteration
-    std::vector<double> v1(5);
-    vectorref<double> vr1(v1);
     for(auto i: vr0) { // safe to iterate over default-constructed StorageRef
       cout << "vr0[" << i << "] = " << vr0[i] << endl;
     }
+
+    std::vector<double> v1(5);
+    {
+      vectorref<double> vr2;
+      {
+        vectorref<double> vr1(v1);
+        for(auto i: vr1) {
+          cout << "vr1[" << i << "] = " << vr1[i] << endl;
+        }
+        vr2 = vr1;
+      } // vr1 is gone now, vr2 is OK though
+      for(auto i: vr2) {
+        cout << "vr2[" << i << "] = " << vr2[i] << endl;
+      }
+    } // vr2 is also gone, v1 is OK though
     for(auto i: v1) {
       cout << "v1[" << i << "] = " << v1[i] << endl;
     }
-    for(auto i: vr1) {
-      cout << "vr1[" << i << "] = " << vr1[i] << endl;
-    }
 
+    // it's easy to implement a simple TensorView using StorageRef. It acts like Tensor, except it does not own the storage
+    // this is for demonstartion purposes only: NOT recommended to use Tensor this way, though ... use TensorView instead
     Tensor<double> t0(2, 2, 3);
-
-    // it's easy to implement a simple TensorView using StorageRef. It acts like Tensor, except it does not own the storage.
     {
       typedef Tensor<double, Range, vectorref<double> > TensorView;
       TensorView tr0(permute(t0.range(),{2,1,0}), t0.storage());
@@ -282,8 +291,41 @@ int main()
     Tensor<double> t0(2,3,4);
     Tensor<double> t1(1,3,4);
     auto r = make_corange(t0.range(), t1.range());
+    cout << "co-iterating over CoRange of " << t0.range() << " and " << t1.range() << endl;
     for(auto i: r) {
       cout << first(i) << " " << second(i) << endl;
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // TensorView tests
+  //////////////////////////////////////////////////////////////////////////////
+
+  {
+    Tensor<double> t0(2,2,2);
+    auto x=0.0; t0.generate([&]() { x += 1.0; return x;});
+
+    { // vanilla iteration
+      TensorView<double> t0v(t0);
+
+      for(auto i: t0v)
+        cout << i << endl;
+    }
+
+    {
+      auto prange0 = permute(t0.range(),{2,1,0});
+      // read only view
+      TensorConstView<double> t0v(prange0, t0.storage());
+
+      for(auto i: t0v)
+        cout << i << endl;
+
+      //*(t0v.begin()) = -1.0; // error: assignment to read-only value
+
+      // read-write view
+      TensorView<double> t0vw(prange0, t0.storage());
+      *(t0vw.begin()) = -1.0; // error: assignment to read-only value
+
     }
   }
 
