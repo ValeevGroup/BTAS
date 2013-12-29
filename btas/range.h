@@ -70,7 +70,9 @@ namespace btas {
 
         /// [begin, end)
         Range1d(index_type begin, index_type end, index_type stride = 1) :
-        lobound_(begin), upbound_(end), stride_(stride) {}
+        lobound_(begin), upbound_(end), stride_(stride) {
+          assert(stride_ != 0);
+        }
 
         /// to construct from an initializer list give it as {}, {extent}, {begin,end}, or {begin,end,stride}
         template <typename T> Range1d(std::initializer_list<T> x) : lobound_(0), upbound_(0), stride_(1) {
@@ -84,6 +86,7 @@ namespace btas {
             if (x.size() == 3)
               stride_ = *(x.begin()+2);
           }
+          assert(stride_ != 0);
         }
 
         Range1d(const Range1d& other) :
@@ -158,23 +161,28 @@ namespace btas {
         /// \throw nothing
         const_iterator end() const { return const_iterator(upbound_, this); }
 
+        /// Increment the coordinate index \c i in this range
+
+        /// \param[in,out] i The coordinate index to be incremented
+        void increment(index_type& i) const {
+          i += stride_;
+          if (not_past_end(i))
+            return;
+          // if ended up outside the range, set to end
+          i = upbound_;
+        }
 
       private:
         index_type lobound_;
         index_type upbound_;
         index_type stride_;
 
-        /// Increment the coordinate index \c i in this range
-
-        /// \param[in,out] i The coordinate index to be incremented
-        void increment(index_type& i) const {
-          i += stride_;
-          if(i < upbound_)
-            return;
-          // if ended up outside the range, set to end
-          i = upbound_;
+        bool not_past_end(const index_type& i) const {
+          if (stride_ > 0)
+            return i < upbound_;
+          else // stride_ < 0
+            return i > upbound_;
         }
-
 
     }; // Range1d
     using Range1 = Range1d<>;
@@ -191,6 +199,17 @@ namespace btas {
         os << "," << r.stride();
       os << ")";
       return os;
+    }
+
+    /// convenient to iterate over dimensions according to \c Order
+    template <CBLAS_ORDER Order = CblasRowMajor>
+    Range1
+    dim_range(size_t ndim) {
+      if (Order == CblasRowMajor)
+        return Range1(ndim-1,-1,-1);
+      if (Order == CblasColMajor)
+        return Range1(0,ndim,1);
+      assert(false); // unreachable
     }
 
     /// BaseRangeNd is a <a href="http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern">CRTP</a>
