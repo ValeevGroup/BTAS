@@ -48,7 +48,7 @@ namespace btas {
         storageref_(storage) {}
 
       TensorViewIterator(const typename Range::iterator& index_iter,
-                         storageref_type& storage) :
+                         const storageref_type& storage) :
         iter_(subiterator(make_pair(*index_iter,index_iter.range()->ordinal(*index_iter)),index_iter.range())),
         storageref_(storage) {}
 

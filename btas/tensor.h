@@ -23,8 +23,9 @@ namespace btas {
   */
   template<typename _T,
            class _Range = btas::DEFAULT::range,
-           class _Storage = btas::DEFAULT::storage<_T>
-           >
+           class _Storage = btas::DEFAULT::storage<_T>,
+           class = typename std::enable_if<std::is_same<_T, typename _Storage::value_type>::value>::type
+          >
   class Tensor {
 
     public:
@@ -515,7 +516,7 @@ namespace serialization {
   template<class Archive, typename _T, class _Storage, class _Range>
   void serialize(Archive& ar, btas::Tensor<_T, _Range, _Storage>& t,
                  const unsigned int version) {
-    ar & t.range() & t.stride() & t.data();
+    ar & t.range() & t.storage();
   }
 
 }

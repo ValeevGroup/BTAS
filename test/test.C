@@ -114,6 +114,7 @@ int main()
     Tensor<bool> T2(2, 2);
     Tensor<std::complex<int> > T3(2, 2, 2);
     Tensor<std::complex<double> > T4(2, 2, 2, 2);
+    Tensor<std::array<complex<double>,3>> T5(2,3,4);
   }
 
   // test 1: random access
@@ -325,6 +326,18 @@ int main()
       // read-write view
       TensorView<double> t0vw(prange0, t0.storage());
       *(t0vw.begin()) = -1.0; // error: assignment to read-only value
+
+    }
+
+    {
+      // read only view as a rank-2 tensor
+      auto x = t0.extent();
+      Range range_01_2(x[0] * x[1], x[2]);
+      TensorConstView<double> t0v(range_01_2, t0.storage());
+
+      for(auto i: make_corange(t0v.range(), t0v)) {
+        cout << first(i) << " " << second(i) << endl;
+      }
 
     }
   }
