@@ -327,6 +327,19 @@ int main()
       *(t0vw.begin()) = -1.0; // error: assignment to read-only value
 
     }
+
+    {
+      // read only view as a rank-2 tensor
+      auto x = t0.extent();
+      Range range_01_2(x[0] * x[1], x[2]);
+      TensorConstView<double> t0v(range_01_2, t0.storage());
+
+      for(auto i: make_corange(t0v.range(), t0v)) {
+        cout << first(i) << " " << second(i) << endl;
+      }
+
+    }
+
   }
 
   return 0;
