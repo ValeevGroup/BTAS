@@ -60,6 +60,11 @@ namespace btas {
           init(lobound, upbound, stride);
       }
 
+      BoxOrdinal(stride_type&& stride,
+                 value_type&& offset,
+                 bool cont) : stride_(stride), offset_(offset), contiguous_(cont) {
+      }
+
 
       BoxOrdinal(const BoxOrdinal& other) :
         stride_(other.stride_),
@@ -89,6 +94,10 @@ namespace btas {
 
       const stride_type& stride() const {
         return stride_;
+      }
+
+      bool offset() const {
+        return offset_;
       }
 
       bool contiguous() const {
@@ -144,6 +153,7 @@ namespace btas {
         contiguous_ = true;
       }
 
+      /// upbound only needed to check contiguousness
       template <typename Index1,
                 typename Index2,
                 typename Weight,
@@ -192,6 +202,33 @@ namespace btas {
       value_type offset_; // lobound.stride => ordinal(index) = index.stride - offset
       bool contiguous_; // whether index iterator traverses a contiguous sequence of ordinals
   };
+
+  /// Permutes BoxOrdinal
+
+  /// permutes the dimensions using permutation \c p = {p[0], p[1], ... }; for example, if \c stride() initially returned
+  /// {s[0], s[1], ... }, after this call \c stride() will return {s[p[0]], s[p[1]], ...}.
+  /// \param perm an array specifying permutation of the dimensions
+  template <CBLAS_ORDER _Order,
+            typename _Index,
+            typename AxisPermutation,
+            class = typename std::enable_if<btas::is_index<AxisPermutation>::value>::type>
+  BoxOrdinal<_Order, _Index> permute(const BoxOrdinal<_Order, _Index>& ord,
+                                     const AxisPermutation& perm)
+  {
+    const auto rank = ord.rank();
+    auto st = ord.stride();
+
+    typedef typename BoxOrdinal<_Order, _Index>::stride_type stride_type;
+    stride_type stride;
+    stride = array_adaptor<stride_type>::construct(rank);
+
+    std::for_each(perm.begin(), perm.end(), [&](const typename AxisPermutation::value_type& i){
+      const auto pi = *(perm.begin() + i);
+      *(stride.begin()+i) = *(st.begin() + pi);
+    });
+
+    return BoxOrdinal<_Order, _Index>(std::move(stride), ord.offset(), ord.contiguous());
+  }
 
   /// Range output operator
 
