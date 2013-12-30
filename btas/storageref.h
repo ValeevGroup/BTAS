@@ -80,6 +80,9 @@ namespace btas {
         return begin_;
       }
       const_iterator begin() const {
+        return cbegin();
+      }
+      const_iterator cbegin() const {
         return begin_;
       }
 
@@ -89,6 +92,9 @@ namespace btas {
         return end_;
       }
       const_iterator end() const {
+        return cend();
+      }
+      const_iterator cend() const {
         return end_;
       }
 
