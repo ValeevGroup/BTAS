@@ -112,6 +112,7 @@ namespace btas {
 
 
       /// copy constructor
+      explicit
       TensorView (const TensorView& x)
       : range_ (x.range()), storageref_(x.storageref_)
       {
@@ -448,38 +449,6 @@ namespace btas {
     os << "TensorView:\n  Range: " << t.range() << std::endl;
     return os;
   }
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Utility functions for creating TensorViews by modifying Ranges of Tensors
-  //////////////////////////////////////////////////////////////////////////////
-
-  template <typename _Tensor>
-  using TensorViewOf = TensorView<typename _Tensor::value_type,
-                                  typename _Tensor::range_type,
-                                  typename _Tensor::storage_type>;
-
-  template <typename _Tensor>
-  TensorViewOf<_Tensor>
-  diag(_Tensor& T)
-    {
-    using return_type = TensorViewOf<_Tensor>;
-    using range_type = typename _Tensor::range_type;
-    using size_type = typename return_type::size_type;
-
-    if(T.rank() == 0) return return_type(T.range(),T.storage());
-
-    size_type stride = 1,
-              prod_extents = 1,
-              extent = T.extent()[0];
-    for(size_type i = 1; i < T.rank(); ++i)
-        {
-        prod_extents *= T.extent()[i];
-        stride += prod_extents;
-        extent = std::min(extent,T.extent()[i]);
-        }
-    return return_type(range_type({0},{extent},{stride}),T.storage());
-    }
-
 
 } // namespace btas
 
