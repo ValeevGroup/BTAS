@@ -77,8 +77,10 @@ namespace btas {
         return *(storageref_.begin() + *iter_);
       }
 
-      template <class = typename std::enable_if<not std::is_const<storage_type>::value,Enabler>::type>
-      reference operator*() {
+      //template <class = typename std::enable_if<not std::is_const<storage_type>::value,Enabler>::type>
+      template <typename S = Storage>
+      typename std::enable_if<not std::is_const<S>::value,reference>::type
+      operator*() {
         return *(storageref_.begin() + *iter_);
       }
 

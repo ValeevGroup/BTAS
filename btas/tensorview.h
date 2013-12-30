@@ -75,9 +75,10 @@ namespace btas {
       }
 
       /// construct from \c range and \c storage
-      template <class = typename std::enable_if<not std::is_const<storage_type>::value,Enabler>::type>
+      template <typename S = _Storage>
       explicit
-      TensorView (const range_type& range, nonconst_storage_type& storage) :
+      TensorView (const range_type& range, nonconst_storage_type& storage,
+                  typename std::enable_if<not std::is_const<S>::value>::type* = 0) :
       range_(range), storageref_(storage)
       {
       }
@@ -236,16 +237,16 @@ namespace btas {
       }
 
       /// \return iterator begin
-      template <class = typename std::enable_if<not std::is_const<storage_type>::value,Enabler>::type>
-      iterator
+      template <typename S = _Storage>
+      typename std::enable_if<not std::is_const<S>::value,iterator>::type
       begin()
       {
         return iterator(range().begin(), storage());
       }
 
       /// \return iterator end
-      template <class = typename std::enable_if<not std::is_const<storage_type>::value,Enabler>::type>
-      iterator
+      template <typename S = _Storage>
+      typename std::enable_if<not std::is_const<S>::value,iterator>::type
       end()
       {
         return iterator(range().end(), storage());
