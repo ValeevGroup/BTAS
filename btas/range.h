@@ -446,6 +446,12 @@ namespace btas {
         return ex;
       }
 
+      /// \return The extent of the nth dimension
+      typename extent_type::value_type 
+      extent(size_t n) const {
+        return upbound_[n] - lobound_[n];
+      }
+
       /// Range volume accessor
 
       /// \return The total number of elements in the range.
