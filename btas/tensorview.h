@@ -90,7 +90,7 @@ namespace btas {
       {
       }
 
-      /// copy constructor
+      /// conversion from Tensor
       template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       explicit
       TensorView (const _Tensor& x)
@@ -100,7 +100,7 @@ namespace btas {
       {
       }
 
-      /// copy constructor
+      /// conversion from Tensor
       template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       explicit
       TensorView (_Tensor& x)
@@ -112,7 +112,6 @@ namespace btas {
 
 
       /// copy constructor
-      explicit
       TensorView (const TensorView& x)
       : range_ (x.range()), storageref_(x.storageref_)
       {
