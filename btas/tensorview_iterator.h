@@ -17,18 +17,30 @@ namespace btas {
   /// Iterates over elements of \c Storage using ordinal values of indices in \c Range
 
   template <typename Range, typename Storage>
-  class TensorViewIterator {
+  class TensorViewIterator : public std::iterator<typename std::conditional<std::is_const<Storage>::value,
+                                                                            std::forward_iterator_tag,
+                                                                            std::output_iterator_tag>::type,
+                                                  typename std::conditional<std::is_const<Storage>::value,
+                                                  const typename StorageRef<Storage>::value_type,
+                                                        typename StorageRef<Storage>::value_type>::type>
+  {
       struct Enabler {};
 
     public:
       typedef Storage storage_type;
       typedef StorageRef<storage_type> storageref_type;
-      typedef typename storageref_type::value_type value_type; ///< Iterator value type
-      typedef value_type& reference; ///< Iterator reference type
-      typedef const value_type& const_reference; ///< Iterator reference type
-      typedef value_type* pointer; ///< Iterator pointer type
-      typedef std::output_iterator_tag iterator_category; /// Iterator category tag
-      typedef std::ptrdiff_t difference_type; ///< Iterator difference type
+      typedef StorageRef<typename std::remove_const<storage_type>::type> ncstorageref_type;
+      typedef std::iterator<typename std::conditional<std::is_const<Storage>::value,
+          std::forward_iterator_tag,
+          std::output_iterator_tag>::type,
+          typename std::conditional<std::is_const<Storage>::value,
+          const typename StorageRef<Storage>::value_type,
+          typename StorageRef<Storage>::value_type>::type> base_type;
+      using typename base_type::value_type;
+      using typename base_type::pointer;
+      using typename base_type::reference;
+      using typename base_type::difference_type;
+      using typename base_type::iterator_category;
 
     private:
       typedef typename Range::ordinal_subiterator subiterator;
@@ -52,6 +64,13 @@ namespace btas {
         iter_(subiterator(make_pair(*index_iter,index_iter.range()->ordinal(*index_iter)),index_iter.range())),
         storageref_(storage) {}
 
+      template <typename S = Storage>
+      TensorViewIterator(const typename Range::iterator& index_iter,
+                         const ncstorageref_type& storage,
+                         typename std::enable_if<std::is_const<S>::value>::type* = 0) :
+        iter_(subiterator(make_pair(*index_iter,index_iter.range()->ordinal(*index_iter)),index_iter.range())),
+        // standard const_cast cannot "map" const into nontrivial structures, have to reinterpret here
+        storageref_(reinterpret_cast<const storageref_type&>(storage)) {}
 
       TensorViewIterator(const typename Range::iterator& index_iter,
                          const ordinal_type& ord,
@@ -73,8 +92,8 @@ namespace btas {
         return *this;
       }
 
-      const_reference operator*() const {
-        return *(storageref_.begin() + *iter_);
+      const reference operator*() const {
+        return *(storageref_.cbegin() + *iter_);
       }
 
       //template <class = typename std::enable_if<not std::is_const<storage_type>::value,Enabler>::type>
