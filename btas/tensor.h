@@ -74,7 +74,7 @@ namespace btas {
       /// construct from \c range, allocate data, but not initialized
       explicit
       Tensor (const range_type& range) :
-      range_(range)
+      range_(range.lobound(), range.upbound())
       {
         array_adaptor<storage_type>::resize(data_, range_.area());
       }
@@ -83,7 +83,7 @@ namespace btas {
       explicit
       Tensor (const range_type& range,
               value_type v) :
-              range_(range)
+              range_(range.lobound(), range.upbound())
       {
         array_adaptor<storage_type>::resize(data_, range_.area());
         std::fill(begin(), end(), v);
@@ -92,32 +92,23 @@ namespace btas {
       /// construct from \c range and \c storage
       explicit
       Tensor (const range_type& range, const storage_type& storage) :
-      range_(range), data_(storage)
+      range_(range.lobound(), range.upbound()), data_(storage)
       {
       }
 
       /// move-construct from \c range and \c storage
       explicit
       Tensor (range_type&& range, storage_type&& storage) :
-      range_(range), data_(storage)
+      range_(range.ordinal(*range(begin())) == 0 ? range : range_type(range.lobound(), range.upbound())),
+      data_(storage)
       {
       }
 
       /// copy constructor
+      /// It will accept Tensors and TensorViews
       template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
-      explicit
       Tensor (const _Tensor& x)
-      : range_ (x.range()),
-      // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
-        data_(x.begin(), x.end())
-      {
-      }
-
-      /// copy constructor
-      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
-      explicit
-      Tensor (_Tensor&& x)
-      : range_ (x.range()),
+      : range_ (x.range().lobound(), x.range().upbound()),
       // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
         data_(x.begin(), x.end())
       {
@@ -131,14 +122,23 @@ namespace btas {
       }
 
       /// copy assignment operator
-      // TODO I only know how to do this if _Tensor's range_type is same as mine
       template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       Tensor&
       operator= (const _Tensor& x)
       {
-          range_ = x.range();
+          range_ = range_type(x.range().lobound(), x.range().upbound());
           array_adaptor<storage_type>::resize(data_, range_.area());
           std::copy(x.begin(), x.end(), data_.begin());
+          return *this;
+      }
+
+      /// copy assignment operator
+      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
+      Tensor&
+      operator= (_Tensor&& x)
+      {
+          range_ = range_type(x.range().lobound(), x.range().upbound());
+          data_ = x.storage();
           return *this;
       }
 
