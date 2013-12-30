@@ -114,6 +114,7 @@ int main()
     Tensor<bool> T2(2, 2);
     Tensor<std::complex<int> > T3(2, 2, 2);
     Tensor<std::complex<double> > T4(2, 2, 2, 2);
+    Tensor<std::array<complex<double>,3>> T5(2,3,4);
   }
 
   // test 1: random access
@@ -339,7 +340,6 @@ int main()
       }
 
     }
-
   }
 
   return 0;

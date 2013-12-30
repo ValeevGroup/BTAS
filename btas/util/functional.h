@@ -5,8 +5,12 @@
  *      Author: evaleev
  */
 
-#ifndef FUNCTIONAL_H_
-#define FUNCTIONAL_H_
+#ifndef BTAS_FUNCTIONAL_H_
+#define BTAS_FUNCTIONAL_H_
+
+#include <functional>
+#include <tuple>
+#include <utility>
 
 namespace btas {
 
@@ -20,19 +24,18 @@ namespace btas {
 
   template <typename Pair> struct first_of_pair;
   template <typename Pair> struct second_of_pair;
+
   /// Computes pair<T1,T2> -> T1
   template <typename T1, typename T2>
-  struct first_of_pair< std::pair<T1,T2> > {
+  struct first_of_pair< std::pair<T1,T2> > : public std::unary_function<const std::pair<T1,T2>&,const T1&>  {
       typedef T1 type;
-      type& operator()(std::pair<T1,T2>& x) const { return x.first; }
       const type& operator()(const std::pair<T1,T2>& x) const { return x.first; }
   };
 
   /// Computes pair<T1,T2> -> T2
   template <typename T1, typename T2>
-  struct second_of_pair< std::pair<T1,T2> > {
+  struct second_of_pair< std::pair<T1,T2> > : public std::unary_function<const std::pair<T1,T2>&,const T2&> {
       typedef T2 type;
-      type& operator()(std::pair<T1,T2>& x) const { return x.second; }
       const type& operator()(const std::pair<T1,T2>& x) const { return x.second; }
   };
 
@@ -71,4 +74,4 @@ namespace btas {
 }
 
 
-#endif /* FUNCTIONAL_H_ */
+#endif /* BTAS_FUNCTIONAL_H_ */

@@ -75,8 +75,10 @@ namespace btas {
       }
 
       /// construct from \c range and \c storage
+      template <typename S = _Storage>
       explicit
-      TensorView (const range_type& range, nonconst_storage_type& storage) :
+      TensorView (const range_type& range, nonconst_storage_type& storage,
+                  typename std::enable_if<not std::is_const<S>::value>::type* = 0) :
       range_(range), storageref_(storage)
       {
       }
@@ -235,14 +237,16 @@ namespace btas {
       }
 
       /// \return iterator begin
-      iterator
+      template <typename S = _Storage>
+      typename std::enable_if<not std::is_const<S>::value,iterator>::type
       begin()
       {
         return iterator(range().begin(), storage());
       }
 
       /// \return iterator end
-      iterator
+      template <typename S = _Storage>
+      typename std::enable_if<not std::is_const<S>::value,iterator>::type
       end()
       {
         return iterator(range().end(), storage());
@@ -404,6 +408,7 @@ namespace btas {
 
   }; // end of TensorView
 
+  /// TensorConstView is a read-only variant of TensorView
   template <typename _T,
             class _Range   = btas::DEFAULT::range,
             class _Storage = btas::DEFAULT::storage<_T>

@@ -48,7 +48,7 @@ namespace btas {
         storageref_(storage) {}
 
       TensorViewIterator(const typename Range::iterator& index_iter,
-                         storageref_type& storage) :
+                         const storageref_type& storage) :
         iter_(subiterator(make_pair(*index_iter,index_iter.range()->ordinal(*index_iter)),index_iter.range())),
         storageref_(storage) {}
 
@@ -77,8 +77,10 @@ namespace btas {
         return *(storageref_.begin() + *iter_);
       }
 
-      template <class = typename std::enable_if<not std::is_const<storage_type>::value,Enabler>::type>
-      reference operator*() {
+      //template <class = typename std::enable_if<not std::is_const<storage_type>::value,Enabler>::type>
+      template <typename S = Storage>
+      typename std::enable_if<not std::is_const<S>::value,reference>::type
+      operator*() {
         return *(storageref_.begin() + *iter_);
       }
 
