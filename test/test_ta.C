@@ -36,16 +36,24 @@ namespace madness {
 
     template <class Archive,
               typename _T,
-              class _Container,
-              class _Shape>
-    struct ArchiveSerializeImpl<Archive, btas::Tensor<_T,_Container,_Shape> > {
-        static inline void serialize(const Archive& ar, btas::Tensor<_T,_Container,_Shape>& t) {
+              class _Range,
+              class _Store>
+    struct ArchiveSerializeImpl<Archive, btas::Tensor<_T,_Range,_Store> > {
+        static inline void serialize(const Archive& ar, btas::Tensor<_T,_Range,_Store>& t) {
         }
     };
 
     }
 }
 
+namespace TiledArray {
+  template<typename _T,
+           class _Range,
+           class _Store>
+  struct expression_traits<btas::Tensor<_T,_Range,_Store> > {
+      typedef btas::Tensor<_T,_Range,_Store> eval_type;
+  };
+}
 
 int main(int argc, char **argv) {
 
@@ -67,7 +75,7 @@ int main(int argc, char **argv) {
   TA::TiledRange
     trange(blocking2.begin(), blocking2.end());
 
-  typedef btas::Tensor<double, TA::Range, btas::varray<double> > DenseTensor;
+  typedef btas::Tensor<double> DenseTensor;
   typedef TA::Array<double, 2, DenseTensor > TArray;
 
   TArray a(world, trange);

@@ -72,17 +72,20 @@ namespace btas {
       }
 
       /// construct from \c range, allocate data, but not initialized
+      template <typename Range>
       explicit
-      Tensor (const range_type& range) :
+      Tensor (const Range& range, typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
       range_(range.lobound(), range.upbound())
       {
         array_adaptor<storage_type>::resize(data_, range_.area());
       }
 
       /// construct from \c range object, set all elements to \c v
+      template <typename Range>
       explicit
-      Tensor (const range_type& range,
-              value_type v) :
+      Tensor (const Range& range,
+              value_type v,
+              typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
               range_(range.lobound(), range.upbound())
       {
         array_adaptor<storage_type>::resize(data_, range_.area());
@@ -90,8 +93,11 @@ namespace btas {
       }
 
       /// construct from \c range and \c storage
+      template <typename Range, typename Storage>
       explicit
-      Tensor (const range_type& range, const storage_type& storage) :
+      Tensor (const Range& range,
+              const Storage& storage,
+              typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
       range_(range.lobound(), range.upbound()), data_(storage)
       {
       }
