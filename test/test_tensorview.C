@@ -110,7 +110,7 @@ int main()
    cout << "Printing Dv3 = slice(permute(A," << std::array<int,3>({2,0,1}) << "),"<< slice_lobound << "," << slice_upbound << ")"
         << ": "; print(Dv3);
 
-   // Dv2 should be equal Dv3
+   // Dv2 should be equal Dv3 because it's a cubic range, break the symmetry to see the difference
 
 // =================================================================================================
 //
