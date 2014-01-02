@@ -525,13 +525,12 @@ namespace btas {
       }
 #endif
 
-      /// Check the coordinate to make sure it is within the range.
+      /// Check the index to make sure it is within the range.
 
-      /// \tparam Index The coordinate index array type
-      /// \param index The coordinate index to check for inclusion in the range
+      /// \tparam Index An array type
+      /// \param index The index to check for inclusion in the range
       /// \return \c true when \c i \c >= \c lobound and \c i \c < \c f, otherwise
       /// \c false
-      /// \throw TildedArray::Exception When the dimension of this range is not
       /// equal to the size of the index.
       template <typename Index>
       typename std::enable_if<btas::is_index<Index>::value, bool>::type
@@ -545,7 +544,6 @@ namespace btas {
 
         return true;
       }
-
 
     private:
 
@@ -658,6 +656,16 @@ namespace btas {
       /// \param stride The axes strides of the N-dimensional range
       RangeNd(index_type&& lobound, index_type&& upbound, extent_type&& stride) :
         base_type(lobound, upbound), ordinal_(lobound, upbound, stride)
+      {
+      }
+
+      /// "Move" constructor defined by the upper and lower bounds, and the ordinal object
+
+      /// \param lobound The lower bound of the N-dimensional range
+      /// \param upbound The upper bound of the N-dimensional range
+      /// \param ordinal The ordinal object
+      RangeNd(index_type&& lobound, index_type&& upbound, _Ordinal&& ord) :
+        base_type(lobound, upbound), ordinal_(ord)
       {
       }
 
@@ -774,7 +782,7 @@ namespace btas {
         return ordinal_;
       }
 
-      /// calculate the ordinal value of \c i
+      /// calculates the ordinal value of \c i
 
       /// Convert an index to its ordinal.
       /// \tparam Index A coordinate index type (array type)
@@ -787,7 +795,29 @@ namespace btas {
         return ordinal_(index);
       }
 
-    public:
+      /// Constructs a Range slice defined by the upper and lower bounds within this Range
+
+      /// \tparam Index1 An array type convertible to \c index_type
+      /// \tparam Index2 An array type convertible to \c index_type
+      /// \param lobound The lower bound of the new range
+      /// \param upbound The upper bound of the new range
+      template <typename Index1, typename Index2>
+      typename std::enable_if<btas::is_index<Index1>::value && btas::is_index<Index2>::value, RangeNd>::type
+      slice(const Index1& lobound, const Index2& upbound) const
+      {
+        return RangeNd(lobound, upbound, _Ordinal(this->lobound(), this->upbound(), this->ordinal().stride()));
+      }
+
+      /// Check the index ordinal to make sure it is within the range.
+
+      /// \tparam IndexOrdinal An integral type
+      /// \param indexord The index ordinal to check for inclusion in the range
+      /// equal to the size of the index.
+      template <typename IndexOrdinal>
+      typename std::enable_if<std::is_integral<IndexOrdinal>::value, bool>::type
+      includes(const IndexOrdinal& indexord) const {
+        return ordinal_.includes(indexord);
+      }
 
       using base_type::increment;
       /// Increments <index,ordinal> pair
@@ -814,6 +844,7 @@ namespace btas {
         i.second = ordinal(i.first);
       }
 
+    private:
       /// The Ordinal object
       _Ordinal ordinal_;
 
@@ -903,24 +934,19 @@ namespace btas {
       const auto rank = r.rank();
       auto lb = r.lobound();
       auto ub = r.upbound();
-      auto wt = r.ordinal().stride();
 
       typedef typename RangeNd<_Order, _Index, _Ordinal>::index_type index_type;
-      typedef typename RangeNd<_Order, _Index, _Ordinal>::extent_type extent_type;
       index_type lobound, upbound;
-      extent_type stride;
       lobound = array_adaptor<index_type>::construct(rank);
       upbound = array_adaptor<index_type>::construct(rank);
-      stride = array_adaptor<extent_type>::construct(rank);
 
       std::for_each(perm.begin(), perm.end(), [&](const typename AxisPermutation::value_type& i){
         const auto pi = *(perm.begin() + i);
         *(lobound.begin()+i) = *(lb.begin() + pi);
         *(upbound.begin()+i) = *(ub.begin() + pi);
-        *(stride.begin()+i) = *(wt.begin() + pi);
       });
 
-      return RangeNd<_Order, _Index, _Ordinal>(std::move(lobound), std::move(upbound), std::move(stride));
+      return RangeNd<_Order, _Index, _Ordinal>(std::move(lobound), std::move(upbound), permute(r.ordinal(), perm) );
     }
 
     /// Permutes a Range

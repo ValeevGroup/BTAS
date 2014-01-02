@@ -1,18 +1,7 @@
 #ifndef __BTAS_TARRAY_H
 #define __BTAS_TARRAY_H 1
 
-#include <array>
-#include <vector>
-#include <algorithm>
-#include <type_traits>
-
-#include <btas/types.h>
-#include <btas/defaults.h>
-#include <btas/tensor_traits.h>
-#include <btas/range.h>
-
-#include <btas/util/stride.h>
-#include <btas/util/dot.h>
+#include <btas/tensor.h>
 
 namespace btas {
 

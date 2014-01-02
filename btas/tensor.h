@@ -30,14 +30,26 @@ namespace btas {
 
     public:
 
-      /// value type
-      typedef _T value_type;
-
       /// type of underlying data storage
       typedef _Storage storage_type;
 
-      /// size type
-      typedef typename storage_type::size_type size_type;
+      /// type of Range
+      typedef _Range range_type;
+
+      /// type of index
+      typedef typename _Range::index_type index_type;
+
+      ///\name Container requirements (c++std:[container.requirements.general]).
+      ///@{
+
+      /// value type
+      typedef _T value_type;
+
+      /// lvalue type of _T
+      typedef value_type& reference;
+
+      /// const lvalue type of _T
+      typedef const value_type& const_reference;
 
       /// element iterator
       typedef typename storage_type::iterator iterator;
@@ -45,11 +57,10 @@ namespace btas {
       /// constant element iterator
       typedef typename storage_type::const_iterator const_iterator;
 
-      /// type of Range
-      typedef _Range range_type;
+      /// size type
+      typedef typename storage_type::size_type size_type;
 
-      /// type of index
-      typedef typename _Range::index_type index_type;
+      ///@}
 
     private:
       struct Enabler {};
@@ -68,77 +79,107 @@ namespace btas {
       Tensor (const size_type& first, const _args&... rest) :
       range_(range_type(first, rest...))
       {
-        array_adaptor<storage_type>::resize(data_, range_.area());
+        // TODO make this disablable in all constructors
+        //assert(range_.ordinal(range_.lobound()) == 0);
+        array_adaptor<storage_type>::resize(storage_, range_.area());
       }
 
       /// construct from \c range, allocate data, but not initialized
+      template <typename Range>
       explicit
-      Tensor (const range_type& range) :
-      range_(range)
+      Tensor (const Range& range, typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
+      range_(range.lobound(), range.upbound())
       {
-        array_adaptor<storage_type>::resize(data_, range_.area());
+        array_adaptor<storage_type>::resize(storage_, range_.area());
       }
 
       /// construct from \c range object, set all elements to \c v
+      template <typename Range>
       explicit
-      Tensor (const range_type& range,
-              value_type v) :
-              range_(range)
+      Tensor (const Range& range,
+              value_type v,
+              typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
+              range_(range.lobound(), range.upbound())
       {
-        array_adaptor<storage_type>::resize(data_, range_.area());
+        array_adaptor<storage_type>::resize(storage_, range_.area());
         std::fill(begin(), end(), v);
       }
 
       /// construct from \c range and \c storage
+      template <typename Range, typename Storage>
       explicit
-      Tensor (const range_type& range, const storage_type& storage) :
-      range_(range), data_(storage)
+      Tensor (const Range& range,
+              const Storage& storage,
+              typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
+      range_(range.lobound(), range.upbound()), storage_(storage)
       {
       }
 
       /// move-construct from \c range and \c storage
       explicit
       Tensor (range_type&& range, storage_type&& storage) :
-      range_(range), data_(storage)
+      range_(range.ordinal(*range.begin()) == 0 ? range : range_type(range.lobound(), range.upbound())),
+      storage_(storage)
       {
       }
 
-      /// copy constructor
-      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
+      /// Construct an evaluated tensor
+
+      /// This constructor will allocate memory for \c range.area() elements. Each element
+      /// will be initialized as:
+      /// \code
+      /// for(int i =Range An input Range type.
+      /// \tparam InIter An input iterator type.
+      /// \tparam Op A unary operation type
+      /// \param range the input range type
+      /// \param first An input iterator for the argument
+      /// \param op The unary operation to be applied to the argument data
+      template <typename Range, typename InIter, typename Op>
       explicit
+      Tensor (const Range& range, InIter it, const Op& op,
+              typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
+              range_(range.lobound(), range.upbound())
+      {
+        auto size = range_.area();
+        array_adaptor<storage_type>::resize(storage_, size);
+        std::transform(it, it+size, begin(), op);
+      }
+
+      /// copy constructor
+      /// It will accept Tensors and TensorViews
+      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       Tensor (const _Tensor& x)
-      : range_ (x.range()),
+      : range_ (x.range().lobound(), x.range().upbound()),
       // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
-        data_(x.begin(), x.end())
-      {
-      }
-
-      /// copy constructor
-      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
-      explicit
-      Tensor (_Tensor&& x)
-      : range_ (x.range()),
-      // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
-        data_(x.begin(), x.end())
+        storage_(x.begin(), x.end())
       {
       }
 
       /// copy constructor
       explicit
       Tensor (const Tensor& x)
-      : range_ (x.range()), data_(x.data_)
+      : range_ (x.range()), storage_(x.storage_)
       {
       }
 
       /// copy assignment operator
-      // TODO I only know how to do this if _Tensor's range_type is same as mine
       template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       Tensor&
       operator= (const _Tensor& x)
       {
-          range_ = x.range();
-          array_adaptor<storage_type>::resize(data_, range_.area());
-          std::copy(x.begin(), x.end(), data_.begin());
+          range_ = range_type(x.range().lobound(), x.range().upbound());
+          array_adaptor<storage_type>::resize(storage_, range_.area());
+          std::copy(x.begin(), x.end(), storage_.begin());
+          return *this;
+      }
+
+      /// copy assignment operator
+      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
+      Tensor&
+      operator= (_Tensor&& x)
+      {
+          range_ = range_type(x.range().lobound(), x.range().upbound());
+          storage_ = x.storage();
           return *this;
       }
 
@@ -147,7 +188,7 @@ namespace btas {
       operator= (const Tensor& x)
       {
         range_ = x.range_;
-        data_ = x.data_;
+        storage_ = x.storage_;
         return *this;
       }
 
@@ -156,7 +197,7 @@ namespace btas {
       Tensor (Tensor&& x)
       {
         std::swap(range_, x.range_);
-        std::swap(data_, x.data_);
+        std::swap(storage_, x.storage_);
       }
 
       /// move assignment operator
@@ -164,7 +205,7 @@ namespace btas {
       operator= (Tensor&& x)
       {
         std::swap(range_, x.range_);
-        std::swap(data_, x.data_);
+        std::swap(storage_, x.storage_);
         return *this;
       }
 
@@ -173,13 +214,6 @@ namespace btas {
       rank () const
       {
         return range_.rank();
-      }
-
-      /// \return number of elements
-      size_type
-      size () const
-      {
-        return range_.area();
       }
 
       /// \return range object
@@ -215,16 +249,75 @@ namespace btas {
       const storage_type&
       storage() const
       {
-        return data_;
+        return storage_;
       }
 
       /// \return storage object
       storage_type&
       storage()
       {
-        return data_;
+        return storage_;
       }
 
+
+      ///\name Container requirements (c++std:[container.requirements.general]).
+      ///@{
+
+      /// \return const iterator begin
+      const_iterator
+      begin() const
+      {
+        return storage_.begin();
+      }
+
+      /// \return const iterator end
+      const_iterator
+      end() const
+      {
+        return storage_.end();
+      }
+
+      /// \return const iterator begin, even if this is not itself const
+      const_iterator
+      cbegin() const
+      {
+        return storage_.begin();
+      }
+
+      /// \return const iterator end, even if this is not itself const
+      const_iterator
+      cend() const
+      {
+        return storage_.end();
+      }
+
+      /// \return iterator begin
+      iterator
+      begin()
+      {
+        return storage_.begin();
+      }
+
+      /// \return iterator end
+      iterator
+      end()
+      {
+        return storage_.end();
+      }
+
+      /// \return number of elements
+      size_type
+      size () const
+      {
+        return range_.area();
+      }
+
+      /// \return maximum number of elements that can be be contained Tensor
+      size_type
+      max_size () const
+      {
+        return std::numeric_limits<size_type>::max();
+      }
 
       /// test whether Tensor is empty
       bool
@@ -233,91 +326,96 @@ namespace btas {
         return range_.area() == 0;
       }
 
-      /// \return const iterator begin
-      const_iterator
-      begin() const
+      /// swap this and x
+      void
+      swap (Tensor& x)
       {
-        return data_.begin();
+        std::swap(range_, x.range_);
+        std::swap(storage_, x.storage_);
       }
 
-      /// \return const iterator end
-      const_iterator
-      end() const
-      {
-        return data_.end();
-      }
+      ///@} // container requirements
 
-      /// \return const iterator begin, even if this is not itself const
-      const_iterator
-      cbegin() const
-      {
-        return data_.begin();
-      }
+      /// @name Element accessors without range check
+      /// @{
 
-      /// \return const iterator end, even if this is not itself const
-      const_iterator
-      cend() const
-      {
-        return data_.end();
-      }
-
-      /// \return iterator begin
-      iterator
-      begin()
-      {
-        return data_.begin();
-      }
-
-      /// \return iterator end
-      iterator
-      end()
-      {
-        return data_.end();
-      }
-
-      /// \return element without range check
+      /// accesses element using its index, given as a pack of integers
       template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value, const value_type&>::type
+      typename std::enable_if<std::is_integral<index0>::value, const_reference>::type
       operator() (const index0& first, const _args&... rest) const
       {
         typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
         auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
         index_type index = array_adaptor<index_type>::construct(indexv.size());
         std::copy(indexv.begin(), indexv.end(), index.begin());
-        return data_[ range_.ordinal(index) ];
+        return storage_[ range_.ordinal(index) ];
       }
 
-      /// \return element without range check (rank() == general)
       template <typename Index>
-      typename std::enable_if<is_index<Index>::value, const value_type&>::type
+      typename std::enable_if<is_index<Index>::value, const_reference>::type
       operator() (const Index& index) const
       {
-        return data_[range_.ordinal(index)];
+        return storage_[range_.ordinal(index)];
       }
 
-      /// access element without range check
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value, const_reference>::type
+      operator[] (const Index& index) const
+      {
+        return storage_[range_.ordinal(index)];
+      }
+
+      /// accesses element using its ordinal value
+      /// \param indexord ordinal value of the index
+      template <typename IndexOrdinal>
+      typename std::enable_if<std::is_integral<IndexOrdinal>::value, const_reference>::type
+      operator[] (const IndexOrdinal& indexord) const
+      {
+        return storage_[indexord];
+      }
+
       template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value, value_type&>::type
+      typename std::enable_if<std::is_integral<index0>::value, reference>::type
       operator() (const index0& first, const _args&... rest)
       {
         typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
         auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
         index_type index = array_adaptor<index_type>::construct(indexv.size());
         std::copy(indexv.begin(), indexv.end(), index.begin());
-        return data_[ range_.ordinal(index) ];
+        return storage_[ range_.ordinal(index) ];
       }
 
-      /// access element without range check (rank() == general)
       template <typename Index>
-      typename std::enable_if<is_index<Index>::value, value_type&>::type
+      typename std::enable_if<is_index<Index>::value, reference>::type
       operator() (const Index& index)
       {
-        return data_[range_.ordinal(index)];
+        return storage_[range_.ordinal(index)];
       }
-   
-      /// \return element without range check
+
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value, reference>::type
+      operator[] (const Index& index)
+      {
+        return storage_[range_.ordinal(index)];
+      }
+
+      /// accesses element using its ordinal value
+      /// \param indexord ordinal value of the index
+      template <typename IndexOrdinal>
+      typename std::enable_if<std::is_integral<IndexOrdinal>::value, reference>::type
+      operator[] (const IndexOrdinal& indexord)
+      {
+        return storage_[indexord];
+      }
+
+      ///@} // element accessors with range check
+
+      /// @name Element accessors with range check
+      /// @{
+
+      /// accesses element using its index, given as a pack of integers
       template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value, const value_type&>::type
+      typename std::enable_if<std::is_integral<index0>::value, const_reference>::type
       at (const index0& first, const _args&... rest) const
       {
         typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
@@ -325,21 +423,30 @@ namespace btas {
         index_type index = array_adaptor<index_type>::construct(indexv.size());
         std::copy(indexv.begin(), indexv.end(), index.begin());
         assert( range_.includes(index) );
-        return data_[ range_.ordinal(index) ];
+        return storage_[ range_.ordinal(index) ];
       }
 
-      /// \return element without range check (rank() == general)
       template <typename Index>
-      typename std::enable_if<is_index<Index>::value, const value_type&>::type
+      typename std::enable_if<is_index<Index>::value, const_reference>::type
       at (const Index& index) const
       {
         assert( range_.includes(index) );
-        return data_[ range_.ordinal(index) ];
+        return storage_[ range_.ordinal(index) ];
       }
 
-      /// access element without range check
+      /// accesses element using its ordinal value
+      /// \param indexord ordinal value of the index
+      template <typename IndexOrdinal>
+      typename std::enable_if<std::is_integral<IndexOrdinal>::value, const_reference>::type
+      at (const IndexOrdinal& indexord) const
+      {
+        assert( range_.includes(indexord) );
+        return storage_[ indexord ];
+      }
+
+      /// accesses element using its index, given as a pack of integers
       template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value, value_type&>::type
+      typename std::enable_if<std::is_integral<index0>::value, reference>::type
       at (const index0& first, const _args&... rest)
       {
         typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
@@ -347,17 +454,28 @@ namespace btas {
         index_type index = array_adaptor<index_type>::construct(indexv.size());
         std::copy(indexv.begin(), indexv.end(), index.begin());
         assert( range_.includes(index) );
-        return data_[ range_.ordinal(index) ];
+        return storage_[ range_.ordinal(index) ];
       }
 
-      /// access element without range check (rank() == general)
       template <typename Index>
-      typename std::enable_if<is_index<Index>::value, value_type&>::type
+      typename std::enable_if<is_index<Index>::value, reference>::type
       at (const Index& index)
       {
         assert( range_.includes(index) );
-        return data_[ range_.ordinal(index) ];
+        return storage_[ range_.ordinal(index) ];
       }
+
+      /// accesses element using its ordinal value
+      /// \param indexord ordinal value of the index
+      template <typename IndexOrdinal>
+      typename std::enable_if<std::is_integral<IndexOrdinal>::value, reference>::type
+      at (const IndexOrdinal& indexord)
+      {
+        assert( range_.includes(indexord) );
+        return storage_[ indexord ];
+      }
+
+      ///@} // element accessors with range check
    
       /// resize array with range object
       template <typename Range>
@@ -365,7 +483,7 @@ namespace btas {
       resize (const Range& range, typename std::enable_if<is_boxrange<Range>::value,Enabler>::type = Enabler())
       {
         range_ = range;
-        array_adaptor<storage_type>::resize(data_, range_.area());
+        array_adaptor<storage_type>::resize(storage_, range_.area());
       }
 
       /// resize array with extent object
@@ -374,15 +492,7 @@ namespace btas {
       resize (const Extent& extent, typename std::enable_if<is_index<Extent>::value,Enabler>::type = Enabler())
       {
         range_ = range_type(extent);
-        array_adaptor<storage_type>::resize(data_, range_.area());
-      }
-
-      /// swap this and x
-      void
-      swap (Tensor& x)
-      {
-        std::swap(range_, x.range_);
-        std::swap(data_, x.data_);
+        array_adaptor<storage_type>::resize(storage_, range_.area());
       }
 
       /// clear all members
@@ -390,7 +500,7 @@ namespace btas {
       clear()
       {
         range_ = range_type();
-        data_ = storage_type();
+        storage_ = storage_type();
       }
 
       //  ========== Finished Public Interface and Its Reference Implementations ==========
@@ -404,7 +514,7 @@ namespace btas {
       operator+= (const Tensor& x)
       {
         assert( std::equal(range_.begin(), range_.end(), x.range_.begin()) );
-        std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::plus<value_type>());
+        std::transform(storage_.begin(), storage_.end(), x.storage_.begin(), storage_.begin(), std::plus<value_type>());
         return *this;
       }
 
@@ -422,7 +532,7 @@ namespace btas {
       {
         assert(
             std::equal(range_.begin(), range_.end(), x.range_.begin()));
-        std::transform(data_.begin(), data_.end(), x.data_.begin(), data_.begin(), std::minus<value_type>());
+        std::transform(storage_.begin(), storage_.end(), x.storage_.begin(), storage_.begin(), std::minus<value_type>());
         return *this;
       }
 
@@ -439,7 +549,7 @@ namespace btas {
       const value_type*
       data () const
       {
-        return data_.data();
+        return storage_.data();
       }
 
       /// \return bare pointer to the first element of data_
@@ -447,14 +557,14 @@ namespace btas {
       value_type*
       data()
       {
-        return data_.data();
+        return storage_.data();
       }
 
       /// fill all elements by val
       void
       fill (const value_type& val)
       {
-        std::fill(data_.begin(), data_.end(), val);
+        std::fill(storage_.begin(), storage_.end(), val);
       }
 
       /// generate all elements by gen()
@@ -462,13 +572,13 @@ namespace btas {
       void
       generate (Generator gen)
       {
-          std::generate(data_.begin(), data_.end(), gen);
+          std::generate(storage_.begin(), storage_.end(), gen);
       }
 
     private:
 
       range_type range_;///< range object
-      storage_type data_;///< data
+      storage_type storage_;///< data
 
   }; // end of Tensor
 
