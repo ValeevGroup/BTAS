@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
   TA::TiledRange
     trange(blocking2.begin(), blocking2.end());
 
-  typedef btas::Tensor<double> DenseTensor;
+  typedef btas::Tensor<double, TA::Range, btas::varray<double>> DenseTensor;
   typedef TA::Array<double, 2, DenseTensor > TArray;
 
   TArray a(world, trange);
@@ -88,15 +88,14 @@ int main(int argc, char **argv) {
   world.gop.fence();
   const double wall_time_start = madness::wall_time();
 
-#if 0
   // Do matrix multiplication
   {
-    c("m,n") = a("m,k") * b("k,n");
+    //c("m,n") = a("m,k") * b("k,n");
+    auto c = a("m,k") * b("k,n");
     world.gop.fence();
     if(world.rank() == 0)
       std::cout << "done\n";
   }
-#endif
 
   madness::finalize();
   return 0;

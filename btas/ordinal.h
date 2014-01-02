@@ -115,6 +115,13 @@ namespace btas {
         return o - offset_;
       }
 
+      /// Does ordinal value belong to this ordinal range?
+      template <typename I>
+      typename std::enable_if<std::is_integral<I>::value, bool>::type
+      includes(const I& ord) const {
+        assert(false); // "BoxOrdinal::includes() is not not yet implemented"
+      }
+
     private:
 
       template <typename Index1,

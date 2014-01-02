@@ -525,13 +525,12 @@ namespace btas {
       }
 #endif
 
-      /// Check the coordinate to make sure it is within the range.
+      /// Check the index to make sure it is within the range.
 
-      /// \tparam Index The coordinate index array type
-      /// \param index The coordinate index to check for inclusion in the range
+      /// \tparam Index An array type
+      /// \param index The index to check for inclusion in the range
       /// \return \c true when \c i \c >= \c lobound and \c i \c < \c f, otherwise
       /// \c false
-      /// \throw TildedArray::Exception When the dimension of this range is not
       /// equal to the size of the index.
       template <typename Index>
       typename std::enable_if<btas::is_index<Index>::value, bool>::type
@@ -545,7 +544,6 @@ namespace btas {
 
         return true;
       }
-
 
     private:
 
@@ -810,7 +808,16 @@ namespace btas {
         return RangeNd(lobound, upbound, _Ordinal(this->lobound(), this->upbound(), this->ordinal().stride()));
       }
 
-    public:
+      /// Check the index ordinal to make sure it is within the range.
+
+      /// \tparam IndexOrdinal An integral type
+      /// \param indexord The index ordinal to check for inclusion in the range
+      /// equal to the size of the index.
+      template <typename IndexOrdinal>
+      typename std::enable_if<std::is_integral<IndexOrdinal>::value, bool>::type
+      includes(const IndexOrdinal& indexord) const {
+        return ordinal_.includes(indexord);
+      }
 
       using base_type::increment;
       /// Increments <index,ordinal> pair
@@ -837,6 +844,7 @@ namespace btas {
         i.second = ordinal(i.first);
       }
 
+    private:
       /// The Ordinal object
       _Ordinal ordinal_;
 
