@@ -300,13 +300,12 @@ template<
    typename _T,
    class _TensorA, class _TensorX, class _TensorY,
    class = typename std::enable_if<
-      is_tensor<_TensorA>::value &
-      is_tensor<_TensorX>::value &
-      is_tensor<_TensorY>::value
+      is_boxtensor<_TensorA>::value &
+      is_boxtensor<_TensorX>::value &
+      is_boxtensor<_TensorY>::value
    >::type
 >
 void gemv (
-   const CBLAS_ORDER& order,
    const CBLAS_TRANSPOSE& transA,
    const _T& alpha,
    const _TensorA& A,
@@ -314,10 +313,11 @@ void gemv (
    const _T& beta,
          _TensorY& Y)
 {
-   // check element type
-   typedef typename _TensorA::value_type value_type;
-   static_assert(std::is_same<value_type, typename _TensorX::value_type>::value, "value type of X must be the same as that of A");
-   static_assert(std::is_same<value_type, typename _TensorY::value_type>::value, "value type of Y must be the same as that of A");
+    static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorY>::value &&
+                  boxtensor_storage_order<_TensorX>::value == boxtensor_storage_order<_TensorY>::value,
+                  "btas::gemm does not support mixed storage order");
+    const CBLAS_ORDER order = boxtensor_storage_order<_TensorY>::value == boxtensor_storage_order<_TensorY>::row_major ?
+                              CblasRowMajor : CblasColMajor;
 
    if (A.empty() || X.empty())
    {
@@ -326,14 +326,14 @@ void gemv (
    }
 
    // get contraction rank
-   const size_type rankA = A.rank();
-   const size_type rankX = X.rank();
-   const size_type rankY = Y.rank();
+   const size_type rankA = rank(A);
+   const size_type rankX = rank(X);
+   const size_type rankY = rank(Y);
 
    // get shapes
-   const typename _TensorA::shape_type& shapeA = A.shape();
-   const typename _TensorX::shape_type& shapeX = X.shape();
-         typename _TensorY::shape_type  shapeY = Y.shape(); // if Y is empty, this gives { 0,...,0 }
+   const typename _TensorA::range_type::extent_type& extentA = extent(A);
+   const typename _TensorX::range_type::extent_type& extentX = extent(X);
+         typename _TensorY::range_type::extent_type  extentY = extent(Y); // if Y is empty, this gives { 0,...,0 }
 
    size_type Msize = 0; // Rows count of Y
    size_type Nsize = 0; // Cols count of Y
@@ -343,21 +343,21 @@ void gemv (
    // to minimize forks by if?
    if (transA == CblasNoTrans)
    {
-      Msize = std::accumulate(shapeA.begin(), shapeA.begin()+rankY, 1ul, std::multiplies<size_type>());
-      Nsize = std::accumulate(shapeA.begin()+rankY, shapeA.end(),   1ul, std::multiplies<size_type>());
+      Msize = std::accumulate(std::begin(extentA), std::begin(extentA)+rankY, 1ul, std::multiplies<size_type>());
+      Nsize = std::accumulate(std::begin(extentA)+rankY, std::end(extentA),   1ul, std::multiplies<size_type>());
 
-      for (size_type i = 0; i < rankY; ++i) shapeY[i] = shapeA[i];
+      for (size_type i = 0; i < rankY; ++i) extentY[i] = extentA[i];
 
-      assert(std::equal(shapeA.begin()+rankY, shapeA.end(), shapeX.begin()));
+      assert(std::equal(std::begin(extentA)+rankY, std::end(extentA), std::begin(extentX)));
    }
    else
    {
-      Msize = std::accumulate(shapeA.begin(), shapeA.begin()+rankX, 1ul, std::multiplies<size_type>());
-      Nsize = std::accumulate(shapeA.begin()+rankX, shapeA.end(),   1ul, std::multiplies<size_type>());
+      Msize = std::accumulate(std::begin(extentA), std::begin(extentA)+rankX, 1ul, std::multiplies<size_type>());
+      Nsize = std::accumulate(std::begin(extentA)+rankX, std::end(extentA),   1ul, std::multiplies<size_type>());
 
-      for (size_type i = 0; i < rankY; ++i) shapeY[i]   = shapeA[i+rankX];
+      for (size_type i = 0; i < rankY; ++i) extentY[i]   = extentA[i+rankX];
 
-      assert(std::equal(shapeA.begin(), shapeA.begin()+rankX, shapeX.begin()));
+      assert(std::equal(std::begin(extentA), std::begin(extentA)+rankX, std::begin(extentX)));
    }
 
    if(order == CblasRowMajor)
@@ -372,17 +372,18 @@ void gemv (
    // resize / scale
    if (Y.empty())
    {
-      Y.resize(shapeY);
-      NumericType<value_type>::fill(Y.begin(), Y.end(), NumericType<value_type>::zero());
+     typedef typename _TensorY::value_type value_type;
+      Y.resize(extentY);
+      NumericType<value_type>::fill(std::begin(Y), std::end(Y), NumericType<value_type>::zero());
    }
    else
    {
-      assert(std::equal(shapeY.begin(), shapeY.end(), Y.shape().begin()));
+      assert(std::equal(std::begin(extentY), std::end(extentY), std::begin(extent(Y))));
    }
 
-   auto itrA = tbegin(A);
-   auto itrX = tbegin(X);
-   auto itrY = tbegin(Y);
+   auto itrA = std::begin(A);
+   auto itrX = std::begin(X);
+   auto itrY = std::begin(Y);
 
    gemv (order, transA, Msize, Nsize, alpha, itrA, LDA, itrX, 1, beta, itrY, 1);
 }
