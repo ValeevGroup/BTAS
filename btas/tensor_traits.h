@@ -64,7 +64,7 @@ public:
 };
 
 /// checks _Tensor meets the TWG.Tensor concept requirements
-/// checks only value_type, shape_type, storage_type, and rank() member TODO check the rest
+/// checks only value_type, range_type, storage_type, and rank() member TODO check the rest
 template<class _Tensor>
 class is_tensor {
 public:

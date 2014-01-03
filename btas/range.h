@@ -534,7 +534,7 @@ namespace btas {
       /// equal to the size of the index.
       template <typename Index>
       typename std::enable_if<btas::is_index<Index>::value, bool>::type
-      includes(const Index& index) const {
+      includes(const Index& index, typename std::enable_if<btas::is_index<Index>::value>::type* = 0) const {
         using btas::rank;
         assert(rank(index) == this->rank());
         const auto end = this->rank();
@@ -807,6 +807,8 @@ namespace btas {
       {
         return RangeNd(lobound, upbound, _Ordinal(this->lobound(), this->upbound(), this->ordinal().stride()));
       }
+
+      using base_type::includes;
 
       /// Check the index ordinal to make sure it is within the range.
 

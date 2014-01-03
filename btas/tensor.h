@@ -110,7 +110,10 @@ namespace btas {
       explicit
       Tensor (const Range& range,
               const Storage& storage,
-              typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
+              typename std::enable_if<btas::is_boxrange<Range>::value &
+                                      not std::is_same<Range,range_type>::value &
+                                      not std::is_same<Storage,storage_type>::value
+                                     >::type* = 0) :
       range_(range.lobound(), range.upbound()), storage_(storage)
       {
       }
@@ -603,6 +606,13 @@ namespace btas {
   auto
   extent (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.range().extent()) {
     return t.range().extent();
+  }
+
+  /// maps Tensor -> Range rank
+  template <typename _T, typename _Range, typename _Storage>
+  auto
+  rank (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.rank()) {
+    return t.rank();
   }
 
   /// Tensor stream output operator
