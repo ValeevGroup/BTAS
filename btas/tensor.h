@@ -605,6 +605,13 @@ namespace btas {
     return t.range().extent();
   }
 
+  /// maps Tensor -> Range rank
+  template <typename _T, typename _Range, typename _Storage>
+  auto
+  rank (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.rank()) {
+    return t.rank();
+  }
+
   /// Tensor stream output operator
 
   /// prints Tensor in row-major form. To be implemented elsewhere using slices.
