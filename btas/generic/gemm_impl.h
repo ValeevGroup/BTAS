@@ -408,9 +408,9 @@ void gemm (
    }
 
    // get contraction rank
-   const size_type rankA = A.rank();
-   const size_type rankB = B.rank();
-   const size_type rankC = C.rank();
+   const size_type rankA = rank(A);
+   const size_type rankB = rank(B);
+   const size_type rankC = rank(C);
 
    const size_type K = (rankA+rankB-rankC)/2; assert((rankA+rankB-rankC) % 2 == 0);
    const size_type M = rankA-K;
@@ -430,12 +430,12 @@ void gemm (
    size_type LDC = 0; // Leading dims of C
 
    Msize = (transA == CblasNoTrans)
-           ? std::accumulate(extentA.begin(), extentA.begin()+M, 1ul, std::multiplies<size_type>())
-           : std::accumulate(extentA.begin()+K, extentA.end(),   1ul, std::multiplies<size_type>())
+           ? std::accumulate(std::begin(extentA), std::begin(extentA)+M, 1ul, std::multiplies<size_type>())
+           : std::accumulate(std::begin(extentA)+K, std::end(extentA),   1ul, std::multiplies<size_type>())
    ;
    Ksize = (transA == CblasNoTrans)
-           ? std::accumulate(extentA.begin()+M, extentA.end(),   1ul, std::multiplies<size_type>())
-           : std::accumulate(extentA.begin(), extentA.begin()+K, 1ul, std::multiplies<size_type>())
+           ? std::accumulate(std::begin(extentA)+M, std::end(extentA),   1ul, std::multiplies<size_type>())
+           : std::accumulate(std::begin(extentA), std::begin(extentA)+K, 1ul, std::multiplies<size_type>())
    ;
 
    // check that contraction dimensions match
@@ -446,13 +446,13 @@ void gemm (
 
      // strong checks
      if (transA == CblasNoTrans && transB == CblasNoTrans)
-       assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()));
+       assert(std::equal(std::begin(extentA)+M, std::end(extentA), std::begin(extentB)));
      if (transA == CblasNoTrans && transB != CblasNoTrans)
-       assert(std::equal(extentA.begin()+M, extentA.end(), extentB.begin()+N));
+       assert(std::equal(std::begin(extentA)+M, std::end(extentA), std::begin(extentB)+N));
      if (transA != CblasNoTrans && transB == CblasNoTrans)
-       assert(std::equal(extentA.begin(), extentA.begin()+K, extentB.begin()));
+       assert(std::equal(std::begin(extentA), std::begin(extentA)+K, std::begin(extentB)));
      if (transA != CblasNoTrans && transB != CblasNoTrans)
-       assert(std::equal(extentA.begin(), extentA.begin()+K, extentB.begin()+N));
+       assert(std::equal(std::begin(extentA), std::begin(extentA)+K, std::begin(extentB)+N));
    }
 
    Nsize = Barea / Ksize;
@@ -481,26 +481,26 @@ void gemm (
    }
    else { // C not empty -> validate extentC
      if (transA == CblasNoTrans)
-       assert(std::equal(extentA.begin(), extentA.begin()+M, extentC.begin()));
+       assert(std::equal(std::begin(extentA), std::begin(extentA)+M, std::begin(extentC)));
      else
-       assert(std::equal(extentA.begin()+K, extentA.end(), extentC.begin()));
+       assert(std::equal(std::begin(extentA)+K, std::end(extentA), std::begin(extentC)));
      if (transB == CblasNoTrans)
-       assert(std::equal(extentB.begin()+K, extentB.end(), extentC.begin()+M));
+       assert(std::equal(std::begin(extentB)+K, std::end(extentB), std::begin(extentC)+M));
      else
-       assert(std::equal(extentB.begin(), extentB.begin()+N, extentC.begin()+M));
+       assert(std::equal(std::begin(extentB), std::begin(extentB)+N, std::begin(extentC)+M));
    }
 
    // resize / scale
    if (C.empty())
    {
       C.resize(extentC);
-      NumericType<value_type>::fill(C.begin(), C.end(), NumericType<value_type>::zero());
+      NumericType<value_type>::fill(std::begin(C), std::end(C), NumericType<value_type>::zero());
    }
    else
    {
-      assert(std::equal(extentC.begin(), extentC.end(), extent(C).begin()));
+      assert(std::equal(std::begin(extentC), std::end(extentC), std::begin(extent(C))));
       if (beta == NumericType<value_type>::zero())
-        NumericType<value_type>::fill(C.begin(), C.end(), NumericType<value_type>::zero());
+        NumericType<value_type>::fill(std::begin(C), std::end(C), NumericType<value_type>::zero());
    }
 
    auto itrA = std::begin(A);
