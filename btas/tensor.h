@@ -110,7 +110,10 @@ namespace btas {
       explicit
       Tensor (const Range& range,
               const Storage& storage,
-              typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
+              typename std::enable_if<btas::is_boxrange<Range>::value &
+                                      not std::is_same<Range,range_type>::value &
+                                      not std::is_same<Storage,storage_type>::value
+                                     >::type* = 0) :
       range_(range.lobound(), range.upbound()), storage_(storage)
       {
       }
