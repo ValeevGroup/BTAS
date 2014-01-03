@@ -18,7 +18,7 @@ template<bool _Finalize> struct ger_impl { };
 
 template<> struct ger_impl<true>
 {
-   /// GER implementation
+   /// Performs GER operation
    template<typename _T, class _IteratorX, class _IteratorY, class _IteratorA>
    static void call (
       const CBLAS_ORDER& order,
@@ -213,9 +213,8 @@ void ger (
 
 //  ================================================================================================
 
-/// Generic interface of BLAS-GER
-/// \param order storage order of tensor in matrix view (CblasRowMajor, CblasColMajor)
-/// \param alpha scalar value to be multiplied to A * X
+/// Generic implementation of operation (generalization of BLAS GER operation)
+/// \param alpha scalar value to be multiplied to A * X * Y
 /// \param X input tensor
 /// \param Y input tensor
 /// \param A output tensor which can be empty tensor but needs to have rank info (= size of shape).
@@ -224,22 +223,22 @@ template<
    typename _T,
    class _TensorX, class _TensorY, class _TensorA,
    class = typename std::enable_if<
-      is_tensor<_TensorX>::value &
-      is_tensor<_TensorY>::value &
-      is_tensor<_TensorA>::value
+      is_boxtensor<_TensorX>::value &
+      is_boxtensor<_TensorY>::value &
+      is_boxtensor<_TensorA>::value
    >::type
 >
 void ger (
-   const CBLAS_ORDER& order,
    const _T& alpha,
    const _TensorX& X,
    const _TensorY& Y,
          _TensorA& A)
 {
-   // check element type
-   typedef typename _TensorA::value_type value_type;
-   static_assert(std::is_same<value_type, typename _TensorX::value_type>::value, "value type of X must be the same as that of A");
-   static_assert(std::is_same<value_type, typename _TensorY::value_type>::value, "value type of Y must be the same as that of A");
+    static_assert(boxtensor_storage_order<_TensorX>::value == boxtensor_storage_order<_TensorA>::value &&
+                  boxtensor_storage_order<_TensorY>::value == boxtensor_storage_order<_TensorA>::value,
+                  "btas::ger does not support mixed storage order");
+    const CBLAS_ORDER order = boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorA>::row_major ?
+                              CblasRowMajor : CblasColMajor;
 
    if (X.empty() || Y.empty())
    {
@@ -247,36 +246,37 @@ void ger (
    }
 
    // get contraction rank
-   const size_type rankX = X.rank();
-   const size_type rankY = Y.rank();
-   const size_type rankA = A.rank();
+   const size_type rankX = rank(X);
+   const size_type rankY = rank(Y);
+   const size_type rankA = rank(A);
 
    // get shapes
-   const typename _TensorX::shape_type& shapeX = X.shape();
-   const typename _TensorY::shape_type& shapeY = Y.shape();
-         typename _TensorA::shape_type  shapeA = A.shape();
+   const typename _TensorX::range_type::extent_type& extentX = extent(X);
+   const typename _TensorY::range_type::extent_type& extentY = extent(Y);
+         typename _TensorA::range_type::extent_type  extentA = extent(A);
 
-   size_type Msize = std::accumulate(shapeX.begin(), shapeX.end(), 1ul, std::multiplies<size_type>());
-   size_type Nsize = std::accumulate(shapeY.begin(), shapeY.end(), 1ul, std::multiplies<size_type>());
+   size_type Msize = std::accumulate(std::begin(extentX), std::end(extentX), 1ul, std::multiplies<size_type>());
+   size_type Nsize = std::accumulate(std::begin(extentY), std::end(extentY), 1ul, std::multiplies<size_type>());
    size_type LDA   = (order == CblasRowMajor) ? Nsize : Msize;
 
-   for (size_type i = 0; i < rankX; ++i) shapeA[i]       = shapeX[i];
-   for (size_type i = 0; i < rankY; ++i) shapeA[i+rankX] = shapeY[i];
+   std::copy_n(std::begin(extentX), rankX, std::begin(extentA));
+   std::copy_n(std::begin(extentY), rankY, std::begin(extentA)+rankX);
 
    // resize / scale
    if (A.empty())
    {
-      A.resize(shapeA);
-      NumericType<value_type>::fill(A.begin(), A.end(), NumericType<value_type>::zero());
+     typedef typename _TensorA::value_type value_type;
+     A.resize(extentA);
+     NumericType<value_type>::fill(std::begin(A), std::end(A), NumericType<value_type>::zero());
    }
    else
    {
-      assert(std::equal(shapeA.begin(), shapeA.end(), A.shape().begin()));
+      assert(std::equal(std::begin(extentA), std::end(extentA), std::begin(extent(A))));
    }
 
-   auto itrX = tbegin(X);
-   auto itrY = tbegin(Y);
-   auto itrA = tbegin(A);
+   auto itrX = std::begin(X);
+   auto itrY = std::begin(Y);
+   auto itrA = std::begin(A);
 
    ger (order, Msize, Nsize, alpha, itrX, 1, itrY, 1, itrA, LDA);
 }
