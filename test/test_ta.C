@@ -90,8 +90,9 @@ int main(int argc, char **argv) {
 
   // Do matrix multiplication
   {
+    // currently TA ContractionResult is hardwired to use TA::Tensor ... is likely fixed on expressions branch
     //c("m,n") = a("m,k") * b("k,n");
-    auto c = a("m,k") * b("k,n");
+    auto c = a("m,k") * b("k,n"); // does not actually compute c!
     world.gop.fence();
     if(world.rank() == 0)
       std::cout << "done\n";
