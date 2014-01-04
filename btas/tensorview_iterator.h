@@ -56,26 +56,26 @@ namespace btas {
 
       TensorViewIterator(const typename Range::iterator& index_iter,
                          Storage& storage) :
-        iter_(subiterator(make_pair(*index_iter,index_iter.range()->ordinal(*index_iter)),index_iter.range())),
+        iter_(subiterator(std::make_pair(*index_iter,index_iter.range()->ordinal(*index_iter)),index_iter.range())),
         storageref_(storage) {}
 
       TensorViewIterator(const typename Range::iterator& index_iter,
                          const storageref_type& storage) :
-        iter_(subiterator(make_pair(*index_iter,index_iter.range()->ordinal(*index_iter)),index_iter.range())),
+        iter_(subiterator(std::make_pair(*index_iter,index_iter.range()->ordinal(*index_iter)),index_iter.range())),
         storageref_(storage) {}
 
       template <typename S = Storage>
       TensorViewIterator(const typename Range::iterator& index_iter,
                          const ncstorageref_type& storage,
                          typename std::enable_if<std::is_const<S>::value>::type* = 0) :
-        iter_(subiterator(make_pair(*index_iter,index_iter.range()->ordinal(*index_iter)),index_iter.range())),
+        iter_(subiterator(std::make_pair(*index_iter,index_iter.range()->ordinal(*index_iter)),index_iter.range())),
         // standard const_cast cannot "map" const into nontrivial structures, have to reinterpret here
         storageref_(reinterpret_cast<const storageref_type&>(storage)) {}
 
       TensorViewIterator(const typename Range::iterator& index_iter,
                          const ordinal_type& ord,
                          Storage& storage) :
-        iter_(subiterator(make_pair(*index_iter,ord),index_iter.range())),
+        iter_(subiterator(std::make_pair(*index_iter,ord),index_iter.range())),
         storageref_(storage) {}
 
 
