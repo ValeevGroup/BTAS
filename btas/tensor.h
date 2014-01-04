@@ -10,6 +10,7 @@
 #include <btas/types.h>
 #include <btas/defaults.h>
 #include <btas/tensor_traits.h>
+#include <btas/tensorview.h>
 #include <btas/array_adaptor.h>
 
 #include <boost/serialization/serialization.hpp>
@@ -511,6 +512,14 @@ namespace btas {
       //
       //  Here come Non-Standard members (to be discussed)
       //
+
+      /// Constructs a Tensor slice defined by a subrange for each dimension
+      template <typename U>
+      TensorView<value_type, range_type, const storage_type>
+      slice(std::initializer_list<Range1d<U>> range1s) const
+      {
+        return TensorView<value_type, range_type, const storage_type>{this->range().slice(range1s), this->storage()};
+      }
 
       /// addition assignment
       Tensor&

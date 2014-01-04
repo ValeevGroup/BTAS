@@ -148,6 +148,11 @@ namespace btas {
 
         const_reference_type stride() const { return stride_; }
 
+        /// Size of Range1d is the number of elements encountered in iteration rom begin to end.
+        size_t size() const {
+          return (upbound_ - lobound_) / stride_;
+        }
+
         /// Index iterator factory
 
         /// The iterator dereferences to an index. The order of iteration matches
@@ -189,6 +194,15 @@ namespace btas {
 
     }; // Range1d
     using Range1 = Range1d<>;
+
+    /// Merges 2 Range1d objects
+    template <typename _Index>
+    Range1d<_Index> merge(const Range1d<_Index>& r1,
+                          const Range1d<_Index>& r2) {
+      assert(r1.stride() == r2.stride());
+      assert((r2.lobound() - r1.lobound()) % r1.stride() == 0);
+      return Range1d<_Index>{r1.lobound(), r2.upbound(), r1.stride()};
+    }
 
     /// Range1d output operator
 
@@ -703,7 +717,8 @@ namespace btas {
 
       /// to construct from an initializer list give it as {extent0, extent1, ... extentN}
       template <typename T>
-      RangeNd(std::initializer_list<T> extents) :
+      RangeNd(std::initializer_list<T> extents,
+              typename std::enable_if<std::is_integral<T>::value>::type* = 0) :
         base_type()
       {
         index_type lb = array_adaptor<index_type>::construct(extents.size(), 0);
@@ -713,12 +728,34 @@ namespace btas {
 
       /// to construct from an initializer list give it as {extent0, extent1, ... extentN}
       template <typename T1, typename T2>
-      RangeNd(std::initializer_list<T1> lobound, std::initializer_list<T2> upbound) :
+      RangeNd(std::initializer_list<T1> lobound, std::initializer_list<T2> upbound,
+              typename std::enable_if<std::is_integral<T1>::value && std::is_integral<T2>::value>::type* = 0) :
         base_type()
       {
         assert(lobound.size() == upbound.size());
         base_type::init(lobound, upbound);
         ordinal_ = _Ordinal(lobound, upbound);
+      }
+
+      /// to construct from an initializer list give it as {Range1d_0, Range1d_1, ... Range1d_N}
+      template <typename T>
+      RangeNd(std::initializer_list<Range1d<T>> range1s) :
+        base_type()
+      {
+        for(auto i: range1s)
+          assert(i.stride() == 1);
+
+        std::vector<long> lb(range1s.size());
+        std::vector<long> ub(range1s.size());
+        int c=0;
+        for(auto i: range1s) {
+          lb[c] = i.lobound();
+          ub[c] = i.upbound();
+          ++c;
+        }
+
+        base_type::init(lb, ub);
+        ordinal_ = _Ordinal(lb, ub);
       }
 
       /// Copy Constructor
@@ -806,6 +843,26 @@ namespace btas {
       slice(const Index1& lobound, const Index2& upbound) const
       {
         return RangeNd(lobound, upbound, _Ordinal(this->lobound(), this->upbound(), this->ordinal().stride()));
+      }
+
+      /// Constructs a Range slice defined by a subrange for each dimension
+      template <typename U>
+      RangeNd
+      slice(std::initializer_list<Range1d<U>> range1s) const
+      {
+        for(auto i: range1s)
+          assert(i.stride() == 1);
+
+        btas::varray<long> lb(range1s.size());
+        btas::varray<long> ub(range1s.size());
+        int c=0;
+        for(auto i: range1s) {
+          lb[c] = i.lobound();
+          ub[c] = i.upbound();
+          ++c;
+        }
+
+        return RangeNd(std::move(lb), std::move(ub), _Ordinal(this->lobound(), this->upbound(), this->ordinal().stride()));
       }
 
       using base_type::includes;
