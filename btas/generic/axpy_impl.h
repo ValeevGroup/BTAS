@@ -147,8 +147,8 @@ void axpy (
       assert( range(X) == range(Y) );
    }
 
-   auto itrX = begin(X);
-   auto itrY = begin(Y);
+   auto itrX = X.begin();
+   auto itrY = Y.begin();
 
    axpy (X.size(), alpha, itrX, 1, itrY, 1);
 }
