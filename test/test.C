@@ -259,29 +259,6 @@ int main()
     for(auto i: v1) {
       cout << "v1[" << i << "] = " << v1[i] << endl;
     }
-
-    // it's easy to implement a simple TensorView using StorageRef. It acts like Tensor, except it does not own the storage
-    // this is for demonstartion purposes only: NOT recommended to use Tensor this way, though ... use TensorView instead
-    Tensor<double> t0(2, 2, 3);
-    {
-      typedef Tensor<double, Range, vectorref<double> > TensorView;
-      TensorView tr0(permute(t0.range(),{2,1,0}), t0.storage());
-      auto v = 0.0;
-      for(auto i: tr0.range()) {
-        tr0(i) = v;
-        v += 1.0;
-      }
-
-      for(auto i: tr0.range()) {
-        cout << "tr0[" << i << "] " << tr0(i) << endl;
-      }
-    }
-
-    // TensorView is gone, but the original Tensor lives, and has the data
-    for(auto i: t0.range()) {
-      cout << "t0[" << i << "] " << t0(i) << endl;
-    }
-
   }
 
   //////////////////////////////////////////////////////////////////////////////
