@@ -7,8 +7,11 @@
 
 #include <btas/tensor.h>
 #include <btas/generic/contract.h>
+#include <btas/varray/allocators.h>
 
 using namespace btas;
+
+template <typename T> using myvec = std::vector<T, stack_allocator<T>>;
 
 int main(int argc, char **argv) {
 
@@ -35,15 +38,55 @@ int main(int argc, char **argv) {
                                                                        // SOON: TensorViews will be usable interchangeably with Tensors
            0.0, t2v, {'i','j','c','d'});
 
-  // The default Tensor is a "dense" box of values, with internally managed storage
-  // But Tensor is highly configurable
-  // For example, it can be used with externally-managed storage
+  // Tensor is highly configurable. A few examples are shown below. See doc/examples/synopsis.C for more examples.
   {
-    auto mybuf = std::vector<double>{OOUU.area()};
-    typedef Tensor<double, Range, StorageRef<std::vector<double> >  > DTensor;
-    auto v_oouu = DTensor(OOUU, ref);
+    // usually one wants to deal with Tensors whose rank is known as compile time.
+    typedef Tensor<double,
+                   RangeNd<CblasRowMajor, std::array<long, 2> >,
+                   std::vector<double> > DTensor2;               // rank-2 tensor (matrix) of doubles
+    typedef Tensor<double,
+                   RangeNd<CblasRowMajor, std::array<long, 3> >,
+                   std::vector<double> > DTensor3;               // rank-3 tensor of doubles
+
+    DTensor2 a(Range{O,U}, 0.0);   // OK
+//  DTensor2 b(OOUU, 0.0);         // runtime error! rank-2 tensor initialized with rank-4 range
+    DTensor3 c(Range{O,U,U}, 0.0); // OK
+
+    // sometimes one wants to deal with tensors of fixed rank AND dimension
+    typedef Tensor<double,
+                   RangeNd<CblasRowMajor, std::array<long, 2> >,
+                   std::array<double, 9> > DMatrix9;               // a 9-element matrix
+    DMatrix9 d(Range{U,U}, 0.0);   // OK: Range.area == 9
+//  DMatrix9 e(Range{P,U}, 0.0);   // runtime error: Range.area > 9
   }
+
   //! [Synopsis]
+
+  // The default Tensor is a "dense" box of values, with internally managed storage
+  // some users want to manually manage memory; here's how simple stack memory management can be done
+  {
+    // allocate 10^6 byte buffer for holding Tensors
+    const auto bufsize = 1000000ul;
+    auto mybuf = std::make_shared<stack_arena>(new char[bufsize], bufsize);
+    auto dalloc = stack_allocator<double>              (mybuf);
+    auto falloc = stack_allocator<float>               (mybuf);
+    auto zalloc = stack_allocator<std::complex<double>>(mybuf);
+
+    typedef std::vector<double, stack_allocator<double>>        dvec;    // vector of doubles allocated in the buffer
+    typedef std::vector<float, stack_allocator<float>>          fvec;    // vector of floats allocated in the buffer
+    typedef std::vector<std::complex<double>,
+                        stack_allocator<std::complex<double>>>  zvec;    // vector of complex doubles allocated in the buffer
+    typedef Tensor<double, Range,  dvec> DTensor; // tensor of doubles that uses memory in the buffer
+    typedef Tensor<float,  Range,  fvec> FTensor; // tensor of floats that uses memory in the buffer
+    typedef Tensor<std::complex<double>,
+                           Range,  zvec> ZTensor; // tensor of complex doubles that uses memory in the buffer
+
+    DTensor v_oouu(OOUU, dvec(dalloc));
+    ZTensor v_pppp(PPPP, zvec(zalloc));
+    FTensor r_oouu(OOUU, fvec(falloc));
+
+    auto v_uuuu = v_pppp.slice({U, U, U, U});
+  }
 
   return 0;
 }
