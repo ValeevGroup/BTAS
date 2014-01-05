@@ -47,6 +47,12 @@ namespace btas {
         return *this;
       }
 
+      operator nonconst_storage_type() const {
+        nonconst_storage_type result(this->size());
+        std::copy(begin_, end_, result.begin());
+        return result;
+      }
+
       template <typename S = _Storage>
       typename std::enable_if<not std::is_const<S>::value,StorageRef&>::type
       operator=(nonconst_storage_type& stor) {
@@ -96,6 +102,10 @@ namespace btas {
       }
       const_iterator cend() const {
         return end_;
+      }
+
+      size_type size() const {
+        return cend() - cbegin();
       }
 
     private:

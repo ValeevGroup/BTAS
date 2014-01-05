@@ -117,6 +117,28 @@ namespace btas {
                                      >::type* = 0) :
       range_(range.lobound(), range.upbound()), storage_(storage)
       {
+        if (storage_.size() != range_.area())
+          array_adaptor<storage_type>::resize(storage_, range_.area());
+      }
+
+      /// copy-copy-construct from \c range and \c storage
+      explicit
+      Tensor (const range_type& range, const storage_type& storage) :
+      range_(range.ordinal(*range.begin()) == 0 ? range : range_type(range.lobound(), range.upbound())),
+      storage_(storage)
+      {
+        if (storage_.size() != range_.area())
+          array_adaptor<storage_type>::resize(storage_, range_.area());
+      }
+
+      /// copy-move-construct from \c range and \c storage
+      explicit
+      Tensor (const range_type& range, storage_type&& storage) :
+      range_(range.ordinal(*range.begin()) == 0 ? range : range_type(range.lobound(), range.upbound())),
+      storage_(storage)
+      {
+        if (storage_.size() != range_.area())
+          array_adaptor<storage_type>::resize(storage_, range_.area());
       }
 
       /// move-construct from \c range and \c storage
@@ -125,6 +147,8 @@ namespace btas {
       range_(range.ordinal(*range.begin()) == 0 ? range : range_type(range.lobound(), range.upbound())),
       storage_(storage)
       {
+        if (storage_.size() != range_.area())
+          array_adaptor<storage_type>::resize(storage_, range_.area());
       }
 
       /// Construct an evaluated tensor
@@ -155,13 +179,19 @@ namespace btas {
       Tensor (const _Tensor& x)
       : range_ (x.range().lobound(), x.range().upbound()),
       // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
-        storage_(x.begin(), x.end())
+        storage_(x.storage())
       {
       }
 
       /// copy constructor
       explicit
       Tensor (const Tensor& x)
+      : range_ (x.range()), storage_(x.storage_)
+      {
+      }
+
+      /// move constructor
+      Tensor (Tensor&& x)
       : range_ (x.range()), storage_(x.storage_)
       {
       }
@@ -194,14 +224,6 @@ namespace btas {
         range_ = x.range_;
         storage_ = x.storage_;
         return *this;
-      }
-
-      /// move constructor
-      explicit
-      Tensor (Tensor&& x)
-      {
-        std::swap(range_, x.range_);
-        std::swap(storage_, x.storage_);
       }
 
       /// move assignment operator

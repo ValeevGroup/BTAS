@@ -2,128 +2,188 @@
 #define __BTAS_VARRAY_H 1
 
 #include <algorithm>
+#include <cassert>
 
 #include <boost/serialization/serialization.hpp>
-
-#include <btas/varray/memory_reference.h>
 
 namespace btas {
 
 /// variable size array class without capacity info
-/// NOTE: to reduce object size, this doesn't have the virtual destructor
-/// TODO: add allocator to template parameter
-template <typename T>
+template <typename _T,
+          typename _Allocator = std::allocator<_T> >
 class varray {
 public:
 
-   typedef memory_reference<T> container;
+   typedef std::allocator_traits<_Allocator> allocator_traits;            ///< Allocator traits
+   typedef typename allocator_traits::allocator_type allocator_type;      ///< Allocator type
 
-   typedef typename container::value_type value_type;
-   typedef typename container::reference reference;
-   typedef typename container::const_reference const_reference;
-   typedef typename container::pointer pointer;
-   typedef typename container::const_pointer const_pointer;
-   typedef typename container::iterator iterator;
-   typedef typename container::const_iterator const_iterator;
-   typedef typename container::reverse_iterator reverse_iterator;
-   typedef typename container::const_reverse_iterator const_reverse_iterator;
-   typedef typename container::difference_type difference_type;
-   typedef typename container::size_type size_type;
-   typedef varray<T> eval_type;
+   typedef typename allocator_traits::value_type value_type;
+   typedef          value_type& reference;
+   typedef    const value_type& const_reference;
+   typedef typename allocator_traits::pointer pointer;
+   typedef typename allocator_traits::const_pointer const_pointer;
+   typedef typename allocator_traits::difference_type difference_type;
+   typedef typename allocator_traits::size_type size_type;
+
+   typedef pointer iterator;
+   typedef const_pointer const_iterator;
+   typedef std::reverse_iterator<iterator> reverse_iterator;
+   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
 private:
 
-   container data_;
+   struct _M_impl {
+     pointer _M_start;
+     pointer _M_finish;
+
+     _M_impl() : _M_start(nullptr), _M_finish(nullptr) { }
+     _M_impl(pointer s, pointer f) : _M_start(s), _M_finish(f) { }
+     _M_impl(_M_impl&& other) {
+       _M_start = other._M_start;
+       _M_finish = other._M_finish;
+       other._M_start = nullptr;
+       other._M_finish = nullptr;
+     }
+
+     size_type size() const { return _M_finish - _M_start; }
+     bool empty() const { return _M_start == _M_finish; }
+
+     pointer begin() { return _M_start; }
+     pointer end() { return _M_finish; }
+     const_pointer cbegin() const { return const_cast<const_pointer>(_M_start); }
+     const_pointer cend() const { return const_cast<const_pointer>(_M_finish); }
+
+     pointer rbegin() { return _M_finish-1; }
+     pointer rend() { return _M_start-1; }
+     const_pointer crbegin() const { return const_cast<const_pointer>(_M_finish-1); }
+     const_pointer crend() const { return const_cast<const_pointer>(_M_start-1); }
+
+     reference front() { return *begin(); }
+     reference back() { return *rbegin(); }
+     const_reference front() const { return *cbegin(); }
+     const_reference back() const { return *crbegin(); }
+
+     reference operator[](size_type i) {
+       return _M_start[i];
+     }
+     const_reference operator[](size_type i) const {
+       return const_cast<const_reference>(_M_start[i]);
+     }
+     reference at(size_type i) {
+       assert(i < size());
+       return _M_start[i];
+     }
+     const_reference at(size_type i) const {
+       assert(i < size());
+       return const_cast<const_reference>(_M_start[i]);
+     }
+
+     pointer data() {
+       return _M_start;
+     }
+     const_pointer data() const {
+       return const_cast<const_pointer>(_M_start);
+     }
+
+     void swap (_M_impl& other)
+     {
+       _M_start = other._M_start;
+       _M_finish = other._M_finish;
+       other._M_start = nullptr;
+       other._M_finish = nullptr;
+     }
+   };
+   _M_impl data_;
+
+   // in C++11 allocators can be stateful ... but the default allocator takes no space, hence no memory overhead
+   allocator_type allocator_;
 
    friend class boost::serialization::access;
 
 public:
 
-   varray ()
-   : data_ (nullptr, nullptr)
+   explicit
+   varray (const allocator_type& a = allocator_type()) : allocator_(a)
    { }
 
    ~varray ()
    {
-      if (!data_.empty()) delete [] data_._M_start;
+     deallocate();
    }
 
    explicit
-   varray (size_type n)
-   : data_ (nullptr, nullptr)
+   varray (size_type n, const allocator_type& a = allocator_type()) : allocator_(a)
    {
-      if (n > 0) {
-         data_._M_start = new value_type [n];
-         data_._M_finish = data_._M_start + n;
-      }
+     if (n > 0) { // this ensures that if n == 0, pointers are null
+       allocate(n);
+       construct(n);
+     }
    }
 
-   varray (size_type n, const value_type& val)
-   : data_ (nullptr, nullptr)
+   varray (size_type n, const_reference val,
+           const allocator_type& a = allocator_type()) : allocator_(a)
    {
-      if (n > 0) {
-         data_._M_start = new value_type [n];
-         data_._M_finish = data_._M_start + n;
-         std::fill (data_._M_start, data_._M_finish, val);
-      }
+     if (n > 0) {
+       allocate(n);
+       construct(n, val);
+     }
    }
 
    template <class InputIterator>
    varray (InputIterator first, InputIterator last)
-   : data_ (nullptr, nullptr)
    {
-      size_type n = static_cast<size_type>(last - first);
-      if (n > 0) {
-         data_._M_start = new value_type [n];
-         data_._M_finish = data_._M_start + n;
-         std::copy (first, last, data_._M_start);
-      }
+     const auto n = std::distance(first, last);
+     if (n > 0) {
+       allocate(n);
+       construct(first, last);
+     }
    }
 
-   varray (const varray& x)
-   : data_ (nullptr, nullptr)
+   varray (const varray& x) : allocator_(x.allocator_)
    {
-      size_type n = x.size();
-      if (n > 0) {
-         data_._M_start = new value_type [n];
-         data_._M_finish = data_._M_start + n;
-         std::copy (x.data_._M_start, x.data_._M_finish, data_._M_start);
-      }
+     const auto n = x.size();
+     if (n > 0) {
+       allocate(n);
+       construct(x.cbegin(), x.cend());
+     }
+   }
+
+   varray (const varray& x, const allocator_type& a) : allocator_(a)
+   {
+     const auto n = x.size();
+     if (n > 0) {
+       allocate(n);
+       construct(x.cbegin(), x.cend());
+     }
    }
 
    varray (varray&& x)
-   : data_ (x.data_)
+   : allocator_(std::move(x.allocator_)), data_(std::move(x.data_))
    {
-      x.data_._M_start = nullptr;
-      x.data_._M_finish = nullptr;
    }
 
    template <typename U, class = typename std::enable_if< std::is_convertible<U, value_type>::value >::type >
    varray (std::initializer_list<U> il)
-   : data_ (nullptr, nullptr)
    {
       size_type n = il.size();
       if (n > 0) {
-         data_._M_start = new value_type [n];
-         data_._M_finish = data_._M_start + n;
-         std::copy (il.begin(), il.end(), data_._M_start);
+        allocate(n);
+        construct(il.begin(), il.end());
       }
    }
 
    varray& operator= (const varray& x) {
-      if (!empty()) {
-         delete [] data_._M_start;
-         data_._M_start = nullptr;
-         data_._M_finish = nullptr;
-      }
+     const auto n = x.size();
+     if (n != data_.size()) {
+       deallocate();
+       if (n > 0)
+         allocate(n);
+     }
 
-      size_type n = x.size();
-      if (n > 0) {
-         data_._M_start = new value_type [n];
-         data_._M_finish = data_._M_start + n;
-         std::copy (x.data_._M_start, x.data_._M_finish, data_._M_start);
-      }
-      return *this;
+     if (n > 0) {
+       construct(x.cbegin(), x.cend());
+     }
+     return *this;
    }
 
    varray& operator= (varray&& x)
@@ -135,18 +195,17 @@ public:
    template <typename U, class = typename std::enable_if< std::is_convertible<U, value_type>::value >::type >
    varray& operator= (std::initializer_list<U> il)
    {
-      if (!empty()) {
-         delete [] data_._M_start;
-         data_._M_start = nullptr;
-         data_._M_finish = nullptr;
-      }
+       const auto n = il.size();
+       if (n != data_.size()) {
+         deallocate();
+         if (n > 0)
+           allocate(n);
+       }
 
-      size_type n = il.size();
-      if (n > 0) {
-         data_._M_start = new value_type [n];
-         data_._M_finish = data_._M_start + n;
-         std::copy (il.begin(), il.end(), data_._M_start);
-      }
+       if (n > 0) {
+         construct(il.cbegin(), il.cend());
+       }
+       return *this;
    }
 
    iterator begin () noexcept
@@ -156,7 +215,7 @@ public:
 
    const_iterator begin () const noexcept
    {
-      return data_.begin();
+      return cbegin();
    }
 
    const_iterator cbegin () const noexcept
@@ -171,7 +230,7 @@ public:
 
    const_iterator end () const noexcept
    {
-      return data_.end();
+      return cend();
    }
 
    const_iterator cend () const noexcept
@@ -204,31 +263,20 @@ public:
 
    void resize (size_type n)
    {
-      if (!empty()) {
-         delete [] data_._M_start;
-         data_._M_start = nullptr;
-         data_._M_finish = nullptr;
-      }
-
-      if (n > 0) {
-         data_._M_start = new value_type [n];
-         data_._M_finish = data_._M_start + n;
-      }
+     if (size() != n) {
+       if (!empty()) {
+         deallocate();
+       }
+       if (n > 0) {
+         allocate(n);
+       }
+     }
    }
 
    void resize (size_type n, const value_type& val)
    {
-      if (!empty()) {
-         delete [] data_._M_start;
-         data_._M_start = nullptr;
-         data_._M_finish = nullptr;
-      }
-
-      if (n > 0) {
-         data_._M_start = new value_type [n];
-         data_._M_finish = data_._M_start + n;
-         std::fill (data_._M_start, data_._M_finish, val);
-      }
+     resize(n);
+     construct(n, val);
    }
 
    bool empty () const noexcept
@@ -265,15 +313,61 @@ public:
    { return data_.data(); }
 
    void swap (varray& x)
-   { std::swap (data_, x.data_); }
+   { data_.swap(x.data_); }
 
    void clear ()
    {
       if (!empty()) {
-         delete [] data_._M_start;
-         data_._M_start = nullptr;
-         data_._M_finish = nullptr;
+        deallocate();
       }
+   }
+
+  private:
+
+   void allocate(size_type n) {
+     assert(n <= allocator_traits::max_size(allocator_));
+     data_._M_start = allocator_traits::allocate(allocator_, n);
+     data_._M_finish = data_._M_start + n;
+   }
+
+   void deallocate() {
+     if (!data_.empty())
+       allocator_traits::deallocate(allocator_, data_._M_start, data_.size());
+     data_._M_start = data_._M_finish = nullptr;
+   }
+
+   void
+   construct(size_type n)
+   {
+     auto ptr = data_._M_start;
+       do
+       {
+           allocator_traits::construct(allocator_, ptr);
+           ++ptr;
+           --n;
+       } while (n > 0);
+   }
+
+   void
+   construct(size_type n, const_reference x)
+   {
+     auto ptr = data_._M_start;
+     do
+     {
+       allocator_traits::construct(allocator_, ptr, x);
+       ++ptr;
+       --n;
+     } while (n > 0);
+   }
+
+   template <typename InputIterator>
+   void
+   construct(const InputIterator& begin, const InputIterator& end) {
+     auto ptr = data_._M_start;
+     for(auto i = begin; i != end; ++i) {
+       allocator_traits::construct(allocator_, ptr, *i);
+       ++ptr;
+     }
    }
 };
 
