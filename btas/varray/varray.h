@@ -158,7 +158,7 @@ public:
    }
 
    varray (varray&& x)
-   : allocator_(x.allocator_), data_(std::move(x.data_))
+   : allocator_(std::move(x.allocator_)), data_(std::move(x.data_))
    {
    }
 
@@ -263,31 +263,20 @@ public:
 
    void resize (size_type n)
    {
-      if (!empty()) {
-         delete [] data_._M_start;
-         data_._M_start = nullptr;
-         data_._M_finish = nullptr;
-      }
-
-      if (n > 0) {
-         data_._M_start = new value_type [n];
-         data_._M_finish = data_._M_start + n;
-      }
+     if (size() != n) {
+       if (!empty()) {
+         deallocate();
+       }
+       if (n > 0) {
+         allocate(n);
+       }
+     }
    }
 
    void resize (size_type n, const value_type& val)
    {
-      if (!empty()) {
-         delete [] data_._M_start;
-         data_._M_start = nullptr;
-         data_._M_finish = nullptr;
-      }
-
-      if (n > 0) {
-         data_._M_start = new value_type [n];
-         data_._M_finish = data_._M_start + n;
-         std::fill (data_._M_start, data_._M_finish, val);
-      }
+     resize(n);
+     construct(n, val);
    }
 
    bool empty () const noexcept
@@ -329,9 +318,7 @@ public:
    void clear ()
    {
       if (!empty()) {
-         delete [] data_._M_start;
-         data_._M_start = nullptr;
-         data_._M_finish = nullptr;
+        deallocate();
       }
    }
 
