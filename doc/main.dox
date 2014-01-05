@@ -6,7 +6,7 @@
    specification of concepts, and a reference tensor framework that conforms to the TWG specification.
 
    \section synopsis Synopsis
-   Here's a short C++ example of what is possible with BTAS (see \c examples/synopsis.C ):
+   Here's a short C++ example of what is possible with BTAS (see doc/examples/synopsis.C ):
    \snippet synopsis.C Synopsis
 
    \section twg Tensor Working Group Specification
