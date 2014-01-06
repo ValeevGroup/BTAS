@@ -188,7 +188,11 @@ template<> struct gemm_impl<true>
             std::complex<float>* itrC,
       const unsigned long& LDC)
    {
+#ifdef _HAS_INTEL_MKL
+      cblas_cgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alpha, itrA, LDA, itrB, LDB, &beta, itrC, LDC);
+#else
       cblas_cgemm(order, transA, transB, Msize, Nsize, Ksize, &alpha, itrA, LDA, itrB, LDB, &beta, itrC, LDC);
+#endif
    }
 
    static void call (
@@ -207,7 +211,11 @@ template<> struct gemm_impl<true>
             std::complex<double>* itrC,
       const unsigned long& LDC)
    {
+#ifdef _HAS_INTEL_MKL
+      cblas_zgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alpha, itrA, LDA, itrB, LDB, &beta, itrC, LDC);
+#else
       cblas_zgemm(order, transA, transB, Msize, Nsize, Ksize, &alpha, itrA, LDA, itrB, LDB, &beta, itrC, LDC);
+#endif
    }
 
 #endif // _HAS_CBLAS

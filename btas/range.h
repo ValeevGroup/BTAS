@@ -760,7 +760,7 @@ namespace btas {
 
       /// to construct RangeNd from Range1d given N {Range1d, Range1d, ... Range1d}
       template <typename T>
-      RangeNd(Range1d<T> range1, const int n) :
+      RangeNd(Range1d<T> range1, size_type n) :
         base_type()
       {
         assert(range1.stride() == 1);
