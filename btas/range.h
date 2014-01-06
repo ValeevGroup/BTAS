@@ -273,9 +273,9 @@ namespace btas {
         validate(lobound, upbound);
 
         lobound_ = array_adaptor<index_type>::construct(n);
-        std::copy(lobound.begin(), lobound.end(), lobound_.begin());
+        std::copy(std::begin(lobound), std::end(lobound), std::begin(lobound_));
         upbound_ = array_adaptor<index_type>::construct(n);
-        std::copy(upbound.begin(), upbound.end(), upbound_.begin());
+        std::copy(std::begin(upbound), std::end(upbound), std::begin(upbound_));
       }
 
       template <typename Index1, typename Index2>
@@ -286,8 +286,8 @@ namespace btas {
 
         typedef typename common_signed_type<typename Index1::value_type, typename Index2::value_type>::type ctype;
         for(auto i = 0; i != n; ++i) {
-          auto li = *(lobound.begin() + i);
-          auto ui = *(upbound.begin() + i);
+          auto li = *(std::begin(lobound) + i);
+          auto ui = *(std::begin(upbound) + i);
           assert(static_cast<ctype>(li) <= static_cast<ctype>(ui));
         }
       }
@@ -417,7 +417,7 @@ namespace btas {
       /// returns the Range1 corresponding to the dimension \c d
       /// \param d the dimension index
       Range1d<typename index_type::value_type> range(size_t d) const {
-        return Range1d<typename index_type::value_type>(*(lobound_.begin()+d), *(upbound_.begin()+d));
+        return Range1d<typename index_type::value_type>(*(std::begin(lobound_)+d), *(std::begin(upbound_)+d));
       }
 
       /// Rank accessor
@@ -473,7 +473,7 @@ namespace btas {
       size_type area() const {
         if (rank()) {
           const extent_type ex = extent();
-          return std::accumulate(ex.begin(), ex.end(), 1ul, std::multiplies<size_type>());
+          return std::accumulate(std::begin(ex), std::end(ex), 1ul, std::multiplies<size_type>());
         }
         else
           return 0;
@@ -514,7 +514,7 @@ namespace btas {
         }
 
         // if the current location is outside the range, make it equal to range end iterator
-        std::copy(upbound_.begin(), upbound_.end(), i.begin());
+        std::copy(std::begin(upbound_), std::end(upbound_), std::begin(i));
       }
 
 #if 0
@@ -913,7 +913,7 @@ namespace btas {
         }
 
         // if outside the range, point to the upper bound ... Range::end() will evaluate to upbound also! Range will use this
-        std::copy(this->upbound_.begin(), this->upbound_.end(), i.first.begin());
+        std::copy(std::begin(this->upbound_), std::end(this->upbound_), std::begin(i.first));
         i.second = ordinal(i.first);
       }
 
@@ -1013,10 +1013,10 @@ namespace btas {
       lobound = array_adaptor<index_type>::construct(rank);
       upbound = array_adaptor<index_type>::construct(rank);
 
-      std::for_each(perm.begin(), perm.end(), [&](const typename AxisPermutation::value_type& i){
-        const auto pi = *(perm.begin() + i);
-        *(lobound.begin()+i) = *(lb.begin() + pi);
-        *(upbound.begin()+i) = *(ub.begin() + pi);
+      std::for_each(std::begin(perm), std::end(perm), [&](const typename AxisPermutation::value_type& i){
+        const auto pi = *(std::begin(perm) + i);
+        *(std::begin(lobound)+i) = *(std::begin(lb) + pi);
+        *(std::begin(upbound)+i) = *(std::begin(ub) + pi);
       });
 
       return RangeNd<_Order, _Index, _Ordinal>(std::move(lobound), std::move(upbound), permute(r.ordinal(), perm) );
@@ -1035,7 +1035,7 @@ namespace btas {
                                               std::initializer_list<T> perm)
     {
       typename RangeNd<_Order, _Index, _Ordinal>::extent_type p = array_adaptor<decltype(p)>::construct(perm.size());
-      std::copy(perm.begin(), perm.end(), p.begin());
+      std::copy(std::begin(perm), std::end(perm), std::begin(p));
       return permute(r, p);
     }
 

@@ -203,7 +203,7 @@ namespace btas {
       {
           range_ = range_type(x.range().lobound(), x.range().upbound());
           array_adaptor<storage_type>::resize(storage_, range_.area());
-          std::copy(x.begin(), x.end(), storage_.begin());
+          std::copy(std::begin(x), std::end(x), std::begin(storage_));
           return *this;
       }
 
@@ -293,42 +293,42 @@ namespace btas {
       const_iterator
       begin() const
       {
-        return storage_.begin();
+        return cbegin();
       }
 
       /// \return const iterator end
       const_iterator
       end() const
       {
-        return storage_.end();
+        return cend();
       }
 
       /// \return const iterator begin, even if this is not itself const
       const_iterator
       cbegin() const
       {
-        return storage_.begin();
+        return std::begin(const_cast<const storage_type&>(storage_));
       }
 
       /// \return const iterator end, even if this is not itself const
       const_iterator
       cend() const
       {
-        return storage_.end();
+        return std::end(const_cast<const storage_type&>(storage_));
       }
 
       /// \return iterator begin
       iterator
       begin()
       {
-        return storage_.begin();
+        return std::begin(storage_);
       }
 
       /// \return iterator end
       iterator
       end()
       {
-        return storage_.end();
+        return std::end(storage_);
       }
 
       /// \return number of elements
@@ -373,7 +373,7 @@ namespace btas {
         typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
         auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
         index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(indexv.begin(), indexv.end(), index.begin());
+        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
         return storage_[ range_.ordinal(index) ];
       }
 
@@ -407,7 +407,7 @@ namespace btas {
         typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
         auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
         index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(indexv.begin(), indexv.end(), index.begin());
+        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
         return storage_[ range_.ordinal(index) ];
       }
 
@@ -447,7 +447,7 @@ namespace btas {
         typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
         auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
         index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(indexv.begin(), indexv.end(), index.begin());
+        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
         assert( range_.includes(index) );
         return storage_[ range_.ordinal(index) ];
       }
@@ -478,7 +478,7 @@ namespace btas {
         typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
         auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
         index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(indexv.begin(), indexv.end(), index.begin());
+        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
         assert( range_.includes(index) );
         return storage_[ range_.ordinal(index) ];
       }
@@ -548,7 +548,7 @@ namespace btas {
       operator+= (const Tensor& x)
       {
         assert( std::equal(range_.begin(), range_.end(), x.range_.begin()) );
-        std::transform(storage_.begin(), storage_.end(), x.storage_.begin(), storage_.begin(), std::plus<value_type>());
+        std::transform(std::begin(storage_), std::end(storage_), std::begin(x.storage_), std::begin(storage_), std::plus<value_type>());
         return *this;
       }
 
@@ -566,7 +566,7 @@ namespace btas {
       {
         assert(
             std::equal(range_.begin(), range_.end(), x.range_.begin()));
-        std::transform(storage_.begin(), storage_.end(), x.storage_.begin(), storage_.begin(), std::minus<value_type>());
+        std::transform(std::begin(storage_), std::end(storage_), std::begin(x.storage_), std::begin(storage_), std::minus<value_type>());
         return *this;
       }
 
@@ -598,7 +598,7 @@ namespace btas {
       void
       fill (const value_type& val)
       {
-        std::fill(storage_.begin(), storage_.end(), val);
+        std::fill(std::begin(storage_), std::end(storage_), val);
       }
 
       /// generate all elements by gen()
@@ -606,7 +606,7 @@ namespace btas {
       void
       generate (Generator gen)
       {
-          std::generate(storage_.begin(), storage_.end(), gen);
+          std::generate(std::begin(storage_), std::end(storage_), gen);
       }
 
     private:

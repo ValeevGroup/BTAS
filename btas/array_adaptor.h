@@ -6,6 +6,7 @@
 #include <vector>
 #include <array>
 #include <cassert>
+#include <btas/tensor_traits.h>
 #include <btas/generic/numeric_type.h>
 #include <btas/varray/varray.h>
 

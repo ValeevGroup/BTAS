@@ -31,7 +31,7 @@ namespace btas {
       template <typename S = _Storage>
       StorageRef(nonconst_storage_type& stor,
                  typename std::enable_if<not std::is_const<S>::value>::type* = 0)
-                 : begin_(stor.begin()), end_(stor.end()) {}
+                 : begin_(std::begin(stor)), end_(std::end(stor)) {}
 
       template <typename S = _Storage>
       StorageRef(const nonconst_storage_type& stor,
@@ -49,15 +49,15 @@ namespace btas {
 
       operator nonconst_storage_type() const {
         nonconst_storage_type result(this->size());
-        std::copy(begin_, end_, result.begin());
+        std::copy(begin_, end_, std::begin(result));
         return result;
       }
 
       template <typename S = _Storage>
       typename std::enable_if<not std::is_const<S>::value,StorageRef&>::type
       operator=(nonconst_storage_type& stor) {
-        begin_ = stor.begin();
-        end_ = stor.end();
+        begin_ = std::begin(stor);
+        end_ = std::end(stor);
         return *this;
       }
 
