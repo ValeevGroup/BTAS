@@ -158,7 +158,7 @@ public:
    }
 
    varray (varray&& x)
-   : allocator_(std::move(x.allocator_)), data_(std::move(x.data_))
+   : data_(std::move(x.data_)), allocator_(std::move(x.allocator_))
    {
    }
 

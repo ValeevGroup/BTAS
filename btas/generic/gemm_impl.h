@@ -17,6 +17,11 @@
 
 namespace btas {
 
+namespace impl {
+    template<typename T> T conj(const T& t) { return t; }
+    template<typename T> std::complex<T> conj(const std::complex<T>& t) { return std::conj(t); } 
+}
+
 template<bool _Finalize> struct gemm_impl { };
 
 template<> struct gemm_impl<true>
@@ -90,6 +95,25 @@ template<> struct gemm_impl<true>
             itrA_save += Ksize;
          }
       }
+      // A:NoTrans / B:ConjTrans
+      else if (transA == CblasNoTrans && transB == CblasConjTrans)
+      {
+         auto itrA_save = itrA;
+         auto itrB_save = itrB;
+         for (size_type i = 0; i < Msize; ++i)
+         {
+            itrB = itrB_save;
+            for (size_type j = 0; j < Nsize; ++j, ++itrC)
+            {
+               itrA = itrA_save;
+               for (size_type k = 0; k < Ksize; ++k, ++itrA, ++itrB)
+               {
+                  (*itrC) += alpha * (*itrA) * impl::conj(*itrB);
+               }
+            }
+            itrA_save += Ksize;
+         }
+      }
       // A:Trans / B:NoTrans
       else if (transA == CblasTrans && transB == CblasNoTrans)
       {
@@ -109,8 +133,27 @@ template<> struct gemm_impl<true>
             itrB_save += Nsize;
          }
       }
+      // A:ConjTrans / B:NoTrans
+      else if (transA == CblasConjTrans && transB == CblasNoTrans)
+      {
+         auto itrB_save = itrB;
+         auto itrC_save = itrC;
+         for (size_type k = 0; k < Ksize; ++k)
+         {
+            itrC = itrC_save;
+            for (size_type i = 0; i < Msize; ++i, ++itrA)
+            {
+               itrB = itrB_save;
+               for (size_type j = 0; j < Nsize; ++j, ++itrB, ++itrC)
+               {
+                  (*itrC) += alpha * impl::conj(*itrA) * (*itrB);
+               }
+            }
+            itrB_save += Nsize;
+         }
+      }
       // A:Trans / B:Trans
-      else if (transA == CblasTrans && transB != CblasTrans)
+      else if (transA == CblasTrans && transB == CblasTrans)
       {
          auto itrA_save = itrA;
          auto itrC_save = itrC;
@@ -127,8 +170,62 @@ template<> struct gemm_impl<true>
             }
          }
       }
+      // A:Trans / B:ConjTrans
+      else if (transA == CblasTrans && transB == CblasConjTrans)
+      {
+         auto itrA_save = itrA;
+         auto itrC_save = itrC;
+         for (size_type j = 0; j < Nsize; ++j, ++itrC_save)
+         {
+            itrA = itrA_save;
+            for (size_type k = 0; k < Ksize; ++k, ++itrB)
+            {
+               itrC = itrC_save;
+               for (size_type i = 0; i < Msize; ++i, ++itrA, itrC += Nsize)
+               {
+                  (*itrC) += alpha * (*itrA) * impl::conj(*itrB);
+               }
+            }
+         }
+      }
+      // A:ConjTrans / B:Trans
+      else if (transA == CblasConjTrans && transB == CblasTrans)
+      {
+         auto itrA_save = itrA;
+         auto itrC_save = itrC;
+         for (size_type j = 0; j < Nsize; ++j, ++itrC_save)
+         {
+            itrA = itrA_save;
+            for (size_type k = 0; k < Ksize; ++k, ++itrB)
+            {
+               itrC = itrC_save;
+               for (size_type i = 0; i < Msize; ++i, ++itrA, itrC += Nsize)
+               {
+                  (*itrC) += alpha * impl::conj(*itrA) * (*itrB);
+               }
+            }
+         }
+      }
+      // A:ConjTrans / B:ConjTrans
+      else if (transA == CblasConjTrans && transB == CblasConjTrans)
+      {
+         auto itrA_save = itrA;
+         auto itrC_save = itrC;
+         for (size_type j = 0; j < Nsize; ++j, ++itrC_save)
+         {
+            itrA = itrA_save;
+            for (size_type k = 0; k < Ksize; ++k, ++itrB)
+            {
+               itrC = itrC_save;
+               for (size_type i = 0; i < Msize; ++i, ++itrA, itrC += Nsize)
+               {
+                  (*itrC) += alpha * impl::conj(*itrA) * impl::conj(*itrB);
+               }
+            }
+         }
+      }
       else {
-        throw std::logic_error("CblasConjTrans not implemented");
+        assert(false);
       }
    }
 
@@ -400,17 +497,19 @@ void gemm (
    const _T& beta,
          _TensorC& C)
 {
-    static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorC>::value &&
-                  boxtensor_storage_order<_TensorB>::value == boxtensor_storage_order<_TensorC>::value,
-                  "btas::gemm does not support mixed storage order");
-    const CBLAS_ORDER order = boxtensor_storage_order<_TensorC>::value == boxtensor_storage_order<_TensorC>::row_major ?
-                              CblasRowMajor : CblasColMajor;
+   static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorC>::value &&
+                 boxtensor_storage_order<_TensorB>::value == boxtensor_storage_order<_TensorC>::value,
+                 "btas::gemm does not support mixed storage order");
+   const CBLAS_ORDER order = boxtensor_storage_order<_TensorC>::value == boxtensor_storage_order<_TensorC>::row_major ?
+                             CblasRowMajor : CblasColMajor;
 
    typedef unsigned long size_type;
 
    if (A.empty() || B.empty()) return;
    assert (C.rank() != 0);
+
    typedef typename _TensorA::value_type value_type;
+   assert(not ((transA == CblasConjTrans || transB == CblasConjTrans) && std::is_fundamental<value_type>::value));
 
    if (A.empty() || B.empty())
    {
