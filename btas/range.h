@@ -758,6 +758,20 @@ namespace btas {
         ordinal_ = _Ordinal(lb, ub);
       }
 
+      /// to construct RangeNd from Range1d given N {Range1d, Range1d, ... Range1d}
+      template <typename T>
+      RangeNd(Range1d<T> range1, size_type n) :
+        base_type()
+      {
+        assert(range1.stride() == 1);
+
+        std::vector<long> lb(n, range1.lobound());
+        std::vector<long> ub(n, range1.upbound());
+
+        base_type::init(lb, ub);
+        ordinal_ = _Ordinal(lb, ub);
+      }
+
       /// Copy Constructor
 
       /// \param other The range to be copied
