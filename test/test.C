@@ -17,6 +17,14 @@ template<typename T> using vectorref = StorageRef<std::vector<T> >;
 int main()
 {
   //////////////////////////////////////////////////////////////////////////////
+  // varray tests
+  //////////////////////////////////////////////////////////////////////////////
+  cout << "sizeof(btas::varray<double>) = " << sizeof(btas::varray<double>) << endl;
+  cout << "sizeof(std::vector<double>) = " << sizeof(vector<double>) << endl;
+  cout << "sizeof(std::tuple<double*,double*,std::allocator<double>>) = " << sizeof(tuple<double*,double*,std::allocator<double>>) << endl;
+  cout << "sizeof(std::pair<double*,std::allocator<double>>) = " << sizeof(pair<double*,std::allocator<double>>) << endl;
+
+  //////////////////////////////////////////////////////////////////////////////
   // Range1 tests
   //////////////////////////////////////////////////////////////////////////////
   {
