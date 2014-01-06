@@ -11,7 +11,7 @@ namespace btas {
 /// variable size array class without capacity info
 template <typename _T,
           typename _Allocator = std::allocator<_T> >
-class varray {
+class varray : private _Allocator {
 public:
 
    typedef std::allocator_traits<_Allocator> allocator_traits;            ///< Allocator traits
@@ -95,15 +95,15 @@ private:
    };
    _M_impl data_;
 
-   // in C++11 allocators can be stateful ... but the default allocator takes no space, hence no memory overhead
-   allocator_type allocator_;
+   allocator_type& alloc() { return static_cast<allocator_type&>(*this); }
+   const allocator_type& alloc() const { return static_cast<const allocator_type&>(*this); }
 
    friend class boost::serialization::access;
 
 public:
 
    explicit
-   varray (const allocator_type& a = allocator_type()) : allocator_(a)
+   varray (const allocator_type& a = allocator_type()) : allocator_type(a)
    { }
 
    ~varray ()
@@ -112,7 +112,7 @@ public:
    }
 
    explicit
-   varray (size_type n, const allocator_type& a = allocator_type()) : allocator_(a)
+   varray (size_type n, const allocator_type& a = allocator_type()) : allocator_type(a)
    {
      if (n > 0) { // this ensures that if n == 0, pointers are null
        allocate(n);
@@ -121,7 +121,7 @@ public:
    }
 
    varray (size_type n, const_reference val,
-           const allocator_type& a = allocator_type()) : allocator_(a)
+           const allocator_type& a = allocator_type()) : allocator_type(a)
    {
      if (n > 0) {
        allocate(n);
@@ -139,7 +139,7 @@ public:
      }
    }
 
-   varray (const varray& x) : allocator_(x.allocator_)
+   varray (const varray& x) : allocator_type(x)
    {
      const auto n = x.size();
      if (n > 0) {
@@ -148,7 +148,7 @@ public:
      }
    }
 
-   varray (const varray& x, const allocator_type& a) : allocator_(a)
+   varray (const varray& x, const allocator_type& a) : allocator_type(a)
    {
      const auto n = x.size();
      if (n > 0) {
@@ -158,7 +158,7 @@ public:
    }
 
    varray (varray&& x)
-   : allocator_(std::move(x.allocator_)), data_(std::move(x.data_))
+   : data_(std::move(x.data_)), allocator_type(std::move(static_cast<allocator_type&&>(x)))
    {
    }
 
@@ -325,14 +325,14 @@ public:
   private:
 
    void allocate(size_type n) {
-     assert(n <= allocator_traits::max_size(allocator_));
-     data_._M_start = allocator_traits::allocate(allocator_, n);
+     assert(n <= allocator_traits::max_size(alloc()));
+     data_._M_start = allocator_traits::allocate(alloc(), n);
      data_._M_finish = data_._M_start + n;
    }
 
    void deallocate() {
      if (!data_.empty())
-       allocator_traits::deallocate(allocator_, data_._M_start, data_.size());
+       allocator_traits::deallocate(alloc(), data_._M_start, data_.size());
      data_._M_start = data_._M_finish = nullptr;
    }
 
@@ -342,7 +342,7 @@ public:
      auto ptr = data_._M_start;
        do
        {
-           allocator_traits::construct(allocator_, ptr);
+           allocator_traits::construct(alloc(), ptr);
            ++ptr;
            --n;
        } while (n > 0);
@@ -354,7 +354,7 @@ public:
      auto ptr = data_._M_start;
      do
      {
-       allocator_traits::construct(allocator_, ptr, x);
+       allocator_traits::construct(alloc(), ptr, x);
        ++ptr;
        --n;
      } while (n > 0);
@@ -365,7 +365,7 @@ public:
    construct(const InputIterator& begin, const InputIterator& end) {
      auto ptr = data_._M_start;
      for(auto i = begin; i != end; ++i) {
-       allocator_traits::construct(allocator_, ptr, *i);
+       allocator_traits::construct(alloc(), ptr, *i);
        ++ptr;
      }
    }
