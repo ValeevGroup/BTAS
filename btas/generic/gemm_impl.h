@@ -72,7 +72,7 @@ template<> struct gemm_impl<true>
          }
       }
       // A:NoTrans / B:Trans
-      else if (transA == CblasNoTrans && transB != CblasNoTrans)
+      else if (transA == CblasNoTrans && transB == CblasTrans)
       {
          auto itrA_save = itrA;
          auto itrB_save = itrB;
@@ -91,7 +91,7 @@ template<> struct gemm_impl<true>
          }
       }
       // A:Trans / B:NoTrans
-      else if (transA != CblasNoTrans && transB == CblasNoTrans)
+      else if (transA == CblasTrans && transB == CblasNoTrans)
       {
          auto itrB_save = itrB;
          auto itrC_save = itrC;
@@ -110,7 +110,7 @@ template<> struct gemm_impl<true>
          }
       }
       // A:Trans / B:Trans
-      else if (transA != CblasNoTrans && transB != CblasNoTrans)
+      else if (transA == CblasTrans && transB != CblasTrans)
       {
          auto itrA_save = itrA;
          auto itrC_save = itrC;
@@ -126,6 +126,9 @@ template<> struct gemm_impl<true>
                }
             }
          }
+      }
+      else {
+        throw std::logic_error("CblasConjTrans not implemented");
       }
    }
 
@@ -185,7 +188,11 @@ template<> struct gemm_impl<true>
             std::complex<float>* itrC,
       const unsigned long& LDC)
    {
+#ifdef _HAS_INTEL_MKL
+      cblas_cgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alpha, itrA, LDA, itrB, LDB, &beta, itrC, LDC);
+#else
       cblas_cgemm(order, transA, transB, Msize, Nsize, Ksize, &alpha, itrA, LDA, itrB, LDB, &beta, itrC, LDC);
+#endif
    }
 
    static void call (
@@ -204,7 +211,11 @@ template<> struct gemm_impl<true>
             std::complex<double>* itrC,
       const unsigned long& LDC)
    {
+#ifdef _HAS_INTEL_MKL
+      cblas_zgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alpha, itrA, LDA, itrB, LDB, &beta, itrC, LDC);
+#else
       cblas_zgemm(order, transA, transB, Msize, Nsize, Ksize, &alpha, itrA, LDA, itrB, LDB, &beta, itrC, LDC);
+#endif
    }
 
 #endif // _HAS_CBLAS

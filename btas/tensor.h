@@ -616,33 +616,33 @@ namespace btas {
 
   }; // end of Tensor
 
-  template <typename _T, typename _Range, typename _Storage>
-  auto cbegin(const btas::Tensor<_T, _Range, _Storage>& x) -> decltype(x.cbegin()) {
+  template <class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
+  auto cbegin(const _Tensor& x) -> decltype(x.cbegin()) {
     return x.cbegin();
   }
-  template <typename _T, typename _Range, typename _Storage>
-  auto cend(const btas::Tensor<_T, _Range, _Storage>& x) -> decltype(x.cbegin()) {
+  template <class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
+  auto cend(const _Tensor& x) -> decltype(x.cbegin()) {
     return x.cend();
   }
 
   /// maps Tensor -> Range
-  template <typename _T, typename _Range, typename _Storage>
+  template <class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
   auto
-  range (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.range()) {
+  range (const _Tensor& t) -> decltype(t.range()) {
     return t.range();
   }
 
   /// maps Tensor -> Range extent
-  template <typename _T, typename _Range, typename _Storage>
+  template <class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
   auto
-  extent (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.range().extent()) {
+  extent (const _Tensor& t) -> decltype(t.range().extent()) {
     return t.range().extent();
   }
 
   /// maps Tensor -> Range rank
-  template <typename _T, typename _Range, typename _Storage>
+  template <class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
   auto
-  rank (const btas::Tensor<_T, _Range, _Storage>& t) -> decltype(t.rank()) {
+  rank (const _Tensor& t) -> decltype(t.rank()) {
     return t.rank();
   }
 
@@ -652,8 +652,8 @@ namespace btas {
   /// \param os The output stream that will be used to print \c t
   /// \param t The Tensor to be printed
   /// \return A reference to the output stream
-  template <typename _T, typename _Range, typename _Storage>
-  std::ostream& operator<<(std::ostream& os, const btas::Tensor<_T, _Range, _Storage>& t) {
+  template <class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
+  std::ostream& operator<<(std::ostream& os, const _Tensor& t) {
     os << "Tensor:\n  Range: " << t.range() << std::endl;
     return os;
   }
@@ -664,9 +664,8 @@ namespace boost {
 namespace serialization {
 
   /// boost serialization
-  template<class Archive, typename _T, class _Storage, class _Range>
-  void serialize(Archive& ar, btas::Tensor<_T, _Range, _Storage>& t,
-                 const unsigned int version) {
+  template<class Archive, class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
+  void serialize(Archive& ar, _Tensor& t, const unsigned int version) {
     ar & t.range() & t.storage();
   }
 
