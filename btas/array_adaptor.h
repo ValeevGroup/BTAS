@@ -6,6 +6,7 @@
 #include <vector>
 #include <array>
 #include <cassert>
+#include <btas/tensor_traits.h>
 #include <btas/generic/numeric_type.h>
 #include <btas/varray/varray.h>
 
@@ -82,7 +83,7 @@ namespace btas {
 
   /// Adaptors for sequence container, e.g. std::vector, btas::varray, and std::initializer_list
 
-  template <typename Array>
+  template <typename Array, class = typename std::enable_if<not btas::is_tensor<Array>::value>::type>
   std::size_t rank(const Array& x) {
     return x.size();
   }
