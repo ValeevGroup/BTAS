@@ -79,8 +79,8 @@ namespace btas {
       BoxOrdinal(const BoxOrdinal<_O,_I>& other) {
           auto n = other.rank();
           stride_ = array_adaptor<stride_type>::construct(n);
-          std::copy(other.stride_.begin(), other.stride_.end(),
-                    stride_.begin());
+          std::copy(std::begin(other.stride_), std::end(other.stride_),
+                    std::begin(stride_));
           offset_ = other.offset_;
           contiguous_ = other.contiguous_;
       }
@@ -110,7 +110,7 @@ namespace btas {
         value_type o = 0;
         const auto end = this->rank();
         for(auto i = 0ul; i != end; ++i)
-          o += *(index.begin() + i) * *(this->stride_.begin() + i);
+          o += *(std::begin(index) + i) * *(std::begin(this->stride_) + i);
 
         return o - offset_;
       }
@@ -142,8 +142,8 @@ namespace btas {
         if (order == CblasRowMajor) {
           for(int i = n - 1; i >= 0; --i) {
             stride_[i] = volume;
-            auto li = *(lobound.begin() + i);
-            auto ui = *(upbound.begin() + i);
+            auto li = *(std::begin(lobound) + i);
+            auto ui = *(std::begin(upbound) + i);
             offset_ += li * volume;
             volume *= (ui - li);
           }
@@ -151,8 +151,8 @@ namespace btas {
         else {
           for(auto i = 0; i != n; ++i) {
             stride_[i] = volume;
-            auto li = *(lobound.begin() + i);
-            auto ui = *(upbound.begin() + i);
+            auto li = *(std::begin(lobound) + i);
+            auto ui = *(std::begin(upbound) + i);
             offset_ += li * volume;
             volume *= (ui - li);
           }
@@ -178,7 +178,7 @@ namespace btas {
         value_type volume = 1;
         offset_ = 0;
         stride_ = array_adaptor<stride_type>::construct(n);
-        std::copy(stride.begin(), stride.end(), stride_.begin());
+        std::copy(std::begin(stride), std::end(stride), std::begin(stride_));
 
         // Compute offset and check whether contiguous
         contiguous_ = true;
@@ -187,8 +187,8 @@ namespace btas {
           for(int i = n - 1; i >= 0; --i) {
             tmpstride[i] = volume;
             contiguous_ &= (tmpstride[i] == stride_[i]);
-            auto li = *(lobound.begin() + i);
-            auto ui = *(upbound.begin() + i);
+            auto li = *(std::begin(lobound) + i);
+            auto ui = *(std::begin(upbound) + i);
             offset_ += li * stride_[i];
             volume *= (ui - li);
           }
@@ -197,8 +197,8 @@ namespace btas {
           for(auto i = 0; i != n; ++i) {
             tmpstride[i] = volume;
             contiguous_ &= (tmpstride[i] == stride_[i]);
-            auto li = *(lobound.begin() + i);
-            auto ui = *(upbound.begin() + i);
+            auto li = *(std::begin(lobound) + i);
+            auto ui = *(std::begin(upbound) + i);
             offset_ += li * stride_[i];
             volume *= (ui - li);
           }
@@ -229,9 +229,9 @@ namespace btas {
     stride_type stride;
     stride = array_adaptor<stride_type>::construct(rank);
 
-    std::for_each(perm.begin(), perm.end(), [&](const typename AxisPermutation::value_type& i){
-      const auto pi = *(perm.begin() + i);
-      *(stride.begin()+i) = *(st.begin() + pi);
+    std::for_each(std::begin(perm), std::end(perm), [&](const typename AxisPermutation::value_type& i){
+      const auto pi = *(std::begin(perm) + i);
+      *(std::begin(stride)+i) = *(std::begin(st) + pi);
     });
 
     return BoxOrdinal<_Order, _Index>(std::move(stride), ord.offset(), ord.contiguous());

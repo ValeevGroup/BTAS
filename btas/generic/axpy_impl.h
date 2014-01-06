@@ -140,15 +140,15 @@ void axpy (
    if (Y.empty())
    {
       Y.resize(btas::extent(X));
-      NumericType<value_type>::fill(Y.begin(), Y.end(), NumericType<value_type>::zero());
+      NumericType<value_type>::fill(std::begin(Y), std::end(Y), NumericType<value_type>::zero());
    }
    else
    {
       assert( range(X) == range(Y) );
    }
 
-   auto itrX = begin(X);
-   auto itrY = begin(Y);
+   auto itrX = std::begin(X);
+   auto itrY = std::begin(Y);
 
    axpy (X.size(), alpha, itrX, 1, itrY, 1);
 }

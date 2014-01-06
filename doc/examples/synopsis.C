@@ -5,8 +5,7 @@
  *      Author: evaleev
  */
 
-#include <btas/tensor.h>
-#include <btas/generic/contract.h>
+#include <btas/btas.h>
 #include <btas/varray/allocators.h>
 
 using namespace btas;
