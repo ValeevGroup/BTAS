@@ -12,8 +12,8 @@
 //  Default types
 //
 
-#include <vector>
 #include <btas/range.h>
+#include <btas/varray/varray.h>
 
 namespace btas {
 
@@ -21,7 +21,7 @@ namespace DEFAULT {
 
 /// default storage class
 template<typename _T>
-using storage = std::vector<_T>;
+using storage = btas::varray<_T>;
 
 /// default range type
 using range = btas::Range;
