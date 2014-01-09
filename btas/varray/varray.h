@@ -161,7 +161,7 @@ public:
    }
 
    varray (varray&& x)
-   : data_(std::move(x.data_)), allocator_type(std::move(static_cast<allocator_type&&>(x)))
+   : allocator_type(std::move(static_cast<allocator_type&&>(x))), data_(std::move(x.data_))
    {
    }
 
