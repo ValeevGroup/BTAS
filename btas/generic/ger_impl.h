@@ -248,7 +248,6 @@ void ger (
    // get contraction rank
    const size_type rankX = rank(X);
    const size_type rankY = rank(Y);
-   const size_type rankA = rank(A);
 
    // get shapes
    const typename _TensorX::range_type::extent_type& extentX = extent(X);

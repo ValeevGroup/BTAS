@@ -25,9 +25,10 @@ namespace btas {
 
       template<typename T>
       stack_arena(T* b, size_t s) :
+        size(s),
         buffer(reinterpret_cast<char*>(b)),
-        current(reinterpret_cast<char*>(b)),
-        size(s) {
+        current(reinterpret_cast<char*>(b))
+        {
       }
 
       void increment(const size_t n) { current += n; }

@@ -102,8 +102,11 @@ private:
 
 public:
 
+   varray () : allocator_type()
+   { }
+
    explicit
-   varray (const allocator_type& a = allocator_type()) : allocator_type(a)
+   varray (const allocator_type& a) : allocator_type(a)
    { }
 
    ~varray ()

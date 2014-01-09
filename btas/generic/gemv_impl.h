@@ -326,7 +326,6 @@ void gemv (
    }
 
    // get contraction rank
-   const size_type rankA = rank(A);
    const size_type rankX = rank(X);
    const size_type rankY = rank(Y);
 

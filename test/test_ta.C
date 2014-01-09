@@ -98,6 +98,10 @@ int main(int argc, char **argv) {
       std::cout << "done\n";
   }
 
+  const double wall_time_finish = madness::wall_time();
+
+  std::cout << "elapsed time = " << wall_time_finish - wall_time_start << " sec" << endl;
+
   madness::finalize();
   return 0;
 
