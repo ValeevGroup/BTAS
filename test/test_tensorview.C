@@ -15,7 +15,6 @@ template <typename _Tensor>
 void print(const _Tensor& X)
 {
   typedef typename _Tensor::range_type range_type;
-  typedef typename _Tensor::value_type value_type;
   constexpr auto order = boxrange_iteration_order<range_type>::value;
 
    cout << "range = " << X.range() << endl;
@@ -82,7 +81,7 @@ int main()
 
    // create a permuted Tensor from A directly
    Tensor<double> C = permute(A, {2,0,1});
-   cout << "Tensor C = permute(" << std::array<int,3>({2,0,1}) << ",A): "; print(C);
+   cout << "Tensor C = permute(" << std::array<int,3>{{2,0,1}} << ",A): "; print(C);
 
 // =================================================================================================
 //
@@ -102,12 +101,12 @@ int main()
    TensorView<double> Dv2( permute(A.range().slice(slice_lobound, slice_upbound), {2,0,1}) , A.storage());
 
    cout << "Printing Dv2 = permute(slice(A," << slice_lobound << "," << slice_upbound << "),"
-       << std::array<int,3>({2,0,1}) << ": "; print(Dv2);
+       << std::array<int,3>{{2,0,1}} << ": "; print(Dv2);
 
    // permute and slice
    TensorView<double> Dv3( permute(A.range(), {2,0,1}).slice(slice_lobound, slice_upbound) , A.storage());
 
-   cout << "Printing Dv3 = slice(permute(A," << std::array<int,3>({2,0,1}) << "),"<< slice_lobound << "," << slice_upbound << ")"
+   cout << "Printing Dv3 = slice(permute(A," << std::array<int,3>{{2,0,1}} << "),"<< slice_lobound << "," << slice_upbound << ")"
         << ": "; print(Dv3);
 
    // Dv2 should be equal Dv3 because it's a cubic range, break the symmetry to see the difference

@@ -11,10 +11,10 @@ int main()
    Tensor<double> A(3,3,3);
    Tensor<double> B(3,3,3);
 
-   int n = 0;
-   for(int i = 0; i < A.extent(0); ++i) {
-      for(int j = 0; j < A.extent(1); ++j) {
-         for(int k = 0; k < A.extent(2); ++k, ++n) {
+   auto n = 0u;
+   for(auto i = 0u; i < A.extent(0); ++i) {
+      for(auto j = 0u; j < A.extent(1); ++j) {
+         for(auto k = 0u; k < A.extent(2); ++k, ++n) {
             A(i,j,k) = 0.1*n;
             B(i,j,k) = 0.1*n;
          }
@@ -39,11 +39,11 @@ int main()
         <<          "C, {" << L << "," << I << "," << K << "," << J << "});" << endl;
    cout << "==================================================" << endl;
 
-   for(int i = 0; i < C.extent(0); ++i) {
-      for(int j = 0; j < C.extent(1); ++j) {
+   for(auto i = 0u; i < C.extent(0); ++i) {
+      for(auto j = 0u; j < C.extent(1); ++j) {
          cout << "C(" << i << "," << j << ",*,*)" << endl;
-         for(int k = 0; k < C.extent(2); ++k) {
-            for(int l = 0; l < C.extent(3); ++l) {
+         for(auto k = 0u; k < C.extent(2); ++k) {
+            for(auto l = 0u; l < C.extent(3); ++l) {
                cout << fixed << setprecision(1) << setw(6) << C(i,j,k,l);
             }
             cout << endl;
