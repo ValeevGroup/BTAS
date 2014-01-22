@@ -18,39 +18,33 @@ namespace btas {
   class StorageRef {
       struct Enabler {};
     public:
-      typedef _Storage storage_type;
-      typedef typename std::remove_const<storage_type>::type nonconst_storage_type;
-      typedef typename storage_type::value_type value_type;
-      typedef typename storage_type::size_type size_type;
-      typedef typename std::conditional<std::is_const<storage_type>::value,typename storage_type::const_iterator,typename storage_type::iterator>::type iterator;
-      typedef typename storage_type::const_iterator const_iterator;
+      using storage_type = _Storage;
+      using nonconst_storage_type = typename std::remove_const<storage_type>::type;
+      using value_type = typename storage_type::value_type;
+      using size_type = typename storage_type::size_type;
+      using iterator = typename std::conditional<std::is_const<storage_type>::value,
+                                        typename storage_type::const_iterator,
+                                        typename storage_type::iterator>::type;
+      using const_iterator = typename storage_type::const_iterator;
 
       StorageRef() : begin_(), end_() { end_ = begin_; }
+
       ~StorageRef() {}
 
       template <typename S = _Storage>
-      StorageRef(nonconst_storage_type& stor,
-                 typename std::enable_if<not std::is_const<S>::value>::type* = 0)
-                 : begin_(std::begin(stor)), end_(std::end(stor)) {}
-
-      template <typename S = _Storage>
-      StorageRef(const nonconst_storage_type& stor,
-                 typename std::enable_if<std::is_const<S>::value>::type* = 0)
-                 : begin_(stor.cbegin()), end_(stor.cend()) {}
+      StorageRef(S& stor)
+                 : begin_(stor.begin()), end_(stor.end())
+                 { }
 
       template <typename Iter1, typename Iter2>
       StorageRef(Iter1 b, Iter2 e) : begin_(b), end_(e) {}
+
       StorageRef(const StorageRef& other) : begin_(other.begin_), end_(other.end_) {}
+
       StorageRef& operator=(const StorageRef& other) {
         begin_ = other.begin_;
         end_ = other.end_;
         return *this;
-      }
-
-      operator nonconst_storage_type() const {
-        nonconst_storage_type result(this->size());
-        std::copy(begin_, end_, std::begin(result));
-        return result;
       }
 
       template <typename S = _Storage>

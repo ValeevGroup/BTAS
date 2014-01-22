@@ -67,18 +67,10 @@ namespace btas {
       ~TensorView () { }
 
       /// construct from \c range and \c storage
-      explicit
-      TensorView (const range_type& range, const nonconst_storage_type& storage) :
-      range_(range), storageref_(storage)
-      {
-      }
-
-      /// construct from \c range and \c storage
       template <typename S = _Storage>
       explicit
-      TensorView (const range_type& range, nonconst_storage_type& storage,
-                  typename std::enable_if<not std::is_const<S>::value>::type* = 0) :
-      range_(range), storageref_(storage)
+      TensorView (const range_type& range, S& storage)
+      : range_(range), storageref_(storage)
       {
       }
 
