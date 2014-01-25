@@ -1039,6 +1039,38 @@ namespace btas {
       return permute(r, p);
     }
 
+    /// Takes the diagonal part of a range
+
+    /// Given a RangeNd, returns a new RangeNd whose indices increase in lock step.
+    /// Requires \c lobound() to be uniform {n,n,n,...}.
+    /// Iterating over the returned range yields:
+    /// {n,n,n,...}
+    /// {n+1,n+1,n+1,...}
+    /// {n+2,n+2,n+2,...}
+    /// up to \c upbound()
+    template <CBLAS_ORDER _Order,
+              typename _Index,
+              typename _Ordinal>
+    RangeNd<_Order, _Index> 
+    diag(const RangeNd<_Order, _Index, _Ordinal>& r)
+      {
+      if(r.rank() == 0) return r;
+      using index_value = typename RangeNd<_Order,_Index>::index_type::value_type;
+      index_value stride = 1,
+                  prod_extents = 1,
+                  extent = r.upbound()[0];
+      const auto dr = _Order == CblasRowMajor ? Range1(r.rank()-1,0,-1) 
+                                              : Range1(0,r.rank()-1,1);
+      for(const auto i : dr)
+        {
+        assert(r.lobound()[0] == r.lobound()[i]);
+        prod_extents *= (r.upbound()[i]-r.lobound()[i]);
+        stride += prod_extents;
+        extent = std::min(extent,r.upbound()[i]);
+        }
+      return RangeNd<_Order,_Index>({r.lobound()[0]},{extent},{stride});
+      }
+
 
     template <CBLAS_ORDER _Order,
               typename _Index,
