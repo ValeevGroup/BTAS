@@ -39,7 +39,21 @@ namespace btas {
       return TensorViewOf<_T>( permute(t.range(), p), t.storage() );
   }
 
-}
+  template <typename _T>
+  TensorViewOf<_T>
+  diag(_T& T)
+    {
+    return TensorViewOf<_T>(diag(T.range()),T.storage());
+    }
+
+  template <typename _T>
+  TensorViewOf<_T>
+  diag(_T&& T)
+    {
+    return TensorViewOf<_T>(diag(T.range()),T.storage());
+    }
+
+} // namespace btas
 
 
 #endif /* BTAS_TENSOR_FUNC_H_ */
