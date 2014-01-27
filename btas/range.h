@@ -1001,8 +1001,9 @@ namespace btas {
               typename _Ordinal,
               typename AxisPermutation,
               class = typename std::enable_if<btas::is_index<AxisPermutation>::value>::type>
-    RangeNd<_Order, _Index> permute(const RangeNd<_Order, _Index, _Ordinal>& r,
-                                    const AxisPermutation& perm)
+    RangeNd<_Order, _Index> 
+    permute(const RangeNd<_Order, _Index, _Ordinal>& r,
+            const AxisPermutation& perm)
     {
       const auto rank = r.rank();
       auto lb = r.lobound();
@@ -1031,8 +1032,9 @@ namespace btas {
               typename _Index,
               typename _Ordinal,
               typename T>
-    RangeNd<_Order, _Index, _Ordinal> permute(const RangeNd<_Order, _Index, _Ordinal>& r,
-                                              std::initializer_list<T> perm)
+    RangeNd<_Order, _Index, _Ordinal> 
+    permute(const RangeNd<_Order, _Index, _Ordinal>& r,
+            std::initializer_list<T> perm)
     {
       typename RangeNd<_Order, _Index, _Ordinal>::extent_type p = array_adaptor<decltype(p)>::construct(perm.size());
       std::copy(std::begin(perm), std::end(perm), std::begin(p));
