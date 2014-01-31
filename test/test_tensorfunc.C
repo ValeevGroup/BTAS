@@ -163,5 +163,81 @@ print(dvA);
 cout << typeToStr(diag(permute(A,{2,1,0}))) <<  " diag(permute(A,{2,1,0}) = " << endl;
 print(diag(permute(A,{2,1,0})));
 
+/////////////////////////////////////////
+//
+// group/flatten
+//
+/////////////////////////////////////////
+
+cout << "\n----------------------------------------" << endl;
+cout << "Testing group/flatten" << endl;
+cout << "----------------------------------------\n" << endl;
+
+//Range rr({0,0,0},{2,3,3});
+//for(auto x : rr) cout << x << " " << rr.ordinal(x) << endl;
+//
+//auto gf = group(rr,0,2);
+//cout << "gf = " << endl;
+//for(auto x : gf) cout << x << " " << gf.ordinal(x) << endl;
+//
+//auto gb = group(rr,1,3);
+//cout << "gb = " << endl;
+//for(auto x : gb) cout << x << " " << gb.ordinal(x) << endl;
+//
+//auto ga = group(rr,0,3);
+//cout << "ga = " << endl;
+//for(auto x : ga) cout << x << " " << ga.ordinal(x) << endl;
+//
+//ga = flatten(rr);
+//cout << "ga = " << endl;
+//for(auto x : ga) cout << x << " " << ga.ordinal(x) << endl;
+//
+//Range f({0,0,0,0},{3,2,2,3});
+//cout << "f = " << endl;
+//for(auto x : f) cout << x << " " << f.ordinal(x) << endl;
+//
+//auto ff = group(f,0,2);
+//cout << "ff = " << endl;
+//for(auto x : ff) cout << x << " " << ff.ordinal(x) << endl;
+//
+//auto fm = group(f,1,3);
+//cout << "fm = " << endl;
+//for(auto x : fm) cout << x << " " << fm.ordinal(x) << endl;
+//
+//auto ff3 = group(f,0,3);
+//cout << "ff3 = " << endl;
+//for(auto x : ff3) cout << x << " " << ff3.ordinal(x) << endl;
+//
+//auto fe = group(f,2,4);
+//cout << "fe = " << endl;
+//for(auto x : fe) cout << x << " " << fe.ordinal(x) << endl;
+
+Range rr1({1,1,1},{2,3,3});
+for(auto x : rr1) cout << x << " " << rr1.ordinal(x) << endl;
+
+auto gf1 = group(rr1,0,2);
+cout << "gf1 = " << endl;
+for(auto x : gf1) cout << x << " " << gf1.ordinal(x) << endl;
+
+auto gb1 = group(rr1,1,3);
+cout << "gb1 = " << endl;
+for(auto x : gb1) cout << x << " " << gb1.ordinal(x) << endl;
+
+auto ga1 = flatten(rr1);
+cout << "ga1 = " << endl;
+for(auto x : ga1) cout << x << " " << ga1.ordinal(x) << endl;
+
+auto gAf = group(A,0,2);
+cout << typeToStr(gAf) << " gAf = group(A,0,2): " << endl; 
+print(gAf);
+
+auto gAb = group(A,1,3);
+cout << typeToStr(gAb) << " gAb = group(A,1,3): " << endl; 
+print(gAb);
+
+auto Af = flatten(A);
+cout << typeToStr(Af) << " Af = flatten(A): " << endl; 
+print(Af);
+
 return 0;
 }

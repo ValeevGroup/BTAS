@@ -53,6 +53,38 @@ namespace btas {
     return TensorViewOf<_T>(diag(T.range()),T.storage());
     }
 
+  template <typename _T>
+  TensorViewOf<_T>
+  group(_T& T,
+        size_t istart,
+        size_t iend)
+    {
+    return TensorViewOf<_T>(group(T.range(),istart,iend),T.storage());
+    }
+
+  template <typename _T>
+  TensorViewOf<_T>
+  group(_T&& T,
+        size_t istart,
+        size_t iend)
+    {
+    return TensorViewOf<_T>(group(T.range(),istart,iend),T.storage());
+    }
+
+  template <typename _T>
+  TensorViewOf<_T>
+  flatten(_T& T)
+    {
+    return TensorViewOf<_T>(flatten(T.range()),T.storage());
+    }
+
+  template <typename _T>
+  TensorViewOf<_T>
+  flatten(_T&& T)
+    {
+    return TensorViewOf<_T>(flatten(T.range()),T.storage());
+    }
+
 } // namespace btas
 
 
