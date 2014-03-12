@@ -177,9 +177,9 @@ namespace btas {
       /// It will accept Tensors and TensorViews
       template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       Tensor (const _Tensor& x)
-      : range_ (x.range().lobound(), x.range().upbound()),
-      // TODO this can be optimized to bitewise copy if x::value_type and my value_type are equal, and storage is linear
-        storage_(x.storage())
+        :  
+        range_ (x.range().lobound(), x.range().upbound()),
+        storage_(x.cbegin(),x.cend())
       {
       }
 
