@@ -21,7 +21,7 @@ void print(const _Tensor& X)
 
    auto ldx = X.extent(order == boxrange_iteration_order<range_type>::column_major ? 0 : X.rank()-1);
 
-   auto i = size_t{1};
+   auto i = 1ul;
    for(const auto& e: X)
    {
       cout << setw(6) << fixed << e;
