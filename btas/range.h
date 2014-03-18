@@ -1109,16 +1109,12 @@ namespace btas {
       for(size_t i = istart; i < iend; ++i)
           {
           upbound[istart] *= (r.upbound()[i]-r.lobound()[i]);
-          //if(i > istart) lobound[istart] *= r.upbound()[i];
-          //lobound[istart] += r.lobound()[i];
           }
       for(size_t i = iend, j = istart+1; i < r.rank(); ++i,++j)
           {
           lobound[j] = r.lobound()[i];
           upbound[j] = r.upbound()[i];
           }
-      //std::cout << "lobound = " << lobound << std::endl;
-      //std::cout << "upbound = " << upbound << std::endl;
 
       return RangeNd<_Order,_Index,_Ordinal>(lobound,upbound);
       }
@@ -1138,6 +1134,97 @@ namespace btas {
           }
       return RangeNd<_Order,_Index,_Ordinal>({lobound},{upbound});
       }
+
+    ///
+    /// Tie (i.e. lock or fuse) N indices together, returning a range with (N-1) fewer indices.
+    /// The position of the tied index is the position of the first index in the group.
+    /// Example:
+    /// std::vector<std::size_t> inds = { 0, 2 };
+    /// tie(T,inds)(i,j) = T(i,j,i)
+    ///
+    template <CBLAS_ORDER _Order,
+              typename _Index,
+              typename _Ordinal,
+              typename ArrayType>
+    RangeNd<_Order, _Index,_Ordinal> 
+    tieIndex(const RangeNd<_Order, _Index, _Ordinal>& r,
+             const ArrayType& inds)
+      {
+      using index_type = typename RangeNd<_Order,_Index,_Ordinal>::index_type;
+      using index_value = typename index_type::value_type;
+
+      if(inds.size() < 2) return r;
+      assert(inds.size() <= r.rank());
+
+      auto newr = r.rank()-(inds.size()-1);
+      auto ti = inds[0];
+      auto tbegin = r.lobound()[ti];
+      auto tend = r.upbound()[ti];
+      for(const auto i : inds)
+          {
+          assert(i < r.rank());
+          ti = std::min(ti,i);
+          tbegin = std::max(tbegin,r.lobound()[i]);
+          tend = std::min(tend,r.upbound()[i]);
+          }
+      if(ti >= newr) ti = newr-1;
+
+      index_type lobound(newr),
+                 upbound(newr),
+                 stride(newr);
+
+      stride[ti] = 0;
+      lobound[ti] = tbegin;
+      upbound[ti] = tend;
+
+      const auto dr = (_Order == CblasRowMajor) ? Range1(r.rank()-1,-1,-1) 
+                                                : Range1(0,r.rank(),1);
+      const auto nr = (_Order == CblasRowMajor) ? Range1(newr-1,-1,-1) 
+                                                : Range1(0,newr,1);
+      index_value prod_extents = 1;
+      auto it = nr.begin();
+      for(const auto i : dr)
+          {
+          bool is_tied = false;
+          for(auto j : inds) if(i == j)
+              {
+              is_tied = true; 
+              break; 
+              }
+          if(is_tied)
+              {
+              stride[ti] += prod_extents;
+              }
+          else
+              {
+              if(*it == ti) ++it;
+              stride[*it] = prod_extents;
+              lobound[*it] = r.lobound()[i];
+              upbound[*it] = r.upbound()[i];
+              ++it;
+              }
+          prod_extents *= (r.upbound()[i]-r.lobound()[i]);
+          }
+
+      return RangeNd<_Order,_Index,_Ordinal>(lobound,upbound,stride);
+      }
+
+    ///
+    /// tieIndex wrapper taking a variadic list of integers 
+    ///
+    template <CBLAS_ORDER _Order,
+              typename _Index,
+              typename _Ordinal,
+              typename... _args>
+    RangeNd<_Order, _Index,_Ordinal> 
+    tieIndex(const RangeNd<_Order, _Index, _Ordinal>& r,
+             size_t i0,
+             const _args&... rest)
+        {
+        const auto size = 1 + sizeof...(rest);
+        std::array<size_t,size> inds = { i0, static_cast<size_t>(rest)...};
+        return tieIndex(r,inds);
+        }
 
 
     template <CBLAS_ORDER _Order,
