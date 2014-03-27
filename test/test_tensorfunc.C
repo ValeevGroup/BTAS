@@ -11,6 +11,26 @@ using namespace std;
 #include <btas/tensor_func.h>
 using namespace btas;
 
+
+template <typename T>
+bool
+isIn(T t, const std::vector<T>& v)
+    {
+    for(const auto& x : v) if(t == x) return true;
+    return false;
+    }
+
+template<typename T>
+T
+vecMin(const std::vector<T>& v)
+    {
+    assert(!v.empty());
+    auto res = v.front();
+    for(auto x : v) res = std::min(res,x);
+    return res;
+    }
+
+
 template <typename _Tensor>
 void print(const _Tensor& X)
 {
@@ -238,6 +258,116 @@ print(gAb);
 auto Af = flatten(A);
 cout << typeToStr(Af) << " Af = flatten(A): " << endl; 
 print(Af);
+
+//
+// 0,0,0  0
+// 0,0,1  1
+// 0,0,2  2
+// 0,1,0  3
+// 0,1,1  4
+// 0,1,2  5
+// 0,2,0  6
+// 0,2,1  7
+// 0,2,2  8
+// 1,0,0  9
+// 1,0,1  10
+// 1,0,2  11
+// 1,1,0  12
+// 1,1,1  13
+// 1,1,2  14
+// 1,2,0  15
+// 1,2,1  16
+// 1,2,2  17
+//
+//  v v v
+//
+// 0,0  0
+// 0,1  3
+// 0,2  6
+// 1,0  10
+// 1,1  13
+//
+//
+//
+//
+//
+//
+
+/////////////////////////////////////////
+//
+// tieIndex
+//
+/////////////////////////////////////////
+
+cout << "\n----------------------------------------" << endl;
+cout << "Testing tieIndex" << endl;
+cout << "----------------------------------------\n" << endl;
+
+Range rr({0,0,0,0},{3,4,4,4});
+//RangeNd<CblasColMajor> rr({3,4,4,4});
+
+std::vector<std::vector<size_t>> tests = {  {0},
+                                            {1},
+                                            {2},
+                                            {3},
+                                            {0,1},
+                                            {0,2}, 
+                                            {0,3}, 
+                                            {1,2}, 
+                                            {1,3}, 
+                                            {2,3},
+                                            {3,1},
+                                            {3,2},
+                                            {0,1,2}, 
+                                            {0,1,3}, 
+                                            {0,2,3}, 
+                                            {1,2,3} 
+                                          };
+for(auto test : tests)
+    {
+    auto tr = tieIndex(rr,test);
+    auto ti = vecMin(test);
+    for(auto x : tr)
+        {
+        std::vector<size_t> y(rr.rank());
+        size_t k = 0;
+        for(size_t j = 0; j < rr.rank(); ++j)
+            {
+            if(isIn(j,test)) 
+                { 
+                if(j == ti) ++k;
+                y[j] = x[ti]; 
+                }
+            else { y[j] = x[k]; ++k; }
+            }
+        if(tr.ordinal(x) != rr.ordinal(y)) 
+            {
+            cout << "Error for test = " << test << "; x = " << x << " " << tr.ordinal(x) << "; y = " << y << " " << rr.ordinal(y) << endl;
+            }
+        }
+
+    }
+
+//Range r2({0,0,0},{3,3,3});
+//for(auto x : r2) cout << x << " " << r2.ordinal(x) << endl;
+//auto tr = tieIndex(r2,0,1);
+//for(auto x : tr) cout << x << " " << tr.ordinal(x) << endl;
+
+auto tA1 = tieIndex(A,0,2);
+print(tA1);
+
+auto tA2 = tieIndex(A,0,1,2);
+print(tA2);
+
+auto tA3 = tieIndex(A,0,1);
+print(tA3);
+
+auto tA4 = tieIndex(A,1,2);
+print(tA4);
+
+std::array<size_t,2> inds = {1,2};
+auto tA5 = tieIndex(A,inds);
+print(tA5);
 
 return 0;
 }
