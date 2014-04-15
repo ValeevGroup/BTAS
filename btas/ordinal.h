@@ -205,9 +205,9 @@ namespace btas {
         }
       }
 
-      stride_type stride_; // stride of each dimension (stride in the language of NumPy)
-      value_type offset_; // lobound.stride => ordinal(index) = index.stride - offset
-      bool contiguous_; // whether index iterator traverses a contiguous sequence of ordinals
+      stride_type stride_; //!< stride of each dimension (stride in the language of NumPy)
+      value_type offset_; //!< lobound . stride so that easy to compute ordinal: ordinal(index) = index . stride - offset
+      bool contiguous_; //!< whether index iterator traverses a contiguous sequence of ordinals
   };
 
   /// Permutes BoxOrdinal
