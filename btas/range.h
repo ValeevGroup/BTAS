@@ -476,7 +476,7 @@ namespace btas {
           return std::accumulate(std::begin(ex), std::end(ex), 1ul, std::multiplies<size_type>());
         }
         else
-          return 0;
+          return 1;
       }
 
       /// Index iterator factory
