@@ -386,6 +386,8 @@ inline bool operator!= (const btas::varray<T>& a,
   return not (a == b);
 }
 
+}
+
 namespace boost {
 namespace serialization {
 
@@ -407,8 +409,6 @@ namespace serialization {
   }
 }
 }
-
-};
 
 template <typename T>
 inline bool operator== (const btas::varray<T>& a,
