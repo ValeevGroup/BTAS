@@ -515,7 +515,9 @@ namespace btas {
       /// resize array with extent object
       template <typename Extent>
       void
-      resize (const Extent& extent, typename std::enable_if<is_index<Extent>::value,Enabler>::type = Enabler())
+      resize (const Extent& extent, typename std::enable_if<is_index<Extent>::value &&
+                                                            not is_boxrange<Extent>::value,
+                                                            Enabler>::type = Enabler())
       {
         range_ = range_type(extent);
         array_adaptor<storage_type>::resize(storage_, range_.area());
