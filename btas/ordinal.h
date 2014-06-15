@@ -96,7 +96,7 @@ namespace btas {
         return stride_;
       }
 
-      bool offset() const {
+      value_type offset() const {
         return offset_;
       }
 
