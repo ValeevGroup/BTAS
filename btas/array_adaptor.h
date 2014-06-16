@@ -214,6 +214,8 @@ namespace btas {
   };
 }
 
+#ifndef BOOST_SERIALIZATION_STD_ARRAY
+#define BOOST_SERIALIZATION_STD_ARRAY
 namespace boost {
   namespace serialization {
 
@@ -225,4 +227,6 @@ namespace boost {
 
   } // namespace serialization
 } // namespace boost
+#endif
+
 #endif /* __BTAS_ARRAYADAPTOR_H_ */
