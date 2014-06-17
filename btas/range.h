@@ -280,6 +280,7 @@ namespace btas {
 
       template <typename Index1, typename Index2>
       void validate(const Index1& lobound, const Index2& upbound) {
+#ifndef NDEBUG
         using btas::rank;
         auto n = rank(lobound);
         assert(n == rank(upbound));
@@ -290,6 +291,7 @@ namespace btas {
           auto ui = *(std::begin(upbound) + i);
           assert(static_cast<ctype>(li) <= static_cast<ctype>(ui));
         }
+#endif
       }
 
     protected:
@@ -461,7 +463,7 @@ namespace btas {
       }
 
       /// \return The extent of the nth dimension
-      typename extent_type::value_type 
+      typename extent_type::value_type
       extent(size_t n) const {
         return upbound_[n] - lobound_[n];
       }
@@ -1001,7 +1003,7 @@ namespace btas {
               typename _Ordinal,
               typename AxisPermutation,
               class = typename std::enable_if<btas::is_index<AxisPermutation>::value>::type>
-    RangeNd<_Order, _Index> 
+    RangeNd<_Order, _Index>
     permute(const RangeNd<_Order, _Index, _Ordinal>& r,
             const AxisPermutation& perm)
     {
@@ -1032,7 +1034,7 @@ namespace btas {
               typename _Index,
               typename _Ordinal,
               typename T>
-    RangeNd<_Order, _Index, _Ordinal> 
+    RangeNd<_Order, _Index, _Ordinal>
     permute(const RangeNd<_Order, _Index, _Ordinal>& r,
             std::initializer_list<T> perm)
     {
@@ -1053,7 +1055,7 @@ namespace btas {
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal>
-    RangeNd<_Order, _Index> 
+    RangeNd<_Order, _Index>
     diag(const RangeNd<_Order, _Index, _Ordinal>& r)
       {
       if(r.rank() == 0) return r;
@@ -1061,7 +1063,7 @@ namespace btas {
       index_value stride = 1,
                   prod_extents = 1,
                   extent = r.upbound()[0];
-      const auto dr = _Order == CblasRowMajor ? Range1(r.rank()-1,0,-1) 
+      const auto dr = _Order == CblasRowMajor ? Range1(r.rank()-1,0,-1)
                                               : Range1(0,r.rank()-1,1);
       for(const auto i : dr)
         {
@@ -1082,13 +1084,12 @@ namespace btas {
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal>
-    RangeNd<_Order, _Index,_Ordinal> 
+    RangeNd<_Order, _Index,_Ordinal>
     group(const RangeNd<_Order, _Index, _Ordinal>& r,
           size_t istart,
           size_t iend)
       {
       using index_type = typename RangeNd<_Order,_Index,_Ordinal>::index_type;
-      using index_value = typename index_type::value_type;
 
       if(r.rank() == 0 || iend <= (istart+1)) return r;
       const auto ngroup = iend-istart;
@@ -1122,7 +1123,7 @@ namespace btas {
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal>
-    RangeNd<_Order, _Index,_Ordinal> 
+    RangeNd<_Order, _Index,_Ordinal>
     flatten(const RangeNd<_Order, _Index, _Ordinal>& r)
       {
       using index_value = typename RangeNd<_Order,_Index,_Ordinal>::index_type::value_type;
@@ -1146,7 +1147,7 @@ namespace btas {
               typename _Index,
               typename _Ordinal,
               typename ArrayType>
-    RangeNd<_Order, _Index,_Ordinal> 
+    RangeNd<_Order, _Index,_Ordinal>
     tieIndex(const RangeNd<_Order, _Index, _Ordinal>& r,
              const ArrayType& inds)
       {
@@ -1177,9 +1178,9 @@ namespace btas {
       lobound[ti] = tbegin;
       upbound[ti] = tend;
 
-      const auto dr = (_Order == CblasRowMajor) ? Range1(r.rank()-1,-1,-1) 
+      const auto dr = (_Order == CblasRowMajor) ? Range1(r.rank()-1,-1,-1)
                                                 : Range1(0,r.rank(),1);
-      const auto nr = (_Order == CblasRowMajor) ? Range1(newr-1,-1,-1) 
+      const auto nr = (_Order == CblasRowMajor) ? Range1(newr-1,-1,-1)
                                                 : Range1(0,newr,1);
       index_value prod_extents = 1;
       auto it = nr.begin();
@@ -1188,8 +1189,8 @@ namespace btas {
           bool is_tied = false;
           for(auto j : inds) if(i == j)
               {
-              is_tied = true; 
-              break; 
+              is_tied = true;
+              break;
               }
           if(is_tied)
               {
@@ -1210,13 +1211,13 @@ namespace btas {
       }
 
     ///
-    /// tieIndex wrapper taking a variadic list of integers 
+    /// tieIndex wrapper taking a variadic list of integers
     ///
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal,
               typename... _args>
-    RangeNd<_Order, _Index,_Ordinal> 
+    RangeNd<_Order, _Index,_Ordinal>
     tieIndex(const RangeNd<_Order, _Index, _Ordinal>& r,
              size_t i0,
              const _args&... rest)

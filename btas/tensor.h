@@ -14,6 +14,7 @@
 #include <btas/array_adaptor.h>
 
 #include <boost/serialization/serialization.hpp>
+#include <boost/serialization/vector.hpp>
 
 namespace btas {
 
@@ -515,7 +516,9 @@ namespace btas {
       /// resize array with extent object
       template <typename Extent>
       void
-      resize (const Extent& extent, typename std::enable_if<is_index<Extent>::value,Enabler>::type = Enabler())
+      resize (const Extent& extent, typename std::enable_if<is_index<Extent>::value &&
+                                                            not is_boxrange<Extent>::value,
+                                                            Enabler>::type = Enabler())
       {
         range_ = range_type(extent);
         array_adaptor<storage_type>::resize(storage_, range_.area());
@@ -661,15 +664,18 @@ namespace btas {
 } // namespace btas
 
 namespace boost {
-namespace serialization {
+  namespace serialization {
 
-  /// boost serialization
-  template<class Archive, class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
-  void serialize(Archive& ar, _Tensor& t, const unsigned int version) {
-    ar & t.range() & t.storage();
-  }
+    /// boost serialization
+    template<class Archive,
+             typename _T,
+             class _Range,
+             class _Storage>
+    void serialize(Archive& ar, btas::Tensor<_T,_Range,_Storage> t, const unsigned int version) {
+      ar & t.range() & t.storage();
+    }
 
-}
-}
+  } // namespace serialization
+} // namespace boost
 
 #endif // __BTAS_TENSOR_H
