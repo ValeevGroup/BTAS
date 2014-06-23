@@ -9,7 +9,7 @@ namespace btas {
 
   template <typename T>
   auto make_array(T* data, const size_t n) -> decltype(boost::serialization::make_array(data, n)) {
-    return boost::serialization::make_array(data, n); 
+    return boost::serialization::make_array(data, n);
   }
   // specialization for complex
   template <typename T>
