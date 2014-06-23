@@ -59,6 +59,7 @@ int main()
   // default (empty) Range
   Range x0;
   cout << "x0 = " << x0 << " area=" << x0.area() << endl;
+  assert(x0.rank() == 0);  // std::cout << "rank = 0" << std::endl;
 
   // Range initialized by extents of each dimension
   Range x1(3, 2, 3);
@@ -110,6 +111,14 @@ int main()
 
   Range x6 ({-1, -1, -1}, {2, 3, 4});
   cout << "x6 = " << x6 << " area=" << x6.area() << endl;
+
+  {
+    typedef RangeNd<CblasRowMajor, std::array<size_t, 3>> Range3d;
+    Range3d x;
+    cout << "Static 3-d Range: x7 = " << x << " area=" << x.area() << endl;
+    assert(x.rank() == 3);
+    static_assert(x.rank() == 3, "default Range rank");
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   // Tensor tests
