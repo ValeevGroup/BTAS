@@ -137,7 +137,7 @@ namespace btas {
 
         /// \return The rank (number of dimensions) of this range
         /// \throw nothing
-        size_t rank() const {
+        constexpr size_t rank() const {
           return 1ul;
         }
 
