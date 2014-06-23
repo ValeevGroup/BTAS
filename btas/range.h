@@ -382,7 +382,7 @@ namespace btas {
 
 
       /// Destructor
-      ~BaseRangeNd() { }
+      ~BaseRangeNd() = default;
 
       /// Copy assignment operator
 
