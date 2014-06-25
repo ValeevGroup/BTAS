@@ -161,7 +161,7 @@ namespace btas {
       const Range1d<typename index_type::value_type>
       range(size_t d) const
       {
-        return range_.dim(d);
+        return range_.range(d);
       }
 
       /// \return range's extent object

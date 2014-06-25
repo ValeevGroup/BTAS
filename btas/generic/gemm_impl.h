@@ -19,7 +19,7 @@ namespace btas {
 
 namespace impl {
     template<typename T> T conj(const T& t) { return t; }
-    template<typename T> std::complex<T> conj(const std::complex<T>& t) { return std::conj(t); } 
+    template<typename T> std::complex<T> conj(const std::complex<T>& t) { return std::conj(t); }
 }
 
 template<bool _Finalize> struct gemm_impl { };

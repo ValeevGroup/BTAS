@@ -178,7 +178,7 @@ namespace btas {
       /// It will accept Tensors and TensorViews
       template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
       Tensor (const _Tensor& x)
-        :  
+        :
         range_ (x.range().lobound(), x.range().upbound()),
         storage_(x.cbegin(),x.cend())
       {
@@ -503,7 +503,7 @@ namespace btas {
       }
 
       ///@} // element accessors with range check
-   
+
       /// resize array with range object
       template <typename Range>
       void

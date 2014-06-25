@@ -147,7 +147,7 @@
     <td> \c rank() </td>
     <td> \c uint </td>
     <td> </td>
-    <td> returns the rank of Range; const </td>
+    <td> returns the rank of Range; const (and constexpr, if possible) </td>
    </tr>
 
    <tr>

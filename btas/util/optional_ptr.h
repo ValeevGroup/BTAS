@@ -23,7 +23,7 @@ class optional_ptr
 
     optional_ptr() : p_(nullptr) { }
 
-    optional_ptr(optional_ptr&& other) 
+    optional_ptr(optional_ptr&& other)
         :
         p_(other.p_),
         up_(std::move(other.up_))
