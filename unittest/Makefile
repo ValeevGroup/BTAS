@@ -13,7 +13,7 @@ SOURCES+= dot_test.cc
 
 
 #Define Flags ----------
-CCFLAGS= -I. $(INCLUDEFLAGS) -O2
+CCFLAGS= -I. $(INCLUDEFLAGS) -g
 
 OBJECTS=$(patsubst %.cc,%.o, $(SOURCES))
 

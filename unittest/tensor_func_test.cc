@@ -6,7 +6,7 @@
 using std::cout;
 using std::endl;
 
-using btas::Range;
+using namespace btas;
 
 using DTensor = btas::Tensor<double>;
 using DTensorView = btas::TensorViewOf<DTensor>;
@@ -23,15 +23,16 @@ operator<<(std::ostream& s, const DTensor& X)
 // T(i,j,k) = 1ijk
 // assuming individual dimensions are all less than 10.
 // (The 1 in front is just a placeholder.)
+template<typename _Tens>
 void static
-fillEls(DTensor& T)
+fillEls(_Tens& T)
     {
     if(T.rank() == 0) return;
-    const double base = pow(10.,T.rank());
+    const auto base = pow(10.,T.rank());
     const size_t max_ii = T.rank()-1;
     for(auto I : T.range())
         {
-        double &val = T(I);
+        auto& val = T(I);
         val = base;
         for(size_t ii = 0; ii <= max_ii; ++ii)
             {
