@@ -8,8 +8,8 @@
 #ifndef BTAS_TENSORVIEW_H_
 #define BTAS_TENSORVIEW_H_
 
-#include "btas/tensorview_iterator.h"
-#include "btas/defaults.h"
+#include <btas/tensorview_iterator.h>
+#include <btas/defaults.h>
 
 namespace btas {
 
