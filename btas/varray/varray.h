@@ -401,7 +401,7 @@ namespace boost {
   template<class Archive, typename T>
   void save (Archive& ar, const btas::varray<T>& x, const unsigned int version)
   {
-      const typename btas::varray<T>::size_type n;
+      const typename btas::varray<T>::size_type n = x.size();
       ar << n << btas::make_array(x.data(), x.size());
   }
   template<class Archive, typename T>
