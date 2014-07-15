@@ -258,22 +258,39 @@ int main()
   // test 11: serialization
   {
     const auto archive_fname = "test1.archive";
+
+    Tensor<std::array<complex<double>,3>> T1(2,3,4);
+    T1.fill({{{1.0,2.0}, {2.0,1.0}, {2.0,3.0} }});
+
     // write
     {
       std::ofstream os(archive_fname);
       assert(os.good());
       boost::archive::text_oarchive ar(os);
-      ar << t;
+      ar << t; // fixed-size Tensor
+      ar << A; // Tensor of Tensor
+      ar << T1; // Tensor of complex datatypes
     }
     // read
     {
       std::ifstream is(archive_fname);
       assert(is.good());
       boost::archive::text_iarchive ar(is);
+
       TArray<double,3> tcopy;
       ar >> tcopy;
+
+      Tensor<Tensor<double>> Acopy;
+      ar >> Acopy; // Tensor of Tensor
+
+      Tensor<std::array<complex<double>,3>> T1copy;
+      ar >> T1copy; // Tensor of complex datatypes
+
       assert(t == tcopy);
+      assert(A == Acopy);
+      assert(T1 == T1copy);
     }
+    std::remove(archive_fname);
   }
 
   //////////////////////////////////////////////////////////////////////////////
