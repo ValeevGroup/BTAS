@@ -1,6 +1,11 @@
 #include <iostream>
 #include <algorithm>
 #include <set>
+#include <fstream>
+
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
 using namespace std;
 
 #include <btas/range.h>
@@ -248,6 +253,27 @@ int main()
 
     CMTensor c(2, 3);
     gemm(CblasNoTrans, CblasTrans, 1.0, a, b, 0.0, c);
+  }
+
+  // test 11: serialization
+  {
+    const auto archive_fname = "test1.archive";
+    // write
+    {
+      std::ofstream os(archive_fname);
+      assert(os.good());
+      boost::archive::text_oarchive ar(os);
+      ar << t;
+    }
+    // read
+    {
+      std::ifstream is(archive_fname);
+      assert(is.good());
+      boost::archive::text_iarchive ar(is);
+      TArray<double,3> tcopy;
+      ar >> tcopy;
+      assert(t == tcopy);
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
