@@ -1014,14 +1014,17 @@ namespace btas {
              >
     inline bool congruent(const RangeNd<_Order1,_Index1,_Ordinal1>& r1,
                           const RangeNd<_Order2,_Index2,_Ordinal2>& r2) {
+      const auto r1_extent = r1.extent();
+      auto r2_extent = r2.extent(); // no std::crbegin even in C++14, hence no const here
       if (_Order1 == _Order2)
-        return std::equal(std::cbegin(r1.extent()), std::cend(r1.extent()),
-                          std::cbegin(r2.extent()));
-      else {
-        auto r2_extent = r2.extent();
-        return std::equal(std::cbegin(r1.extent()), std::cend(r1.extent()),
-                          std::rbegin(r2_extent)); // no crbegin
-      }
+        // 7/15/2014: broken with clang++/libc++ (clang-503.0.40) on OS X
+        //auto eq =  std::equal(std::cbegin(r1.extent()), std::cend(r1.extent()),
+        //                     std::cbegin(r2.extent()));
+        return std::equal(std::cbegin(r1_extent), std::cend(r1_extent),
+                          std::cbegin(r2_extent));
+      else
+        return std::equal(std::cbegin(r1_extent), std::cend(r1_extent),
+                          std::rbegin(r2_extent));
     }
 
     /// Permutes a Range

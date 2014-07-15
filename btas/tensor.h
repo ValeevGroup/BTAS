@@ -674,6 +674,9 @@ namespace btas {
                                                                std::cend(t1.storage()),
                                                                std::cbegin(t2.storage()));
       else { // not plain, or different orders
+        auto cong = congruent(t1.range(), t2.range());
+        if (not cong)
+          return false;
         typedef TensorView<typename _Tensor1::value_type, typename _Tensor1::range_type, const typename _Tensor1::storage_type>  cview1;
         typedef TensorView<typename _Tensor2::value_type, typename _Tensor2::range_type, const typename _Tensor2::storage_type>  cview2;
         cview1 vt1(t1);
