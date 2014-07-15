@@ -137,7 +137,7 @@ namespace btas {
 
         /// \return The rank (number of dimensions) of this range
         /// \throw nothing
-        size_t rank() const {
+        constexpr size_t rank() const {
           return 1ul;
         }
 
@@ -280,6 +280,7 @@ namespace btas {
 
       template <typename Index1, typename Index2>
       void validate(const Index1& lobound, const Index2& upbound) {
+#ifndef NDEBUG
         using btas::rank;
         auto n = rank(lobound);
         assert(n == rank(upbound));
@@ -290,6 +291,7 @@ namespace btas {
           auto ui = *(std::begin(upbound) + i);
           assert(static_cast<ctype>(li) <= static_cast<ctype>(ui));
         }
+#endif
       }
 
     protected:
@@ -380,7 +382,7 @@ namespace btas {
 
 
       /// Destructor
-      ~BaseRangeNd() { }
+      ~BaseRangeNd() = default;
 
       /// Copy assignment operator
 
@@ -420,15 +422,6 @@ namespace btas {
         return Range1d<typename index_type::value_type>(*(std::begin(lobound_)+d), *(std::begin(upbound_)+d));
       }
 
-      /// Rank accessor
-
-      /// \return The rank (number of dimensions) of this range
-      /// \throw nothing
-      size_t rank() const {
-        using btas::rank;
-        return rank(lobound_);
-      }
-
       /// Range lobound coordinate accessor
 
       /// \return A \c size_array that contains the lower bound of this range
@@ -449,6 +442,16 @@ namespace btas {
         return upbound_;
       }
 
+      /// Rank accessor
+
+      /// \return The rank (number of dimensions) of this range
+      /// \throw nothing
+      //constexpr auto rank() const -> decltype(btas::rank(this->lobound())) {
+      constexpr size_t rank() const {
+        using btas::rank;
+        return rank(lobound_);
+      }
+
       /// Range size accessor
 
       /// \return A \c extent_type that contains the extent of each dimension
@@ -461,7 +464,7 @@ namespace btas {
       }
 
       /// \return The extent of the nth dimension
-      typename extent_type::value_type 
+      typename extent_type::value_type
       extent(size_t n) const {
         return upbound_[n] - lobound_[n];
       }
@@ -991,6 +994,39 @@ namespace btas {
       return ! operator ==(r1, r2);
     }
 
+    /// Tests congruency of two Ranges
+
+    /// Ranges are congruent if the have identical extents. The congruency of \c r1 and \c r2 of rank N is checked by the following code:
+    /// \code
+    ///   if (_Order1 == _Order2)
+    ///     result = r1.extent()[0] == r2.extent()[0] && r1.extent()[1] == r2.extent()[1] && ... ;
+    ///   else
+    ///     result = r1.extent()[0] == r2.extent()[N-1] && r1.extent()[1] == r2.extent()[N-2] && ... ;
+    /// \endcode
+    /// \note To compare also lobound (except when the ranges have diffferent Order) use Range::operator==()
+    /// \return \c true when \c r1 and \c r2 have same extents, otherwise \c false
+    template <CBLAS_ORDER _Order1,
+              typename _Index1,
+              typename _Ordinal1,
+              CBLAS_ORDER _Order2,
+              typename _Index2,
+              typename _Ordinal2
+             >
+    inline bool congruent(const RangeNd<_Order1,_Index1,_Ordinal1>& r1,
+                          const RangeNd<_Order2,_Index2,_Ordinal2>& r2) {
+      const auto r1_extent = r1.extent();
+      auto r2_extent = r2.extent(); // no std::crbegin even in C++14, hence no const here
+      if (_Order1 == _Order2)
+        // 7/15/2014: broken with clang++/libc++ (clang-503.0.40) on OS X
+        //auto eq =  std::equal(std::cbegin(r1.extent()), std::cend(r1.extent()),
+        //                     std::cbegin(r2.extent()));
+        return std::equal(std::cbegin(r1_extent), std::cend(r1_extent),
+                          std::cbegin(r2_extent));
+      else
+        return std::equal(std::cbegin(r1_extent), std::cend(r1_extent),
+                          std::rbegin(r2_extent));
+    }
+
     /// Permutes a Range
 
     /// permutes the dimensions using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned
@@ -1001,7 +1037,7 @@ namespace btas {
               typename _Ordinal,
               typename AxisPermutation,
               class = typename std::enable_if<btas::is_index<AxisPermutation>::value>::type>
-    RangeNd<_Order, _Index> 
+    RangeNd<_Order, _Index>
     permute(const RangeNd<_Order, _Index, _Ordinal>& r,
             const AxisPermutation& perm)
     {
@@ -1032,7 +1068,7 @@ namespace btas {
               typename _Index,
               typename _Ordinal,
               typename T>
-    RangeNd<_Order, _Index, _Ordinal> 
+    RangeNd<_Order, _Index, _Ordinal>
     permute(const RangeNd<_Order, _Index, _Ordinal>& r,
             std::initializer_list<T> perm)
     {
@@ -1053,7 +1089,7 @@ namespace btas {
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal>
-    RangeNd<_Order, _Index> 
+    RangeNd<_Order, _Index>
     diag(const RangeNd<_Order, _Index, _Ordinal>& r)
       {
       if(r.rank() == 0) return r;
@@ -1061,7 +1097,7 @@ namespace btas {
       index_value stride = 1,
                   prod_extents = 1,
                   extent = r.upbound()[0];
-      const auto dr = _Order == CblasRowMajor ? Range1(r.rank()-1,0,-1) 
+      const auto dr = _Order == CblasRowMajor ? Range1(r.rank()-1,0,-1)
                                               : Range1(0,r.rank()-1,1);
       for(const auto i : dr)
         {
@@ -1082,13 +1118,12 @@ namespace btas {
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal>
-    RangeNd<_Order, _Index,_Ordinal> 
+    RangeNd<_Order, _Index,_Ordinal>
     group(const RangeNd<_Order, _Index, _Ordinal>& r,
           size_t istart,
           size_t iend)
       {
       using index_type = typename RangeNd<_Order,_Index,_Ordinal>::index_type;
-      using index_value = typename index_type::value_type;
 
       if(r.rank() == 0 || iend <= (istart+1)) return r;
       const auto ngroup = iend-istart;
@@ -1122,7 +1157,7 @@ namespace btas {
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal>
-    RangeNd<_Order, _Index,_Ordinal> 
+    RangeNd<_Order, _Index,_Ordinal>
     flatten(const RangeNd<_Order, _Index, _Ordinal>& r)
       {
       using index_value = typename RangeNd<_Order,_Index,_Ordinal>::index_type::value_type;
@@ -1146,7 +1181,7 @@ namespace btas {
               typename _Index,
               typename _Ordinal,
               typename ArrayType>
-    RangeNd<_Order, _Index,_Ordinal> 
+    RangeNd<_Order, _Index,_Ordinal>
     tieIndex(const RangeNd<_Order, _Index, _Ordinal>& r,
              const ArrayType& inds)
       {
@@ -1177,9 +1212,9 @@ namespace btas {
       lobound[ti] = tbegin;
       upbound[ti] = tend;
 
-      const auto dr = (_Order == CblasRowMajor) ? Range1(r.rank()-1,-1,-1) 
+      const auto dr = (_Order == CblasRowMajor) ? Range1(r.rank()-1,-1,-1)
                                                 : Range1(0,r.rank(),1);
-      const auto nr = (_Order == CblasRowMajor) ? Range1(newr-1,-1,-1) 
+      const auto nr = (_Order == CblasRowMajor) ? Range1(newr-1,-1,-1)
                                                 : Range1(0,newr,1);
       index_value prod_extents = 1;
       auto it = nr.begin();
@@ -1188,8 +1223,8 @@ namespace btas {
           bool is_tied = false;
           for(auto j : inds) if(i == j)
               {
-              is_tied = true; 
-              break; 
+              is_tied = true;
+              break;
               }
           if(is_tied)
               {
@@ -1210,13 +1245,13 @@ namespace btas {
       }
 
     ///
-    /// tieIndex wrapper taking a variadic list of integers 
+    /// tieIndex wrapper taking a variadic list of integers
     ///
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal,
               typename... _args>
-    RangeNd<_Order, _Index,_Ordinal> 
+    RangeNd<_Order, _Index,_Ordinal>
     tieIndex(const RangeNd<_Order, _Index, _Ordinal>& r,
              size_t i0,
              const _args&... rest)
@@ -1247,9 +1282,25 @@ namespace serialization {
   /// boost serialization
   template<class Archive, CBLAS_ORDER _Order,
            typename _Index, typename _Ordinal>
-  void serialize(Archive& ar, btas::RangeNd<_Order, _Index, _Ordinal>& t,
-                 const unsigned int version) {
-    ar & t.lobound() & t.upbound() & t.ordinal();
+  void serialize(Archive& ar, btas::RangeNd<_Order, _Index, _Ordinal>& t, const unsigned int version) {
+    boost::serialization::split_free(ar, t, version);
+  }
+  template<class Archive, CBLAS_ORDER _Order,
+           typename _Index, typename _Ordinal>
+  void save(Archive& ar, const btas::RangeNd<_Order, _Index, _Ordinal>& t, const unsigned int version) {
+    auto lo = t.lobound();
+    auto up = t.upbound();
+    auto ordinal = t.ordinal();
+    ar << lo << up << ordinal;
+  }
+  template<class Archive, CBLAS_ORDER _Order,
+           typename _Index, typename _Ordinal>
+  void load(Archive& ar, btas::RangeNd<_Order, _Index, _Ordinal>& t, const unsigned int version) {
+    typedef typename btas::BaseRangeNd<btas::RangeNd<_Order, _Index, _Ordinal>>::index_type index_type;
+    index_type lo, up;
+    _Ordinal ordinal;
+    ar >> lo >> up >> ordinal;
+    t = btas::RangeNd<_Order, _Index, _Ordinal>(std::move(lo), std::move(up), std::move(ordinal));
   }
 
 }

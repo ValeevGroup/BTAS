@@ -19,3 +19,11 @@
 
 # Scratch directory
 work/
+
+# Generated files by Doxygen
+doc/Doxyfile
+doc/html/
+doc/latex/
+
+# Binary file for unit test
+unittest/test

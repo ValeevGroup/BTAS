@@ -71,6 +71,19 @@
    </tr>
 
    <tr>
+    <td> \c Tensor(const Range&) </td>
+    <td> </td>
+    <td>
+     @code
+      Range r0; // or another Range constructor
+      Tensor t0(r0);
+      assert(t0.range() == r0);
+     @endcode
+    </td>
+    <td> creates and allocates a Tensor over a Range </td>
+   </tr>
+
+   <tr>
     <td> \c Tensor(const Tensor&) </td>
     <td> </td>
     <td>

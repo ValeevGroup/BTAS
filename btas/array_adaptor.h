@@ -9,6 +9,8 @@
 #include <btas/tensor_traits.h>
 #include <btas/generic/numeric_type.h>
 #include <btas/varray/varray.h>
+#include <btas/serialization.h>
+#include <boost/serialization/array.hpp>
 
 namespace btas {
 
@@ -49,7 +51,7 @@ namespace btas {
   };
 
   template <typename T, size_t N>
-  std::size_t rank(const std::array<T, N>& x) {
+  constexpr std::size_t rank(const std::array<T, N>& x) noexcept {
     return N;
   }
 
@@ -71,7 +73,7 @@ namespace btas {
   };
 
   template <typename T, size_t N>
-  std::size_t rank(const T (&x)[N]) {
+  constexpr std::size_t rank(const T (&x)[N]) noexcept {
     return N;
   }
 
@@ -144,6 +146,14 @@ namespace std {
   auto cend(const std::array<T,N>& x) -> decltype(x.cend()) {
     return x.cend();
   }
+  template <typename T, size_t N>
+  auto rbegin(std::array<T,N>& x) -> decltype(x.rbegin()) {
+    return x.rbegin();
+  }
+  template <typename T, size_t N>
+  auto rend(std::array<T,N>& x) -> decltype(x.rend()) {
+    return x.rend();
+  }
 
   template <typename T>
   auto cbegin(const btas::varray<T>& x) -> decltype(x.cbegin()) {
@@ -153,6 +163,14 @@ namespace std {
   auto cend(const btas::varray<T>& x) -> decltype(x.cend()) {
     return x.cend();
   }
+  template <typename T>
+  auto rbegin(btas::varray<T>& x) -> decltype(x.rbegin()) {
+    return x.rbegin();
+  }
+  template <typename T>
+  auto rend(btas::varray<T>& x) -> decltype(x.rend()) {
+    return x.rend();
+  }
 
   template <typename T>
   auto cbegin(const std::vector<T>& x) -> decltype(x.cbegin()) {
@@ -161,6 +179,31 @@ namespace std {
   template <typename T>
   auto cend(const std::vector<T>& x) -> decltype(x.cend()) {
     return x.cend();
+  }
+  template <typename T>
+  auto rbegin(std::vector<T>& x) -> decltype(x.rbegin()) {
+    return x.rbegin();
+  }
+  template <typename T>
+  auto rend(std::vector<T>& x) -> decltype(x.rend()) {
+    return x.rend();
+  }
+
+  template <typename T, size_t N>
+  const T* cbegin(const T (&x)[N]) {
+    return &x[0];
+  }
+  template <typename T, size_t N>
+  const T* cend(const T(&x)[N]) {
+    return &x[N];
+  }
+  template <typename T, size_t N>
+  const T* rbegin(T(&x)[N]) {
+    return &x[N-1];
+  }
+  template <typename T, size_t N>
+  const T* rend(T(&x)[N]) {
+    return &x[0] - 1;
   }
 
   template <typename T>
@@ -212,5 +255,20 @@ namespace btas {
       typedef U (type)[N];
   };
 }
+
+#ifndef BOOST_SERIALIZATION_STD_ARRAY
+#define BOOST_SERIALIZATION_STD_ARRAY
+namespace boost {
+  namespace serialization {
+
+    template<class Archive, class T, size_t N>
+    void serialize(Archive & ar, std::array<T,N> & a, const unsigned int version)
+    {
+        ar & btas::make_array(a.data(), a.size());
+    }
+
+  } // namespace serialization
+} // namespace boost
+#endif
 
 #endif /* __BTAS_ARRAYADAPTOR_H_ */

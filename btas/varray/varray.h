@@ -3,8 +3,9 @@
 
 #include <algorithm>
 #include <cassert>
-
-#include <boost/serialization/serialization.hpp>
+#include <btas/serialization.h>
+#include <boost/serialization/split_free.hpp>
+#include <boost/serialization/array.hpp>
 
 namespace btas {
 
@@ -27,8 +28,8 @@ public:
 
    typedef pointer iterator;
    typedef const_pointer const_iterator;
-   typedef std::reverse_iterator<iterator> reverse_iterator;
-   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+   typedef iterator reverse_iterator;
+   typedef const_iterator const_reverse_iterator;
 
 private:
 
@@ -386,29 +387,34 @@ inline bool operator!= (const btas::varray<T>& a,
   return not (a == b);
 }
 
+} // namespace btas
+
 namespace boost {
-namespace serialization {
+  namespace serialization {
 
-  /// boost serialization: load as varray
+  /// boost serialization for varray
   template<class Archive, typename T>
-  void load (Archive& ar, btas::varray<T>& x, const unsigned int version)
+  void serialize (Archive& ar, btas::varray<T>& x, const unsigned int version)
   {
-      typename btas::varray<T>::size_type n; ar >> n;
-      x.resize(n);
-      for (typename btas::varray<T>::value_type& xi : x) ar >> xi;
+      boost::serialization::split_free(ar, x, version);
   }
-
-  /// boost serialization: save as varray
   template<class Archive, typename T>
   void save (Archive& ar, const btas::varray<T>& x, const unsigned int version)
   {
-      ar << x.size();
-      for (const typename btas::varray<T>::value_type& xi : x) ar << xi;
+      const typename btas::varray<T>::size_type n = x.size();
+      ar << n << btas::make_array(x.data(), x.size());
   }
-}
-}
+  template<class Archive, typename T>
+  void load (Archive& ar, btas::varray<T>& x, const unsigned int version)
+  {
+      typename btas::varray<T>::size_type n;
+      ar >> n;
+      x.resize(n);
+      ar >> btas::make_array(x.data(), x.size());
+  }
 
-};
+  } // namespace serialization
+} // namespace boost
 
 template <typename T>
 inline bool operator== (const btas::varray<T>& a,
