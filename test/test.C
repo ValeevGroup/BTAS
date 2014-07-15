@@ -53,6 +53,12 @@ int main()
     Range1 r6 = {-3, 3};      r6 = {2, 7};
     Range1 r7 = {-3, 13, 2};  r7 = {-1, 10, 2};
 
+    // test equality
+    assert(r0 != r1);
+    assert(r1 != r2);
+    assert(congruent(r1,r2));
+    Range1 r1copy(0, 5, 1);
+    assert(r1 == r1copy);
   }
 
   //////////////////////////////////////////////////////////////////////////////

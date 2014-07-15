@@ -218,6 +218,48 @@ namespace btas {
       return os;
     }
 
+    /// Range1d equality operator
+
+    /// comparison of two Range1d objects, with potentially different index types
+    /// \tparam _Index1
+    /// \tparam _Index2
+    /// \param r1 the first, Range1d<_Index1>, object
+    /// \param r2 the second, Range1d<_Index1>, object
+    /// returns true if \c r1 and \c r2 have identical lobound, upbound, and stride
+    template <typename _Index1, typename _Index2>
+    bool operator==(const Range1d<_Index1>& r1,
+                    const Range1d<_Index2>& r2) {
+      return r1.lobound() == r2.lobound() && r1.upbound() == r2.upbound() && r1.stride() == r2.stride();
+    }
+
+    /// Range1d inequality operator
+
+    /// comparison of two Range1d objects, with potentially different index types
+    /// \tparam _Index1
+    /// \tparam _Index2
+    /// \param r1 the first, Range1d<_Index1>, object
+    /// \param r2 the second, Range1d<_Index1>, object
+    /// returns false if \c r1 and \c r2 have identical lobound, upbound, and stride
+    template <typename _Index1, typename _Index2>
+    bool operator!=(const Range1d<_Index1>& r1,
+                    const Range1d<_Index2>& r2) {
+      return !operator==(r1,r2);
+    }
+
+    /// Range1d congruence test
+
+    /// two Range1d objects are congruent if their sizes are equal
+    /// \tparam _Index1
+    /// \tparam _Index2
+    /// \param r1 the first, Range1d<_Index1>, object
+    /// \param r2 the second, Range1d<_Index1>, object
+    /// returns true if \c r1 and \c r2 have identical sizes
+    template <typename _Index1, typename _Index2>
+    bool congruent(const Range1d<_Index1>& r1,
+                    const Range1d<_Index2>& r2) {
+      return r1.size() == r2.size();
+    }
+
     /// convenient to iterate over dimensions according to \c Order
     template <CBLAS_ORDER Order = CblasRowMajor>
     Range1
@@ -1003,8 +1045,16 @@ namespace btas {
     ///   else
     ///     result = r1.extent()[0] == r2.extent()[N-1] && r1.extent()[1] == r2.extent()[N-2] && ... ;
     /// \endcode
-    /// \note To compare also lobound (except when the ranges have diffferent Order) use Range::operator==()
+    /// \tparam _Order1
+    /// \tparam _Index1
+    /// \tparam _Ordinal1
+    /// \tparam _Order2
+    /// \tparam _Index2
+    /// \tparam _Ordinal2
+    /// \param r1 a RangeNd<_Order1,_Index1,_Ordinal1> object
+    /// \param r2 a RangeNd<_Order2,_Index2,_Ordinal2> object
     /// \return \c true when \c r1 and \c r2 have same extents, otherwise \c false
+    /// \note To compare also lobound (except when the ranges have diffferent Order) use Range::operator==()
     template <CBLAS_ORDER _Order1,
               typename _Index1,
               typename _Ordinal1,
