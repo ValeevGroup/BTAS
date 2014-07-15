@@ -994,6 +994,36 @@ namespace btas {
       return ! operator ==(r1, r2);
     }
 
+    /// Tests congruency of two Ranges
+
+    /// Ranges are congruent if the have identical extents. The congruency of \c r1 and \c r2 of rank N is checked by the following code:
+    /// \code
+    ///   if (_Order1 == _Order2)
+    ///     result = r1.extent()[0] == r2.extent()[0] && r1.extent()[1] == r2.extent()[1] && ... ;
+    ///   else
+    ///     result = r1.extent()[0] == r2.extent()[N-1] && r1.extent()[1] == r2.extent()[N-2] && ... ;
+    /// \endcode
+    /// \note To compare also lobound (except when the ranges have diffferent Order) use Range::operator==()
+    /// \return \c true when \c r1 and \c r2 have same extents, otherwise \c false
+    template <CBLAS_ORDER _Order1,
+              typename _Index1,
+              typename _Ordinal1,
+              CBLAS_ORDER _Order2,
+              typename _Index2,
+              typename _Ordinal2
+             >
+    inline bool congruent(const RangeNd<_Order1,_Index1,_Ordinal1>& r1,
+                          const RangeNd<_Order2,_Index2,_Ordinal2>& r2) {
+      if (_Order1 == _Order2)
+        return std::equal(std::cbegin(r1.extent()), std::cend(r1.extent()),
+                          std::cbegin(r2.extent()));
+      else {
+        auto r2_extent = r2.extent();
+        return std::equal(std::cbegin(r1.extent()), std::cend(r1.extent()),
+                          std::rbegin(r2_extent)); // no crbegin
+      }
+    }
+
     /// Permutes a Range
 
     /// permutes the dimensions using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned

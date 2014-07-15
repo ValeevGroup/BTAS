@@ -661,6 +661,25 @@ namespace btas {
     return os;
   }
 
+  /// Tensor comparison operator
+
+  template <class _Tensor1, class _Tensor2,
+            class = typename std::enable_if<btas::is_boxtensor<_Tensor1>::value>::type,
+            class = typename std::enable_if<btas::is_boxtensor<_Tensor2>::value>::type >
+  bool operator==(const _Tensor1& t1, const _Tensor2& t2) {
+      if (t1.range().order == t2.range().order &&
+          t1.range().ordinal().contiguous() &&
+          t2.range().ordinal().contiguous()) // plain Tensor
+        return congruent(t1.range(), t2.range()) && t1.storage() == t2.storage();
+      else { // not plain, or different orders
+        typedef TensorView<typename _Tensor1::value_type, typename _Tensor1::range_type, const typename _Tensor1::storage_type>  cview1;
+        typedef TensorView<typename _Tensor2::value_type, typename _Tensor2::range_type, const typename _Tensor2::storage_type>  cview2;
+        cview1 vt1(t1);
+        cview2 vt2(t2);
+        return std::equal(vt1.cbegin(), vt1.cend(), vt2.cbegin());
+      }
+  }
+
 } // namespace btas
 
 namespace boost {
