@@ -57,14 +57,6 @@ template<>
 const char*
 typeToStr(const TensorViewOf<const Tensor<double>>& T) { return "cTensorView"; }
 
-template<>
-const char*
-typeToStr(const StorageRef<Tensor<double>::storage_type>& S) { return "StorageRef"; }
-
-template<>
-const char*
-typeToStr(const StorageRef<const Tensor<double>::storage_type>& S) { return "cStorageRef"; }
-
 // Set the elements of a Tensor T such that
 // T(i,j,k) = 1ijk
 // assuming individual dimensions are all less than 10.
