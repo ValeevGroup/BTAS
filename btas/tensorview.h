@@ -12,9 +12,22 @@
 
 #include <btas/tensorview_iterator.h>
 #include <btas/defaults.h>
+#include <btas/util/functional.h>
 
 namespace btas {
 
+  /// TensorViewPolicy configures behavior of certain features of TensorView
+  /// \tparam RuntimeConst: if true, constness of data access is checked at runtime. This involves
+  ///      extra space overhead (enough to store a boolean readwrite flag). Non-const data access members
+  ///      will also check whether readwrite is set using assert (hence runtime overhead can be eliminated after
+  ///      testing. This feature is needed if you want to use a single TensorView<T,Range,Storage> type
+  ///      for mutable (non-const) and immutable (const) views. The default value is false, which requires use
+  ///      of TensorView<T,Range,const Storage>, aka TensorConstView<T.Range,Storage>, for immutable views.
+  template <bool RuntimeConst = false>
+  struct TensorViewPolicy {
+      /// value of RuntimeConst template parameter
+      static constexpr bool runtimeconst = RuntimeConst;
+  };
 
   /// View (aka generalized slice) of a tensor
 
@@ -25,7 +38,8 @@ namespace btas {
   */
   template<typename _T,
            class _Range = btas::DEFAULT::range,
-           class _Storage = btas::DEFAULT::storage<_T>
+           class _Storage = btas::DEFAULT::storage<_T>,
+           class _Policy = btas::TensorViewPolicy<>
            >
   class TensorView {
 
@@ -66,34 +80,74 @@ namespace btas {
       /// destructor
       ~TensorView () { }
 
-      /// move-construct from \c range and \c storageref
+      /// move-construct from \c range and \c storageref ; write access must be passed explicitly if \c _Policy requires
+      template<class Policy = _Policy, class = typename std::enable_if<not Policy::runtimeconst>::type>
       explicit
-      TensorView (range_type&& range, storageref_type&& storageref) :
-      range_(range), storageref_(storageref)
+      TensorView (range_type&& range,
+                  storageref_type&& storageref,
+                  bool can_write = not _Policy::runtimeconst ? not std::is_const<storage_type>::value : false) :
+      range_(range), storageref_(storageref), can_write_(can_write)
       {
       }
 
-      /// conversion from Tensor
-      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value &&
-                                                              std::is_const<storage_type>::value>::type>
+      /// conversion from const Tensor into TensorConstView
+      template<class _Tensor,
+               class Storage = _Storage,
+               class = typename std::enable_if<is_boxtensor<_Tensor>::value &&
+                                               std::is_const<Storage>::value>::type
+              >
       TensorView (const _Tensor& x)
       : range_ (x.range()),
-        storageref_(std::cref(x.storage()))
+        storageref_(std::cref(x.storage())),
+        can_write_(false)
       {
       }
 
-      /// conversion from Tensor
-      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value &&
-                                                              not std::is_const<storage_type>::value>::type>
+      /// conversion from const Tensor to non-const View only possible if RuntimeConst=true
+      template<class _Tensor,
+               class Storage = _Storage,
+               class Policy = _Policy,
+               class = typename std::enable_if<is_boxtensor<_Tensor>::value &&
+                                               not std::is_const<Storage>::value &&
+                                               Policy::runtimeconst>::type
+              >
+      TensorView (const _Tensor& x)
+      : range_ (x.range()),
+        storageref_(std::ref(const_cast<storage_type&>(x.storage()))),
+        can_write_(false)
+      {
+      }
+
+      /// conversion from non-const Tensor
+      template<class _Tensor,
+               class Storage = _Storage,
+               class = typename std::enable_if<is_boxtensor<_Tensor>::value &&
+                                               std::is_same<typename _Tensor::storage_type,Storage>::value>::type>
       TensorView (_Tensor& x)
       : range_ (x.range()),
-        storageref_(std::ref(x.storage()))
+        storageref_(std::ref(x.storage())),
+        can_write_(true)
       {
       }
 
-      /// copy constructor
-      TensorView (const TensorView& x)
-      : range_ (x.range()), storageref_(x.storageref_)
+      /// conversion from non-const TensorView
+      template<class __T,
+               class __Range,
+               class __Storage,
+               class __Policy,
+               class = typename std::enable_if<not std::is_const<__Storage>::value>::type>
+      TensorView (TensorView<__T,__Range,__Storage,__Policy>& x)
+      : range_ (x.range()),
+        storageref_(std::ref(x.storage())),
+        can_write_(_Policy::runtimeconst ? bool(x.can_write_) : not std::is_const<storage_type>::value)
+      {
+      }
+
+      /// standard copy constructor
+      TensorView (const TensorView& x) :
+        range_ (x.range_),
+        storageref_(x.storageref_),
+        can_write_(false)
       {
       }
 
@@ -103,14 +157,14 @@ namespace btas {
       {
         range_ = x.range_;
         storageref_ = x.storageref_;
+        can_write_ = x.can_write_;
         return *this;
       }
 
       /// move constructor
-      TensorView (TensorView&& x)
+      TensorView (TensorView&& x) : range_(), storageref_(x.storageref_), can_write_(x.can_write_)
       {
         std::swap(range_, x.range_);
-        std::swap(storageref_, x.storageref_);
       }
 
       /// move assignment operator
@@ -119,6 +173,7 @@ namespace btas {
       {
         std::swap(range_, x.range_);
         std::swap(storageref_, x.storageref_);
+        std::swap(can_write_, x.can_write_);
         return *this;
       }
 
@@ -166,16 +221,17 @@ namespace btas {
       }
 
       /// \return storage object
-      const storageref_type&
+      const storage_type&
       storage() const
       {
-        return storageref_;
+        return storageref_.get();
       }
 
       /// \return storage object
-      storageref_type&
+      storage_type&
       storage()
       {
+        assert_writable();
         return storageref_;
       }
 
@@ -197,6 +253,7 @@ namespace btas {
       iterator
       begin()
       {
+        assert_writable();
         return iterator(range().begin(), storage());
       }
 
@@ -211,6 +268,7 @@ namespace btas {
       iterator
       end()
       {
+        assert_writable();
         return iterator(range().end(), storageref_);
       }
 
@@ -253,6 +311,7 @@ namespace btas {
       typename std::enable_if<std::is_integral<index0>::value, value_type&>::type
       operator() (const index0& first, const _args&... rest)
       {
+        assert_writable();
         typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
         auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
         index_type index = array_adaptor<index_type>::construct(indexv.size());
@@ -265,6 +324,7 @@ namespace btas {
       typename std::enable_if<is_index<Index>::value, value_type&>::type
       operator() (const Index& index)
       {
+        assert_writable();
         return storageref_.get()[range_.ordinal(index)];
       }
 
@@ -295,6 +355,7 @@ namespace btas {
       typename std::enable_if<std::is_integral<index0>::value, value_type&>::type
       at (const index0& first, const _args&... rest)
       {
+        assert_writable();
         typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
         auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
         index_type index = array_adaptor<index_type>::construct(indexv.size());
@@ -308,6 +369,7 @@ namespace btas {
       typename std::enable_if<is_index<Index>::value, value_type&>::type
       at (const Index& index)
       {
+        assert_writable();
         assert( range_.includes(index) );
         return storageref_.get()[ range_.ordinal(index) ];
       }
@@ -318,6 +380,7 @@ namespace btas {
       {
         std::swap(range_, x.range_);
         std::swap(storageref_, x.storageref_);
+        std::swap(can_write_, x.can_write_);
       }
 
       //  ========== Finished Public Interface and Its Reference Implementations ==========
@@ -381,6 +444,17 @@ namespace btas {
 
       range_type range_;///< range object
       storageref_type storageref_;///< dataref
+      typedef typename std::conditional<_Policy::runtimeconst,
+                                        bool,
+                                        btas::detail::bool_type<not std::is_const<storage_type>::value>
+                                       >::type writable_type;
+      writable_type can_write_;
+
+      /// use this in non-const members to assert writability if Policy calls for runtime const check
+      void assert_writable() const {
+        if (_Policy::runtimeconst)
+          assert(can_write_ == true);
+      }
 
       /// construct from \c range and \c storage
       explicit TensorView(const range_type& range, storage_type& storage) :
@@ -402,14 +476,28 @@ namespace btas {
                 typename Storage>
       friend TensorView<T, Range, const Storage> make_cview(const Range& range, const Storage& storage);
 
+      template <class __T,
+                      class __Range,
+                      class __Storage,
+                      class __Policy>
+      friend class TensorView;
   }; // end of TensorView
 
   /// TensorConstView is a read-only variant of TensorView
   template <typename _T,
             class _Range   = btas::DEFAULT::range,
-            class _Storage = btas::DEFAULT::storage<_T>
+            class _Storage = btas::DEFAULT::storage<_T>,
+            class _Policy  = btas::TensorViewPolicy<>
            >
-  using TensorConstView = TensorView<_T, _Range, const _Storage>;
+  using TensorConstView = TensorView<_T, _Range, const _Storage, _Policy>;
+
+  /// TensorRWView is a variant of TensorView with runtime write access check
+  template <typename _T,
+            class _Range   = btas::DEFAULT::range,
+            class _Storage = btas::DEFAULT::storage<_T>,
+            class _Policy  = btas::TensorViewPolicy<true>
+           >
+  using TensorRWView = TensorView<_T, _Range, _Storage, _Policy>;
 
   /// Helper function that constructs TensorView.
   /// \tparam Range the range type

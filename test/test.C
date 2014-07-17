@@ -365,8 +365,30 @@ int main()
       const auto& t0_cref = t0;
       TensorView<double> t0v1(t0_ref);
       TensorConstView<double> t0v2(t0_ref);
-      //TensorView<double> t0v3(t0_cref); // error: nonconst view from const Tensor
+      //TensorView<double> t0v3(t0_cref); // compile error: nonconst view from const Tensor
       TensorConstView<double> t0v4(t0_cref);
+
+      // make TensorConstView from TensorView
+      TensorConstView<double> t0v5 = t0v1;
+
+      //
+      // test const-correctness of TensorRWView that tracks constness at (mostly) runtime
+      //
+      TensorRWView<double> t0v6 = t0v1;      // receive write access from TensorView
+      t0v6(0,0,0) = -3.0;                    // OK
+      TensorRWView<double> t0v6_copy = t0v6; // receive write access from writeable TensorRWView
+      t0v6_copy(0,0,0) = -3.0;               // OK
+      TensorRWView<double> t0v7 = t0v5;      // no write access from TensorConstView
+      //t0v7(0,0,0) = -3.0;                  // runtime error: t0v7 has no write access
+      const TensorRWView<double> t0v8 = t0v1;// receive write access from TensorView, but the object is const, hence can't write
+      //t0v8(0,0,0) = -3.0;                  // compile error: t0v8 is const
+      TensorRWView<double> t0v9 = t0v8;      // no write access: t0v8 has write access but is const!
+      //t0v9(0,0,0) = -3.0;                  // runtime error: t0v9 has no write access
+
+      TensorRWView<double> t0v10(t0_ref);    // write access when constructed directly from mutable Tensor
+      t0v10(0,0,0) = -3.0;                   // OK
+      TensorRWView<double> t0v11(t0_cref);   // no write access since Tensor is const
+      //t0v11(0,0,0) = -3.0;                 // runtime error: t0v11 has no write access
     }
 
     {
