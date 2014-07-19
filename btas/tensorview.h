@@ -85,7 +85,7 @@ namespace btas {
       template<class Policy = _Policy, class = typename std::enable_if<not Policy::runtimeconst>::type>
       explicit
       TensorView (range_type&& range,
-                  storageref_type&& storageref,
+                  const storageref_type& storageref,
                   bool can_write = not _Policy::runtimeconst ? not std::is_const<storage_type>::value : false) :
       range_(range), storageref_(storageref), can_write_(can_write)
       {
@@ -477,6 +477,11 @@ namespace btas {
                 typename Storage>
       friend TensorView<T, Range, const Storage> make_cview(const Range& range, const Storage& storage);
 
+      template <typename T,
+                typename Range>
+      friend TensorView<typename std::remove_const<T>::type, Range, typename std::conditional<std::is_const<T>::value,T* const,T*>::type>
+      make_map(T*& data, Range&& range);
+
       template <class __T,
                       class __Range,
                       class __Storage,
@@ -669,6 +674,49 @@ namespace btas {
   std::ostream& operator<<(std::ostream& os, const btas::TensorView<_T, _Range, _Storage>& t) {
     os << "TensorView:\n  Range: " << t.range() << std::endl;
     return os;
+  }
+
+  /// TensorMap views a sequence of values as a Tensor
+  template <typename _T,
+            class _Range = btas::DEFAULT::range>
+  using TensorMap = TensorView<_T, _Range, _T*>;
+  /// TensorConstMap const-views a sequence of values as a Tensor
+  template <typename _T,
+            class _Range = btas::DEFAULT::range>
+  using TensorConstMap = TensorView<_T, _Range, const _T* const>;
+
+  /// Helper function that constructs TensorMap.
+  /// \tparam T the element type returned by the view
+  /// \tparam Range the range type
+  /// \param range the range object defining the view
+  /// \return TensorView into \c storage using \c range
+  /// \attention use make_cmap if you must force a const view; this will provide const view, however, if \c storage is a const reference.
+  template <typename T,
+            typename Range>
+  TensorView<typename std::remove_const<T>::type, Range, typename std::conditional<std::is_const<T>::value,T* const,T*>::type>
+  make_map(T*& data, Range&& range)
+  {
+    typedef typename std::remove_const<T>::type value_type;
+    typedef TensorView<value_type, Range, typename std::conditional<std::is_const<T>::value,T* const,T*>::type>
+        result_type;
+    return result_type(std::move(range),
+                       std::ref(data));
+  }
+
+  /// Helper function that constructs TensorConstMap.
+  /// \tparam Range the range type
+  /// \param range the range object defining the view
+  /// \return TensorView into \c storage using \c range
+  /// \attention use make_cmap if you must force a const view; this will provide const view, however, if \c storage is a const reference.
+  template <typename T,
+            typename Range>
+  TensorConstMap<typename std::remove_const<T>::type, Range>
+  make_cmap(T*& data, Range&& range)
+  {
+    typedef typename std::remove_const<T>::type value_type;
+    TensorConstMap<value_type, Range> result(std::move(range),
+                                             std::cref(const_cast<const T*&>(data)));
+    return result;
   }
 
 } // namespace btas

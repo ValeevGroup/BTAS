@@ -93,14 +93,14 @@ namespace btas {
       }
 
       const reference operator*() const {
-        return *(storageref_.get().cbegin() + *iter_);
+        return *(cbegin(storageref_.get()) + *iter_);
       }
 
       //template <class = typename std::enable_if<not std::is_const<storage_type>::value,Enabler>::type>
       template <typename S = Storage>
       typename std::enable_if<not std::is_const<S>::value,reference>::type
       operator*() {
-        return *(storageref_.get().begin() + *iter_);
+        return *(begin(storageref_.get()) + *iter_);
       }
 
       const index_type& index() const {
