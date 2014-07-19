@@ -1,4 +1,5 @@
 #include "test.h"
+#include <random>
 #include "btas/tensor.h"
 #include "btas/generic/contract.h"
 
@@ -38,6 +39,15 @@ fillEls(DTensor& T)
         }
     }
 
+//rng() is useful for filling Tensors with random elements
+//using the code T.generate(rng);
+double static
+rng()
+    {
+    static std::mt19937 rng(std::time(NULL));
+    static auto dist = std::uniform_real_distribution<double>{0., 1.};
+    return dist(rng);
+    }
 
 TEST_CASE("Tensor Contract")
     {
@@ -50,31 +60,51 @@ TEST_CASE("Tensor Contract")
 
     SECTION("Matrix-like")
         {
-        //cout << "T2 = " << T2 << endl;
+        //cout << "T2 = \n" << T2 << endl;
         enum {i,j,k};
 
-        DTensor R;
-        contract(1.0,T2,{j,i},T2,{j,k},0.0,R,{i,k});
+        DTensor A;
+        contract(1.0,T2,{j,i},T2,{j,k},0.0,A,{i,k});
+        //cout << "A = \n" << A << endl;
 
-        // Correct entries of R should be:
+        // If using fillEls(T2) to set elements
+        // of T2, correct entries of A should be:
         //
         // 36500 36830
         // 36830 37163
         //
 
-        //const size_t rmax = T2.extent(1),
-        //             cmax = T2.extent(1);
-        //for(size_t r = 0; r < rmax; ++r)
-        //for(size_t c = 0; c < cmax; ++c)
-        //    {
-        //    double val = 0;
-        //    for(size_t i = 0; i < T2.extent(0); ++i)
-        //        {
-        //        val += T2(i,r)*T2(i,c);
-        //        }
-        //    CHECK(val == R(r,c));
-        //    //cout << r << " " << c << " " << val << " " << R(r,c) << endl;
-        //    }
+        auto rmax = T2.extent(1),
+             cmax = T2.extent(1);
+        for(size_t r = 0; r < rmax; ++r)
+        for(size_t c = 0; c < cmax; ++c)
+            {
+            double val = 0;
+            for(size_t n = 0; n < T2.extent(0); ++n)
+                {
+                val += T2(n,r)*T2(n,c);
+                }
+            CHECK(val == A(r,c));
+            //cout << r << " " << c << " " << val << " " << A(r,c) << endl;
+            }
+
+        DTensor B;
+        contract(1.0,T2,{i,j},T2,{k,j},0.0,B,{i,k});
+        //cout << "B = \n" << B << endl;
+
+        rmax = T2.extent(0),
+        cmax = T2.extent(0);
+        for(size_t r = 0; r < rmax; ++r)
+        for(size_t c = 0; c < cmax; ++c)
+            {
+            double val = 0;
+            for(size_t n = 0; n < T2.extent(1); ++n)
+                {
+                val += T2(r,n)*T2(c,n);
+                }
+            CHECK(val == B(r,c));
+            //cout << r << " " << c << " " << val << " " << B(r,c) << endl;
+            }
         }
 
 
