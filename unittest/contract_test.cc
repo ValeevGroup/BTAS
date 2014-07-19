@@ -107,5 +107,14 @@ TEST_CASE("Tensor Contract")
             }
         }
 
+    SECTION("Memory Bug")
+        {
+        DTensor T(3,4);
+        T.generate(rng);
+        enum {i,j,k};
+        DTensor R;
+        contract(1.0,T,{j,i},T,{j,k},0.0,R,{i,k});
+        }
+
 
     }
