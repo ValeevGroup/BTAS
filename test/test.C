@@ -425,15 +425,15 @@ int main()
       for(auto i=0; i!=24; ++i) ptr0[i] = i;
 
       auto map0   = make_map(ptr0, Range{2, 3, 4});   // writable map
-      auto map0c  = make_map(const_cast<const double*&>(ptr0), Range{2, 3, 4});   // const map
+      auto map0c  = make_map(const_cast<const double*>(ptr0), Range{2, 3, 4});   // const map
       auto map0c2 = make_cmap(ptr0, Range{2, 3, 4}); // const map
 
       map0(1, 2, 3) = -1.0;
-      //map0c(1, 2, 3) = -1.0;
-      //map0c2(1, 2, 3) = -1.0;
+      //map0c(1, 2, 3) = -1.0;  // error: read-only map
+      //map0c2(1, 2, 3) = -1.0; // error: read-only map
 
-      std::cout << map0c << std::endl;
-      for (const auto& i: map0c) { std::cout << i << std::endl; }
+      std::cout << map0 << std::endl;
+      for (const auto& i: map0) { std::cout << i << std::endl; }
 
       delete[] ptr0;
   }
