@@ -91,20 +91,20 @@ int main()
    auto slice_lobound = { 1, 1, 1 };
    auto slice_upbound = { n, n, n };
 
-   TensorView<double> Dv0( A.range().slice(slice_lobound, slice_upbound) , A.storage());
+   auto Dv0 = make_cview(A.range().slice(slice_lobound, slice_upbound) , A.storage());
    auto Dv1 = permute(A, {2,0,1});
 
    cout << "Printing Dv0 = slice(A," << slice_lobound << "," << slice_upbound << "): "; print(Dv0);
    cout << "Printing Dv1 = permute(A,{2,0,1}): "; print(Dv1);
 
    // slice and permute
-   TensorView<double> Dv2( permute(A.range().slice(slice_lobound, slice_upbound), {2,0,1}) , A.storage());
+   auto Dv2 = make_cview( permute(A.range().slice(slice_lobound, slice_upbound), {2,0,1}) , A.storage());
 
    cout << "Printing Dv2 = permute(slice(A," << slice_lobound << "," << slice_upbound << "),"
        << std::array<int,3>{{2,0,1}} << ": "; print(Dv2);
 
    // permute and slice
-   TensorView<double> Dv3( permute(A.range(), {2,0,1}).slice(slice_lobound, slice_upbound) , A.storage());
+   auto Dv3 = make_cview( permute(A.range(), {2,0,1}).slice(slice_lobound, slice_upbound) , A.storage());
 
    cout << "Printing Dv3 = slice(permute(A," << std::array<int,3>{{2,0,1}} << "),"<< slice_lobound << "," << slice_upbound << ")"
         << ": "; print(Dv3);

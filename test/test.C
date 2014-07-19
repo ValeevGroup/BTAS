@@ -12,12 +12,9 @@ using namespace std;
 #include <btas/btas.h>
 #include <btas/tensor.h>
 #include <btas/tarray.h>
-#include <btas/storageref.h>
 #include <btas/corange.h>
 #include <btas/tensorview.h>
 using namespace btas;
-
-template<typename T> using vectorref = StorageRef<std::vector<T> >;
 
 int main()
 {
@@ -300,34 +297,6 @@ int main()
   }
 
   //////////////////////////////////////////////////////////////////////////////
-  // StorageRef tests
-  //////////////////////////////////////////////////////////////////////////////
-  {
-    vectorref<double> vr0; // creates an empty range, safe for iteration
-    for(auto i: vr0) { // safe to iterate over default-constructed StorageRef
-      cout << "vr0[" << i << "] = " << vr0[i] << endl;
-    }
-
-    std::vector<double> v1(5);
-    {
-      vectorref<double> vr2;
-      {
-        vectorref<double> vr1(v1);
-        for(auto i: vr1) {
-          cout << "vr1[" << i << "] = " << vr1[i] << endl;
-        }
-        vr2 = vr1;
-      } // vr1 is gone now, vr2 is OK though
-      for(auto i: vr2) {
-        cout << "vr2[" << i << "] = " << vr2[i] << endl;
-      }
-    } // vr2 is also gone, v1 is OK though
-    for(auto i: v1) {
-      cout << "v1[" << i << "] = " << v1[i] << endl;
-    }
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
   // CoRange tests
   //////////////////////////////////////////////////////////////////////////////
 
@@ -356,33 +325,95 @@ int main()
         cout << i << endl;
     }
 
-    {
+    { // test permuted view
       auto prange0 = permute(t0.range(),{2,1,0});
       // read only view
-      TensorConstView<double> t0v(prange0, t0.storage());
+      auto t0v = make_cview(prange0, t0.storage());
 
       for(auto i: t0v)
         cout << i << endl;
 
+      //
+      // test const-correctness
+      //
+
       //*(t0v.begin()) = -1.0; // error: assignment to read-only value
 
       // read-write view
-      TensorView<double> t0vw(prange0, t0.storage());
-      *(t0vw.begin()) = -1.0; // error: assignment to read-only value
+      auto t0vw = make_view(prange0, t0.storage());
+      *(t0vw.begin()) = -1.0; // OK: writable value
 
+      // const TensorView behaves like TensorConstView
+      const auto t0cv = make_view(prange0, t0.storage());
+      //t0cv(0,0,0) = -1.0; // error: assignment to read-only value
+
+      // const TensorView can be made from const Tensor
+      const auto& t0_cref = t0;
+      const auto t0cvr = make_view(prange0, t0_cref.storage());
+      //t0cvr(0,0,0) = -1.0; // error: assignment to read-only value
+
+      // making TensorView from const Tensor produces TensorConstView
+      auto t0ncvr = make_view(prange0, t0_cref.storage());
+      //t0ncvr(0,0,0) = -2.0; // error: assignment to read-only value N.B. Error message will be a bit more verbose here
+    }
+
+    //
+    // more tests of const-correctness
+    //
+    {
+      auto& t0_ref = t0;
+      const auto& t0_cref = t0;
+      TensorView<double> t0v1(t0_ref);
+      TensorConstView<double> t0v2(t0_ref);
+      //TensorView<double> t0v3(t0_cref); // compile error: nonconst view from const Tensor
+      TensorConstView<double> t0v4(t0_cref);
+
+      // make TensorConstView from TensorView
+      TensorConstView<double> t0v5 = t0v1;
+
+      //
+      // test const-correctness of TensorRWView that tracks constness at (mostly) runtime
+      //
+      TensorRWView<double> t0v6 = t0v1;      // receive write access from TensorView
+      t0v6(0,0,0) = -3.0;                    // OK
+      TensorRWView<double> t0v6_copy = t0v6; // receive write access from writeable TensorRWView
+      t0v6_copy(0,0,0) = -3.0;               // OK
+      TensorRWView<double> t0v7 = t0v5;      // no write access from TensorConstView
+      //t0v7(0,0,0) = -3.0;                  // runtime error: t0v7 has no write access
+      const TensorRWView<double> t0v8 = t0v1;// receive write access from TensorView, but the object is const, hence can't write
+      //t0v8(0,0,0) = -3.0;                  // compile error: t0v8 is const
+      TensorRWView<double> t0v9 = t0v8;      // no write access: t0v8 has write access but is const!
+      //t0v9(0,0,0) = -3.0;                  // runtime error: t0v9 has no write access
+
+      TensorRWView<double> t0v10(t0_ref);    // write access when constructed directly from mutable Tensor
+      t0v10(0,0,0) = -3.0;                   // OK
+      TensorRWView<double> t0v11(t0_cref);   // no write access since Tensor is const
+      //t0v11(0,0,0) = -3.0;                 // runtime error: t0v11 has no write access
     }
 
     {
       // read only view as a rank-2 tensor
       auto x = t0.extent();
       Range range_01_2(x[0] * x[1], x[2]);
-      TensorConstView<double> t0v(range_01_2, t0.storage());
+      auto t0v = make_cview(range_01_2, t0.storage());
 
       for(auto i: make_corange(t0v.range(), t0v)) {
         cout << first(i) << " " << second(i) << endl;
       }
 
     }
+
+    { // TensorView with different element type
+      auto t0_float = make_cview<float>(t0.range(), t0.storage());
+      auto t0_float1 = make_cview<float>(t0);
+      auto t0_float2 = make_view<float>(t0);
+
+      for(auto i: t0_float) {
+        cout << i << endl;
+      }
+
+    }
+
   }
 
   return 0;
