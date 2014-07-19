@@ -76,9 +76,6 @@ namespace btas {
 
     public:
 
-      /// default constructor
-      TensorView () { }
-
       /// destructor
       ~TensorView () { }
 
