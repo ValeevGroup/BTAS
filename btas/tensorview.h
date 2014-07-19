@@ -10,6 +10,7 @@
 
 #include <functional>
 
+#include <btas/storage_traits.h>
 #include <btas/tensorview_iterator.h>
 #include <btas/defaults.h>
 #include <btas/util/functional.h>
@@ -61,7 +62,7 @@ namespace btas {
       typedef std::reference_wrapper<storage_type> storageref_type;
 
       /// size type
-      typedef typename storage_type::size_type size_type;
+      typedef typename storage_traits<storage_type>::size_type size_type;
 
       /// element iterator
       typedef TensorViewIterator<range_type, storage_type> iterator;
