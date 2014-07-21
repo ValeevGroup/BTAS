@@ -25,8 +25,7 @@ namespace btas {
   permute(const _TensorX& X, const _Permutation& p, _TensorY& Y) 
     {
     const auto pr = permute(X.range(),p);
-    using _Yrange_type = typename _TensorY::range_type;
-    Y.resize(_Yrange_type(pr.lobound(),pr.upbound()));
+    Y.resize(pr);
     const auto itrX = std::begin(X);
     auto itrY = std::begin(Y);
     for(auto i : Y.range())
