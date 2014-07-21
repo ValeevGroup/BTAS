@@ -389,6 +389,14 @@ int main()
       t0v10(0,0,0) = -3.0;                   // OK
       TensorRWView<double> t0v11(t0_cref);   // no write access since Tensor is const
       //t0v11(0,0,0) = -3.0;                 // runtime error: t0v11 has no write access
+
+
+      auto t0v12 = make_rwview(t0_ref.range(), t0_ref.storage());
+      t0v12(0,0,0) = -3.0;                   // OK
+      auto t0v13 = make_rwview(t0_cref.range(), t0_cref.storage());
+      //t0v13(0,0,0) = -3.0;                 // error: no write access
+      auto t0v14 = make_rwview<float>(t0_ref.range(), t0_ref.storage());
+      //t0v14(0,0,0) = -3.0;                 // alternate type views are always immutable
     }
 
     {
