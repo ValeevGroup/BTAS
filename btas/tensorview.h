@@ -288,9 +288,15 @@ namespace btas {
         return const_iterator(range().end(), storage());
       }
 
-      /// \return element without range check
+      /// Immutable access to an element without range check.
+
+      /// Available when \c value_type == \c storage_type::value_type
+      /// \return const reference to the element indexed by {\c first, \c rest}
       template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value, const value_type&>::type
+      typename std::enable_if<std::is_integral<index0>::value &&
+                               std::is_same<value_type,typename storage_type::value_type>::value,
+                              const value_type&
+                             >::type
       operator() (const index0& first, const _args&... rest) const
       {
         typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
@@ -300,17 +306,29 @@ namespace btas {
         return storageref_.get()[ range_.ordinal(index) ];
       }
 
-      /// \return element without range check (rank() == general)
+      /// Immutable access to an element without range check.
+
+      /// Available when \c value_type == \c storage_type::value_type
+      /// \return const reference to the element indexed by \c index
       template <typename Index>
-      typename std::enable_if<is_index<Index>::value, const value_type&>::type
+      typename std::enable_if<is_index<Index>::value &&
+                               std::is_same<value_type,typename storage_type::value_type>::value,
+                              const value_type&
+                             >::type
       operator() (const Index& index) const
       {
         return storageref_.get()[range_.ordinal(index)];
       }
 
-      /// access element without range check
+      /// Mutable access to an element without range check.
+
+      /// Available when \c value_type == \c storage_type::value_type
+      /// \return reference to the element indexed by {\c first, \c rest}
       template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value, value_type&>::type
+      typename std::enable_if<std::is_integral<index0>::value &&
+                               std::is_same<value_type,typename storage_type::value_type>::value,
+                              value_type&
+                             >::type
       operator() (const index0& first, const _args&... rest)
       {
         assert_writable();
@@ -321,14 +339,52 @@ namespace btas {
         return storageref_.get()[ range_.ordinal(index) ];
       }
 
-      /// access element without range check (rank() == general)
+      /// Mutable access to an element without range check (rank() == general)
+
+      /// Available when \c value_type == \c storag_type::value_type
+      /// \return reference to the element indexed by \c index
       template <typename Index>
-      typename std::enable_if<is_index<Index>::value, value_type&>::type
+      typename std::enable_if<is_index<Index>::value &&
+                               std::is_same<value_type,typename storage_type::value_type>::value,
+                              value_type&
+                             >::type
       operator() (const Index& index)
       {
         assert_writable();
         return storageref_.get()[range_.ordinal(index)];
       }
+
+      /// Immutable access to an element without range check.
+
+      /// Available when \c value_type != \c storage_type::value_type
+      /// \return value of the element indexed by {\c first, \c rest}
+      template<typename index0, typename... _args>
+      typename std::enable_if<std::is_integral<index0>::value &&
+                              not std::is_same<value_type,typename storage_type::value_type>::value,
+                              value_type>::type
+      operator() (const index0& first, const _args&... rest) const
+      {
+        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
+        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
+        index_type index = array_adaptor<index_type>::construct(indexv.size());
+        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
+        return storageref_.get()[ range_.ordinal(index) ];
+      }
+
+      /// Immutable access to an element without range check (rank() == general)
+
+      /// Available when \c value_type != \c storage_type::value_type
+      /// \return value of the element indexed by \c index
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value &&
+                               not std::is_same<value_type,typename storage_type::value_type>::value,
+                              value_type
+                             >::type
+      operator() (const Index& index) const
+      {
+        return storageref_.get()[range_.ordinal(index)];
+      }
+
 
       /// \return element without range check
       template<typename index0, typename... _args>
