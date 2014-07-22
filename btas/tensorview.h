@@ -760,10 +760,10 @@ namespace btas {
             typename Storage,
             typename Policy = btas::TensorViewPolicy<TensorViewPolicy_CompiletimeConst>,
             class = typename std::enable_if<not std::is_reference<Range>::value>::type>
-  TensorView<typename Storage::value_type, Range, const Storage, Policy>
+  TensorView<typename std::add_const<typename Storage::value_type>::type, Range, const Storage, Policy>
   make_cview(const Range& range, const Storage& storage, Policy = Policy())
   {
-    return make_cview<typename Storage::value_type, Range, Storage, Policy>(range, storage);
+    return make_cview<typename std::add_const<typename Storage::value_type>::type, Range, Storage, Policy>(range, storage);
   }
 
   /// Helper function that constructs a constant TensorView, with an explicitly-specified element type of the view. Useful if need to
@@ -779,10 +779,10 @@ namespace btas {
             typename Storage,
             typename Policy = TensorViewPolicy<TensorViewPolicy_CompiletimeConst>,
             class = typename std::enable_if<not std::is_reference<Range>::value>::type>
-  TensorView<T, Range, const Storage, Policy>
+  TensorView<typename std::add_const<T>::type, Range, const Storage, Policy>
   make_cview(const Range& range, const Storage& storage, Policy = Policy())
   {
-    return __make_cview<T, Range, const Storage, Policy>(Range(range), storage);
+    return __make_cview<typename std::add_const<T>::type, Range, const Storage, Policy>(Range(range), storage);
   }
 
   /// Helper function that constructs a full constant TensorView of a Tensor.
@@ -793,13 +793,13 @@ namespace btas {
   template <typename Tensor,
             typename Policy = TensorViewPolicy<TensorViewPolicy_CompiletimeConst>,
             class = typename std::enable_if<is_boxtensor<Tensor>::value>::type>
-  TensorView<typename Tensor::value_type,
+  TensorView<typename std::add_const<typename Tensor::value_type>::type,
              typename Tensor::range_type,
              const typename Tensor::storage_type,
              Policy>
   make_cview(const Tensor& tensor)
   {
-    return TensorView<typename Tensor::value_type,
+    return TensorView<typename std::add_const<typename Tensor::value_type>::type,
                       typename Tensor::range_type,
                       const typename Tensor::storage_type,
                       Policy>(tensor);
@@ -816,13 +816,13 @@ namespace btas {
   template <typename T, typename Tensor,
             typename Policy = TensorViewPolicy<TensorViewPolicy_CompiletimeConst>,
             class = typename std::enable_if<is_boxtensor<Tensor>::value>::type>
-  TensorView<T,
+  TensorView<typename std::add_const<T>::type,
              typename Tensor::range_type,
              const typename Tensor::storage_type,
              Policy>
   make_cview(const Tensor& tensor)
   {
-    return TensorView<T,
+    return TensorView<typename std::add_const<T>::type,
                       typename Tensor::range_type,
                       const typename Tensor::storage_type,
                       Policy>(tensor);

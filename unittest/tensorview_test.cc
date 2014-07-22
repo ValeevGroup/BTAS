@@ -88,9 +88,8 @@ TEST_CASE("Tensor View Constructors")
 
         // read only view
         auto T0cv = make_cview(prange0, T0.storage());
-        //FIXME T0cv(0,0,0) cannot be used.
-        //cout << T0cv(0,0,0)<<endl;
-        //CHECK( T0cv(0,0,0) == T0(0,0,0));
+        CHECK( T0cv(0,0,0) == T0(0,0,0));
+        CHECK( T0cv(*T0cv.range().begin()) == T0(0,0,0) );
         //for( auto i : T0cv.range())
         //    cout << T0cv(i)<<endl;
         //T0cv(0,0,0)=0.1; // This is not allowed.
