@@ -1,6 +1,17 @@
 #include "test.h"
 #include <random>
+#include "btas/tarray.h"
 #include "btas/tensor.h"
+#include "btas/tensorview.h"
+#include <btas/btas.h>
+#include <btas/tarray.h>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
+#include <iostream>
+#include <algorithm>
+#include <set>
+#include <fstream>
 
 using std::cout;
 using std::endl;
@@ -9,6 +20,8 @@ using btas::Range;
 using btas::Tensor;
 
 using DTensor = Tensor<double>;
+using namespace btas;
+using namespace std;
 
 double static
 rng()
@@ -47,6 +60,14 @@ fillEls(DTensor& T)
         }
     }
 
+template <typename T>
+T
+randomReal()
+    {
+    static std::mt19937 rng(std::time(NULL));
+    static auto dist = std::uniform_real_distribution<T>{0., 1.};
+    return dist(rng);
+    }
 
 TEST_CASE("Tensor Constructors")
     {
@@ -115,6 +136,26 @@ TEST_CASE("Tensor Constructors")
         DTensor T1(r1);
         CHECK(T1.rank() == 6);
         }
+    SECTION("Fixed Rank Tensor")
+        {
+        TArray<double,3> T0(2,4,3);
+        CHECK(T0.rank() == 3);
+        CHECK(T0.size() == 24);
+        CHECK(T0.extent(0) == 2);
+        CHECK(T0.extent(1) == 4);
+        CHECK(T0.extent(2) == 3);
+
+        Range r1(2,5,3);
+        //FIXME
+        //Range r1(2,5,3,4); 
+        //The conflict between the rank of fixed rank tensor and the rank of range cannot be detected during the compile time. 
+        TArray<double,3> T1(r1);
+        CHECK(T1.rank() == 3);
+        CHECK(T1.size() == 30);
+        CHECK(T1.extent(0) == 2);
+        CHECK(T1.extent(1) == 5);
+        CHECK(T1.extent(2) == 3);
+        }
     }
 
 TEST_CASE("Tensor")
@@ -146,4 +187,76 @@ TEST_CASE("Tensor")
             CHECK(*it == data[j]);
             }
         }
+
+    SECTION("Tensor of Tensor")
+        {
+        Tensor<Tensor<double>> A(4,3);
+        Tensor<double> aval(2,3);
+        aval.generate([](){ return randomReal<double>();}); A.fill(aval);
+        Tensor<Tensor<double>> B(3,2);
+        Tensor<double> bval(3,4);
+        bval.generate([](){ return randomReal<double>();}); B.fill(bval);
+        Tensor<Tensor<double>> C(4,2); C.fill(Tensor<double>(2,4));// rank info is required to determine contraction ranks at gemm
+        btas::gemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 1.0, C);
+        Tensor<Tensor<double>> Ctest(4,2); Ctest.fill(Tensor<double>(2,4));
+        for(size_t i0=0; i0< A.extent(0);i0++)
+        for(size_t i1=0; i1< A.extent(1);i1++)
+        for(size_t i2=0; i2< B.extent(1);i2++)
+            btas::gemm(CblasNoTrans, CblasNoTrans,1.0,A(i0,i1),B(i1,i2),1.0,Ctest(i0,i2));
+        CHECK(C== Ctest);
+
+        Tensor<Tensor<double>> Ctest1(4,2); Ctest1.fill(Tensor<double>(2,4));
+        for(size_t i0=0; i0< A.extent(0);i0++)
+        for(size_t i1=0; i1< A.extent(1);i1++)
+        for(size_t i2=0; i2< B.extent(1);i2++)
+            for(size_t j0=0; j0< A(i0,i1).extent(0); j0++)
+            for(size_t j1=0; j1< A(i0,i1).extent(1); j1++)
+            for(size_t j2=0; j2< B(i1,i2).extent(1); j2++)
+                Ctest1(i0,i2)(j0,j2) += A(i0,i1)(j0,j1)*B(i1,i2)(j1,j2);
+        CHECK(C== Ctest1);
+
+        }
+
+    SECTION("Serialization")
+        {
+        const auto archive_fname = "test1.archive";
+
+        Tensor<std::array<complex<double>,3>> T1(2,3,4);
+        T1.fill({{{1.0,2.0}, {2.0,1.0}, {2.0,3.0} }});
+        //Tensor<double,3> t({-1,0,1},{2,4,3});
+        TArray<double,3> t(2,4,3);
+        t.generate([](){ return randomReal<double>();});
+        Tensor<Tensor<double>> A(4,4);
+        Tensor<double> aval(2,2); aval.fill(1.0); A.fill(aval);
+        // write
+        {
+          std::ofstream os(archive_fname);
+          assert(os.good());
+          boost::archive::text_oarchive ar(os);
+          ar << t; // fixed-size Tensor
+          ar << A; // Tensor of Tensor
+          ar << T1; // Tensor of complex datatypes
+        }
+        // read
+        {
+          std::ifstream is(archive_fname);
+          assert(is.good());
+          boost::archive::text_iarchive ar(is);
+
+          TArray<double,3> tcopy;
+          ar >> tcopy;
+
+          Tensor<Tensor<double>> Acopy;
+          ar >> Acopy; // Tensor of Tensor
+
+          Tensor<std::array<complex<double>,3>> T1copy;
+          ar >> T1copy; // Tensor of complex datatypes
+
+          CHECK(t == tcopy);
+          CHECK(A == Acopy);
+          CHECK(T1 == T1copy);
+        }
+        std::remove(archive_fname);
+        }     
+
     }
