@@ -11,7 +11,6 @@ SOURCES+= tensor_test.cc
 SOURCES+= tensorview_test.cc
 SOURCES+= tensor_func_test.cc
 SOURCES+= contract_test.cc
-SOURCES+= dot_test.cc
 SOURCES+= tensor_blas_test.cc
 
 
