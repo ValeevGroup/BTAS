@@ -207,6 +207,19 @@ namespace std {
   }
 
   template <typename T>
+  const T* cbegin(const T* x) {
+    return x;
+  }
+  template <typename T>
+  const T* cbegin(T* x) {
+    return x;
+  }
+  template <typename T>
+  T* begin(T* x) {
+    return x;
+  }
+
+  template <typename T>
   struct make_unsigned<std::vector<T> > {
       typedef std::vector<typename make_unsigned<T>::type > type;
   };
