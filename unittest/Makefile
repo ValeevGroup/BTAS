@@ -1,7 +1,10 @@
-CCCOM=g++ -std=c++11 
-BTAS_SOURCE=..
-INCLUDEFLAGS=-I$(BTAS_SOURCE) 
-LIBFLAGS= -lboost_serialization
+BTAS_SOURCE = ..
+BOOSTPREFIX = /opt/local
+
+CXX = clang++ -std=c++11 
+CXXFLAGS= -g
+CPPFLAGS += -I$(BTAS_SOURCE)
+LDFLAGS += -lboost_serialization
 
 #Define source files ----------
 
@@ -13,22 +16,13 @@ SOURCES+= tensor_func_test.cc
 SOURCES+= contract_test.cc
 SOURCES+= tensor_blas_test.cc
 
-
-#Define Flags ----------
-CCFLAGS=  -I. $(INCLUDEFLAGS) -g
-
-OBJECTS=$(patsubst %.cc,%.o, $(SOURCES))
-
-%.o: %.cc
-	$(CCCOM) -c $(CCFLAGS) -o $@ $<
-
-#Targets -----------------
+OBJECTS=$(SOURCES:%.cc=%.o)
 
 run: test
 	./test
 
 test: $(OBJECTS)
-	$(CCCOM) $(CCFLAGS) $(OBJECTS) -o test $(LIBFLAGS) 
+	$(CXX) $^ -o $@ $(LDFLAGS) 
 
 clean:
 	rm -fr *.o test
