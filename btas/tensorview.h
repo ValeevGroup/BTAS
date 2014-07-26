@@ -11,10 +11,10 @@
 #include <functional>
 
 #include <btas/storage_traits.h>
+#include <btas/util/sequence_adaptor.h>
 #include <btas/tensorview_iterator.h>
 #include <btas/defaults.h>
 #include <btas/util/functional.h>
-#include <btas/util/sequence_adaptor.h>
 
 namespace btas {
 
