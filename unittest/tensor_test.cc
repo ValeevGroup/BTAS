@@ -146,15 +146,17 @@ TEST_CASE("Tensor Constructors")
         CHECK(T0.extent(2) == 3);
 
         Range r1(2,5,3);
-        //FIXME
-        //Range r1(2,5,3,4); 
-        //The conflict between the rank of fixed rank tensor and the rank of range cannot be detected during the compile time. 
         TArray<double,3> T1(r1);
-        CHECK(T1.rank() == 3);
-        CHECK(T1.size() == 30);
-        CHECK(T1.extent(0) == 2);
-        CHECK(T1.extent(1) == 5);
-        CHECK(T1.extent(2) == 3);
+
+        typedef TArray<double,3>::range_type Range3; // rank-3 Range
+        Range3 r2(2,5,3);
+        TArray<double,3> T2(r2);
+
+        CHECK(T1 == T2);
+
+        typedef TArray<double,4>::range_type Range4; // rank-3 Range
+        Range4 r3(2,5,3,4);
+        //TArray<double,3> T3(r3); // error: mismatched rank
         }
     }
 
