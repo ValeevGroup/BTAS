@@ -95,6 +95,10 @@ namespace std {
       return reference_wrapper<const btas::infinite_sequence_adaptor<_T*>>(t);
   }
 
+  template <typename T>
+  auto cbegin(const btas::infinite_sequence_adaptor<T>& x) -> decltype(x.cbegin()) {
+    return x.cbegin();
+  }
 
 }
 
