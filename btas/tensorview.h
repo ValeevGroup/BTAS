@@ -542,11 +542,6 @@ namespace btas {
                 typename Policy>
       friend TensorView<T, Range, const Storage, Policy> __make_cview(Range&& range, const Storage& storage, Policy);
 
-//      template <typename T,
-//                typename Range>
-//      friend TensorView<typename std::remove_const<T>::type, Range, typename std::conditional<std::is_const<T>::value,T* const,T*>::type>
-//      make_map(T*& data, Range&& range);
-
       template <class __T,
                 class __Range,
                 class __Storage,
