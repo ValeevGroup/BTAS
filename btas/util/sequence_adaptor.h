@@ -15,7 +15,7 @@ namespace btas {
       typedef typename std::add_const<pointer>::type const_pointer;
       typedef          value_type& reference;
       typedef    const value_type& const_reference;
-      typedef btas::size_type size_type;
+      typedef size_t size_type;
       typedef ptrdiff_t difference_type;
 
       typedef pointer iterator;
