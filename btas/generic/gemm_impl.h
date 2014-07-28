@@ -508,7 +508,7 @@ void gemm (
       scal(beta, C);
       return;
    }
-   
+
    typedef typename _TensorA::value_type value_type;
    assert(not ((transA == CblasConjTrans || transB == CblasConjTrans) && std::is_fundamental<value_type>::value));
 
