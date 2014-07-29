@@ -21,8 +21,8 @@ namespace btas {
                                            is_boxtensor<_TensorY>::value
                                           >::type
           >
-  void 
-  permute(const _TensorX& X, const _Permutation& p, _TensorY& Y) 
+  void
+  permute(const _TensorX& X, const _Permutation& p, _TensorY& Y)
     {
     const auto pr = permute(X.range(),p);
     Y.resize(pr);

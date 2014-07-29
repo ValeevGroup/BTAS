@@ -15,7 +15,7 @@ namespace btas {
       typedef typename std::add_const<pointer>::type const_pointer;
       typedef          value_type& reference;
       typedef    const value_type& const_reference;
-      typedef btas::size_type size_type;
+      typedef size_t size_type;
       typedef ptrdiff_t difference_type;
 
       typedef pointer iterator;
@@ -83,6 +83,33 @@ namespace std {
       // access
       operator type& () noexcept { return *this; }
       type& get() noexcept { return *this; }
+      const type& get() const noexcept { return *this; }
+
+  };
+
+  // re-implement reference_wrapper<const infinite_sequence_adaptor<Ptr>> to act like const Ptr
+  template <typename _T>
+  class reference_wrapper<const btas::infinite_sequence_adaptor<_T*>> : private btas::infinite_sequence_adaptor<_T*> {
+    public:
+
+      // types
+      typedef const btas::infinite_sequence_adaptor<_T*> ctype;
+      typedef btas::infinite_sequence_adaptor<_T*> nctype;
+
+      // construct/copy/destroy
+      reference_wrapper(ctype& x) noexcept : ctype(x) {}
+      // DO bind to temps
+      reference_wrapper(nctype&& x) noexcept : ctype(x) {}
+      reference_wrapper(const reference_wrapper<ctype>& x) noexcept : ctype(x) {}
+
+      // assignment
+      reference_wrapper& operator=(const reference_wrapper<ctype>& x) noexcept {
+        static_cast<ctype&>(*this) = static_cast<ctype&>(x);
+      }
+
+      // access
+      operator ctype& () const noexcept { return *this; }
+      ctype& get() const noexcept { return *this; }
 
   };
 
@@ -94,7 +121,6 @@ namespace std {
   reference_wrapper<const btas::infinite_sequence_adaptor<_T*>> cref(const btas::infinite_sequence_adaptor<_T*>&& t) {
       return reference_wrapper<const btas::infinite_sequence_adaptor<_T*>>(t);
   }
-
 
 }
 

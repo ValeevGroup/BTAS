@@ -13,6 +13,14 @@ using DTensor = Tensor<double>;
 using btas::TensorView;
 using namespace btas;
 
+static
+std::ostream& 
+operator<<(std::ostream& s, const DTensor& X)
+    {
+    for(auto i : X.range()) s << i << " " << X(i) << "\n";
+    return s;
+    }
+
 // Set the elements of a Tensor T such that
 // T(i,j,k) = 1ijk
 // assuming individual dimensions are all less than 10.
@@ -37,10 +45,14 @@ fillEls(DTensor& T)
 TEST_CASE("Tensor View Constructors")
     {
 
+    DTensor T0(2,3,4);
+    fillEls(T0);
+
+    DTensor T2(3,4);
+    fillEls(T2);
+
     SECTION("Constructed from Full Tensors")
         {
-        DTensor T0(2,3,4);
-        fillEls(T0);
         TensorView<double> T0v(T0);
         CHECK(T0v == T0);
         T0v(0,0,0) = 1.0;
@@ -73,8 +85,6 @@ TEST_CASE("Tensor View Constructors")
 
     SECTION("Constructed from Tensor permute")
         {
-        DTensor T0(2,3,4);
-        fillEls(T0);
         const auto T0_cref = T0;
         auto prange0 = permute(T0.range(),{2,1,0});
 
@@ -109,6 +119,18 @@ TEST_CASE("Tensor View Constructors")
         //cout << T0ncvr(0,0,0)<<endl; T0ncvr(0,0,0) cannot be used.
         //CHECK(T0ncvr(0,0,0) == 1.0);
 
+        }
+
+    SECTION("Tensor Assign from TensorView")
+        {
+        //
+        //This is a regression test for bug #64
+        //The following code was failing due
+        //to a faulty implementation of Tensor operator=
+        //
+        DTensor pT2; 
+        pT2 = permute(T2,{1,0});
+        CHECK(pT2(1,0) == T2(0,1));
         }
         
     }

@@ -160,7 +160,35 @@ TEST_CASE("Tensor Constructors")
         }
     }
 
-TEST_CASE("Tensor")
+TEST_CASE("Custom Tensor")
+    {
+
+    SECTION("Storage")
+        {
+          {
+          typedef Tensor<double, btas::DEFAULT::range, std::vector<double> > Tensor;
+          Tensor T0;
+          Tensor T1(2,3,4);
+          }
+          {
+          typedef Tensor<double, btas::DEFAULT::range, btas::varray<double> > Tensor;
+          Tensor T0;
+          Tensor T1(2,3,4);
+          }
+          {
+          typedef Tensor<double, btas::DEFAULT::range, std::array<double, 24> > Tensor;
+          Tensor T0;
+          Tensor T1(2,3,4);
+          }
+          {
+          typedef Tensor<double, btas::DEFAULT::range, std::valarray<double> > Tensor;
+          Tensor T0;
+          Tensor T1(2,3,4);
+          }
+        }
+    }
+
+TEST_CASE("Tensor Operations")
     {
     DTensor T2(3,2);
     fillEls(T2);
