@@ -62,7 +62,7 @@ namespace btas {
       public:
         typedef Index index_type;
         typedef index_type value_type;
-        typedef const value_type const_reference_type;
+        typedef const value_type const_reference;
 
         typedef RangeIterator<index_type, Range1d> const_iterator; ///< Index iterator
         typedef const_iterator iterator; ///< interator = const_iterator
@@ -141,12 +141,12 @@ namespace btas {
           return 1ul;
         }
 
-        const_reference_type lobound() const { return lobound_; }
+        const_reference lobound() const { return lobound_; }
         index_type front() const { return lobound_; }
-        const_reference_type upbound() const { return upbound_; }
+        const_reference upbound() const { return upbound_; }
         index_type back() const { return upbound_ - 1; }
 
-        const_reference_type stride() const { return stride_; }
+        const_reference stride() const { return stride_; }
 
         /// Size of Range1d is the number of elements encountered in iteration from begin to end.
         size_t size() const {
@@ -290,8 +290,8 @@ namespace btas {
       typedef std::size_t size_type; ///< Size type
 
       typedef index_type value_type; ///< Range can be viewed as a Container of value_type
-      typedef index_type& reference_type;
-      typedef const value_type& const_reference_type;
+      typedef index_type& reference;
+      typedef const value_type& const_reference;
 
       // index iterator
       typedef RangeIterator<index_type, _Derived>  iterator;         ///< Index iterator
@@ -468,7 +468,7 @@ namespace btas {
 
       /// \return A \c size_array that contains the lower bound of this range
       /// \throw nothing
-      const_reference_type lobound() const { return lobound_; }
+      const_reference lobound() const { return lobound_; }
 
       /// Range lobound coordinate accessor
 
@@ -480,7 +480,7 @@ namespace btas {
 
       /// \return A \c size_array that contains the upper bound of this range
       /// \throw nothing
-      const_reference_type upbound() const {
+      const_reference upbound() const {
         return upbound_;
       }
 
