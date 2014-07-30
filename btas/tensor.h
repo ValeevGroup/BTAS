@@ -688,8 +688,8 @@ namespace btas {
         auto cong = congruent(t1.range(), t2.range());
         if (not cong)
           return false;
-        typedef TensorView<typename _Tensor1::value_type, typename _Tensor1::range_type, const typename _Tensor1::storage_type>  cview1;
-        typedef TensorView<typename _Tensor2::value_type, typename _Tensor2::range_type, const typename _Tensor2::storage_type>  cview2;
+        typedef TensorView<typename _Tensor1::value_type, typename _Tensor1::range_type, typename btas::storage_traits<typename _Tensor1::storage_type>::const_iterator>  cview1;
+        typedef TensorView<typename _Tensor2::value_type, typename _Tensor2::range_type, typename btas::storage_traits<typename _Tensor2::storage_type>::const_iterator>  cview2;
         cview1 vt1(t1);
         cview2 vt2(t2);
         return std::equal(vt1.cbegin(), vt1.cend(), vt2.cbegin());

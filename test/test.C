@@ -416,15 +416,6 @@ int main()
       //t0v20(0,0,0) = -3.0;                 // compile error: immutable
       auto t0v21 = make_rwview(Range{2,2,2}, t0_ref.storage());
       t0v21(0,0,0) = -3.0;                   // OK
-
-      auto t0v22 = make_rwview(t0v4);        // N.B. TensorRWView made form TensorConstView is read-only
-      //t0v22(0,0,0) = -3.0;                 // runtime error: immutable
-      auto t0v23 = make_rwview(t0v4,true);   // N.B. TensorRWView made form TensorConstView is read-only, EVEN IF can_write=true
-      //t0v22(0,0,0) = -3.0;                 // runtime error: immutable
-      auto t0v24 = make_rwview(t0v1, false); // N.B. mutability of TensorRWView made form TensorView depends on can_write
-      //t0v24(0,0,0) = -3.0;                 // runtime error: immutable
-      auto t0v25 = make_rwview(t0v1, true);
-      t0v25(0,0,0) = -3.0;                   // OK
     }
 
     {
@@ -439,6 +430,7 @@ int main()
 
     }
 
+#if 0
     { // TensorView with different element type
       auto t0_float = make_cview<float>(t0.range(), t0.storage());
       auto t0_float1 = make_cview<float>(t0);
@@ -449,6 +441,7 @@ int main()
       }
 
     }
+#endif
 
   }
 
