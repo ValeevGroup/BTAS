@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 2.8.8)
 project (BTAS)
 
 # Configure options
-option(BTAS_BUILD_UNITTEST "Causes building BTAS unit tests" OFF)
+option(BTAS_BUILD_UNITTEST "Causes building BTAS unit tests" ON)
 option(BTAS_EXPERT "BTAS Expert mode: disables automatically downloading or building dependencies" OFF)
 
 # Set BTAS version
@@ -56,11 +56,11 @@ set(BUILD_TESTING_SHARED FALSE CACHE BOOLEAN "BUILD_TESTING_SHARED")
 ##########################
 # Check C++11 features
 ##########################
-#include(TestCXXAcceptsFlag)
+include(TestCXXAcceptsFlag)
 include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
 
-# Check for gerneral C++11 support
+# Check for general C++11 support
 CHECK_CXX_SOURCE_COMPILES(
     "
     #if (__cplusplus < 201103L) || defined(__INTEL_CXX11_MODE__)
@@ -69,6 +69,34 @@ CHECK_CXX_SOURCE_COMPILES(
     int main(){ return 0; }
     "
     BTAS_HAS_CXX11)
+
+# if no C++11, try flags
+if (NOT BTAS_HAS_CXX11)
+  CHECK_CXX_ACCEPTS_FLAG("-std=c++11" CXX_ACCEPTS_STDCXX11)
+  if (CXX_ACCEPTS_STDCXX11)
+    set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+  else (CXX_ACCEPTS_STDCXX11)
+    CHECK_CXX_ACCEPTS_FLAG("-std=c++0x" CXX_ACCEPTS_STDCXX0X)
+    if (CXX_ACCEPTS_STDCXX0X)
+    set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
+    else (CXX_ACCEPTS_STDCXX0X)
+      message(FATAL_ERROR "Compiler does not provide C++11 support; provide the appropriate command-line flags explicitly via -DCMAKE_CXX_FLAGS=\"\" or try a newer compiler")
+    endif (CXX_ACCEPTS_STDCXX0X)
+  endif (CXX_ACCEPTS_STDCXX11)
+  
+  # look for C++11 support again
+  CHECK_CXX_SOURCE_COMPILES(
+    "
+    #if (__cplusplus < 201103L) || defined(__INTEL_CXX11_MODE__)
+    #error C++11 support not enabled.
+    #endif
+    int main(){ return 0; }
+    "
+    BTAS_HAS_CXX11_USING_STDFLAG)
+  if (NOT BTAS_HAS_CXX11_USING_STDFLAG)
+    message(FATAL_ERROR "Compiler cannot compile C++11 code with -std=c++11 or -std=c++0x flags; provide the appropriate command-line flags explicitly via -DCMAKE_CXX_FLAGS=\"\" or try a newer compiler")
+  endif (NOT BTAS_HAS_CXX11_USING_STDFLAG)
+endif (NOT BTAS_HAS_CXX11)
 
 if(BTAS_HAS_CXX11)
   # static_assert is desired, but an implementation is included
