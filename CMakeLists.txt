@@ -58,6 +58,7 @@ set(BUILD_TESTING_SHARED FALSE CACHE BOOLEAN "BUILD_TESTING_SHARED")
 ##########################
 #include(TestCXXAcceptsFlag)
 include(CheckCXXSourceCompiles)
+include(CheckCXXSourceRuns)
 
 # Check for gerneral C++11 support
 CHECK_CXX_SOURCE_COMPILES(
