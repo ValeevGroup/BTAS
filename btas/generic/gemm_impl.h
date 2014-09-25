@@ -15,6 +15,7 @@
 
 #include <btas/generic/scal_impl.h>
 
+//using namespace std;
 namespace btas {
 
 template<bool _Finalize> struct gemm_impl { };
@@ -243,6 +244,7 @@ template<> struct gemm_impl<true>
             float* itrC,
       const unsigned long& LDC)
    {
+//      std::cout << " cblas_sgemm is used" <<endl;
       cblas_sgemm(order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
    }
 
@@ -263,6 +265,7 @@ template<> struct gemm_impl<true>
             double* itrC,
       const unsigned long& LDC)
    {
+//      std::cout << " cblas_dgemm is used" <<endl;
       cblas_dgemm(order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
    }
 
@@ -286,8 +289,10 @@ template<> struct gemm_impl<true>
       const std::complex<float> alphac(std::move(alpha));
       const std::complex<float> betac (std::move(beta));
 #ifdef _HAS_INTEL_MKL
+//      std::cout << " cblas_cgemm3m is used" <<endl;
       cblas_cgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
 #else
+//      std::cout << " cblas_cgemm is used" <<endl;
       cblas_cgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
 #endif
    }
@@ -312,8 +317,10 @@ template<> struct gemm_impl<true>
       const std::complex<double> alphac(std::move(alpha));
       const std::complex<double> betac (std::move(beta));
 #ifdef _HAS_INTEL_MKL
+//      std::cout << " cblas_zgemm3m is used" <<endl;
       cblas_zgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
 #else
+//      std::cout << " cblas_zgemm is used" <<endl;
       cblas_zgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
 #endif
    }
@@ -467,7 +474,11 @@ void gemm (
    static_assert(std::is_same<typename __traits_C::iterator_category, std::random_access_iterator_tag>::value,
                  "iterator C must be a random access iterator");
 
-   gemm_impl<std::is_convertible<_T, value_type>::value>::call(order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
+   typename _IteratorA::pointer A = &(*itrA);
+   typename _IteratorB::pointer B = &(*itrB);
+   typename _IteratorC::pointer C = &(*itrC);
+   gemm_impl<std::is_convertible<_T, value_type>::value>::call(order, transA, transB, Msize, Nsize, Ksize, alpha, A, LDA, B, LDB, beta, C, LDC);
+
 }
 
 //  ================================================================================================
@@ -572,11 +583,17 @@ void gemm (
    Nsize = Barea / Ksize;
 
    if(order == CblasRowMajor) {
-     LDA = Ksize;
-     LDB = Nsize;
+     if(transA == CblasNoTrans) LDA = Ksize;
+     else LDA = Msize;
+     if(transB == CblasNoTrans) LDB = Nsize;
+     else LDB = Ksize;
      LDC = Nsize;
    }
    else {
+     if(transA == CblasNoTrans) LDA = Msize;
+     else LDA = Ksize;
+     if(transB == CblasNoTrans) LDB = Ksize;
+     else LDB = Msize;
      LDA = Msize;
      LDB = Ksize;
      LDC = Msize;

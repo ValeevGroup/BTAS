@@ -1,4 +1,3 @@
-//#define _HAS_CBLAS
 #include "test.h"
 #include <random>
 

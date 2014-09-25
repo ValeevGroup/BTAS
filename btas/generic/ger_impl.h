@@ -12,6 +12,7 @@
 #include <btas/generic/numeric_type.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
 
+//using namespace std;
 namespace btas {
 
 template<bool _Finalize> struct ger_impl { };
@@ -75,6 +76,7 @@ template<> struct ger_impl<true>
             float* itrA,
       const unsigned long& LDA)
    {
+//      std::cout << " cblas_sger is used" <<endl;
       cblas_sger(order, Msize, Nsize, alpha, itrX, incX, itrY, incY, itrA, LDA);
    }
 
@@ -91,6 +93,7 @@ template<> struct ger_impl<true>
             double* itrA,
       const unsigned long& LDA)
    {
+//      std::cout << " cblas_dger is used" <<endl;
       cblas_dger(order, Msize, Nsize, alpha, itrX, incX, itrY, incY, itrA, LDA);
    }
 
@@ -109,6 +112,7 @@ template<> struct ger_impl<true>
    {
       // FIXME: implement cgerc and cgeru separately.
       const std::complex<float> alphac(std::move(alpha));
+//      std::cout << " cblas_cgeru is used" <<endl;
       cblas_cgeru(order, Msize, Nsize, &alphac, itrX, incX, itrY, incY, itrA, LDA);
    }
 
@@ -127,6 +131,7 @@ template<> struct ger_impl<true>
    {
       // FIXME: implement zgerc and zgeru separately.
       const std::complex<double> alphac(std::move(alpha));
+//      std::cout << " cblas_zgeru is used" <<endl;
       cblas_zgeru(order, Msize, Nsize, &alphac, itrX, incX, itrY, incY, itrA, LDA);
    }
 
@@ -214,7 +219,10 @@ void ger (
    static_assert(std::is_same<typename __traits_A::iterator_category, std::random_access_iterator_tag>::value,
                  "iterator A must be a random access iterator");
 
-   ger_impl<std::is_convertible<_T, value_type>::value>::call(order, Msize, Nsize, alpha, itrX, incX, itrY, incY, itrA, LDA);
+   typename _IteratorX::pointer X = &(*itrX);
+   typename _IteratorY::pointer Y = &(*itrY);
+   typename _IteratorA::pointer A = &(*itrA);
+   ger_impl<std::is_convertible<_T, value_type>::value>::call(order, Msize, Nsize, alpha, X, incX, Y, incY, A, LDA);
 }
 
 //  ================================================================================================
