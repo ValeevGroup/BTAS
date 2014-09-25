@@ -14,7 +14,6 @@
 
 #include <btas/generic/scal_impl.h>
 
-//using namespace std;
 namespace btas {
 
 
@@ -143,7 +142,6 @@ template<> struct gemv_impl<true>
             float* itrY,
       const typename std::iterator_traits<float*>::difference_type& incY)
    {
-//      std::cout << " cblas_sgemv is used" <<endl;
       cblas_sgemv(order, transA, Msize, Nsize, alpha, itrA, LDA, itrX, incX, beta, itrY, incY);
    }
 
@@ -162,7 +160,6 @@ template<> struct gemv_impl<true>
             double* itrY,
       const typename std::iterator_traits<double*>::difference_type& incY)
    {
-//      std::cout << " cblas_dgemv is used" <<endl;
       cblas_dgemv(order, transA, Msize, Nsize, alpha, itrA, LDA, itrX, incX, beta, itrY, incY);
    }
 
@@ -183,7 +180,6 @@ template<> struct gemv_impl<true>
    {
       const std::complex<float> alphac(std::move(alpha));
       const std::complex<float> betac (std::move(beta));
-//      std::cout << " cblas_cgemv is used" <<endl;
       cblas_cgemv(order, transA, Msize, Nsize, &alphac, itrA, LDA, itrX, incX, &betac, itrY, incY);
    }
 
@@ -204,7 +200,6 @@ template<> struct gemv_impl<true>
    {
       const std::complex<double> alphac(std::move(alpha));
       const std::complex<double> betac (std::move(beta));
-//      std::cout << " cblas_zgemv is used" <<endl;
       cblas_zgemv(order, transA, Msize, Nsize, &alphac, itrA, LDA, itrX, incX, &betac, itrY, incY);
    }
 

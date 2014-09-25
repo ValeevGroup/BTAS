@@ -15,7 +15,6 @@
 
 #include <btas/generic/scal_impl.h>
 
-//using namespace std;
 namespace btas {
 
 template<bool _Finalize> struct gemm_impl { };
@@ -244,7 +243,6 @@ template<> struct gemm_impl<true>
             float* itrC,
       const unsigned long& LDC)
    {
-//      std::cout << " cblas_sgemm is used" <<endl;
       cblas_sgemm(order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
    }
 
@@ -265,7 +263,6 @@ template<> struct gemm_impl<true>
             double* itrC,
       const unsigned long& LDC)
    {
-//      std::cout << " cblas_dgemm is used" <<endl;
       cblas_dgemm(order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
    }
 
@@ -289,10 +286,8 @@ template<> struct gemm_impl<true>
       const std::complex<float> alphac(std::move(alpha));
       const std::complex<float> betac (std::move(beta));
 #ifdef _HAS_INTEL_MKL
-//      std::cout << " cblas_cgemm3m is used" <<endl;
       cblas_cgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
 #else
-//      std::cout << " cblas_cgemm is used" <<endl;
       cblas_cgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
 #endif
    }
@@ -317,10 +312,8 @@ template<> struct gemm_impl<true>
       const std::complex<double> alphac(std::move(alpha));
       const std::complex<double> betac (std::move(beta));
 #ifdef _HAS_INTEL_MKL
-//      std::cout << " cblas_zgemm3m is used" <<endl;
       cblas_zgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
 #else
-//      std::cout << " cblas_zgemm is used" <<endl;
       cblas_zgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
 #endif
    }
