@@ -14,6 +14,8 @@ notifications:
     on_failure: always
 os:
   - linux
-after_failure: 
+after_failure:
+  - cat build/CMakeFiles/CMakeOutput.log
+  - cat build/CMakeFiles/CMakeError.log
 script:
   - mkdir build && cd build && cmake .. && make && make check
