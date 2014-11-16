@@ -17,7 +17,6 @@ os:
 after_failure:
   - cat CMakeFiles/CMakeOutput.log
   - cat CMakeFiles/CMakeError.log
-  - cat build/CMakeFiles/CMakeOutput.log
-  - cat build/CMakeFiles/CMakeError.log
+  - ls -l /usr/lib/x86_64-linux-gnu/libboost*
 script:
   - mkdir build && cd build && cmake .. && make && make check
