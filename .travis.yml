@@ -18,6 +18,4 @@ after_failure:
   - cat CMakeFiles/CMakeOutput.log
   - cat CMakeFiles/CMakeError.log
 script:
-  - dpkg-query -L g++-4.9 
-  - $CXX --version
-  - mkdir build && cd build && cmake .. && make VERBOSE=1 && make check VERBOSE=1
+  - mkdir build && cd build && export CXX=/usr/bin/g++-4.9 && cmake .. && make VERBOSE=1 && make check VERBOSE=1
