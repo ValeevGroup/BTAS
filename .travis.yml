@@ -16,4 +16,4 @@ after_failure:
   - cat CMakeFiles/CMakeOutput.log
   - cat CMakeFiles/CMakeError.log
 script:
-  - mkdir build && cd build &&  if [ $CXX == gcc ]; then export CXX=/usr/bin/g++-4.8; fi && cmake .. && make VERBOSE=1 && make check VERBOSE=1
+  - mkdir build && cd build &&  if [ $CXX == g++ ]; then export CXX=/usr/bin/g++-4.8; fi && cmake .. && make VERBOSE=1 && make check VERBOSE=1
