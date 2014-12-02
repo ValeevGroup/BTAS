@@ -127,72 +127,80 @@ template<> struct gemv_impl<true>
 
 #ifdef _HAS_CBLAS
 
+   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, float>::value>::type>
    static void call (
       const CBLAS_ORDER& order,
       const CBLAS_TRANSPOSE& transA,
       const unsigned long& Msize,
       const unsigned long& Nsize,
-      const float& alpha,
+      const _T& alpha,
       const float* itrA,
       const unsigned long& LDA,
       const float* itrX,
       const typename std::iterator_traits<float*>::difference_type& incX,
-      const float& beta,
+      const _T& beta,
             float* itrY,
       const typename std::iterator_traits<float*>::difference_type& incY)
    {
       cblas_sgemv(order, transA, Msize, Nsize, alpha, itrA, LDA, itrX, incX, beta, itrY, incY);
    }
 
+   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, double>::value>::type>
    static void call (
       const CBLAS_ORDER& order,
       const CBLAS_TRANSPOSE& transA,
       const unsigned long& Msize,
       const unsigned long& Nsize,
-      const double& alpha,
+      const _T& alpha,
       const double* itrA,
       const unsigned long& LDA,
       const double* itrX,
       const typename std::iterator_traits<double*>::difference_type& incX,
-      const double& beta,
+      const _T& beta,
             double* itrY,
       const typename std::iterator_traits<double*>::difference_type& incY)
    {
       cblas_dgemv(order, transA, Msize, Nsize, alpha, itrA, LDA, itrX, incX, beta, itrY, incY);
    }
 
+   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<float>>::value>::type>
    static void call (
       const CBLAS_ORDER& order,
       const CBLAS_TRANSPOSE& transA,
       const unsigned long& Msize,
       const unsigned long& Nsize,
-      const std::complex<float>& alpha,
+      const _T& alpha,
       const std::complex<float>* itrA,
       const unsigned long& LDA,
       const std::complex<float>* itrX,
       const typename std::iterator_traits<std::complex<float>*>::difference_type& incX,
-      const std::complex<float>& beta,
+      const _T& beta,
             std::complex<float>* itrY,
       const typename std::iterator_traits<std::complex<float>*>::difference_type& incY)
    {
-      cblas_cgemv(order, transA, Msize, Nsize, &alpha, itrA, LDA, itrX, incX, &beta, itrY, incY);
+      const std::complex<float> alphac(std::move(alpha));
+      const std::complex<float> betac (std::move(beta));
+      cblas_cgemv(order, transA, Msize, Nsize, &alphac, itrA, LDA, itrX, incX, &betac, itrY, incY);
    }
 
+   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<double>>::value>::type>
    static void call (
       const CBLAS_ORDER& order,
       const CBLAS_TRANSPOSE& transA,
       const unsigned long& Msize,
       const unsigned long& Nsize,
-      const std::complex<double>& alpha,
+      const _T& alpha,
       const std::complex<double>* itrA,
       const unsigned long& LDA,
       const std::complex<double>* itrX,
       const typename std::iterator_traits<std::complex<double>*>::difference_type& incX,
-      const std::complex<double>& beta,
+      const _T& beta,
             std::complex<double>* itrY,
       const typename std::iterator_traits<std::complex<double>*>::difference_type& incY)
    {
-      cblas_zgemv(order, transA, Msize, Nsize, &alpha, itrA, LDA, itrX, incX, &beta, itrY, incY);
+      const std::complex<double> alphac(std::move(alpha));
+      const std::complex<double> betac (std::move(beta));
+      cblas_zgemv(order, transA, Msize, Nsize, &alphac, itrA, LDA, itrX, incX, &betac, itrY, incY);
    }
 
 #endif // _HAS_CBLAS
@@ -309,7 +317,11 @@ void gemv (
    static_assert(std::is_same<typename __traits_Y::iterator_category, std::random_access_iterator_tag>::value,
                  "iterator Y must be a random access iterator");
 
-   gemv_impl<std::is_same<value_type, _T>::value>::call(order, transA, Msize, Nsize, alpha, itrA, LDA, itrX, incX, beta, itrY, incY);
+   typename _IteratorA::pointer A = &(*itrA);
+   typename _IteratorX::pointer X = &(*itrX);
+   typename _IteratorY::pointer Y = &(*itrY);
+   gemv_impl<std::is_convertible<_T, value_type>::value>::call(order, transA, Msize, Nsize, alpha, A, LDA, X, incX, beta, Y, incY);
+   //gemv_impl<std::is_convertible<_T, value_type>::value>::call(order, transA, Msize, Nsize, alpha, itrA, LDA, itrX, incX, beta, itrY, incY);
 }
 
 //  ================================================================================================
@@ -352,8 +364,7 @@ void gemv (
       return;
    }
 
-   typedef typename _TensorA::value_type value_type;
-   assert(not ((transA == CblasConjTrans ) && std::is_fundamental<value_type>::value));
+   assert(not ((transA == CblasConjTrans ) && std::is_fundamental<typename _TensorA::value_type>::value));
 
    // get contraction rank
    const size_type rankX = rank(X);
@@ -389,14 +400,16 @@ void gemv (
       assert(std::equal(std::begin(extentA), std::begin(extentA)+rankX, std::begin(extentX)));
    }
 
-   if(order == CblasRowMajor)
-   {
-      LDA = Nsize;
-   }
-   else
-   {
-      LDA = Msize;
-   }
+   LDA = std::accumulate(std::begin(extentA)+rankY, std::end(extentA),   1ul, std::multiplies<size_type>());
+
+   //if(order == CblasRowMajor)
+   //{
+   //   LDA = Nsize;
+   //}
+   //else
+   //{
+   //   LDA = Msize;
+   //}
 
    // resize / scale
    if (Y.empty())

@@ -198,34 +198,38 @@ namespace btas {
       }
 
       /// copy assignment operator
-      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
+      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value &&
+                                                              not std::is_same<typename _Tensor::storage_type,Tensor::storage_type>::value
+                                                             >::type
+              >
       Tensor&
       operator= (const _Tensor& x)
       {
           range_ = range_type(x.range().lobound(), x.range().upbound());
-          //Must leave storage_ untouched until done copying elements of x
-          //into new_storage, because x could be a TensorView referring to
-          //this Tensor
-          storage_type new_storage;
-          array_adaptor<storage_type>::resize(new_storage, range_.area());
-          std::copy(std::begin(x), std::end(x), std::begin(new_storage));
-          std::swap(storage_,new_storage);
+          array_adaptor<storage_type>::resize(storage_, range_.area());
+          std::copy(std::begin(x), std::end(x), std::begin(storage_));
           return *this;
       }
 
       /// copy assignment operator
-      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
+      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type,
+               class = typename std::enable_if<std::is_same<typename _Tensor::storage_type,Tensor::storage_type>::value>::type
+              >
       Tensor&
-      operator= (_Tensor&& x)
+      operator= (const _Tensor& x)
       {
           range_ = range_type(x.range().lobound(), x.range().upbound());
-          //Must leave storage_ untouched until done copying elements of x
-          //into new_storage, because x could be a TensorView referring to
-          //this Tensor
-          storage_type new_storage;
-          array_adaptor<storage_type>::resize(new_storage, range_.area());
-          std::copy(std::begin(x), std::end(x), std::begin(new_storage));
-          std::swap(storage_,new_storage);
+          if (&x.storage() != &this->storage()) { // safe to copy immediately, unless copying into self
+            array_adaptor<storage_type>::resize(storage_, range_.area());
+            std::copy(std::begin(x), std::end(x), std::begin(storage_));
+          }
+          else {
+            // must use temporary if copying into self :(
+            storage_type new_storage;
+            array_adaptor<storage_type>::resize(new_storage, range_.area());
+            std::copy(std::begin(x), std::end(x), std::begin(new_storage));
+            std::swap(storage_,new_storage);
+          }
           return *this;
       }
 
