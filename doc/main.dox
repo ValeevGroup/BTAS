@@ -1,9 +1,10 @@
 
 /**
-   \mainpage Basic Tensor Algebra Software (BTAS)
+   \mainpage Basic Tensor Algebra Software (BTAS) and Tensor Working Group (TWG) specification
    
-   BTAS is a modern C++ software framework for general computation on tensor data. It includes the Tensor Working Group (TWG)
-   specification of concepts, and a reference tensor framework that conforms to the TWG specification.
+   BTAS is a modern C++ software framework for general computation on tensor data. It is a reference imlementation of the Tensor Working Group (TWG)
+   specification of concepts. It is possible to customize BTAS by providing replacing the reference implementations of TWG concepts with
+   custom implementations, as demonstrated below.
 
    \section synopsis Synopsis
    Here's a short C++ example of what is possible with BTAS (see doc/examples/synopsis.C ):
