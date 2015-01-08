@@ -725,7 +725,7 @@ namespace btas {
       /// \param lobound The lower bound of the N-dimensional range
       /// \param upbound The upper bound of the N-dimensional range
       template <typename Index1, typename Index2>
-      RangeNd(const Index1& lobound, const Index2& upbound, _Ordinal&& ord)
+      RangeNd(const Index1& lobound, const Index2& upbound, _Ordinal&& ord,
               typename std::enable_if<btas::is_index<Index1>::value && btas::is_index<Index2>::value, Enabler>::type = Enabler()) :
         base_type(lobound, upbound), ordinal_(ord)
       {
