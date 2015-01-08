@@ -75,54 +75,11 @@ elseif(BTAS_EXPERT)
 
 else()
 
-  include(ExternalProject)
+  # compiling boost properly is too hard ... ask to come back
+  message("** BOOST was not explicitly set")
+  message(WARNING "** Downloading and building Boost automatically is not supported, will disable unit tests")
+  set(BTAS_BUILD_UNITTEST OFF)
   
-  # Set source and build path for Boost in the TiledArray Project
-  set(BOOST_DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}/external/src)
-  set(BOOST_SOURCE_DIR   ${PROJECT_SOURCE_DIR}/external/src/boost)
-  set(BOOST_BUILD_DIR   ${PROJECT_BINARY_DIR}/external/build/boost)
-
-  # Set the external source
-  if (EXISTS ${PROJECT_SOURCE_DIR}/external/src/boost.tar.gz)
-    # Use local file
-    set(BOOST_URL ${PROJECT_SOURCE_DIR}/external/src/boost.tar.gz)
-    set(BOOST_URL_HASH "")
-  else()
-    # Downlaod remote file
-    set(BOOST_URL
-        http://downloads.sourceforge.net/project/boost/boost/1.54.0/boost_1_54_0.tar.gz)
-    set(BOOST_URL_HASH MD5=efbfbff5a85a9330951f243d0a46e4b9)
-  endif()
-
-  message("** Will build Boost from ${BOOST_URL}")
-
-  ExternalProject_Add(boost
-    PREFIX ${CMAKE_INSTALL_PREFIX}
-    STAMP_DIR ${BOOST_BUILD_DIR}/stamp
-   #--Download step--------------
-    URL ${BOOST_URL}
-    URL_HASH ${BOOST_URL_HASH}
-    DOWNLOAD_DIR ${BOOST_DOWNLOAD_DIR}
-   #--Configure step-------------
-    SOURCE_DIR ${BOOST_SOURCE_DIR}
-    CONFIGURE_COMMAND ""
-   #--Build step-----------------
-    BUILD_COMMAND ""
-   #--Install step---------------
-    INSTALL_COMMAND ""
-   #--Custom targets-------------
-    STEP_TARGETS download
-    )
-
-  add_dependencies(External boost)
-  install(
-    DIRECTORY ${BOOST_SOURCE_DIR}/boost
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    COMPONENT boost
-    )
-  set(Boost_INCLUDE_DIRS ${BOOST_SOURCE_DIR})
-  set(Boost_LIBRARIES "-L${BOOST_BUILD_DIR}/lib -lboost_serialization")
-
 endif()
 
 # Set the  build variables
