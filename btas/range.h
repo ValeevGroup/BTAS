@@ -578,8 +578,8 @@ namespace btas {
       /// \param last The ending position in the range
       /// \return The difference between first and last, in terms of range positions
       std::ptrdiff_t distance_to(const index& first, const index& last) const {
-        TA_ASSERT(includes(first));
-        TA_ASSERT(includes(last));
+        assert(includes(first));
+        assert(includes(last));
         return ord(last) - ord(first);
       }
 #endif
