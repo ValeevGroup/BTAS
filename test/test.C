@@ -5,6 +5,7 @@
 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/complex.hpp>
 
 using namespace std;
 
