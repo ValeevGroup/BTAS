@@ -671,8 +671,8 @@ namespace btas {
 
       /// Constructor defined by the upper and lower bounds
 
-      /// \tparam Index1 An array type convertible to \c index_type
-      /// \tparam Index2 An array type convertible to \c index_type
+      /// \tparam Index1 any type for which \c btas::is_index<Index1>::value is true
+      /// \tparam Index2 any type for which \c btas::is_index<Index2>::value is true
       /// \param lobound The lower bound of the N-dimensional range
       /// \param upbound The upper bound of the N-dimensional range
       template <typename Index1, typename Index2>
@@ -693,9 +693,9 @@ namespace btas {
 
       /// Constructor defined by the upper and lower bounds, and the axes strides
 
-      /// \tparam Index1 An array type convertible to \c index_type
-      /// \tparam Index2 An array type convertible to \c index_type
-      /// \tparam Extent An array type convertible to \c extent_type
+      /// \tparam Index1 any type for which \c btas::is_index<Index1>::value is true
+      /// \tparam Index2 any type for which \c btas::is_index<Index2>::value is true
+      /// \tparam Extent any type for which \c Ordinal(Index1,Index2,Extent) is a valid expression (similar to \c extent_type)
       /// \param lobound The lower bound of the N-dimensional range
       /// \param upbound The upper bound of the N-dimensional range
       /// \param stride The axes strides of the N-dimensional range
@@ -717,6 +717,20 @@ namespace btas {
         base_type(lobound, upbound), ordinal_(lobound, upbound, stride)
       {
       }
+
+      /// Constructor defined by the upper and lower bounds, and the ordinal object
+
+      /// \tparam Index1 any type for which \c btas::is_index<Index1>::value is true
+      /// \tparam Index2 any type for which \c btas::is_index<Index2>::value is true
+      /// \param lobound The lower bound of the N-dimensional range
+      /// \param upbound The upper bound of the N-dimensional range
+      template <typename Index1, typename Index2>
+      RangeNd(const Index1& lobound, const Index2& upbound, _Ordinal&& ord)
+              typename std::enable_if<btas::is_index<Index1>::value && btas::is_index<Index2>::value, Enabler>::type = Enabler()) :
+        base_type(lobound, upbound), ordinal_(ord)
+      {
+      }
+
 
       /// "Move" constructor defined by the upper and lower bounds, and the ordinal object
 
