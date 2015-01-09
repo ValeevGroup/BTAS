@@ -63,14 +63,31 @@ public:
    static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
 };
 
-/// checks _Tensor meets the TWG.Tensor concept requirements
-/// checks only value_type, range_type, storage_type, and rank() member TODO check the rest
+/// Checks _TensorView meets the TWG.TensorView concept requirements
+/// Only checks that it provides types value_type and range_type, as well as method rank() TODO check the rest
+template<class _TensorView>
+class is_tensorview {
+public:
+   static constexpr const bool
+   value = has_value_type<_TensorView>::value & has_range_type<_TensorView>::value &
+           has_rank<_TensorView>::value;
+};
+
+/// checks _TensorView meets the TWG.BoxTensorView concept requirements
+template<class _TensorView>
+class is_boxtensorview {
+public:
+   static constexpr const bool
+   value = is_tensorview<_TensorView>::value && has_boxrange_range_type<_TensorView>::value;
+};
+
+/// checks _Tensor meets the TWG.Tensor concept requirements. This implies that it meets TWG.TensorView as well as
+/// provides type storage_type.
 template<class _Tensor>
 class is_tensor {
 public:
    static constexpr const bool
-   value = has_value_type<_Tensor>::value & has_range_type<_Tensor>::value &
-           has_storage_type<_Tensor>::value & has_rank<_Tensor>::value;
+   value = has_storage_type<_Tensor>::value & is_tensorview<_Tensor>::value;
 };
 
 /// checks _Tensor meets the TWG.BoxTensor concept requirements

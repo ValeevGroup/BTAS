@@ -16,9 +16,9 @@ namespace btas {
 
   /// permute \c X using permutation \c p, write result to \c Y
   template<class _TensorX, typename _Permutation, class _TensorY,
-           class = typename std::enable_if<is_boxtensor<_TensorX>::value &&
+           class = typename std::enable_if<is_boxtensorview<_TensorX>::value &&
                                            is_index<_Permutation>::value &&
-                                           is_boxtensor<_TensorY>::value
+                                           is_boxtensorview<_TensorY>::value
                                           >::type
           >
   void
@@ -37,8 +37,8 @@ namespace btas {
 
   /// permute \c X using permutation \c p, write result to \c Y
   template<class _TensorX, class _TensorY, typename _T,
-           class = typename std::enable_if<is_boxtensor<_TensorX>::value &&
-                                           is_boxtensor<_TensorY>::value
+           class = typename std::enable_if<is_boxtensorview<_TensorX>::value &&
+                                           is_boxtensorview<_TensorY>::value
                                           >::type
           >
   void permute(const _TensorX& X, std::initializer_list<_T> pi, _TensorY& Y) {
@@ -48,8 +48,8 @@ namespace btas {
   /// permute \c X annotated with \c aX into \c Y annotated with \c aY
   /// \tparam _Annotation contaner type
   template<class _TensorX, typename _AnnotationX, class _TensorY, typename _AnnotationY,
-           class = typename std::enable_if<is_boxtensor<_TensorX>::value &&
-                                           is_boxtensor<_TensorY>::value &&
+           class = typename std::enable_if<is_boxtensorview<_TensorX>::value &&
+                                           is_boxtensorview<_TensorY>::value &&
                                            is_container<_AnnotationX>::value &&
                                            is_container<_AnnotationY>::value>::type>
   void permute(const _TensorX& X, const _AnnotationX& aX,
