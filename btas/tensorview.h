@@ -64,17 +64,20 @@ namespace btas {
       /// storage iterator
       typedef _StorageIterator storage_iterator;
 
-      /// storage iterator
-      typedef btas::iterator_const_wrapper<_StorageIterator> storage_const_iterator;
-
       ///
       static constexpr bool is_const = btas::is_const_iterator<storage_iterator>::value;
+
+      /// const storage iterator
+      typedef typename std::conditional<is_const,
+                                        storage_iterator,
+                                        btas::iterator_const_wrapper<storage_iterator>
+                                       >::type const_storage_iterator;
 
       /// element iterator
       typedef TensorViewIterator<range_type, storage_iterator> iterator;
 
       /// element iterator
-      typedef TensorViewIterator<range_type, storage_const_iterator> const_iterator;
+      typedef TensorViewIterator<range_type, const_storage_iterator> const_iterator;
 
     private:
       struct Enabler {};
@@ -234,14 +237,14 @@ namespace btas {
       }
 
       /// \return storage begin iterator
-      storage_const_iterator
+      const_storage_iterator
       storage_cbegin() const
       {
         return storage_begin_;
       }
 
       /// \return storage begin iterator
-      storage_const_iterator
+      const_storage_iterator
       storage_begin() const
       {
         return storage_cbegin();
@@ -322,7 +325,7 @@ namespace btas {
 
       /// Immutable access to an element without range check.
 
-      /// Available when \c value_type == \c storage_type::value_type
+      /// Available when \c value_type == \c std::iterator_traits<storage_iterator>::value_type
       /// \return const reference to the element indexed by {\c first, \c rest}
       template<typename index0, typename... _args>
       typename std::enable_if<std::is_integral<index0>::value &&
@@ -340,7 +343,7 @@ namespace btas {
 
       /// Immutable access to an element without range check.
 
-      /// Available when \c value_type == \c storage_type::value_type
+      /// Available when \c value_type == \c std::iterator_traits<storage_iterator>::value_type
       /// \return const reference to the element indexed by \c index
       template <typename Index>
       typename std::enable_if<is_index<Index>::value &&
@@ -354,7 +357,7 @@ namespace btas {
 
       /// Mutable access to an element without range check.
 
-      /// Available when \c value_type == \c storage_type::value_type
+      /// Available when \c value_type == \c std::iterator_traits<storage_iterator>::value_type
       /// \return reference to the element indexed by {\c first, \c rest}
       template<typename index0, typename... _args>
       typename std::enable_if<std::is_integral<index0>::value &&
@@ -373,7 +376,7 @@ namespace btas {
 
       /// Mutable access to an element without range check (rank() == general)
 
-      /// Available when \c value_type == \c storag_type::value_type
+      /// Available when \c value_type == \c std::iterator_traits<storage_iterator>::value_type
       /// \return reference to the element indexed by \c index
       template <typename Index>
       typename std::enable_if<is_index<Index>::value &&
@@ -388,7 +391,7 @@ namespace btas {
 
       /// Immutable access to an element without range check.
 
-      /// Available when \c value_type != \c storage_type::value_type
+      /// Available when \c value_type != \c std::iterator_traits<storage_iterator>::value_type
       /// \return value of the element indexed by {\c first, \c rest}
       template<typename index0, typename... _args>
       typename std::enable_if<std::is_integral<index0>::value &&
@@ -405,7 +408,7 @@ namespace btas {
 
       /// Immutable access to an element without range check (rank() == general)
 
-      /// Available when \c value_type != \c storage_type::value_type
+      /// Available when \c value_type != \c std::iterator_traits<storage_iterator>::value_type
       /// \return value of the element indexed by \c index
       template <typename Index>
       typename std::enable_if<is_index<Index>::value &&
@@ -479,7 +482,7 @@ namespace btas {
 
     private:
 
-      range_type range_;///< range object
+      range_type range_; ///< range object
       storage_iterator storage_begin_;///< dataref
       typedef typename std::conditional<_Policy::runtimeconst,
                                         bool,
@@ -555,7 +558,7 @@ namespace btas {
     return result_type(std::move(range), begin(storage), can_write);
   }
 
-  /// Helper function (friendly to TensorView) that constructs a view, with an explicitly-specified element type of the view. Useful if need to
+  /// Helper function that constructs a view, with an explicitly-specified element type of the view. Useful if need to
   /// view a tensor of floats as a tensor of complex floats. \sa TensorConstView
   /// \tparam T the element type of the resulting view
   /// \tparam Range the range type
@@ -694,7 +697,7 @@ namespace btas {
   {
     return TensorView<typename Tensor::value_type,
                       typename Tensor::range_type,
-                      typename Tensor::storage_type,
+                      typename btas::storage_traits<typename Tensor::storage_type>::iterator,
                       Policy>(tensor);
   }
 
@@ -713,8 +716,8 @@ namespace btas {
   TensorView<T,
              typename Tensor::range_type,
              typename std::conditional<std::is_same<T,typename Tensor::storage_type::value_type>::value,
-                                       typename Tensor::storage_type,
-                                       typename std::add_const<typename Tensor::storage_type>::type
+                                       typename Tensor::storage_iterator,
+                                       typename Tensor::const_storage_iterator
                                       >::type,
              Policy>
   make_view(Tensor& tensor, Policy = Policy())
@@ -722,9 +725,9 @@ namespace btas {
       typedef   TensorView<T,
           typename Tensor::range_type,
           typename std::conditional<std::is_same<T,typename Tensor::storage_type::value_type>::value,
-                                    typename Tensor::storage_type,
-                                    typename std::add_const<typename Tensor::storage_type>::type
-                                   >::type,
+                                                 typename Tensor::storage_iterator,
+                                                 typename Tensor::const_storage_iterator
+                                                >::type,
           Policy> result_type;
     return result_type(tensor);
   }
@@ -788,13 +791,13 @@ namespace btas {
             class = typename std::enable_if<is_boxtensor<Tensor>::value>::type>
   TensorView<typename std::add_const<typename Tensor::value_type>::type,
              typename Tensor::range_type,
-             const typename Tensor::storage_type,
+             typename Tensor::const_storage_iterator,
              Policy>
   make_cview(const Tensor& tensor)
   {
     return TensorView<typename std::add_const<typename Tensor::value_type>::type,
                       typename Tensor::range_type,
-                      const typename Tensor::storage_type,
+                      typename Tensor::const_storage_iterator,
                       Policy>(tensor);
   }
 
@@ -811,13 +814,13 @@ namespace btas {
             class = typename std::enable_if<is_boxtensor<Tensor>::value>::type>
   TensorView<typename std::add_const<T>::type,
              typename Tensor::range_type,
-             const typename Tensor::storage_type,
+             typename Tensor::const_storage_iterator,
              Policy>
   make_cview(const Tensor& tensor)
   {
     return TensorView<typename std::add_const<T>::type,
                       typename Tensor::range_type,
-                      const typename Tensor::storage_type,
+                      typename Tensor::const_storage_iterator,
                       Policy>(tensor);
   }
 
@@ -953,6 +956,26 @@ namespace btas {
       // enforce mutability
       can_write = can_write && (not std::is_const<Tensor>::value && not std::is_const<typename Tensor::storage_type>::value);
       return make_rwview(tensor.range(), tensor.storage(), can_write);
+  }
+
+  /// Helper function that constructs a TensorView from another TensorView.
+  /// \tparam _TensorView the tensor view type
+  /// \param tview the _TensorView object
+  /// \return TensorView, a full view of the \c tensor
+  /// \note Provided for completeness.
+  template <typename _TensorView, class = typename std::enable_if<is_boxtensorview<_TensorView>::value && not is_boxtensor<_TensorView>::value>::type>
+  TensorRWView<typename _TensorView::value_type,
+               typename _TensorView::range_type,
+               typename _TensorView::storage_iterator>
+  make_rwview(_TensorView& tview,
+              bool can_write = not std::is_const<_TensorView>::value &&
+                               not std::is_const<typename _TensorView::value_type>::value)
+  {
+      // enforce mutability
+      can_write = can_write && (not std::is_const<_TensorView>::value && not std::is_const<typename _TensorView::value_type>::value);
+      return TensorRWView<typename _TensorView::value_type,
+                          typename _TensorView::range_type,
+                          typename _TensorView::storage_iterator>(tview.range(), tview.storage_begin(), can_write);
   }
 
   /// Helper function that constructs a full writable TensorView of a Tensor,

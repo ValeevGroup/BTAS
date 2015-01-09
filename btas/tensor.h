@@ -62,6 +62,12 @@ namespace btas {
       /// size type
       typedef typename storage_traits<storage_type>::size_type size_type;
 
+      /// storage iterator
+      typedef iterator storage_iterator;
+
+      /// const storage iterator
+      typedef const_iterator const_storage_iterator;
+
       ///@}
 
     private:
@@ -176,7 +182,7 @@ namespace btas {
 
       /// copy constructor
       /// It will accept Tensors and TensorViews
-      template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
+      template<class _Tensor, class = typename std::enable_if<is_boxtensorview<_Tensor>::value>::type>
       Tensor (const _Tensor& x)
         :
         range_ (x.range().lobound(), x.range().upbound()),
@@ -679,23 +685,21 @@ namespace btas {
   /// Tensor comparison operator
 
   template <class _Tensor1, class _Tensor2,
-            class = typename std::enable_if<btas::is_boxtensor<_Tensor1>::value>::type,
-            class = typename std::enable_if<btas::is_boxtensor<_Tensor2>::value>::type >
+            class = typename std::enable_if<btas::is_boxtensorview<_Tensor1>::value>::type,
+            class = typename std::enable_if<btas::is_boxtensorview<_Tensor2>::value>::type >
   bool operator==(const _Tensor1& t1, const _Tensor2& t2) {
       if (t1.range().order == t2.range().order &&
           t1.range().ordinal().contiguous() &&
           t2.range().ordinal().contiguous()) // plain Tensor
-        return congruent(t1.range(), t2.range()) && std::equal(std::cbegin(t1.storage()),
-                                                               std::cend(t1.storage()),
-                                                               std::cbegin(t2.storage()));
+        return congruent(t1.range(), t2.range()) && std::equal(t1.cbegin(),
+                                                               t1.cend(),
+                                                               t2.cbegin());
       else { // not plain, or different orders
         auto cong = congruent(t1.range(), t2.range());
         if (not cong)
           return false;
-        typedef TensorView<typename _Tensor1::value_type, typename _Tensor1::range_type, typename btas::storage_traits<typename _Tensor1::storage_type>::const_iterator>  cview1;
-        typedef TensorView<typename _Tensor2::value_type, typename _Tensor2::range_type, typename btas::storage_traits<typename _Tensor2::storage_type>::const_iterator>  cview2;
-        cview1 vt1(t1);
-        cview2 vt2(t2);
+        auto vt1 = make_rwview(t1);
+        auto vt2 = make_rwview(t2);
         return std::equal(vt1.cbegin(), vt1.cend(), vt2.cbegin());
       }
   }
