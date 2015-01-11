@@ -10,6 +10,7 @@
 #include <btas/generic/numeric_type.h>
 #include <btas/varray/varray.h>
 #include <btas/serialization.h>
+#include <boost/version.hpp>
 #include <boost/serialization/array.hpp>
 
 namespace btas {
@@ -237,19 +238,18 @@ namespace btas {
   };
 }
 
-#ifndef BOOST_SERIALIZATION_STD_ARRAY
-#define BOOST_SERIALIZATION_STD_ARRAY
+#if BOOST_VERSION / 100 < 1056
 namespace boost {
   namespace serialization {
 
     template<class Archive, class T, size_t N>
     void serialize(Archive & ar, std::array<T,N> & a, const unsigned int version)
     {
-        ar & btas::make_array(a.data(), a.size());
+        ar & boost::serialization::make_array(a.data(), a.size());
     }
 
   } // namespace serialization
 } // namespace boost
-#endif
+#endif // boost cannot serialize std::array?
 
 #endif /* __BTAS_ARRAYADAPTOR_H_ */

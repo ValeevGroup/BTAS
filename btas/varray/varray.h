@@ -402,7 +402,7 @@ namespace boost {
   void save (Archive& ar, const btas::varray<T>& x, const unsigned int version)
   {
       const typename btas::varray<T>::size_type n = x.size();
-      ar << n << btas::make_array(x.data(), x.size());
+      ar << n << boost::serialization::make_array(x.data(), n);
   }
   template<class Archive, typename T>
   void load (Archive& ar, btas::varray<T>& x, const unsigned int version)
@@ -410,7 +410,7 @@ namespace boost {
       typename btas::varray<T>::size_type n;
       ar >> n;
       x.resize(n);
-      ar >> btas::make_array(x.data(), x.size());
+      ar >> boost::serialization::make_array(x.data(), n);
   }
 
   } // namespace serialization
