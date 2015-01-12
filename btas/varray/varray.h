@@ -6,6 +6,7 @@
 #include <btas/serialization.h>
 #include <boost/serialization/split_free.hpp>
 #include <boost/serialization/array.hpp>
+#include <boost/serialization/collection_size_type.hpp>
 
 namespace btas {
 
