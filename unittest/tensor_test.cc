@@ -5,8 +5,8 @@
 #include "btas/tensorview.h"
 #include <btas/btas.h>
 #include <btas/tarray.h>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/complex.hpp>
 
 #include <iostream>
@@ -263,7 +263,7 @@ TEST_CASE("Tensor Operations")
         {
           std::ofstream os(archive_fname);
           assert(os.good());
-          boost::archive::binary_oarchive ar(os);
+          boost::archive::xml_oarchive ar(os);
           ar << BOOST_SERIALIZATION_NVP(t); // fixed-size Tensor
           ar << BOOST_SERIALIZATION_NVP(A); // Tensor of Tensor
           ar << BOOST_SERIALIZATION_NVP(T1); // Tensor of complex datatypes
@@ -272,7 +272,7 @@ TEST_CASE("Tensor Operations")
         {
           std::ifstream is(archive_fname);
           assert(is.good());
-          boost::archive::binary_iarchive ar(is);
+          boost::archive::xml_iarchive ar(is);
 
           TArray<double,3> tcopy;
           ar >> BOOST_SERIALIZATION_NVP(tcopy);
