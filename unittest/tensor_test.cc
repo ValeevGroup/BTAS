@@ -264,9 +264,9 @@ TEST_CASE("Tensor Operations")
           std::ofstream os(archive_fname);
           assert(os.good());
           boost::archive::binary_oarchive ar(os);
-          ar << t; // fixed-size Tensor
-          ar << A; // Tensor of Tensor
-          ar << T1; // Tensor of complex datatypes
+          ar << BOOST_SERIALIZATION_NVP(t); // fixed-size Tensor
+          ar << BOOST_SERIALIZATION_NVP(A); // Tensor of Tensor
+          ar << BOOST_SERIALIZATION_NVP(T1); // Tensor of complex datatypes
         }
         // read
         {
@@ -275,13 +275,13 @@ TEST_CASE("Tensor Operations")
           boost::archive::binary_iarchive ar(is);
 
           TArray<double,3> tcopy;
-          ar >> tcopy;
+          ar >> BOOST_SERIALIZATION_NVP(tcopy);
 
           Tensor<Tensor<double>> Acopy;
-          ar >> Acopy; // Tensor of Tensor
+          ar >> BOOST_SERIALIZATION_NVP(Acopy);
 
           Tensor<std::array<complex<double>,3>> T1copy;
-          ar >> T1copy; // Tensor of complex datatypes
+          ar >> BOOST_SERIALIZATION_NVP(T1copy);
 
           CHECK(t == tcopy);
           CHECK(A == Acopy);

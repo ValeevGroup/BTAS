@@ -401,16 +401,19 @@ namespace boost {
   template<class Archive, typename T>
   void save (Archive& ar, const btas::varray<T>& x, const unsigned int version)
   {
-      const typename btas::varray<T>::size_type n = x.size();
-      ar << n << boost::serialization::make_array(x.data(), n);
+      const boost::serialization::collection_size_type count(x.size());
+      ar << BOOST_SERIALIZATION_NVP(count);
+      if (count != 0)
+        ar << boost::serialization::make_array(x.data(), count);
   }
   template<class Archive, typename T>
   void load (Archive& ar, btas::varray<T>& x, const unsigned int version)
   {
-      typename btas::varray<T>::size_type n;
-      ar >> n;
-      x.resize(n);
-      ar >> boost::serialization::make_array(x.data(), n);
+      boost::serialization::collection_size_type count;
+      ar >> BOOST_SERIALIZATION_NVP(count);
+      x.resize(count);
+      if (count != 0)
+        ar >> boost::serialization::make_array(x.data(), count);
   }
 
   } // namespace serialization

@@ -1352,19 +1352,19 @@ namespace serialization {
   template<class Archive, CBLAS_ORDER _Order,
            typename _Index, typename _Ordinal>
   void save(Archive& ar, const btas::RangeNd<_Order, _Index, _Ordinal>& t, const unsigned int version) {
-    auto lo = t.lobound();
-    auto up = t.upbound();
+    auto lobound = t.lobound();
+    auto upbound = t.upbound();
     auto ordinal = t.ordinal();
-    ar << lo << up << ordinal;
+    ar << BOOST_SERIALIZATION_NVP(lobound) << BOOST_SERIALIZATION_NVP(upbound) << BOOST_SERIALIZATION_NVP(ordinal);
   }
   template<class Archive, CBLAS_ORDER _Order,
            typename _Index, typename _Ordinal>
   void load(Archive& ar, btas::RangeNd<_Order, _Index, _Ordinal>& t, const unsigned int version) {
     typedef typename btas::BaseRangeNd<btas::RangeNd<_Order, _Index, _Ordinal>>::index_type index_type;
-    index_type lo, up;
+    index_type lobound, upbound;
     _Ordinal ordinal;
-    ar >> lo >> up >> ordinal;
-    t = btas::RangeNd<_Order, _Index, _Ordinal>(std::move(lo), std::move(up), std::move(ordinal));
+    ar >> BOOST_SERIALIZATION_NVP(lobound) >> BOOST_SERIALIZATION_NVP(upbound) >> BOOST_SERIALIZATION_NVP(ordinal);
+    t = btas::RangeNd<_Order, _Index, _Ordinal>(std::move(lobound), std::move(upbound), std::move(ordinal));
   }
 
 }
