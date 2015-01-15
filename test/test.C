@@ -3,8 +3,8 @@
 #include <set>
 #include <fstream>
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/complex.hpp>
 
 using namespace std;
@@ -270,25 +270,25 @@ int main()
     {
       std::ofstream os(archive_fname);
       assert(os.good());
-      boost::archive::text_oarchive ar(os);
-      ar << t; // fixed-size Tensor
-      ar << A; // Tensor of Tensor
-      ar << T1; // Tensor of complex datatypes
+      boost::archive::binary_oarchive ar(os);
+      ar << BOOST_SERIALIZATION_NVP(t); // fixed-size Tensor
+      ar << BOOST_SERIALIZATION_NVP(A); // Tensor of Tensor
+      ar << BOOST_SERIALIZATION_NVP(T1); // Tensor of complex datatypes
     }
     // read
     {
       std::ifstream is(archive_fname);
       assert(is.good());
-      boost::archive::text_iarchive ar(is);
+      boost::archive::binary_iarchive ar(is);
 
       TArray<double,3> tcopy;
-      ar >> tcopy;
+      ar >> BOOST_SERIALIZATION_NVP(tcopy);
 
       Tensor<Tensor<double>> Acopy;
-      ar >> Acopy; // Tensor of Tensor
+      ar >> BOOST_SERIALIZATION_NVP(Acopy); // Tensor of Tensor
 
       Tensor<std::array<complex<double>,3>> T1copy;
-      ar >> T1copy; // Tensor of complex datatypes
+      ar >> BOOST_SERIALIZATION_NVP(T1copy); // Tensor of complex datatypes
 
       assert(t == tcopy);
       assert(A == Acopy);
