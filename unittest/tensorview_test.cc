@@ -61,19 +61,15 @@ TEST_CASE("Tensor View Constructors")
         //TensorView<float> T0vf(T0);
         //CHECK(T0vf == T0);
         
-        auto T0vd = make_view<double>(T0);
+        auto T0vd = make_view(T0);
         CHECK(T0vd == T0);
         T0vd(0,0,0) = 1.0;
         CHECK(T0vd(0,0,0) == 1.0);
 
-        auto T0cvd = make_cview<double>(T0);
-        //auto T0cvd = make_cview(T0);
+        auto T0cvd = make_cview(T0);
         CHECK(T0cvd == T0);
-        //for(auto i: T0cvd) 
-        //     cout << i<<endl;  // This can be used.
-        //for( auto i: T0cvd.range())
-        //    cout << T0cvd(i)<<endl;
-        //cout << T0cvd(0,0,0)<<endl;
+        // T0cvd(0,0,0) == 1.0; // compile error : assignment to read-only value
+        CHECK(std::is_const<typename std::remove_reference<decltype(T0cvd(0,0,0))>::type>::value); // ensure operator() returns const ref
 
         auto T0vf = make_view<float>(T0);
         CHECK(T0vf == T0);
