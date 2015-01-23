@@ -42,7 +42,7 @@ fillEls(DTensor& T)
         }
     }
 
-TEST_CASE("Tensor View Constructors")
+TEST_CASE("TensorView constructors")
     {
 
     DTensor T0(2,3,4);
@@ -51,73 +51,71 @@ TEST_CASE("Tensor View Constructors")
     DTensor T2(3,4);
     fillEls(T2);
 
-    SECTION("Constructed from Full Tensors")
+    SECTION("TensorView<double> directly from Tensor<double>")
         {
         TensorView<double> T0v(T0);
         CHECK(T0v == T0);
         T0v(0,0,0) = 1.0;
         CHECK(T0v(0,0,0) == 1.0);
-        //Cannot make a tensorview with different tensor type in this way.
-        //TensorView<float> T0vf(T0);
-        //CHECK(T0vf == T0);
-        
-        auto T0vd = make_view(T0);
-        CHECK(T0vd == T0);
-        T0vd(0,0,0) = 1.0;
-        CHECK(T0vd(0,0,0) == 1.0);
-
-        auto T0cvd = make_cview(T0);
-        CHECK(T0cvd == T0);
-        // T0cvd(0,0,0) == 1.0; // compile error : assignment to read-only value
-        CHECK(std::is_const<typename std::remove_reference<decltype(T0cvd(0,0,0))>::type>::value); // ensure operator() returns const ref
-
-        auto T0vf = make_view<float>(T0);
-        CHECK(T0vf == T0);
-        //cout << T0vf(0,0,0)<<endl; // This cannot be used.
-        //T0vf(0,0,0) = 1.0f;
-        //CHECK(T0vf(0,0,0) == 1.0);
-
         }
 
-    SECTION("Constructed from Tensor permute")
+    SECTION("TensorView<double> using make_view from Tensor<double>")
         {
-        const auto T0_cref = T0;
+        auto T0vd = make_view(T0);
+        CHECK(T0vd == T0);
+        }
+
+    SECTION("TensorView<double> using make_cview from Tensor<double>")
+        {
+        auto T0cvd = make_cview(T0);
+        CHECK(T0cvd == T0);
+        }
+
+    SECTION("TensorView<float> using make_view from Tensor<double>")
+        {
+        auto T0vf = make_view<float>(T0);
+        CHECK(T0vf == T0);
+        }
+
+    SECTION("TensorView<float> using make_cview from Tensor<double>")
+        {
+        auto T0vf = make_cview<float>(T0);
+        CHECK(T0vf == T0);
+        }
+
+    SECTION("TensorView<double> using make_view from permuted Range + Storage")
+        {
+        const auto& T0_cref = T0;
         auto prange0 = permute(T0.range(),{2,1,0});
 
+        // read only views
         const auto T0cvr = make_view(prange0, T0_cref.storage());
-        //T0cvr(0,0,0) =1.0; // This is not allowed.
-        //T0cvr(i,j,k) can be used. 
+        bool tensorview_is_readonly = true;
         for(size_t i0=0; i0< T0.extent(0);i0++)
-        for(size_t i1=0; i1< T0.extent(1);i1++)
-        for(size_t i2=0; i2< T0.extent(2);i2++)
-            CHECK( T0cvr(i2,i1,i0) == T0(i0,i1,i2));
+          for(size_t i1=0; i1< T0.extent(1);i1++)
+            for(size_t i2=0; i2< T0.extent(2);i2++)
+              tensorview_is_readonly = tensorview_is_readonly && (T0cvr(i2,i1,i0) == T0(i0,i1,i2));
+        CHECK(tensorview_is_readonly);
 
-        // read only view
         auto T0cv = make_cview(prange0, T0.storage());
-        CHECK( T0cv(0,0,0) == T0(0,0,0));
-        CHECK( T0cv(*T0cv.range().begin()) == T0(0,0,0) );
-        //for( auto i : T0cv.range())
-        //    cout << T0cv(i)<<endl;
-        //T0cv(0,0,0)=0.1; // This is not allowed.
-        //CHECK(T0cv(0,0,0) == 0.1);
-        //for(auto i: T0cv) cout << i<<endl; // This is okay. 
+        CHECK(T0cv == T0cvr);
+        auto T0ncvr = make_view(prange0, T0_cref.storage());
+        CHECK(T0ncvr == T0cvr);
         
         // readwrite view
         auto T0vw = make_view(prange0, T0.storage());
-        T0vw(0,0,0)= 1.0;
-        CHECK(T0vw(0,0,0) == 1.0);
-        CHECK(T0vw(0,0,0) == T0(0,0,0));
-
-
-        auto T0ncvr = make_view(prange0, T0_cref.storage());
-        //T0ncvr(0,0,0) =1.0;
-        //FIXME
-        //cout << T0ncvr(0,0,0)<<endl; T0ncvr(0,0,0) cannot be used.
-        //CHECK(T0ncvr(0,0,0) == 1.0);
+        CHECK(T0vw == T0cvr);
 
         }
+    } // TEST_CASE("TensorView constructors")
 
-    SECTION("Tensor Assign from TensorView")
+TEST_CASE("TensorView assignment")
+    {
+
+    DTensor T2(3,4);
+    fillEls(T2);
+
+    SECTION("to Tensor using permute() -> TensorView")
         {
         //
         //This is a regression test for bug #64
@@ -129,5 +127,52 @@ TEST_CASE("Tensor View Constructors")
         CHECK(pT2(1,0) == T2(0,1));
         }
         
-    }
+    } // TEST_CASE("TensorView assignment")
+
+TEST_CASE("TensorView constness tracking")
+    {
+
+    DTensor T0(2,3,4);
+    fillEls(T0);
+
+    SECTION("directly constructed TensorView is writable")
+        {
+        TensorView<double> T0v(T0);
+        T0v(0,0,0) = 1.0;
+        CHECK(T0v(0,0,0) == 1.0);
+        CHECK(T0(0,0,0) == 1.0);
+        }
+
+    SECTION("make_view makes writable TensorView")
+        {
+        auto T0vd = make_view(T0);
+        T0vd(0,0,0) = 1.0;
+        CHECK(T0vd(0,0,0) == 1.0);
+        CHECK(T0(0,0,0) == 1.0);
+        }
+
+    SECTION("make_cview makes read-only TensorView")
+        {
+        auto T0cvd = make_cview(T0);
+
+        // T0cvd(0,0,0) == 1.0; // compile error : assignment to read-only value
+        auto tensorview_elemaccess_returns_constdoubleref = std::is_same<decltype(T0cvd(0,0,0)),const double&>::value;
+        CHECK(tensorview_elemaccess_returns_constdoubleref); // ensure operator() returns const ref
+        }
+
+    SECTION("make_view<float> makes read-only TensorView")
+        {
+        auto T0vf = make_view<float>(T0);
+        auto tensorview_elemaccess_returns_float = std::is_same<decltype(T0vf(0,0,0)),float>::value;
+        CHECK(tensorview_elemaccess_returns_float); // ensure operator() returns const ref
+        }
+
+    SECTION("make_cview<float> makes read-only TensorView")
+        {
+        auto T0vf = make_cview<float>(T0);
+        auto tensorview_elemaccess_returns_float = std::is_same<decltype(T0vf(0,0,0)),float>::value;
+        CHECK(tensorview_elemaccess_returns_float); // ensure operator() returns const ref
+        }
+
+    } // TEST_CASE("TensorView constructors")
 
