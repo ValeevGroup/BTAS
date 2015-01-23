@@ -43,11 +43,36 @@ TEST_CASE("TensorView constructors") {
   DTensor T0(2, 3, 4);
   fillEls(T0);
 
+  auto& T0_ref = T0;
+  const auto& T0_cref = T0;
+
   SECTION("TensorView<double> directly from Tensor<double>") {
     TensorView<double> T0v(T0);
     CHECK(T0v == T0);
-    T0v(0,0,0) = 1.0;
-    CHECK(T0v(0,0,0) == 1.0);
+  }
+
+  SECTION("TensorView<double> directly from Tensor<double>&") {
+    TensorView<double> T0v(T0_ref);
+    CHECK(T0v == T0);
+  }
+
+  SECTION("TensorView<double> cannot be constructed directly from const Tensor<double>&") {
+    //TensorView<double> T0v(T0_cref); // compile error: nonconst view from const Tensor
+  }
+
+  SECTION("TensorConstView<double> directly from Tensor<double>") {
+    TensorConstView<double> T0v(T0);
+    CHECK(T0v == T0);
+  }
+
+  SECTION("TensorConstView<double> directly from Tensor<double>&") {
+    TensorConstView<double> T0v(T0_ref);
+    CHECK(T0v == T0);
+  }
+
+  SECTION("TensorConstView<double> directly from const Tensor<double>&") {
+    TensorConstView<double> T0v(T0_cref);
+    CHECK(T0v == T0);
   }
 
   SECTION("TensorView<double> using make_view from Tensor<double>") {
@@ -97,8 +122,25 @@ TEST_CASE("TensorView constructors") {
 
 TEST_CASE("TensorView assignment") {
 
+  DTensor T0(2, 3, 4);
+  fillEls(T0);
+
+  auto& T0_ref = T0;
+  const auto& T0_cref = T0;
+  TensorView<double> T0v(T0_ref);
+  TensorConstView<double> T0cv(T0_cref);
+
   DTensor T2(3, 4);
   fillEls(T2);
+
+  SECTION("TensorConstView<double> = TensorView<double>") {
+    TensorConstView<double> T0cv = T0v;
+    CHECK(T0cv == T0v);
+  }
+
+  SECTION("TensorView<double> = TensorConstView<double>: compile-time error") {
+    //TensorView<double> T0v = T0cv; // compile-time error
+  }
 
   SECTION("to Tensor using permute() -> TensorView") {
     //This is a regression test for bug #64
@@ -132,7 +174,6 @@ TEST_CASE("TensorView constness tracking") {
 
   SECTION("make_cview makes read-only TensorView") {
     auto T0cvd = make_cview(T0);
-
     // T0cvd(0,0,0) == 1.0; // compile error : assignment to read-only value
     auto tensorview_elemaccess_returns_constdoubleref = std::is_same<decltype(T0cvd(0,0,0)),const double&>::value;
     CHECK(tensorview_elemaccess_returns_constdoubleref);// ensure operator() returns const ref
@@ -141,13 +182,13 @@ TEST_CASE("TensorView constness tracking") {
   SECTION("make_view<float> makes read-only TensorView") {
     auto T0vf = make_view<float>(T0);
     auto tensorview_elemaccess_returns_float = std::is_same<decltype(T0vf(0,0,0)),float>::value;
-    CHECK(tensorview_elemaccess_returns_float); // ensure operator() returns const ref
+    CHECK(tensorview_elemaccess_returns_float); // ensure operator() returns float
   }
 
   SECTION("make_cview<float> makes read-only TensorView") {
     auto T0vf = make_cview<float>(T0);
     auto tensorview_elemaccess_returns_float = std::is_same<decltype(T0vf(0,0,0)),float>::value;
-    CHECK(tensorview_elemaccess_returns_float); // ensure operator() returns const ref
+    CHECK(tensorview_elemaccess_returns_float); // ensure operator() returns float
   }
 
 } // TEST_CASE("TensorView constness tracking")
