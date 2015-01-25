@@ -95,6 +95,27 @@ TEST_CASE("TensorView constructors") {
     CHECK(T0vf == T0);
   }
 
+  SECTION("TensorRWView<double> using make_rwview from Tensor<double>") {
+    auto T0vd = make_rwview(T0);
+    CHECK(T0vd == T0);
+  }
+
+  SECTION("TensorRWView<double> using make_rwview from Tensor<double>") {
+    auto T0cvd = make_rwview(T0, false);
+    CHECK(T0cvd == T0);
+  }
+
+  SECTION("TensorRWView<float> using make_rwview from Tensor<double>") {
+    auto T0vf = make_rwview<float>(T0);
+    CHECK(T0vf == T0);
+  }
+
+  SECTION("TensorRWView<float> using make_rwview from Tensor<double>") {
+    auto T0vf = make_rwview<float>(T0, false);
+    CHECK(T0vf == T0);
+  }
+
+
   SECTION("TensorView<double> using make_view from permuted Range + Storage") {
     const auto& T0_cref = T0;
     auto prange0 = permute(T0.range(), {2,1,0});
@@ -180,6 +201,23 @@ TEST_CASE("TensorView constness tracking") {
   }
 
   SECTION("make_view<float> makes read-only TensorView") {
+  SECTION("make_rwview makes writable TensorView") {
+    auto T0vd = make_rwview(T0);
+    T0vd(0,0,0) = 1.0;
+    CHECK(T0vd(0,0,0) == 1.0);
+    CHECK(T0(0,0,0) == 1.0);
+  }
+
+  SECTION("make_rwview(Tensor,false) makes read-only TensorView") {
+    auto T0vd = make_rwview(T0, false);
+
+    bool tensorview_elemaccess_throws = false;
+    try {T0vd(0,0,0) = 1.0;}
+    catch(std::logic_error& err) { tensorview_elemaccess_throws = true; }
+    catch(...) { }
+    CHECK(tensorview_elemaccess_throws);
+  }
+
     auto T0vf = make_view<float>(T0);
     auto tensorview_elemaccess_returns_float = std::is_same<decltype(T0vf(0,0,0)),float>::value;
     CHECK(tensorview_elemaccess_returns_float); // ensure operator() returns float
