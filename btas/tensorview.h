@@ -525,7 +525,8 @@ namespace btas {
       /// use this in non-const members to assert writability if Policy calls for runtime const check
       void assert_writable() const {
         if (_Policy::runtimeconst)
-          assert(can_write_ == true);
+          if (can_write_ == false)
+            throw std::logic_error("write attempt into read-only TensorView with runtimeconst Policy");
       }
 
       /// construct from \c range and \c storage; pass \c can_write explicitly if needed
