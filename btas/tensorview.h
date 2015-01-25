@@ -512,6 +512,10 @@ namespace btas {
       }
 #endif
 
+      bool writable() const {
+        return can_write_;
+      }
+
     private:
 
       range_type range_;///< range object
