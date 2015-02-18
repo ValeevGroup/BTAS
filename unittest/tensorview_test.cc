@@ -108,7 +108,7 @@ TEST_CASE("TensorView constructors") {
   SECTION("TensorRWView<double> using make_rwview from TensorRWView(read-only) throws") {
     auto T0v = make_rwview(T0, false);
     // TODO need to specialize make_*view to TensorView
-    CHECK_THROWS_AS( auto T0vv = make_rwview(T0v), std::logic_error);
+    CHECK_THROWS_AS( auto T0vv = make_rwview(T0v), btas::exception);
   }
 
   SECTION("TensorRWView<float> using make_rwview from Tensor<double>") {
@@ -277,17 +277,17 @@ TEST_CASE("TensorView constness tracking") {
 
   SECTION("make_rwview(Tensor,false) makes read-only TensorView") {
     auto T0vd = make_rwview(T0, false);
-    CHECK_THROWS_AS( T0vd(0,0,0) = 1.0 , std::logic_error);
+    CHECK_THROWS_AS( T0vd(0,0,0) = 1.0 , btas::exception);
   }
 
   SECTION("make_rwview(const Tensor) makes read-only TensorView") {
     auto T0v = make_rwview(T0_cref);
-    CHECK_THROWS_AS( T0v(0,0,0) = 1.0 , std::logic_error);
+    CHECK_THROWS_AS( T0v(0,0,0) = 1.0 , btas::exception);
   }
 
   SECTION("make_rwview(const Tensor, false) makes read-only TensorView") {
     auto T0v = make_rwview(T0_cref, false);
-    CHECK_THROWS_AS( T0v(0,0,0) = 1.0 , std::logic_error);
+    CHECK_THROWS_AS( T0v(0,0,0) = 1.0 , btas::exception);
   }
 
   SECTION("make_rwview(TensorView) makes writable TensorView") {
@@ -301,19 +301,19 @@ TEST_CASE("TensorView constness tracking") {
   SECTION("make_rwview(TensorView,false) makes read-only TensorView") {
     auto T0v = make_view(T0);
     auto T0vv = make_rwview(T0v, false);
-    CHECK_THROWS_AS( T0vv(0,0,0) = 1.0 , std::logic_error);
+    CHECK_THROWS_AS( T0vv(0,0,0) = 1.0 , btas::exception);
   }
 
   SECTION("make_rwview(const TensorView) makes read-only TensorView") {
     const auto T0v = make_view(T0);
     auto T0vv = make_rwview(T0v);
-    CHECK_THROWS_AS( T0vv(0,0,0) = 1.0 , std::logic_error);
+    CHECK_THROWS_AS( T0vv(0,0,0) = 1.0 , btas::exception);
   }
 
   SECTION("make_rwview(const TensorView, false) makes read-only TensorView") {
     const auto T0v = make_view(T0);
     auto T0vv = make_rwview(T0v, false);
-    CHECK_THROWS_AS( T0vv(0,0,0) = 1.0 , std::logic_error);
+    CHECK_THROWS_AS( T0vv(0,0,0) = 1.0 , btas::exception);
   }
 
   SECTION("make_rwview(TensorRWView(writable)) makes writable TensorView") {
@@ -327,13 +327,13 @@ TEST_CASE("TensorView constness tracking") {
   SECTION("make_rwview(const TensorRWView(writable)) makes read-only TensorView") {
     const auto T0v = make_rwview(T0);
     auto T0vv = make_rwview(T0v);
-    CHECK_THROWS_AS( T0vv(0,0,0) = 1.0 , std::logic_error);
+    CHECK_THROWS_AS( T0vv(0,0,0) = 1.0 , btas::exception);
   }
 
   SECTION("make_rwview(TensorConstView) makes read-only TensorView") {
     auto T0v = make_cview(T0);
     auto T0vv = make_rwview(T0v);
-    CHECK_THROWS_AS( T0vv(0,0,0) = 1.0 , std::logic_error);
+    CHECK_THROWS_AS( T0vv(0,0,0) = 1.0 , btas::exception);
   }
 
   SECTION("make_view<float> makes read-only TensorView") {
