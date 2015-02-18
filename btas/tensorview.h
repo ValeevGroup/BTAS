@@ -15,6 +15,7 @@
 #include <btas/tensorview_iterator.h>
 #include <btas/defaults.h>
 #include <btas/util/functional.h>
+#include <btas/error.h>
 
 namespace btas {
 
@@ -529,8 +530,7 @@ namespace btas {
       /// use this in non-const members to assert writability if Policy calls for runtime const check
       void assert_writable() const {
         if (_Policy::runtimeconst)
-          if (can_write_ == false)
-            throw std::logic_error("write attempt into read-only TensorView with runtimeconst Policy");
+          BTAS_ASSERT(can_write_);
       }
 
       /// construct from \c range and \c storage; pass \c can_write explicitly if needed

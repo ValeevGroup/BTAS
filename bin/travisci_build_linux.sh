@@ -9,6 +9,6 @@ fi
 
 mkdir build
 cd build
-cmake ..
+cmake .. -DBTAS_ASSERT_THROWS=ON
 make VERBOSE=1
 make check VERBOSE=1
