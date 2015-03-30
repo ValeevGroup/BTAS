@@ -6,6 +6,7 @@ project (BTAS)
 # Configure options
 option(BTAS_BUILD_UNITTEST "Causes building BTAS unit tests" ON)
 option(BTAS_EXPERT "BTAS Expert mode: disables automatically downloading or building dependencies" OFF)
+option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw" OFF)
 
 # Set BTAS version
 set(BTAS_MAJOR_VERSION 0)
@@ -140,6 +141,13 @@ if (BTAS_BUILD_UNITTEST)
   include(external/lapack.cmake)
   include(external/boost.cmake)
 endif()
+
+##########################
+# configure BTAS_ASSERT
+##########################
+if (BTAS_ASSERT_THROWS)
+  add_definitions(-DBTAS_ASSERT_THROWS)
+endif(BTAS_ASSERT_THROWS)
 
 ##########################
 # sources
