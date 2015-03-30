@@ -13,6 +13,8 @@ using DTensor = Tensor<double>;
 using btas::TensorView;
 using namespace btas;
 
+template <typename T> struct TD;
+
 static std::ostream&
 operator<<(std::ostream& s, const DTensor& X) {
   for (auto i : X.range())
@@ -356,3 +358,19 @@ TEST_CASE("TensorView constness tracking") {
 
 } // TEST_CASE("TensorView constness tracking")
 
+TEST_CASE("TensorMap constructors") {
+
+  double* ptr0 = new double[24];
+  for(auto i=0; i!=24; ++i) ptr0[i] = i;
+  const double* cptr0 = const_cast<const double*>(ptr0);
+
+  auto map0   = make_map(ptr0, Range{2, 3, 4});   // writable map
+  auto map0c  = make_map(const_cast<const double*>(ptr0), Range{2, 3, 4});   // const map
+  auto map0c2 = make_cmap(ptr0, Range{2, 3, 4}); // const map
+  auto map0c3 = make_cmap(const_cast<const double*>(ptr0), Range{2, 3, 4});   // const map
+
+  SECTION("TensorMap<double> directly from double*") {
+    CHECK_NOTHROW(TensorMap<double> T0v(ptr0));
+  }
+
+} // TEST_CASE("TensorView constructors")
