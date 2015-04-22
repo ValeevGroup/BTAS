@@ -14,6 +14,9 @@ using btas::TensorView;
 using namespace btas;
 
 template <typename T> struct TD;
+template <typename T>
+void BindToConstRefAccess(T&& x) {
+}
 
 static std::ostream&
 operator<<(std::ostream& s, const DTensor& X) {
@@ -364,13 +367,28 @@ TEST_CASE("TensorMap constructors") {
   for(auto i=0; i!=24; ++i) ptr0[i] = i;
   const double* cptr0 = const_cast<const double*>(ptr0);
 
-  auto map0   = make_map(ptr0, Range{2, 3, 4});   // writable map
-  auto map0c  = make_map(const_cast<const double*>(ptr0), Range{2, 3, 4});   // const map
-  auto map0c2 = make_cmap(ptr0, Range{2, 3, 4}); // const map
-  auto map0c3 = make_cmap(const_cast<const double*>(ptr0), Range{2, 3, 4});   // const map
+  SECTION("make_map<double> makes writable TensorMap from double*") {
+    auto map = make_map(ptr0, Range{2, 3, 4});
+    map(0,0,0) = 1.0;
+    CHECK(map(0,0,0) == 1.0);
+  }
 
-  SECTION("TensorMap<double> directly from double*") {
-    CHECK_NOTHROW(TensorMap<double> T0v(ptr0));
+  SECTION("make_map<double> makes read-only TensorMap from const double*") {
+    auto map = make_map(cptr0, Range{2, 3, 4});
+    auto map_elemaccess_returns_constref = std::is_same<decltype(map(0,0,0)),const double&>::value;
+    CHECK(map_elemaccess_returns_constref); // ensure const-correctness of operator()
+  }
+
+  SECTION("make_cmap<double> makes read-only TensorMap from double*") {
+    auto map = make_cmap(ptr0, Range{2, 3, 4});
+    auto map_elemaccess_returns_constref = std::is_same<decltype(map(0,0,0)),const double&>::value;
+    CHECK(map_elemaccess_returns_constref); // ensure const-correctness of operator()
+  }
+
+  SECTION("make_cmap<double> makes read-only TensorMap from const double*") {
+    auto map = make_cmap(cptr0, Range{2, 3, 4});
+    auto map_elemaccess_returns_constref = std::is_same<decltype(map(0,0,0)),const double&>::value;
+    CHECK(map_elemaccess_returns_constref); // ensure const-correctness of operator()
   }
 
 } // TEST_CASE("TensorView constructors")

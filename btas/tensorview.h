@@ -1028,7 +1028,7 @@ namespace btas {
   /// TensorConstMap const-views a sequence of values as a Tensor
   template <typename _T,
             class _Range = btas::DEFAULT::range>
-  using TensorConstMap = TensorView<_T, _Range, const btas::infinite_sequence_adaptor<const _T*>>;
+  using TensorConstMap = TensorView<const _T, _Range, const btas::infinite_sequence_adaptor<const _T*>>;
 
   /// Helper function that constructs TensorMap.
   /// \tparam T the element type returned by the view
