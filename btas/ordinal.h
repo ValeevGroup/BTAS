@@ -128,8 +128,7 @@ namespace btas {
     private:
 
       template <typename Index1,
-                typename Index2,
-                class = typename std::enable_if<btas::is_index<Index1>::value && btas::is_index<Index2>::value>::type
+                typename Index2
                >
       void init(const Index1& lobound,
                 const Index2& upbound) {
@@ -166,10 +165,7 @@ namespace btas {
       /// upbound only needed to check contiguousness
       template <typename Index1,
                 typename Index2,
-                typename Weight,
-                class = typename std::enable_if<btas::is_index<Index1>::value &&
-                                                btas::is_index<Index2>::value &&
-                                                btas::is_index<Weight>::value>::type
+                typename Weight
                >
       void init(const Index1& lobound,
                 const Index2& upbound,
@@ -185,11 +181,9 @@ namespace btas {
 
         // Compute offset and check whether contiguous
         contiguous_ = true;
-        stride_type tmpstride = array_adaptor<stride_type>::construct(n);
         if (order == CblasRowMajor) {
           for(int i = n - 1; i >= 0; --i) {
-            tmpstride[i] = volume;
-            contiguous_ &= (tmpstride[i] == stride_[i]);
+            contiguous_ &= (volume == stride_[i]);
             auto li = *(std::begin(lobound) + i);
             auto ui = *(std::begin(upbound) + i);
             offset_ += li * stride_[i];
@@ -198,8 +192,7 @@ namespace btas {
         }
         else {
           for(auto i = 0; i != n; ++i) {
-            tmpstride[i] = volume;
-            contiguous_ &= (tmpstride[i] == stride_[i]);
+            contiguous_ &= (volume == stride_[i]);
             auto li = *(std::begin(lobound) + i);
             auto ui = *(std::begin(upbound) + i);
             offset_ += li * stride_[i];
