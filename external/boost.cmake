@@ -4,7 +4,8 @@
 if (BOOST_ROOT OR BOOST_INCLUDEDIR)
   set(Boost_NO_SYSTEM_PATHS TRUE)
 endif()
-  
+#set(Boost_DEBUG TRUE)
+
 # Check for Boost
 find_package(Boost 1.33 COMPONENTS serialization)
 
@@ -66,23 +67,20 @@ if (Boost_FOUND)
 
   if (NOT BOOST_COMPILES_AND_RUNS)
     message(FATAL_ERROR "Boost found at ${BOOST_ROOT}, but could not compile and/or run test program")
-  endif()
+  endif(NOT BOOST_COMPILES_AND_RUNS)
   
-elseif(BTAS_EXPERT)
-
-  message(WARNING "** Downloading and building Boost is explicitly disabled in EXPERT mode")
-
 else()
 
   # compiling boost properly is too hard ... ask to come back
-  message("** BOOST_ROOT was not explicitly set and Boost libraries were not found")
+  message("** BOOST_ROOT was not explicitly set and Boost serialization library was not found")
 
 endif()
 
-if (EXISTS Boost_INCLUDE_DIRS)
-  include_directories(${Boost_INCLUDE_DIRS})
-else(EXISTS Boost_INCLUDE_DIRS)
-  message(WARNING "Boost library headers not found, set BOOST_ROOT to search in the right place (cmake -DBOOST_ROOT=...); if do not have Boost, download at www.boost.org and unpack (no need to compile)")
-  message(WARNING "** Downloading and building Boost automatically is not supported, !! unit tests will be disabled !!")
+if (NOT Boost_INCLUDE_DIRS)
+  message(WARNING "Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIRS}")
+  message(WARNING "Boost serialization library not found, set BOOST_ROOT to search in the right place (cmake -DBOOST_ROOT=...); if do not have Boost, download at www.boost.org and compile (unpacking alone is not enough)")
+  message(WARNING "** !! unit tests will be disabled !!")
   set(BTAS_BUILD_UNITTEST OFF)
-endif(EXISTS Boost_INCLUDE_DIRS)
+else()
+  include_directories(${Boost_INCLUDE_DIRS})
+endif()
