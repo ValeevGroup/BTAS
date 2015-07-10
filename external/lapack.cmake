@@ -50,9 +50,9 @@ if(LAPACK_LIBRARIES OR BLAS_LIBRARIES OR LAPACK_LINKER_FLAGS OR BLAS_LINKER_FLAG
 
     if(LAPACK_FOUND)
       message(STATUS "A library with LAPACK API found.")
-    else()
+    else(LAPACK_FOUND)
       message(FATAL_ERROR "The user specified LAPACK libraries do not support the LAPACK API.\nRerun cmake with LAPACK_LIBRARIES and/or LAPACK_LINKER_FLAGS.")
-    endif()
+    endif(LAPACK_FOUND)
     
     cmake_pop_check_state()
     
@@ -70,5 +70,4 @@ include_directories(
 
 append_flags(CMAKE_EXE_LINKER_FLAGS "${BLAS_LINKER_FLAGS}")
 append_flags(CMAKE_EXE_LINKER_FLAGS "${LAPACK_LINKER_FLAGS}")
-set(TiledArray_LIBRARIES "${LAPACK_LIBRARIES}" "${BLAS_LIBRARIES}" ${TiledArray_LIBRARIES})
 
