@@ -70,17 +70,19 @@ if (Boost_FOUND)
   
 elseif(BTAS_EXPERT)
 
-  message("** BOOST was not explicitly set")
-  message(FATAL_ERROR "** Downloading and building Boost is explicitly disabled in EXPERT mode")
+  message(WARNING "** Downloading and building Boost is explicitly disabled in EXPERT mode")
 
 else()
 
   # compiling boost properly is too hard ... ask to come back
-  message("** BOOST was not explicitly set")
-  message(WARNING "** Downloading and building Boost automatically is not supported, will disable unit tests")
-  set(BTAS_BUILD_UNITTEST OFF)
-  
+  message("** BOOST_ROOT was not explicitly set and Boost libraries were not found")
+
 endif()
 
-# Set the  build variables
-include_directories(${Boost_INCLUDE_DIRS})
+if (EXISTS Boost_INCLUDE_DIRS)
+  include_directories(${Boost_INCLUDE_DIRS})
+else(EXISTS Boost_INCLUDE_DIRS)
+  message(WARNING "Boost library headers not found, set BOOST_ROOT to search in the right place (cmake -DBOOST_ROOT=...); if do not have Boost, download at www.boost.org and unpack (no need to compile)")
+  message(WARNING "** Downloading and building Boost automatically is not supported, !! unit tests will be disabled !!")
+  set(BTAS_BUILD_UNITTEST OFF)
+endif(EXISTS Boost_INCLUDE_DIRS)
