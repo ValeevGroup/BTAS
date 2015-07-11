@@ -138,7 +138,10 @@ check_type_size("long long" BTAS_HAS_LONG_LONG)
 add_custom_target(External)
 
 if (BTAS_BUILD_UNITTEST)
-  include(external/lapack.cmake)
+  if (USE_LAPACK)
+    include(external/lapack.cmake)
+    add_definitions(-D_HAS_CBLAS=1)
+  endif(USE_LAPACK)
   include(external/boost.cmake)
 endif()
 
