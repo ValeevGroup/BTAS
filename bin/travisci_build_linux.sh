@@ -7,16 +7,16 @@ if [ "$CXX" = "g++" ]; then
     export CXX=/usr/bin/g++-$GCC_VERSION
 fi
 
-mkdir build_nolapack
-cd build_nolapack
+mkdir build
+cd build
 cmake .. -DBTAS_ASSERT_THROWS=ON
 make VERBOSE=1
 make check VERBOSE=1
 cd ..
 
-mkdir build_lapack
-cd build_lapack
-cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_LAPACK=ON
+mkdir build_cblas
+cd build_cblas
+cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON
 make VERBOSE=1
 make check VERBOSE=1
 cd ..

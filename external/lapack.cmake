@@ -59,6 +59,7 @@ if(LAPACK_LIBRARIES OR BLAS_LIBRARIES OR LAPACK_LINKER_FLAGS OR BLAS_LINKER_FLAG
   endif()
 else()
   # Try to find BLAS and LAPACK
+  find_package(BLAS REQUIRED)
   find_package(LAPACK REQUIRED)
 endif()
 
