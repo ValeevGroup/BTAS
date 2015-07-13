@@ -16,8 +16,10 @@ before_install:
 script:
   - ./bin/travisci_build_$TRAVIS_OS_NAME.sh
 after_failure:
-  - cat CMakeFiles/CMakeOutput.log
-  - cat CMakeFiles/CMakeError.log
+  - cat build/CMakeFiles/CMakeOutput.log
+  - cat build/CMakeFiles/CMakeError.log
+  - cat build_cblas/CMakeFiles/CMakeOutput.log
+  - cat build_cblas/CMakeFiles/CMakeError.log
 notifications:
   email:
     recipients:
