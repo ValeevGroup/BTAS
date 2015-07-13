@@ -16,6 +16,7 @@ cd ..
 
 mkdir build_cblas
 cd build_cblas
+ls -l /usr/include/cblas*
 cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON
 make VERBOSE=1
 make check VERBOSE=1
