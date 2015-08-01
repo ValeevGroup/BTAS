@@ -57,6 +57,10 @@ TEST_CASE("TensorView constructors") {
   auto& T0_ref = T0;
   const auto& T0_cref = T0;
 
+  SECTION("default ctor for TensorView<double>") {
+    TensorView<double> T0v;
+  }
+
   SECTION("TensorView<double> directly from Tensor<double>") {
     TensorView<double> T0v(T0);
     CHECK(T0v == T0);

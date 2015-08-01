@@ -82,6 +82,13 @@ namespace btas {
 
     public:
 
+      /// default constructor creates an uninitialized view
+      TensorView() :
+        range_(),
+        storageref_(*((storage_type*)nullptr)),
+        can_write_()
+      {}
+
       /// destructor
       ~TensorView() = default;
 
