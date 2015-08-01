@@ -89,7 +89,7 @@ MACRO(CHECK_ALL_LIBRARIES LIBRARIES _prefix _name _flags _list _include _search_
     MARK_AS_ADVANCED(${_prefix}${_combined_name}_INCLUDE)
     IF(${_prefix}${_combined_name}_INCLUDE)
       IF (_verbose)
-        MESSAGE(STATUS "Includes found")
+        MESSAGE(STATUS "Includes found: ${_prefix}${_combined_name}_INCLUDE = ${${_prefix}${_combined_name}_INCLUDE}")
       ENDIF (_verbose)
       SET(${_prefix}_INCLUDE_DIR ${${_prefix}${_combined_name}_INCLUDE})
       SET(${_prefix}_INCLUDE_FILE ${_include})
@@ -108,7 +108,7 @@ MACRO(CHECK_ALL_LIBRARIES LIBRARIES _prefix _name _flags _list _include _search_
     MARK_AS_ADVANCED(${_prefix}${_combined_name}_WORKS)
     SET(_libraries_work ${${_prefix}${_combined_name}_WORKS})
     IF(_verbose AND _libraries_work)
-      MESSAGE(STATUS "Libraries found")
+      MESSAGE(STATUS "Libraries found: ${_prefix}_${_library}_LIBRARY = ${${_prefix}_${_library}_LIBRARY}")
     ENDIF(_verbose AND _libraries_work)
   ENDIF(_libraries_work)
   # Fin
