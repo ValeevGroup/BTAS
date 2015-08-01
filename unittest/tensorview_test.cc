@@ -3,6 +3,12 @@
 #include "btas/tensorview.h"
 #include "btas/tensor.h"
 #include "btas/tensor_func.h"
+// serialization of TensorView is disabled
+#if 0
+#include <fstream>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#endif
 
 using std::cout;
 using std::endl;
@@ -392,3 +398,35 @@ TEST_CASE("TensorMap constructors") {
   }
 
 } // TEST_CASE("TensorView constructors")
+
+// serialization of TensorView is disabled
+#if 0
+TEST_CASE("TensorView serialization") {
+  SECTION("TensorView<double>") {
+    const auto archive_fname = "tensorview_serialziation.archive";
+
+    DTensor T0(2, 3, 4);
+    fillEls(T0);
+    auto T0v = make_view(T0);
+    // write
+    {
+      std::ofstream os(archive_fname);
+      assert(os.good());
+      boost::archive::xml_oarchive ar(os);
+      ar << BOOST_SERIALIZATION_NVP(T0v);
+    }
+    // read
+    {
+      std::ifstream is(archive_fname);
+      assert(is.good());
+      boost::archive::xml_iarchive ar(is);
+
+      decltype(T0v) T0v_copy;
+      ar >> BOOST_SERIALIZATION_NVP(T0v_copy);
+
+      CHECK(T0v == T0v_copy);
+    }
+    std::remove(archive_fname);
+  }
+}
+#endif

@@ -1078,5 +1078,53 @@ namespace btas {
 
 } // namespace btas
 
+// serialization of TensorView is disabled
+#if 0
+namespace boost {
+  namespace serialization {
+
+    /// boost serialization
+    template<class Archive,
+             typename _T,
+             class _Range,
+             class _Storage,
+             class _Policy>
+    void serialize(Archive& ar,
+                   btas::TensorView<_T,_Range,_Storage,_Policy>& tv,
+                   const unsigned int version) {
+      boost::serialization::split_free(ar, tv, version);
+    }
+    template<class Archive,
+             typename _T,
+             class _Range,
+             class _Storage,
+             class _Policy>
+    void save(Archive& ar,
+              const btas::TensorView<_T,_Range,_Storage,_Policy>& tv,
+              const unsigned int version) {
+      const auto& range = tv.range();
+      const auto* storage_ptr = &tv.storage();
+      bool writable = tv.writable();
+      ar << BOOST_SERIALIZATION_NVP(range) << BOOST_SERIALIZATION_NVP(storage_ptr) << BOOST_SERIALIZATION_NVP(writable);
+    }
+    template<class Archive,
+             typename _T,
+             class _Range,
+             class _Storage,
+             class _Policy>
+    void load(Archive& ar,
+              btas::TensorView<_T,_Range,_Storage,_Policy>& tv,
+              const unsigned int version) {
+      _Range range;
+      _Storage* storage_ptr;
+      bool writable;
+      ar >> BOOST_SERIALIZATION_NVP(range) >> BOOST_SERIALIZATION_NVP(storage_ptr) >> BOOST_SERIALIZATION_NVP(writable);
+      std::reference_wrapper<_Storage> storage_ref(*storage_ptr);
+      tv = btas::TensorView<_T,_Range,_Storage,_Policy>(std::move(range), std::move(storage_ref), writable);
+    }
+
+  } // namespace serialization
+} // namespace boost
+#endif // serialization of TensorView is disabled
 
 #endif /* TENSORVIEW_H_ */
