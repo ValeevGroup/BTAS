@@ -80,6 +80,9 @@ MACRO(CHECK_ALL_LIBRARIES LIBRARIES _prefix _name _flags _list _include _search_
       ENDIF(${_prefix}_${_library}_LIBRARY)
       SET(${LIBRARIES} ${${LIBRARIES}} ${${_prefix}_${_library}_LIBRARY})
       SET(_libraries_work ${${_prefix}_${_library}_LIBRARY})
+      IF(_verbose)
+        MESSAGE(STATUS "Searched for library ${_prefix}_${_library}_LIBRARY: result=${${_prefix}_${_library}_LIBRARY}")
+      ENDIF(_verbose)
     ENDIF(_libraries_work)
   ENDFOREACH(_library ${_list})
   # Test include
@@ -89,7 +92,7 @@ MACRO(CHECK_ALL_LIBRARIES LIBRARIES _prefix _name _flags _list _include _search_
     MARK_AS_ADVANCED(${_prefix}${_combined_name}_INCLUDE)
     IF(${_prefix}${_combined_name}_INCLUDE)
       IF (_verbose)
-        MESSAGE(STATUS "Includes found: ${_prefix}${_combined_name}_INCLUDE = ${${_prefix}${_combined_name}_INCLUDE}")
+        MESSAGE(STATUS "Includes found: ${_prefix}${_combined_name}_INCLUDE=${${_prefix}${_combined_name}_INCLUDE}  ${_prefix}_INCLUDE_FILE=${${_prefix}_INCLUDE_FILE}")
       ENDIF (_verbose)
       SET(${_prefix}_INCLUDE_DIR ${${_prefix}${_combined_name}_INCLUDE})
       SET(${_prefix}_INCLUDE_FILE ${_include})
