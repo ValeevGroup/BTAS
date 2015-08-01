@@ -250,7 +250,7 @@ TEST_CASE("Tensor Operations")
 
     SECTION("Serialization")
         {
-        const auto archive_fname = "test1.archive";
+        const auto archive_fname = "tensor_operations.serialization.archive";
 
         Tensor<std::array<complex<double>,3>> T1(2,3,4);
         T1.fill({{{1.0,2.0}, {2.0,1.0}, {2.0,3.0} }});
