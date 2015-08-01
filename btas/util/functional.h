@@ -101,5 +101,11 @@ namespace btas {
 
 } // namespace btas
 
+namespace std {
+  template <bool B>
+  void swap(btas::detail::bool_type<B>& a,
+            btas::detail::bool_type<B>& b) {
+  }
+}
 
 #endif /* BTAS_FUNCTIONAL_H_ */
