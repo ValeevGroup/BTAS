@@ -83,7 +83,7 @@ namespace btas {
     public:
 
       /// destructor
-      ~TensorView () { }
+      ~TensorView() = default;
 
       /// move-construct from \c range and \c storageref ; write access must be passed explicitly if \c _Policy requires
       template<class Policy = _Policy, class = typename std::enable_if<not Policy::runtimeconst>::type>
