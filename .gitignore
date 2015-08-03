@@ -27,3 +27,6 @@ doc/latex/
 
 # Binary file for unit test
 unittest/test
+build
+build_cblas
+test
