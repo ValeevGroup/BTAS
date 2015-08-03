@@ -7,6 +7,8 @@ if [ "$CXX" = "g++" ]; then
     export CXX=/usr/bin/g++-$GCC_VERSION
 fi
 
+cat /proc/cpuinfo
+
 mkdir build_cblas
 cd build_cblas
 cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON
