@@ -23,7 +23,7 @@ int main() {
 }
 EOF
 
-$CXX -std=c++11 test.cc -lcblas -o test
+$CXX -std=c++11 test.cc -lblas -o test
 
 cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON
 make VERBOSE=1
