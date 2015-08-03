@@ -69,7 +69,7 @@ MACRO(CHECK_ALL_LIBRARIES LIBRARIES _prefix _name _flags _list _include _search_
       ELSE(APPLE)
         FIND_LIBRARY(${_prefix}_${_library}_LIBRARY
           NAMES ${_library}
-          PATHS /usr/local/lib /usr/lib /usr/local/lib64 /usr/lib64 ENV 
+          PATHS /usr/local/lib /usr/lib /usr/lib/libblas /usr/local/lib64 /usr/lib64 ENV 
           LD_LIBRARY_PATH 
           )
       ENDIF(APPLE)
@@ -81,7 +81,7 @@ MACRO(CHECK_ALL_LIBRARIES LIBRARIES _prefix _name _flags _list _include _search_
       SET(${LIBRARIES} ${${LIBRARIES}} ${${_prefix}_${_library}_LIBRARY})
       SET(_libraries_work ${${_prefix}_${_library}_LIBRARY})
       IF(_verbose)
-        MESSAGE(STATUS "Searched for library ${_prefix}_${_library}_LIBRARY: result=${${_prefix}_${_library}_LIBRARY}")
+        MESSAGE(STATUS "Searched for library ${_library}: result=${${_prefix}_${_library}_LIBRARY}")
       ENDIF(_verbose)
     ENDIF(_libraries_work)
   ENDFOREACH(_library ${_list})

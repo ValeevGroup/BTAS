@@ -7,7 +7,8 @@ if [ "$CXX" = "g++" ]; then
     export CXX=/usr/bin/g++-$GCC_VERSION
 fi
 
-cat /proc/cpuinfo
+ls -l /usr/lib
+ls -l /usr/lib/libblas
 
 mkdir build_cblas
 cd build_cblas
