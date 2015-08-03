@@ -9,9 +9,6 @@ fi
 
 mkdir build_cblas
 cd build_cblas
-ls -l /usr/include
-ls -l /usr/lib
-ls -l /usr/lib/libblas
 cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON
 make VERBOSE=1
 make check VERBOSE=1
