@@ -234,7 +234,10 @@ TEST_CASE("Tensor Operations")
         for(size_t i1=0; i1< A.extent(1);i1++)
         for(size_t i2=0; i2< B.extent(1);i2++)
             btas::gemm(CblasNoTrans, CblasNoTrans,1.0,A(i0,i1),B(i1,i2),1.0,Ctest(i0,i2));
-        CHECK(C== Ctest);
+
+        const auto eps_double = 1.e4 * std::numeric_limits<double>::epsilon();
+        Ctest -= C;
+        CHECK(dot(Ctest,Ctest) < eps_double);
 
         Tensor<Tensor<double>> Ctest1(4,2); Ctest1.fill(Tensor<double>(2,4));
         for(size_t i0=0; i0< A.extent(0);i0++)
@@ -244,7 +247,8 @@ TEST_CASE("Tensor Operations")
             for(size_t j1=0; j1< A(i0,i1).extent(1); j1++)
             for(size_t j2=0; j2< B(i1,i2).extent(1); j2++)
                 Ctest1(i0,i2)(j0,j2) += A(i0,i1)(j0,j1)*B(i1,i2)(j1,j2);
-        CHECK(C== Ctest1);
+        Ctest1 -= C;
+        CHECK(dot(Ctest1,Ctest1) < eps_double);
 
         }
 

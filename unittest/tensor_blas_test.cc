@@ -39,6 +39,9 @@ randomCplx()
     return std::complex<T>(randomReal<T>(),randomReal<T>());
     }
 
+const auto eps_double = 1.e4 * std::numeric_limits<double>::epsilon();
+const auto eps_float = 1.e4 * std::numeric_limits<float>::epsilon();
+
 TEST_CASE("Tensor Dot")
     {
 
@@ -49,7 +52,7 @@ TEST_CASE("Tensor Dot")
         const auto dres = dot(Td,Td);
         double dcheck = 0.;
         for(const auto& el : Td) dcheck += el*el;
-        CHECK(std::abs(dcheck-dres) < std::numeric_limits<double>::epsilon());
+        CHECK(std::abs(dcheck-dres) < eps_double);
         }
 
     SECTION("Float Dot")
@@ -59,7 +62,7 @@ TEST_CASE("Tensor Dot")
         const auto fres = dot(Tf,Tf);
         float fcheck = 0.;
         for(const auto& el : Tf) fcheck += el*el;
-        CHECK(fabs(fcheck-fres) < std::numeric_limits<float>::epsilon());
+        CHECK(fabs(fcheck-fres) < eps_float);
 
         Tensor<float> Uf(7,2,9);
         REQUIRE(Uf.size() == Tf.size());
@@ -70,7 +73,7 @@ TEST_CASE("Tensor Dot")
             {
             fcheck += Tf[i]*Uf[i];
             }
-        CHECK(std::abs(fcheck-res) < std::numeric_limits<float>::epsilon());
+        CHECK(std::abs(fcheck-res) < eps_float);
         }
 
     SECTION("Complex Double Dot")
@@ -80,7 +83,7 @@ TEST_CASE("Tensor Dot")
         const auto cres = dot(Tc,Tc);
         std::complex<double> ccheck = 0.;
         for(const auto& el : Tc) ccheck += std::conj(el)*el;
-        CHECK(std::abs(ccheck-cres) < std::numeric_limits<double>::epsilon());
+        CHECK(std::abs(ccheck-cres) < eps_double);
         }
 
     SECTION("Complex Float Dot")
@@ -90,7 +93,7 @@ TEST_CASE("Tensor Dot")
         const auto cres = dot(Tc,Tc);
         std::complex<float> ccheck = 0.;
         for(const auto& el : Tc) ccheck += std::conj(el)*el;
-        CHECK(std::abs(ccheck-cres) < std::numeric_limits<float>::epsilon());
+        CHECK(std::abs(ccheck-cres) < eps_float);
         }
 
     }
@@ -107,7 +110,7 @@ TEST_CASE("Tensor Scal")
         scal(d,T);
         double res=0;
         for(auto i : T.range()) res+=std::abs(T(i)-Tbak(i)*d);
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Float Scal")
@@ -119,7 +122,7 @@ TEST_CASE("Tensor Scal")
         scal(d,T);
         double res=0;
         for(auto i : T.range()) res+=std::abs(T(i)-Tbak(i)*d);
-        CHECK(res < std::numeric_limits<float>::epsilon());
+        CHECK(res < eps_float);
         }
 
     SECTION("Complex Double Scal")
@@ -131,7 +134,7 @@ TEST_CASE("Tensor Scal")
         scal(d,T);
         double res=0;
         for(auto i : T.range()) res+=std::abs(T(i)-Tbak(i)*d);
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Complex Float scal")
@@ -143,7 +146,7 @@ TEST_CASE("Tensor Scal")
         scal(d,T);
         double res=0;
         for(auto i : T.range()) res+=std::abs(T(i)-Tbak(i)*d);
-        CHECK(res < std::numeric_limits<float>::epsilon());
+        CHECK(res < eps_float);
         }
     } 
 
@@ -161,7 +164,7 @@ TEST_CASE("Tensor Axpy")
         axpy(alpha,X,Y);
         double res=0;
         for(auto i : Y.range()) res+=std::abs(Ybak(i)+X(i)*alpha-Y(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Float Axpy")
@@ -175,7 +178,7 @@ TEST_CASE("Tensor Axpy")
         axpy(alpha,X,Y);
         double res=0;
         for(auto i : X.range()) res+=std::abs(Ybak(i)+X(i)*alpha-Y(i));
-        CHECK(res <std::numeric_limits<float>::epsilon() );
+        CHECK(res < eps_float);
         }
 
     SECTION("Complex Double Axpy")
@@ -189,7 +192,7 @@ TEST_CASE("Tensor Axpy")
         axpy(alpha,X,Y);
         double res=0;
         for(auto i : X.range()) res+=std::abs(Ybak(i)+X(i)*alpha-Y(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Complex Float Axpy")
@@ -203,7 +206,7 @@ TEST_CASE("Tensor Axpy")
         axpy(alpha,X,Y);
         double res=0;
         for(auto i : X.range()) res+=std::abs(Ybak(i)+X(i)*alpha-Y(i));
-        CHECK(res <std::numeric_limits<float>::epsilon() );
+        CHECK(res < eps_float);
         }
     }
 
@@ -223,7 +226,7 @@ TEST_CASE("Tensor Ger")
         ger(a,X,Y,A);
         double res=0;
         for(auto i : A.range()) res+=std::abs(a*X(i[0],i[1])*Y(i[2],i[3])+Abak(i)-A(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Float Ger")
@@ -239,7 +242,7 @@ TEST_CASE("Tensor Ger")
         ger(a,X,Y,A);
         double res=0;
         for(auto i : A.range()) res+=std::abs(a*X(i[0],i[1])*Y(i[2],i[3])+Abak(i)-A(i));
-        CHECK(res < std::numeric_limits<float>::epsilon());
+        CHECK(res < eps_float);
         }
 
     SECTION("Complex Double Ger")
@@ -255,7 +258,7 @@ TEST_CASE("Tensor Ger")
         ger(a,X,Y,A);
         double res=0;
         for(auto i : A.range()) res+=std::abs(a*X(i[0],i[1])*Y(i[2],i[3])+Abak(i)-A(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Complex Float Ger")
@@ -271,7 +274,7 @@ TEST_CASE("Tensor Ger")
         ger(a,X,Y,A);
         double res=0;
         for(auto i : A.range()) res+=std::abs(a*X(i[0],i[1])*Y(i[2],i[3])+Abak(i)-A(i));
-        CHECK(res < std::numeric_limits<float>::epsilon());
+        CHECK(res < eps_float);
         }
     }
 
@@ -299,7 +302,7 @@ TEST_CASE("Tensor Gemv")
         gemv(CblasNoTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Double Gemv --- Trans")
@@ -323,7 +326,7 @@ TEST_CASE("Tensor Gemv")
         gemv(CblasTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Float Gemv --- NoTrans")
@@ -347,7 +350,7 @@ TEST_CASE("Tensor Gemv")
         gemv(CblasNoTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
-        CHECK(res < std::numeric_limits<float>::epsilon());
+        CHECK(res < eps_float);
         }
 
     SECTION("Complex Double Gemv --- NoTrans")
@@ -371,7 +374,7 @@ TEST_CASE("Tensor Gemv")
         gemv(CblasNoTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Complex Double Gemv --- Trans")
@@ -395,7 +398,7 @@ TEST_CASE("Tensor Gemv")
         gemv(CblasTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Complex Double Gemv --- ConjTrans")
@@ -423,7 +426,7 @@ TEST_CASE("Tensor Gemv")
         gemv(CblasConjTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Complex Float Gemv --- NoTrans")
@@ -447,7 +450,7 @@ TEST_CASE("Tensor Gemv")
         gemv(CblasNoTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
-        CHECK(res < std::numeric_limits<float>::epsilon());
+        CHECK(res < eps_float);
         }
 
 
@@ -478,7 +481,7 @@ TEST_CASE("Tensor Gemm")
         gemm(CblasNoTrans,CblasNoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Double Gemm --- Trans")
@@ -504,7 +507,7 @@ TEST_CASE("Tensor Gemm")
         gemm(CblasTrans,CblasNoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Float Gemm --- NoTrans")
@@ -529,7 +532,7 @@ TEST_CASE("Tensor Gemm")
         gemm(CblasNoTrans,CblasNoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
-        CHECK(res < std::numeric_limits<float>::epsilon());
+        CHECK(res < eps_float);
         }
 
     SECTION("Float Gemm --- Trans")
@@ -555,7 +558,7 @@ TEST_CASE("Tensor Gemm")
         gemm(CblasTrans,CblasNoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
-        CHECK(res < std::numeric_limits<float>::epsilon());
+        CHECK(res < eps_float);
         }
 
     SECTION("Complex Double Gemm --- NoTrans")
@@ -580,7 +583,7 @@ TEST_CASE("Tensor Gemm")
         gemm(CblasNoTrans,CblasNoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Complex Double Gemm --- Trans")
@@ -605,7 +608,7 @@ TEST_CASE("Tensor Gemm")
         gemm(CblasTrans,CblasNoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Complex Double Gemm --- ConjTrans")
@@ -630,7 +633,7 @@ TEST_CASE("Tensor Gemm")
         gemm(CblasConjTrans,CblasNoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
     
     SECTION("Complex Float Gemm --- NoTrans")
@@ -655,7 +658,7 @@ TEST_CASE("Tensor Gemm")
         gemm(CblasNoTrans,CblasNoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
-        CHECK(res < std::numeric_limits<float>::epsilon());
+        CHECK(res < eps_float);
         }
     }
 
@@ -685,7 +688,7 @@ TEST_CASE("Contraction")
         }
         double res=0;
         for(auto i : C.range()) res+=std::abs(C(i)-Ctest(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
 
         Tensor<double> D;
         Tensor<double> Dtest(2,4,6);
@@ -700,7 +703,7 @@ TEST_CASE("Contraction")
         }
         double res1=0;
         for(auto i : D.range()) res1+=std::abs(D(i)-Dtest(i));
-        CHECK(res1 < std::numeric_limits<double>::epsilon());
+        CHECK(res1 < eps_double);
         }
 
     SECTION("Float Contraction")
@@ -724,7 +727,7 @@ TEST_CASE("Contraction")
         }
         float res=0;
         for(auto i : C.range()) res+=std::abs(C(i)-Ctest(i));
-        CHECK(res < std::numeric_limits<float>::epsilon());
+        CHECK(res < eps_float);
         }
 
     SECTION("Complex Double Contraction")
@@ -749,7 +752,7 @@ TEST_CASE("Contraction")
         }
         double res=0;
         for(auto i : C.range()) res+=std::abs(C(i)-Ctest(i));
-        CHECK(res < std::numeric_limits<double>::epsilon());
+        CHECK(res < eps_double);
         }
 
     SECTION("Complex Float Contraction")
@@ -774,7 +777,7 @@ TEST_CASE("Contraction")
         }
         float res=0;
         for(auto i : C.range()) res+=std::abs(C(i)-Ctest(i));
-        CHECK(res < std::numeric_limits<float>::epsilon());
+        CHECK(res < eps_float);
         }
 
     }
