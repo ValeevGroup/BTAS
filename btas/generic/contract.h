@@ -52,6 +52,11 @@ void contract(
    const _T& beta,
          _TensorC& C, const _AnnotationC& aC)
 {
+   // Check that the ranks of the tensors match that of the annotation.
+   assert(rank(A) == rank(aA));
+   assert(rank(B) == rank(aB));
+   assert(C.empty() || (rank(C) == rank(aC)));
+
    // check index A
    auto __sort_indexA = _AnnotationA{aA};
    std::sort(std::begin(__sort_indexA), std::end(__sort_indexA));
