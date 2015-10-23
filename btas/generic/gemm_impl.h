@@ -47,7 +47,11 @@ template<> struct gemm_impl<true>
          return;
       }
 
-      if (beta != NumericType<_T>::one())
+      if (beta == NumericType<_T>::zero())
+      {
+         std::fill_n(itrC, Msize*Nsize, NumericType<_T>::zero());
+      }
+      else if (beta != NumericType<_T>::one())
       {
          scal (Msize*Nsize, beta, itrC, 1);
       }
@@ -345,7 +349,11 @@ template<> struct gemm_impl<false>
       // currently, column-major order has not yet been supported at this level
       assert(order == CblasRowMajor);
 
-      if (beta != NumericType<_T>::one())
+      if (beta == NumericType<_T>::zero())
+      {
+         std::fill_n(itrC, Msize*Nsize, NumericType<_T>::zero());
+      }
+      else if (beta != NumericType<_T>::one())
       {
          scal (Msize*Nsize, beta, itrC, 1);
       }
