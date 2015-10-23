@@ -47,7 +47,11 @@ template<> struct gemm_impl<true>
          return;
       }
 
-      if (beta != NumericType<_T>::one())
+      if (beta == NumericType<_T>::zero())
+      {
+         std::fill_n(itrC, Msize*Nsize, NumericType<typename std::iterator_traits<_IteratorC>::value_type>::zero());
+      }
+      else if (beta != NumericType<_T>::one())
       {
          scal (Msize*Nsize, beta, itrC, 1);
       }
@@ -345,7 +349,11 @@ template<> struct gemm_impl<false>
       // currently, column-major order has not yet been supported at this level
       assert(order == CblasRowMajor);
 
-      if (beta != NumericType<_T>::one())
+      if (beta == NumericType<_T>::zero())
+      {
+         std::fill_n(itrC, Msize*Nsize, NumericType<typename std::iterator_traits<_IteratorC>::value_type>::zero());
+      }
+      else if (beta != NumericType<_T>::one())
       {
          scal (Msize*Nsize, beta, itrC, 1);
       }
@@ -623,7 +631,7 @@ void gemm (
    else
    {
       assert(std::equal(std::begin(extentC), std::end(extentC), std::begin(extent(C))));
-      if (beta == NumericType<value_type>::zero())
+      if (beta == NumericType<_T>::zero())
         NumericType<value_type>::fill(std::begin(C), std::end(C), NumericType<value_type>::zero());
    }
 

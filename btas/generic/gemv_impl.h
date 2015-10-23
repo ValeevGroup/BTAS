@@ -37,7 +37,13 @@ template<> struct gemv_impl<true>
             _IteratorY itrY,
       const typename std::iterator_traits<_IteratorY>::difference_type& incY)
    {
-      if (beta != NumericType<_T>::one())
+      if (beta == NumericType<_T>::zero())
+      {
+        auto itrY_tmp = itrY;
+        for(size_t i=0; i!=(transA == CblasNoTrans?Msize:Nsize); ++i, itrY_tmp+=incY)
+          *itrY_tmp = NumericType<typename std::iterator_traits<_IteratorY>::value_type>::zero();
+      }
+      else if (beta != NumericType<_T>::one())
       {
          if (transA == CblasNoTrans)
             scal (Msize, beta, itrY, incY);

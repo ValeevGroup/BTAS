@@ -11,14 +11,19 @@ namespace btas {
 /// Numeric value functions
 template<typename _T> struct NumericType
 {
-   static int zero () { return 0; }
-   static int one  () { return 1; }
+   static _T zero () { return _T(0); }
+   static _T one  () { return _T(1); }
 
    template<class _Iterator>
-   static void fill(_Iterator, _Iterator, int) { }
+   static void fill(_Iterator begin, _Iterator end, _T value) {
+       std::fill(begin, end, value);
+   }
 
    template<class _Iterator>
-   static void scal(_Iterator, _Iterator, int) { }
+   static void scal(_Iterator begin, _Iterator end, _T scaling_factor) {
+       for(auto i=begin; i!=end; ++i)
+         *i *= scaling_factor;
+   }
 };
 
 //
