@@ -9,7 +9,7 @@
 
   \subsection sec_TWG_Tensor_Concept_Tensor_Description Description
   To be a valid Tensor, class must be a <a href="http://www.stepanovpapers.com/DeSt98.pdf"><em>regular type</em></a>, define
-  types, and support expresisons specified below.
+  types, and support expressions specified below.
 
   \subsubsection sec_TWG_Tensor_Concept_Tensor_Description_Types Associated Types
   <table>
