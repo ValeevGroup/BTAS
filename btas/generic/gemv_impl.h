@@ -41,7 +41,7 @@ template<> struct gemv_impl<true>
       {
         auto itrY_tmp = itrY;
         for(size_t i=0; i!=(transA == CblasNoTrans?Msize:Nsize); ++i, itrY_tmp+=incY)
-          *itrY_tmp = NumericType<_T>::zero();
+          *itrY_tmp = NumericType<typename std::iterator_traits<_IteratorY>::value_type>::zero();
       }
       else if (beta != NumericType<_T>::one())
       {

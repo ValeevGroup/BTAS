@@ -49,7 +49,7 @@ template<> struct gemm_impl<true>
 
       if (beta == NumericType<_T>::zero())
       {
-         std::fill_n(itrC, Msize*Nsize, NumericType<_T>::zero());
+         std::fill_n(itrC, Msize*Nsize, NumericType<typename std::iterator_traits<_IteratorC>::value_type>::zero());
       }
       else if (beta != NumericType<_T>::one())
       {
@@ -351,7 +351,7 @@ template<> struct gemm_impl<false>
 
       if (beta == NumericType<_T>::zero())
       {
-         std::fill_n(itrC, Msize*Nsize, NumericType<_T>::zero());
+         std::fill_n(itrC, Msize*Nsize, NumericType<typename std::iterator_traits<_IteratorC>::value_type>::zero());
       }
       else if (beta != NumericType<_T>::one())
       {
@@ -631,7 +631,7 @@ void gemm (
    else
    {
       assert(std::equal(std::begin(extentC), std::end(extentC), std::begin(extent(C))));
-      if (beta == NumericType<value_type>::zero())
+      if (beta == NumericType<_T>::zero())
         NumericType<value_type>::fill(std::begin(C), std::end(C), NumericType<value_type>::zero());
    }
 
