@@ -32,7 +32,7 @@ template<> struct gesvd_impl<true>
             _IteratorS itrS,
             _IteratorU itrU,
       const unsigned long& LDU,
-            _IteratorU itrVt,
+            _IteratorVt itrVt,
       const unsigned long& LDVt)
    {
       assert(false); // gesvd_impl<true> for a generic iterator type has not yet been implemented.
@@ -116,7 +116,7 @@ template<> struct gesvd_impl<true>
    {
       unsigned long Ksize = (Msize < Nsize) ? Msize : Nsize;
       double* superb = new double[Ksize-1];
-      LAPACKE_cgesvd(order, jobu, jobvt, Msize, Nsize, itrA, LDA, itrS, itrU, LDU, itrVt, LDVt, superb);
+      LAPACKE_zgesvd(order, jobu, jobvt, Msize, Nsize, itrA, LDA, itrS, itrU, LDU, itrVt, LDVt, superb);
       delete [] superb;
    }
 
@@ -137,9 +137,9 @@ template<> struct gesvd_impl<false>
             _IteratorA itrA,
       const unsigned long& LDA,
             _IteratorS itrS,
-            _IteratorA itrU,
+            _IteratorU itrU,
       const unsigned long& LDU,
-            _IteratorA itrVt,
+            _IteratorVt itrVt,
       const unsigned long& LDVt)
    {
       assert(false); // gesvd_impl<false> for a generic iterator type has not yet been implemented.
@@ -160,9 +160,9 @@ void gesvd (
          _IteratorA itrA,
    const unsigned long& LDA,
          _IteratorS itrS,
-         _IteratorA itrU,
+         _IteratorU itrU,
    const unsigned long& LDU,
-         _IteratorA itrVt,
+         _IteratorVt itrVt,
    const unsigned long& LDVt)
 {
    typedef std::iterator_traits<_IteratorA> __traits_A;
@@ -237,8 +237,9 @@ void gesvd (
 
    // get shapes
    const typename _TensorA::range_type::extent_type& extentA = extent(A);
+         typename _VectorS::range_type::extent_type extentS = extent(S); // if S is empty, this gives { 0,...,0 }
          typename _TensorU::range_type::extent_type extentU = extent(U); // if U is empty, this gives { 0,...,0 }
-         typename _TensorVt::range_type::extent_type  extentVt = extent(Vt); // if Vt is empty, this gives { 0,...,0 }
+         typename _TensorVt::range_type::extent_type extentVt = extent(Vt); // if Vt is empty, this gives { 0,...,0 }
 
    size_type Msize = 0; // Rows count of Y
    size_type Nsize = 0; // Cols count of Y
@@ -253,6 +254,8 @@ void gesvd (
    size_type Ksize = std::min(Msize,Nsize);
    size_type Ucols = (jobu == 'A') ? Msize : Ksize;
    size_type Vtrows = (jobvt == 'A') ? Nsize : Ksize;
+
+   extentS[0] = Ksize;
 
    for (size_type i = 0; i < rankU-1; ++i) extentU[i] = extentA[i];
    extentU[rankU-1] = Ucols;
@@ -273,7 +276,7 @@ void gesvd (
       LDVt = Vtrows;
    }
 
-   S.resize(Ksize);
+   S.resize(extentS);
    U.resize(extentU);
    Vt.resize(extentVt);
 

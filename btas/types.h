@@ -5,19 +5,29 @@
 //  BLAS types
 //
 
+#include <complex>
+#define lapack_complex_float  std::complex<float>
+#define lapack_complex_double std::complex<double>
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
 #ifdef _HAS_CBLAS
+
 #ifdef _HAS_INTEL_MKL
+
 #include <mkl_cblas.h>
 #include <mkl_lapacke.h>
+
 #else
+
 #include <cblas.h>
 #include <lapacke.h>
+
 #endif // _HAS_INTEL_MKL
-#else
+
+#else // _HAS_CBLAS
 
 /// major order directive
 enum CBLAS_ORDER { CblasRowMajor, CblasColMajor };
@@ -39,10 +49,6 @@ enum CBLAS_SIDE { CblasLeft, CblasRight };
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-
-#ifdef _HAS_CBLAS
-#include <complex>
-#endif // _HAS_CBLAS
 
 namespace btas {
 
