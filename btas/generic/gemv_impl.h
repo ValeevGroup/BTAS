@@ -406,16 +406,16 @@ void gemv (
       assert(std::equal(std::begin(extentA), std::begin(extentA)+rankX, std::begin(extentX)));
    }
 
-   LDA = std::accumulate(std::begin(extentA)+rankY, std::end(extentA),   1ul, std::multiplies<size_type>());
+// LDA = std::accumulate(std::begin(extentA)+rankY, std::end(extentA),   1ul, std::multiplies<size_type>());
 
-   //if(order == CblasRowMajor)
-   //{
-   //   LDA = Nsize;
-   //}
-   //else
-   //{
-   //   LDA = Msize;
-   //}
+   if(order == CblasRowMajor)
+   {
+      LDA = Nsize;
+   }
+   else
+   {
+      LDA = Msize;
+   }
 
    // resize / scale
    if (Y.empty())

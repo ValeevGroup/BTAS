@@ -12,8 +12,10 @@ extern "C" {
 #ifdef _HAS_CBLAS
 #ifdef _HAS_INTEL_MKL
 #include <mkl_cblas.h>
+#include <mkl_lapacke.h>
 #else
 #include <cblas.h>
+#include <lapacke.h>
 #endif // _HAS_INTEL_MKL
 #else
 

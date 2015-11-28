@@ -9,6 +9,7 @@
 #include <btas/generic/ger_impl.h>
 #include <btas/generic/gemv_impl.h>
 #include <btas/generic/gemm_impl.h>
+#include <btas/generic/gesvd_impl.h>
 
 #ifdef _CONTRACT_OPT_BAGEL
 #include <btas/optimize/contract.h>

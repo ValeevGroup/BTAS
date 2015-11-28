@@ -17,6 +17,16 @@
 *~
 *.swp
 
+# CMake files
+*.cmake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+
+# Testing files
+Testing/
+btas_test
+
 # Scratch directory
 work/
 
