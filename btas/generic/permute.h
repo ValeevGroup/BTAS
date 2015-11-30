@@ -101,6 +101,17 @@ namespace btas {
    permute(X, prm, Y);
 }
 
+  /// permute \c X using permutation \c p, write result to \c Y
+  template<class _TensorX, class _TensorY, typename _T,
+           class = typename std::enable_if<is_boxtensor<_TensorX>::value &&
+                                           is_boxtensor<_TensorY>::value
+                                          >::type
+          >
+  void permute(const _TensorX& X, std::initializer_list<_T> aX,
+                     _TensorY& Y, std::initializer_list<_T> aY) {
+      permute(X, btas::varray<_T>(aX), Y, btas::varray<_T>(aY));
+  }
+
 } // namespace btas
 
 #endif // __BTAS_PERMUTE_H
