@@ -75,14 +75,14 @@ TEST_CASE("Range")
         RangeNd<CblasColMajor, std::vector<long> > r4(size);
         CHECK(r4.area()== 18);
         }
-    SECTION("Intialized by initializer list");
+    SECTION("Initialized by initializer list")
         {
         Range r5={2,3,4};
         CHECK(r5.area()== 24);
         Range r6({-1, -1, -1}, {2, 3, 4});
         CHECK(r6.area()== 60);
         }
-    SECTION("Ordinal");
+    SECTION("Ordinal")
         {
         Range r5={2,3,4};
         long j=0;
@@ -91,7 +91,7 @@ TEST_CASE("Range")
             j++;
         }
         }
-    SECTION("Permute");
+    SECTION("Permute")
         {
         const auto p = std::array<size_t, 3>{{2,0,1}};
         Range r5={2,3,4};
