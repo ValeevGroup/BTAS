@@ -132,8 +132,8 @@ TEST_CASE("Range")
         for(auto i : r){
 
             //FIXME 
-            //In current code, the grouped indeces are recalculted to give a new index. The new index begins with 0.
-            //I am not sure whether it is neccessary. 
+            //In current code, the grouped indices are recalculated to give a new index. The new index begins with 0.
+            //I am not sure whether it is necessary.
             //FIXME 
             //r.extent(1) is 3. 
             //But I have to set it 3, rather than use r.extent(1)
