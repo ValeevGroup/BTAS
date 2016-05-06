@@ -142,7 +142,8 @@ namespace btas {
 
         // Compute range data
         if (order == CblasRowMajor) {
-          for(int i = n - 1; i >= 0; --i) {
+          for(typename std::make_signed<decltype(n)>::type i = n - 1;
+              i >= 0; --i) {
             stride_[i] = volume;
             auto li = *(std::begin(lobound) + i);
             auto ui = *(std::begin(upbound) + i);
@@ -182,7 +183,8 @@ namespace btas {
         // Compute offset and check whether contiguous
         contiguous_ = true;
         if (order == CblasRowMajor) {
-          for(int i = n - 1; i >= 0; --i) {
+          for(typename std::make_signed<decltype(n)>::type i = n - 1;
+              i >= 0; --i) {
             contiguous_ &= (volume == stride_[i]);
             auto li = *(std::begin(lobound) + i);
             auto ui = *(std::begin(upbound) + i);
