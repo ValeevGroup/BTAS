@@ -328,7 +328,7 @@ namespace btas {
         assert(n == rank(upbound));
 
         typedef typename common_signed_type<typename Index1::value_type, typename Index2::value_type>::type ctype;
-        for(auto i = 0; i != n; ++i) {
+        for(decltype(n) i = 0; i != n; ++i) {
           auto li = *(std::begin(lobound) + i);
           auto ui = *(std::begin(upbound) + i);
           assert(static_cast<ctype>(li) <= static_cast<ctype>(ui));
@@ -500,7 +500,7 @@ namespace btas {
       /// \throw nothing
       extent_type extent() const {
         extent_type ex = array_adaptor<extent_type>::construct(rank());
-        for(auto i=0; i<rank(); ++i)
+        for(size_t i=0; i<rank(); ++i)
           ex[i] = upbound_[i] - lobound_[i];
         return ex;
       }
@@ -597,7 +597,7 @@ namespace btas {
         using btas::rank;
         assert(rank(index) == this->rank());
         const auto end = this->rank();
-        for(auto i = 0ul; i < end; ++i)
+        for(size_t i = 0; i < end; ++i)
           if((index[i] < lobound_[i]) || (index[i] >= upbound_[i]))
             return false;
 

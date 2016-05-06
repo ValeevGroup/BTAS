@@ -404,7 +404,7 @@ namespace boost {
   {
       const boost::serialization::collection_size_type count(x.size());
       ar << BOOST_SERIALIZATION_NVP(count);
-      if (count != 0)
+      if (count != decltype(count)(0))
         ar << boost::serialization::make_array(x.data(), count);
   }
   template<class Archive, typename T>
@@ -413,7 +413,7 @@ namespace boost {
       boost::serialization::collection_size_type count;
       ar >> BOOST_SERIALIZATION_NVP(count);
       x.resize(count);
-      if (count != 0)
+      if (count != decltype(count)(0))
         ar >> boost::serialization::make_array(x.data(), count);
   }
 

@@ -112,7 +112,7 @@ namespace btas {
       operator()(const Index& index) const {
         value_type o = 0;
         const auto end = this->rank();
-        for(auto i = 0ul; i != end; ++i)
+        for(std::size_t i = 0; i != end; ++i)
           o += *(std::begin(index) + i) * *(std::begin(this->stride_) + i);
 
         return o - offset_;
@@ -151,7 +151,7 @@ namespace btas {
           }
         }
         else {
-          for(auto i = 0; i != n; ++i) {
+          for(decltype(n) i = 0; i != n; ++i) {
             stride_[i] = volume;
             auto li = *(std::begin(lobound) + i);
             auto ui = *(std::begin(upbound) + i);
@@ -191,7 +191,7 @@ namespace btas {
           }
         }
         else {
-          for(auto i = 0; i != n; ++i) {
+          for(decltype(n) i = 0; i != n; ++i) {
             contiguous_ &= (volume == stride_[i]);
             auto li = *(std::begin(lobound) + i);
             auto ui = *(std::begin(upbound) + i);
