@@ -621,8 +621,8 @@ namespace btas {
       }
 
     private:
-      index_type lobound_; ///< range origin
-      index_type upbound_; ///< range extent
+      index_type lobound_; ///< range lower bound
+      index_type upbound_; ///< range upper bound
 
     }; // class BaseRangeNd
 
