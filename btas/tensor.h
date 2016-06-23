@@ -601,7 +601,7 @@ namespace btas {
       const value_type*
       data () const
       {
-        return storage_.data();
+        return std::data(storage_);
       }
 
       /// \return bare pointer to the first element of data_
@@ -609,7 +609,7 @@ namespace btas {
       value_type*
       data()
       {
-        return storage_.data();
+        return std::data(storage_);
       }
 
       /// fill all elements by val

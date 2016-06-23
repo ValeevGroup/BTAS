@@ -169,7 +169,7 @@ namespace std {
     return x;
   }
 
-#if __cplusplus == 201103L // add useful bits to make transition to C++14 easier
+#if __cplusplus < 201402L // add useful bits to make transition to C++14 easier
   template <typename C>
   constexpr auto cbegin(const C& x) -> decltype(std::begin(x)) {
     return std::begin(x);
@@ -185,6 +185,27 @@ namespace std {
   template <typename C>
   auto rend(C& x) -> decltype(x.rend()) {
     return x.rend();
+  }
+#endif
+
+#if __cplusplus <= 201402L // add useful bits to make transition to C++17 easier
+  template <class C, typename std::enable_if<std::is_pointer<decltype(declval<C>().data())>::value>::type* = nullptr>
+  constexpr auto data(C& c) -> decltype(c.data()) {
+      return c.data();
+  }
+  template <class C, typename std::enable_if<std::is_pointer<decltype(declval<C>().data())>::value>::type* = nullptr>
+  constexpr auto data(const C& c) -> decltype(c.data()) {
+      return c.data();
+  }
+  template <class T, std::size_t N>
+  constexpr T* data(T (&array)[N]) noexcept
+  {
+      return array;
+  }
+  template <class E>
+  constexpr const E* data(const std::initializer_list<E>& il) noexcept
+  {
+      return il.begin();
   }
 #endif
 

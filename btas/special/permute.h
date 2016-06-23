@@ -27,7 +27,7 @@ template<typename _T, size_type _N>
 void permute (const TArray<_T, _N>& x, const std::array<size_type, _N>& index, TArray<_T, _N>& y)
 {
    y.resize(__permute_index(x.shape(), index));
-   Reindex(x.data(), y.data(), __permute_index(x.stride(), index), y.shape());
+   Reindex(std::data(x), std::data(y), __permute_index(x.stride(), index), y.shape());
 }
 
 } // namespace btas
