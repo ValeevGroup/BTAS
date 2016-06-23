@@ -1137,7 +1137,7 @@ namespace btas {
     permute(const RangeNd<_Order, _Index, _Ordinal>& r,
             std::initializer_list<T> perm)
     {
-      typename RangeNd<_Order, _Index, _Ordinal>::extent_type p = array_adaptor<decltype(p)>::construct(perm.size());
+      typename RangeNd<_Order, _Index, _Ordinal>::extent_type p = array_adaptor<typename RangeNd<_Order, _Index, _Ordinal>::extent_type>::construct(perm.size());
       std::copy(std::begin(perm), std::end(perm), std::begin(p));
       return permute(r, p);
     }
