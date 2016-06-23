@@ -269,6 +269,7 @@ namespace btas {
       if (Order == CblasColMajor)
         return Range1(0,ndim,1);
       assert(false); // unreachable
+      return Range1();
     }
 
     /// BaseRangeNd is a <a href="http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern">CRTP</a>
