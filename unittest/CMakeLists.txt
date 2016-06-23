@@ -8,7 +8,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Boost_INCLUDE_DIRS})
-target_link_libraries(${executable} ${BTAS_LIBRARIES} ${Boost_LIBRARIES} ${BLAS_LIBRARIES})
+target_link_libraries(${executable} ${Boost_LIBRARIES} ${LAPACKE_LIBRARIES} ${CBLAS_LIBRARIES})
 append_flags(CMAKE_EXE_LINKER_FLAGS "${BLAS_LINKER_FLAGS}")
 
 # Add targets

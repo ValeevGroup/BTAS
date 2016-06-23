@@ -28,7 +28,7 @@ SET(MKL_CDFT_LIBRARIES)
 
 # Includes
 INCLUDE(CheckTypeSize)
-INCLUDE(CheckFunctionExists)
+INCLUDE(CheckLibraryList)
 
 # Prints diagnostic
 # SET(_verbose TRUE)
@@ -43,15 +43,21 @@ SET(INTEL_MKL_SEQUENTIAL OFF CACHE BOOL
 
 # Checks
 CHECK_TYPE_SIZE("void*" SIZE_OF_VOIDP)
-IF ("${SIZE_OF_VOIDP}" EQUAL 8)
-  SET(mklvers "em64t")
-  SET(iccvers "intel64")
+IF (APPLE)
+  SET(mklvers "")
+  SET(iccvers "")
   SET(mkl64s "_lp64")
-ELSE ("${SIZE_OF_VOIDP}" EQUAL 8)
-  SET(mklvers "32")
-  SET(iccvers "ia32")
-  SET(mkl64s)
-ENDIF ("${SIZE_OF_VOIDP}" EQUAL 8)
+ELSE (APPLE)
+  IF ("${SIZE_OF_VOIDP}" EQUAL 8)
+    SET(mklvers "em64t")
+    SET(iccvers "intel64")
+    SET(mkl64s "_lp64")
+  ELSE ("${SIZE_OF_VOIDP}" EQUAL 8)
+    SET(mklvers "32")
+    SET(iccvers "ia32")
+    SET(mkl64s)
+  ENDIF ("${SIZE_OF_VOIDP}" EQUAL 8)
+ENDIF (APPLE)
 IF (CMAKE_COMPILER_IS_GNUCC)
   SET(mklthreads "mkl_gnu_thread" "mkl_intel_thread")
   SET(mklifaces  "gf" "intel")
@@ -65,29 +71,37 @@ SET(mklrtls "iomp5" "guide")
 SET(mklkerlibs "mc" "mc3" "nc" "p4n" "p4m" "p4m3" "p4p" "def")
 SET(mklseq)
 
-
-
 # Paths
 SET(saved_CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH})
 SET(saved_CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH})
+
+# If the user did not specify an MKL root directory, check for the MKLROOT
+# environment variable or the presence of /opt/intel/mkl.
+if(NOT INTEL_MKL_DIR OR NOT DEFINED INTEL_MKL_DIR)
+  if(EXISTS $ENV{MKLROOT})
+    set(INTEL_MKL_DIR "$ENV{MKLROOT}")
+  endif()
+endif()
+
 IF (INTEL_COMPILER_DIR)
-  # TODO: diagnostic if dir does not exist
-  SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH}
-    "${INTEL_COMPILER_DIR}/lib/${iccvers}")
-  IF (NOT INTEL_MKL_DIR)
+  IF (EXISTS ${INTEL_COMPILER_DIR}/lib/${iccvers})
+    SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH}
+        "${INTEL_COMPILER_DIR}/lib/${iccvers}")
+  ENDIF ()
+  IF (NOT INTEL_MKL_DIR AND EXISTS ${INTEL_COMPILER_DIR}/mkl)
     SET(INTEL_MKL_DIR "${INTEL_COMPILER_DIR}/mkl")
-  ENDIF (NOT INTEL_MKL_DIR)
+  ENDIF ()
 ENDIF (INTEL_COMPILER_DIR)
-IF (INTEL_MKL_DIR)
+IF (INTEL_MKL_DIR AND EXISTS ${INTEL_MKL_DIR})
   # TODO: diagnostic if dir does not exist
   SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH}
     "${INTEL_MKL_DIR}/include")
   SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH}
     "${INTEL_MKL_DIR}/lib/${mklvers}")
-ENDIF (INTEL_MKL_DIR)
+ENDIF ()
 
 # Try linking multiple libs
-MACRO(CHECK_ALL_LIBRARIES LIBRARIES _name _list _flags)
+MACRO(CHECK_LIBRARY_LIST LIBRARIES _name _list _flags)
   # This macro checks for the existence of the combination of libraries given by _list.
   # If the combination is found, this macro whether we can link against that library
   # combination using the name of a routine given by _name using the linker
@@ -141,7 +155,7 @@ MACRO(CHECK_ALL_LIBRARIES LIBRARIES _name _list _flags)
       MESSAGE(STATUS "FindMKL: ${__list} : no")
     ENDIF (_verbose)
   ENDIF(_libraries_work)
-ENDMACRO(CHECK_ALL_LIBRARIES)
+ENDMACRO(CHECK_LIBRARY_LIST)
 
 
 # Check for version 10/11
@@ -153,7 +167,7 @@ FOREACH(mklrtl ${mklrtls})
     FOREACH(mkl64 ${mkl64s} "")
       FOREACH(mklthread ${mklthreads})
         IF (NOT MKL_LIBRARIES AND NOT INTEL_MKL_SEQUENTIAL)
-          CHECK_ALL_LIBRARIES(MKL_LIBRARIES cblas_sgemm
+          CHECK_LIBRARY_LIST(MKL_LIBRARIES cblas_sgemm
             "mkl_${mkliface}${mkl64};${mklthread};mkl_core;${mklrtl};pthread;m" "")
         ENDIF (NOT MKL_LIBRARIES AND NOT INTEL_MKL_SEQUENTIAL)          
       ENDFOREACH(mklthread)
@@ -164,7 +178,7 @@ FOREACH(mklrtl ${mklrtls})
   FOREACH(mkliface ${mklifaces})
     FOREACH(mkl64 ${mkl64s} "")
       IF (NOT MKL_LIBRARIES)
-        CHECK_ALL_LIBRARIES(MKL_LIBRARIES cblas_sgemm
+        CHECK_LIBRARY_LIST(MKL_LIBRARIES cblas_sgemm
           "mkl_${mkliface}${mkl64};mkl_sequential;mkl_core;m" "")
         IF (MKL_LIBRARIES)
           SET(mklseq "_sequential")
@@ -178,7 +192,7 @@ FOREACH(mklrtl ${mklrtls})
     FOREACH(mkl64 ${mkl64s} "")
       FOREACH(mklthread ${mklthreads})
         IF (NOT MKL_LIBRARIES)
-          CHECK_ALL_LIBRARIES(MKL_LIBRARIES cblas_sgemm
+          CHECK_LIBRARY_LIST(MKL_LIBRARIES cblas_sgemm
             "mkl_${mkliface}${mkl64};${mklthread};mkl_core;${mklrtl};pthread;m" "")
         ENDIF (NOT MKL_LIBRARIES)          
       ENDFOREACH(mklthread)
@@ -189,7 +203,7 @@ ENDFOREACH(mklrtl)
 # Check for older versions
 IF (NOT MKL_LIBRARIES)
   SET(MKL_VERSION 900)
-  CHECK_ALL_LIBRARIES(MKL_LIBRARIES cblas_sgemm
+  CHECK_LIBRARY_LIST(MKL_LIBRARIES cblas_sgemm
     "mkl;guide;pthread;m" "")
 ENDIF (NOT MKL_LIBRARIES)          
 

@@ -15,19 +15,28 @@ extern "C" {
 
 #ifdef _HAS_CBLAS
 
+#if not defined(_CBLAS_HEADER) && not defined(_LAPACKE_HEADER)
+
 #ifdef _HAS_INTEL_MKL
 
 #include <mkl_cblas.h>
 #include <mkl_lapacke.h>
 
-#else
+#else  // _HAS_INTEL_MKL
 
 #include <cblas.h>
 #include <lapacke.h>
 
-#endif // _HAS_INTEL_MKL
+#endif  // _HAS_INTEL_MKL
 
-#else // _HAS_CBLAS
+#else  // _CBLAS_HEADER
+
+#include _CBLAS_HEADER
+#include _LAPACKE_HEADER
+
+#endif  // _CBLAS_HEADER
+
+#else  // _HAS_CBLAS
 
 /// major order directive
 enum CBLAS_ORDER { CblasRowMajor, CblasColMajor };
