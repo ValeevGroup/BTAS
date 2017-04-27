@@ -1,5 +1,8 @@
 #include "test.h"
+
+#include <iostream>
 #include <random>
+
 #include "btas/tensor.h"
 #include "btas/generic/contract.h"
 

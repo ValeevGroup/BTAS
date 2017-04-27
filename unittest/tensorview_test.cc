@@ -1,5 +1,8 @@
 #include "test.h"
+
+#include <iostream>
 #include <random>
+
 #include "btas/tensorview.h"
 #include "btas/tensor.h"
 #include "btas/tensor_func.h"
@@ -123,7 +126,7 @@ TEST_CASE("TensorView constructors") {
   SECTION("TensorRWView<double> using make_rwview from TensorRWView(read-only) throws") {
     auto T0v = make_rwview(T0, false);
     // TODO need to specialize make_*view to TensorView
-    CHECK_THROWS_AS( auto T0vv = make_rwview(T0v), btas::exception);
+    CHECK_THROWS_AS( make_rwview(T0v), btas::exception);
   }
 
   SECTION("TensorRWView<float> using make_rwview from Tensor<double>") {

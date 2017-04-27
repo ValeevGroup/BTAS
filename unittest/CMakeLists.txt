@@ -16,4 +16,4 @@ add_dependencies(${executable} External)
 add_dependencies(check ${executable})
 
 # Add a test
-add_test(${executable} ${executable})
+add_test(${executable} ${executable} -s)

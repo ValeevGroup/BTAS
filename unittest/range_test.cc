@@ -1,4 +1,7 @@
 #include "test.h"
+
+#include <iostream>
+
 #include "btas/range.h"
 
 using std::cout;
@@ -68,7 +71,6 @@ TEST_CASE("Range")
         typedef RangeNd<CblasRowMajor, std::array<size_t, 3>> Range3d;
         Range3d x;
         CHECK(x.rank()== 3);
-        CHECK(x.area()== 0);
         }
     SECTION("Col-major std::vector-based Range")
         {

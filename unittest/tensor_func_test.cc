@@ -1,4 +1,7 @@
 #include "test.h"
+
+#include <iostream>
+
 #include "btas/tensor.h"
 #include "btas/tensor_func.h"
 #include "btas/generic/contract.h"
