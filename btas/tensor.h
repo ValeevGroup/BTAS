@@ -382,15 +382,11 @@ namespace btas {
       /// @{
 
       /// accesses element using its index, given as a pack of integers
-      template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value, const_reference>::type
-      operator() (const index0& first, const _args&... rest) const
+      template<typename ... Index>
+      typename std::enable_if<not is_index<typename std::decay<Index>::type...>::value, const_reference>::type
+      operator() (Index&& ... idx) const
       {
-        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
-        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
-        index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
-        return storage_[ range_.ordinal(index) ];
+        return storage_[ range_.ordinal(std::forward<Index>(idx)...) ];
       }
 
       template <typename Index>
@@ -416,15 +412,11 @@ namespace btas {
         return storage_[indexord];
       }
 
-      template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value, reference>::type
-      operator() (const index0& first, const _args&... rest)
+      template<typename ... Index>
+      typename std::enable_if<not is_index<typename std::decay<Index>::type...>::value, reference>::type
+      operator() (Index&& ... idx)
       {
-        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
-        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
-        index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
-        return storage_[ range_.ordinal(index) ];
+        return storage_[ range_.ordinal(std::forward<Index>(idx)...) ];
       }
 
       template <typename Index>
@@ -456,66 +448,60 @@ namespace btas {
       /// @{
 
       /// accesses element using its index, given as a pack of integers
-      template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value, const_reference>::type
-      at (const index0& first, const _args&... rest) const
+      template<typename ... Index>
+      const_reference at (Index&& ... idx) const
       {
-        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
-        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
-        index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
-        assert( range_.includes(index) );
-        return storage_[ range_.ordinal(index) ];
+        assert( sizeof...(idx) == range_.rank() );
+        assert( range_.includes(std::forward<Index>(idx)...) );
+        return storage_[ range_.ordinal(std::forward<Index>(idx)...) ];
       }
 
       template <typename Index>
       typename std::enable_if<is_index<Index>::value, const_reference>::type
       at (const Index& index) const
       {
+        assert( size(index) == range_.rank() );
         assert( range_.includes(index) );
         return storage_[ range_.ordinal(index) ];
       }
 
-      /// accesses element using its ordinal value
-      /// \param indexord ordinal value of the index
-      template <typename IndexOrdinal>
-      typename std::enable_if<std::is_integral<IndexOrdinal>::value, const_reference>::type
-      at (const IndexOrdinal& indexord) const
-      {
-        assert( range_.includes(indexord) );
-        return storage_[ indexord ];
-      }
+//      /// accesses element using its ordinal value
+//      /// \param indexord ordinal value of the index
+//      template <typename IndexOrdinal>
+//      typename std::enable_if<std::is_integral<IndexOrdinal>::value, const_reference>::type
+//      at (const IndexOrdinal& indexord) const
+//      {
+//        assert( range_.includes(indexord) );
+//        return storage_[ indexord ];
+//      }
 
       /// accesses element using its index, given as a pack of integers
-      template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value, reference>::type
-      at (const index0& first, const _args&... rest)
+      template<typename... Index>
+      reference at (Index&&... idx)
       {
-        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
-        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
-        index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
-        assert( range_.includes(index) );
-        return storage_[ range_.ordinal(index) ];
+        assert( sizeof...(idx) == range_.rank() );
+        assert( range_.includes(std::forward<Index>(idx)...) );
+        return storage_[ range_.ordinal(std::forward<Index>(idx)...) ];
       }
 
       template <typename Index>
       typename std::enable_if<is_index<Index>::value, reference>::type
       at (const Index& index)
       {
+        assert( size(index) == range_.rank() );
         assert( range_.includes(index) );
         return storage_[ range_.ordinal(index) ];
       }
 
-      /// accesses element using its ordinal value
-      /// \param indexord ordinal value of the index
-      template <typename IndexOrdinal>
-      typename std::enable_if<std::is_integral<IndexOrdinal>::value, reference>::type
-      at (const IndexOrdinal& indexord)
-      {
-        assert( range_.includes(indexord) );
-        return storage_[ indexord ];
-      }
+//      /// accesses element using its ordinal value
+//      /// \param indexord ordinal value of the index
+//      template <typename IndexOrdinal>
+//      typename std::enable_if<std::is_integral<IndexOrdinal>::value, reference>::type
+//      at (const IndexOrdinal& indexord)
+//      {
+//        assert( range_.includes(indexord) );
+//        return storage_[ indexord ];
+//      }
 
       ///@} // element accessors with range check
 

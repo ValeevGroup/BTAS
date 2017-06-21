@@ -24,12 +24,22 @@ public:
 
 /// test _Index conforms the TWG.Index concept
 /// check only value_type and operator[]
-template<class _Index>
-class is_index {
+template<typename ...>
+class is_index;
+
+template<typename _Index>
+class is_index<_Index> {
 public:
    static constexpr const bool
    value = has_integral_value_type<_Index>::value &
            is_container<_Index>::value;
+};
+
+template<typename _Index1, typename _Index2, typename ... Rest>
+class is_index<_Index1,_Index2,Rest...> {
+public:
+   static constexpr const bool
+   value = false;
 };
 
 } // namespace btas

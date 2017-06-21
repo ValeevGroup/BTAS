@@ -2,6 +2,7 @@
 #define __BTAS_GEMV_IMPL_H 1
 
 #include <algorithm>
+#include <cassert>
 #include <numeric>
 #include <iterator>
 #include <type_traits>

@@ -290,6 +290,9 @@ namespace btas {
       typedef typename std::make_unsigned<index_type>::type extent_type;    ///< Range extent type
       typedef std::size_t size_type; ///< Size type
 
+      typedef typename index_type::value_type index_element_type;
+      typedef typename extent_type::value_type extent_element_type;
+
       typedef index_type value_type; ///< Range can be viewed as a Container of value_type
       typedef index_type& reference;
       typedef const value_type& const_reference;
@@ -311,6 +314,7 @@ namespace btas {
         if (n == 0) {
           lobound_ = array_adaptor<index_type>::construct(0);
           upbound_ = array_adaptor<index_type>::construct(0);
+          extent_ = array_adaptor<extent_type>::construct(0);
           return;
         }
         validate(lobound, upbound);
@@ -319,6 +323,11 @@ namespace btas {
         std::copy(std::begin(lobound), std::end(lobound), std::begin(lobound_));
         upbound_ = array_adaptor<index_type>::construct(n);
         std::copy(std::begin(upbound), std::end(upbound), std::begin(upbound_));
+        extent_ = array_adaptor<extent_type>::construct(n);
+        std::transform(std::begin(lobound), std::end(lobound), std::begin(upbound), std::begin(extent_),
+                       [](index_element_type l, index_element_type u) -> extent_element_type {
+          return u - l;
+        });
       }
 
       template <typename Index1, typename Index2>
@@ -341,21 +350,24 @@ namespace btas {
 
       /// Default constructor
 
-      /// Construct an unitialized range; its area is zero.
-      BaseRangeNd() : lobound_(), upbound_() { }
+      /// Construct an uninitialized range
+     /// \note this is a rank-0 range if \c rank(index_type) return value is
+     ///       non-constexpr
+     BaseRangeNd() : lobound_(), upbound_(), extent_() {}
 
-      /// Constructor defined by the upper and lower bounds
+     /// Constructor defined by the upper and lower bounds
 
-      /// \tparam Index1 An array type convertible to \c index_type
-      /// \tparam Index2 An array type convertible to \c index_type
-      /// \param lobound The lower bound of the N-dimensional range
-      /// \param upbound The upper bound of the N-dimensional range
-      template <typename Index1, typename Index2>
-      BaseRangeNd(const Index1& lobound, const Index2& upbound,
-              typename std::enable_if<btas::is_index<Index1>::value && btas::is_index<Index2>::value, Enabler>::type = Enabler())
-      {
-        validate(lobound, upbound);
-        init(lobound, upbound);
+     /// \tparam Index1 An array type convertible to \c index_type
+     /// \tparam Index2 An array type convertible to \c index_type
+     /// \param lobound The lower bound of the N-dimensional range
+     /// \param upbound The upper bound of the N-dimensional range
+     template <typename Index1, typename Index2>
+     BaseRangeNd(const Index1& lobound, const Index2& upbound,
+                 typename std::enable_if<btas::is_index<Index1>::value &&
+                                             btas::is_index<Index2>::value,
+                                         Enabler>::type = Enabler()) {
+       validate(lobound, upbound);
+       init(lobound, upbound);
       }
 
       /// "Move" constructor defined by the upper and lower bounds
@@ -366,6 +378,12 @@ namespace btas {
         lobound_(lobound), upbound_(upbound)
       {
         validate(lobound, upbound);
+        extent_ = array_adaptor<extent_type>::construct(rank());
+        std::transform(
+            std::begin(lobound), std::end(lobound), std::begin(upbound),
+            std::begin(extent_),
+            [](index_element_type l,
+               index_element_type u) -> extent_element_type { return u - l; });
       }
 
       /// Range constructor from a pack of extents for each dimension
@@ -404,7 +422,7 @@ namespace btas {
 
       /// \param other The range to be copied
       BaseRangeNd(const BaseRangeNd& other) :
-        lobound_(other.lobound_), upbound_(other.upbound_)
+        lobound_(other.lobound_), upbound_(other.upbound_), extent_(other.extent_)
       {
       }
 
@@ -419,7 +437,9 @@ namespace btas {
 
       /// \param other The range to be moved
       BaseRangeNd(BaseRangeNd&& other) :
-        lobound_(other.lobound_), upbound_(other.upbound_)
+        lobound_(std::move(other.lobound_)),
+        upbound_(std::move(other.upbound_)),
+        extent_(std::move(other.extent_))
       {
       }
 
@@ -435,6 +455,7 @@ namespace btas {
       BaseRangeNd& operator=(const BaseRangeNd& other) {
         lobound_ = other.lobound_;
         upbound_ = other.upbound_;
+        extent_ = other.extent_;
 
         return *this;
       }
@@ -444,8 +465,9 @@ namespace btas {
       /// \param other The range to be moved
       /// \return A reference to this object
       BaseRangeNd& operator=(BaseRangeNd&& other) {
-        lobound_ = other.lobound_;
-        upbound_ = other.upbound_;
+        lobound_ = std::move(other.lobound_);
+        upbound_ = std::move(other.upbound_);
+        extent_ = std::move(other.extent_);
 
         return *this;
       }
@@ -453,6 +475,7 @@ namespace btas {
       void swap(BaseRangeNd& other) {
         std::swap(lobound_, other.lobound_);
         std::swap(upbound_, other.upbound_);
+        std::swap(extent_, other.extent_);
       }
 
     public:
@@ -471,6 +494,10 @@ namespace btas {
       /// \throw nothing
       const_reference lobound() const { return lobound_; }
 
+      const index_element_type* lobound_data() const {
+        return std::data(lobound_);
+      }
+
       /// Range lobound coordinate accessor
 
       /// \return A \c size_array that contains the first index in this range
@@ -483,6 +510,10 @@ namespace btas {
       /// \throw nothing
       const_reference upbound() const {
         return upbound_;
+      }
+
+      const index_element_type* upbound_data() const {
+        return std::data(upbound_);
       }
 
       /// Rank accessor
@@ -499,17 +530,22 @@ namespace btas {
 
       /// \return A \c extent_type that contains the extent of each dimension
       /// \throw nothing
-      extent_type extent() const {
-        extent_type ex = array_adaptor<extent_type>::construct(rank());
-        for(size_t i=0; i<rank(); ++i)
-          ex[i] = upbound_[i] - lobound_[i];
-        return ex;
+      const extent_type& extent() const {
+        return extent_;
+//        extent_type ex = array_adaptor<extent_type>::construct(rank());
+//        for(size_t i=0; i<rank(); ++i)
+//          ex[i] = upbound_[i] - lobound_[i];
+//        return ex;
+      }
+
+      const extent_element_type* extent_data() const {
+        return std::data(extent_);
       }
 
       /// \return The extent of the nth dimension
       typename extent_type::value_type
       extent(size_t n) const {
-        return upbound_[n] - lobound_[n];
+          return extent_[n];
       }
 
       /// Range volume accessor
@@ -518,8 +554,7 @@ namespace btas {
       /// \throw nothing
       size_type area() const {
         if (rank()) {
-          const extent_type ex = extent();
-          return std::accumulate(std::begin(ex), std::end(ex), 1ul, std::multiplies<size_type>());
+          return std::accumulate(std::begin(extent_), std::end(extent_), 1ul, std::multiplies<size_type>());
         }
         else
           return 0;
@@ -623,6 +658,7 @@ namespace btas {
     private:
       index_type lobound_; ///< range lower bound
       index_type upbound_; ///< range upper bound
+      extent_type extent_;  ///< range extent
 
     }; // class BaseRangeNd
 
@@ -904,6 +940,19 @@ namespace btas {
       typename std::enable_if<btas::is_index<Index>::value, ordinal_type>::type
       ordinal(const Index& index) const {
         return ordinal_(index);
+      }
+
+      /// calculates the ordinal value of \c i
+
+      /// Convert an index to its ordinal.
+      /// \tparam Index A coordinate index type (array type)
+      /// \param index The index to be converted to an ordinal index
+      /// \return The ordinal index of \c index
+      /// \throw When \c index is not included in this range.
+      template <typename ... Index>
+      typename std::enable_if<not btas::is_index<typename std::decay<Index>::type...>::value, ordinal_type>::type
+      ordinal(Index&& ... index) const {
+        return ordinal_(std::forward<Index>(index)...);
       }
 
       /// Constructs a Range slice defined by the upper and lower bounds within this Range

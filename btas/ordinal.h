@@ -13,6 +13,8 @@
 #include <btas/index_traits.h>
 #include <btas/varray/varray.h>
 
+#include <boost/assert.hpp>
+
 namespace btas {
 
   /// BoxOrdinal is an implementation detail of BoxRange.
@@ -110,6 +112,7 @@ namespace btas {
       template <typename Index>
       typename std::enable_if<btas::is_index<Index>::value, value_type>::type
       operator()(const Index& index) const {
+        assert(index.size() == rank());
         value_type o = 0;
         const auto end = this->rank();
         for(std::size_t i = 0; i != end; ++i)
@@ -117,6 +120,27 @@ namespace btas {
 
         return o - offset_;
       }
+
+      /// computes the ordinal value using a pack of indices
+      template <typename ... Index>
+      typename std::enable_if<not btas::is_index<typename std::decay<Index>::type...>::value, value_type>::type
+      operator()(Index&& ... index) const {
+        assert(sizeof...(index) == rank());
+        value_type o = zip(std::begin(this->stride_), std::forward<Index>(index)...);
+        return o - offset_;
+      }
+
+    private:
+      template <typename Iterator, typename FirstIndex, typename ... RestOfIndices>
+      value_type zip(Iterator&& it, FirstIndex&& index, RestOfIndices&& ... rest) const {
+        return *it * index + zip(it+1, rest...);
+      }
+      template <typename Iterator>
+      value_type zip(Iterator&& it) const {
+        return 0;
+      }
+
+    public:
 
       /// Does ordinal value belong to this ordinal range?
       template <typename I>
