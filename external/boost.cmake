@@ -15,6 +15,8 @@ if (Boost_FOUND)
   list(APPEND CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR})
   list(APPEND CMAKE_REQUIRED_LIBRARIES ${Boost_LIBRARIES})
 
+  include(CheckCXXSourceRuns)
+
   CHECK_CXX_SOURCE_RUNS(
       "
       #define BOOST_TEST_MAIN main_tester

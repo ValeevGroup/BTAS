@@ -55,77 +55,11 @@ set(BUILD_TESTING_STATIC FALSE CACHE BOOLEAN "BUILD_TESTING_STATIC")
 set(BUILD_TESTING_SHARED FALSE CACHE BOOLEAN "BUILD_TESTING_SHARED")
 
 ##########################
-# Check C++11 features
+# We use C++11 features
 ##########################
-include(TestCXXAcceptsFlag)
-include(CheckCXXSourceCompiles)
-include(CheckCXXSourceRuns)
-
-# Check for general C++11 support
-CHECK_CXX_SOURCE_COMPILES(
-    "
-    #if (__cplusplus < 201103L) || defined(__INTEL_CXX11_MODE__)
-    #error C++11 support not enabled.
-    #endif
-    int main(){ return 0; }
-    "
-    BTAS_HAS_CXX11)
-
-# if no C++11, try flags
-if (NOT BTAS_HAS_CXX11)
-  CHECK_CXX_ACCEPTS_FLAG("-std=c++11" CXX_ACCEPTS_STDCXX11)
-  if (CXX_ACCEPTS_STDCXX11)
-    set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
-  else (CXX_ACCEPTS_STDCXX11)
-    CHECK_CXX_ACCEPTS_FLAG("-std=c++0x" CXX_ACCEPTS_STDCXX0X)
-    if (CXX_ACCEPTS_STDCXX0X)
-    set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
-    else (CXX_ACCEPTS_STDCXX0X)
-      message(FATAL_ERROR "Compiler does not provide C++11 support; provide the appropriate command-line flags explicitly via -DCMAKE_CXX_FLAGS=\"\" or try a newer compiler")
-    endif (CXX_ACCEPTS_STDCXX0X)
-  endif (CXX_ACCEPTS_STDCXX11)
-  
-  # look for C++11 support again
-  CHECK_CXX_SOURCE_COMPILES(
-    "
-    #if (__cplusplus < 201103L) || defined(__INTEL_CXX11_MODE__)
-    #error C++11 support not enabled.
-    #endif
-    int main(){ return 0; }
-    "
-    BTAS_HAS_CXX11_USING_STDFLAG)
-  if (NOT BTAS_HAS_CXX11_USING_STDFLAG)
-    message(FATAL_ERROR "Compiler cannot compile C++11 code with -std=c++11 or -std=c++0x flags; provide the appropriate command-line flags explicitly via -DCMAKE_CXX_FLAGS=\"\" or try a newer compiler")
-  endif (NOT BTAS_HAS_CXX11_USING_STDFLAG)
-endif (NOT BTAS_HAS_CXX11)
-
-if(BTAS_HAS_CXX11)
-  # static_assert is desired, but an implementation is included
-  CHECK_CXX_SOURCE_COMPILES("
-    int main(int argc, char* argv[]) {
-      static_assert(true, \"don't worry, be happy\");
-      return 0;
-    }"
-    BTAS_HAVE_STATIC_ASSERT)  
-  
-  # check for variadic templates
-  CHECK_CXX_SOURCE_COMPILES("
-    #include <iostream>
-    #include <iterator>
-    #include <algorithm>
-    template <typename... args> void print_numbers(const args&... numbers) {
-      const int n = sizeof...(args);
-      int nums[sizeof...(args)] = { static_cast<int>(numbers)... };
-      std::copy(nums, nums+n, std::ostream_iterator<int>(std::cout, \" \"));
-    }
-    int main(int argc, char* argv[]) {
-      print_numbers(-1);
-      print_numbers(0, 1, 2, 3, 4);
-      return 0;
-    }"
-    BTAS_HAVE_VARIADIC_TEMPLATES) 
- 
-endif(BTAS_HAS_CXX11)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Check type support
 include(CheckTypeSize)
