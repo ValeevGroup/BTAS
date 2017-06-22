@@ -41,6 +41,7 @@ addons:
       - clang-3.9
       - clang-4.0
       - clang-5.0
+      - libboost1.55
       - libboost1.55-dev
       - libblas-dev
       - liblapack-dev
