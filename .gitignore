@@ -18,7 +18,6 @@
 *.swp
 
 # CMake files
-*.cmake
 CMakeCache.txt
 CMakeFiles/
 Makefile
