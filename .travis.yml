@@ -45,6 +45,7 @@ addons:
       - libboost1.55-dev
       - libblas-dev
       - liblapack-dev
+      - liblapacke-dev
       - libopenblas-dev
       - cmake
       - cmake-data
