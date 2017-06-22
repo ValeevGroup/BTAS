@@ -1,3 +1,5 @@
+dist: trusty
+sudo: required
 language: cpp
 os:
   - linux
@@ -21,7 +23,6 @@ matrix:
       env: GCC_VERSION=6 LLVM_VERSION=3.9
     - compiler: gcc
       env: GCC_VERSION=6 LLVM_VERSION=5.0
-sudo: false
 addons:
   apt:
     sources:
