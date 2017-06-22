@@ -15,7 +15,7 @@ fi
 ##########   test with cblas   ##########
 mkdir build_cblas
 cd build_cblas
-cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON
+cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON -DBOOST_INCLUDEDIR=/usr/include/boost -DBOOST_LIBRARYDIR=/usr/lib
 make VERBOSE=1
 make check VERBOSE=1
 cd ..
