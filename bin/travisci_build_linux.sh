@@ -23,7 +23,7 @@ fi
 ########## test without cblas ##########
 mkdir build
 cd build
-cmake .. -DBTAS_ASSERT_THROWS=ON -DBoost_NO_BOOST_CMAKE=ON
+cmake .. -DBTAS_ASSERT_THROWS=ON -DBoost_NO_BOOST_CMAKE=ON -DBOOST_INCLUDEDIR=/usr/include/boost -DBOOST_LIBRARYDIR=/usr/lib
 make VERBOSE=1
 make check VERBOSE=1
 cd ..
