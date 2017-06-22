@@ -6,13 +6,15 @@ if (BOOST_ROOT OR BOOST_INCLUDEDIR)
 endif()
 #set(Boost_DEBUG TRUE)
 
-# Check for Boost
-find_package(Boost 1.33 COMPONENTS serialization)
+# Check for Boost, unless told otherwise (then must set Boost_FOUND, Boost_INCLUDE_DIRS, Boost_LIBRARIES)
+if (NOT SKIP_BOOST_SEARCH)
+  find_package(Boost 1.33 COMPONENTS serialization)
+endif()
 
 if (Boost_FOUND)
 
   # Perform a compile check with Boost
-  list(APPEND CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR})
+  list(APPEND CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIRS})
   list(APPEND CMAKE_REQUIRED_LIBRARIES ${Boost_LIBRARIES})
 
   include(CheckCXXSourceRuns)
