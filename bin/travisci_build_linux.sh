@@ -15,7 +15,7 @@ fi
 ##########   test with cblas   ##########
 #mkdir build_cblas
 #cd build_cblas
-#cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON
+#cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON -DBoost_NO_BOOST_CMAKE=ON
 #make VERBOSE=1
 #make check VERBOSE=1
 #cd ..
@@ -23,7 +23,7 @@ fi
 ########## test without cblas ##########
 mkdir build
 cd build
-cmake .. -DBTAS_ASSERT_THROWS=ON
+cmake .. -DBTAS_ASSERT_THROWS=ON -Boost_NO_BOOST_CMAKE=ON
 make VERBOSE=1
 make check VERBOSE=1
 cd ..
