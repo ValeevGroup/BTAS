@@ -111,7 +111,7 @@ if (BTAS_BUILD_UNITTEST)
   add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
   add_subdirectory(unittest)
 else(BTAS_BUILD_UNITTEST)
-  add_custom_target(check COMMAND echo "WARNING: unit testing disabled. To enable, give -DBTAS_BUILD_UNITTEST=TRUE to cmake __AND__ ensure you have Boost libraries")
+  add_custom_target(check COMMAND echo "WARNING: unit testing disabled. To enable, give -DBTAS_BUILD_UNITTEST=TRUE to cmake")
 endif(BTAS_BUILD_UNITTEST)
 
 # Add target to allow on-the-fly switching of build type
