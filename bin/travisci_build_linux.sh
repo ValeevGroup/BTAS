@@ -13,12 +13,12 @@ else
 fi
 
 ##########   test with cblas   ##########
-#mkdir build_cblas
-#cd build_cblas
-#cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON -DBoost_NO_BOOST_CMAKE=ON
-#make VERBOSE=1
-#make check VERBOSE=1
-#cd ..
+mkdir build_cblas
+cd build_cblas
+cmake .. -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON
+make VERBOSE=1
+make check VERBOSE=1
+cd ..
 
 ########## test without cblas ##########
 mkdir build
