@@ -13,7 +13,7 @@
 extern "C" {
 #endif // __cplusplus
 
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
 
 #if not defined(_CBLAS_HEADER) && not defined(_LAPACKE_HEADER)
 
@@ -36,7 +36,7 @@ extern "C" {
 
 #endif  // _CBLAS_HEADER
 
-#else  // _HAS_CBLAS
+#else  // BTAS_HAS_CBLAS
 
 /// major order directive
 enum CBLAS_ORDER { CblasRowMajor, CblasColMajor };
@@ -53,7 +53,7 @@ enum CBLAS_DIAG { CblasNonUnit, CblasUnit };
 /// transposition directive for symmetric matrix (not used)
 enum CBLAS_SIDE { CblasLeft, CblasRight };
 
-#endif // _HAS_CBLAS
+#endif // BTAS_HAS_CBLAS
 
 #ifdef __cplusplus
 }

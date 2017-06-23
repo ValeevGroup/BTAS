@@ -35,7 +35,7 @@ template<> struct axpy_impl<true>
       }
    }
 
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
    template <typename _T, class = typename std::enable_if<std::is_convertible<_T, float>::value>::type>
    static void call (
       const unsigned long& Nsize,

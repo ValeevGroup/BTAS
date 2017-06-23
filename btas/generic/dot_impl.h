@@ -78,7 +78,7 @@ struct dotc_impl<float>
       const float* itrX, const typename std::iterator_traits<float*>::difference_type& incX,
       const float* itrY, const typename std::iterator_traits<float*>::difference_type& incY)
    {
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
       return cblas_sdot(Nsize, itrX, incX, itrY, incY);
 #else
       return_type val = (*itrX) * (*itrY);
@@ -103,7 +103,7 @@ struct dotc_impl<double>
       const double* itrX, const typename std::iterator_traits<double*>::difference_type& incX,
       const double* itrY, const typename std::iterator_traits<double*>::difference_type& incY)
    {
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
       return cblas_ddot(Nsize, itrX, incX, itrY, incY);
 #else
       return_type val = (*itrX) * (*itrY);
@@ -129,7 +129,7 @@ struct dotc_impl<std::complex<float>>
       const std::complex<float>* itrY, const typename std::iterator_traits<std::complex<float>*>::difference_type& incY)
    {
       return_type val;
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
       cblas_cdotc_sub(Nsize, itrX, incX, itrY, incY, &val);
 #else
       val = std::conj(*itrX) * (*itrY);
@@ -155,7 +155,7 @@ struct dotu_impl<std::complex<float>>
       const std::complex<float>* itrY, const typename std::iterator_traits<std::complex<float>*>::difference_type& incY)
    {
       return_type val;
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
       cblas_cdotu_sub(Nsize, itrX, incX, itrY, incY, &val);
 #else
       val = (*itrX) * (*itrY);
@@ -181,7 +181,7 @@ struct dotc_impl<std::complex<double>>
       const std::complex<double>* itrY, const typename std::iterator_traits<std::complex<double>*>::difference_type& incY)
    {
       return_type val;
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
       cblas_zdotc_sub(Nsize, itrX, incX, itrY, incY, &val);
 #else
       val = std::conj(*itrX) * (*itrY);
@@ -207,7 +207,7 @@ struct dotu_impl<std::complex<double>>
       const std::complex<double>* itrY, const typename std::iterator_traits<std::complex<double>*>::difference_type& incY)
    {
       return_type val;
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
       cblas_zdotu_sub(Nsize, itrX, incX, itrY, incY, &val);
 #else
       val = (*itrX) * (*itrY);
