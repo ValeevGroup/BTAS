@@ -36,10 +36,10 @@ IF(NOT LAPACKE_LIBRARIES)
   CHECK_LIBRARY_LIST(
     LAPACKE_LIBRARIES
     LAPACKE
-    cblas_dgemm
+    LAPACKE_dgesv
     ""
-    "cblas;atlas"
-    "cblas.h"
+    "lapacke;cblas;atlas"
+    "lapacke.h"
     TRUE )
 ENDIF(NOT LAPACKE_LIBRARIES)
 
@@ -48,22 +48,10 @@ IF(NOT LAPACKE_LIBRARIES)
   CHECK_LIBRARY_LIST(
     LAPACKE_LIBRARIES
     LAPACKE
-    cblas_dgemm
+    LAPACKE_dgesv
     ""
-    "cblas"
-    "cblas.h"
-    TRUE )
-ENDIF(NOT LAPACKE_LIBRARIES)
-
-# LAPACKE library included in BLAS library
-IF(NOT LAPACKE_LIBRARIES)
-  CHECK_LIBRARY_LIST(
-    LAPACKE_LIBRARIES
-    LAPACKE
-    cblas_dgemm
-    ""
-    "blas"
-    "cblas.h"
+    "lapacke"
+    "lapacke.h"
     TRUE )
 ENDIF(NOT LAPACKE_LIBRARIES)
 
