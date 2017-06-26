@@ -38,7 +38,7 @@ template<> struct gesvd_impl<true>
       assert(false); // gesvd_impl<true> for a generic iterator type has not yet been implemented.
    }
 
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
 
    static void call (
       const CBLAS_ORDER& order,
@@ -120,7 +120,7 @@ template<> struct gesvd_impl<true>
       delete [] superb;
    }
 
-#endif // _HAS_CBLAS
+#endif // BTAS_HAS_CBLAS
 
 };
 

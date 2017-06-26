@@ -228,7 +228,7 @@ template<> struct gemm_impl<true>
       }
    }
 
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
 
    template <typename _T, class = typename std::enable_if<std::is_convertible<_T, float>::value>::type>
    static void call (
@@ -322,7 +322,7 @@ template<> struct gemm_impl<true>
 #endif
    }
 
-#endif // _HAS_CBLAS
+#endif // BTAS_HAS_CBLAS
 
 };
 

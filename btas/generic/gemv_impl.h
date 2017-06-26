@@ -132,7 +132,7 @@ template<> struct gemv_impl<true>
       }
    }
 
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
 
    template <typename _T, class = typename std::enable_if<std::is_convertible<_T, float>::value>::type>
    static void call (
@@ -210,7 +210,7 @@ template<> struct gemv_impl<true>
       cblas_zgemv(order, transA, Msize, Nsize, &alphac, itrA, LDA, itrX, incX, &betac, itrY, incY);
    }
 
-#endif // _HAS_CBLAS
+#endif // BTAS_HAS_CBLAS
 
 };
 

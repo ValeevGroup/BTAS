@@ -60,7 +60,7 @@ template<> struct ger_impl<true>
       }
    }
 
-#ifdef _HAS_CBLAS
+#ifdef BTAS_HAS_CBLAS
 
    template <typename _T, class = typename std::enable_if<std::is_convertible<_T, float>::value>::type>
    static void call (
@@ -130,7 +130,7 @@ template<> struct ger_impl<true>
       cblas_zgeru(order, Msize, Nsize, &alphac, itrX, incX, itrY, incY, itrA, LDA);
    }
 
-#endif // _HAS_CBLAS
+#endif // BTAS_HAS_CBLAS
 
 };
 
