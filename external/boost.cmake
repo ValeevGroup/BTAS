@@ -8,7 +8,7 @@ endif()
 
 # Check for Boost, unless told otherwise (then must set Boost_FOUND, Boost_INCLUDE_DIRS, Boost_LIBRARIES)
 if (NOT SKIP_BOOST_SEARCH)
-  find_package(Boost 1.33 COMPONENTS serialization)
+  find_package(Boost 1.33 REQUIRED COMPONENTS serialization OPTIONAL_COMPONENTS container)
 endif()
 
 if (Boost_FOUND)
@@ -16,6 +16,9 @@ if (Boost_FOUND)
   # Perform a compile check with Boost
   list(APPEND CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIRS})
   list(APPEND CMAKE_REQUIRED_LIBRARIES ${Boost_LIBRARIES})
+  if (Boost_CONTAINER_FOUND)
+    add_definitions(-DHAVE_BOOST_CONTAINER=1 -DBTAS_TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK})
+  endif()
 
   include(CheckCXXSourceRuns)
 
@@ -28,6 +31,9 @@ if (Boost_FOUND)
       #include <cstdio>
       #include <boost/archive/text_oarchive.hpp>
       #include <boost/archive/text_iarchive.hpp>
+      #ifdef HAVE_BOOST_CONTAINER
+      #  include <boost/container/small_vector.hpp>
+      #endif
       
       class A {
         public:
@@ -47,7 +53,7 @@ if (Boost_FOUND)
           }
       };
 
-      BOOST_AUTO_TEST_CASE( tester )
+      BOOST_AUTO_TEST_CASE( serialization )
       {
         BOOST_CHECK( true );
         
@@ -67,6 +73,17 @@ if (Boost_FOUND)
           remove(fname);
         }
       }
+      
+      #ifdef HAVE_BOOST_CONTAINER
+      BOOST_AUTO_TEST_CASE( container )
+      {
+        boost::container::small_vector<int, 1> v;
+        BOOST_CHECK_NO_THROW(v.push_back(0));
+        BOOST_CHECK_NO_THROW(v.push_back(1));
+        BOOST_CHECK(v[0] == 0);
+        BOOST_CHECK(v[1] == 1);
+      }
+      #endif  // HAVE_BOOST_CONTAINER
       "  BOOST_COMPILES_AND_RUNS)
 
   if (NOT BOOST_COMPILES_AND_RUNS)

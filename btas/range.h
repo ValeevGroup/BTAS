@@ -16,7 +16,7 @@
 
 #include <boost/iterator/transform_iterator.hpp>
 
-#include <btas/varray/varray.h>
+#include <btas/defaults.h>
 #include <btas/range_iterator.h>
 #include <btas/array_adaptor.h>
 #include <btas/types.h>
@@ -666,7 +666,7 @@ namespace btas {
 
     /// Extends BaseRangeNd to compute ordinals, as specified by \c _Ordinal
     template <CBLAS_ORDER _Order = CblasRowMajor,
-              typename _Index = btas::varray<long>,
+              typename _Index = btas::DEFAULT::index_type,
               typename _Ordinal = btas::BoxOrdinal<_Order,_Index>,
               class = typename std::enable_if<btas::is_index<_Index>::value>
              >
@@ -976,8 +976,8 @@ namespace btas {
         for(auto i: range1s)
           assert(i.stride() == 1);
 
-        btas::varray<long> lb(range1s.size());
-        btas::varray<long> ub(range1s.size());
+        btas::DEFAULT::index<long> lb(range1s.size());
+        btas::DEFAULT::index<long> ub(range1s.size());
         int c=0;
         for(auto i: range1s) {
           lb[c] = i.lobound();
@@ -1220,7 +1220,7 @@ namespace btas {
         stride += prod_extents;
         extent = std::min(extent,r.upbound()[i]);
         }
-      return RangeNd<_Order,_Index>({r.lobound()[0]},{extent},{stride});
+      return RangeNd<_Order,_Index>({r.lobound()[0]},{extent},{static_cast<typename RangeNd<_Order, _Index>::extent_type::value_type>(stride)});
       }
 
     /// Group a set of adjacent indices of a Range
@@ -1388,6 +1388,19 @@ namespace btas {
         static constexpr int value = (_Order == CblasRowMajor) ? row_major : column_major;
     };
 }
+
+//
+//  Default range type
+//
+
+namespace btas {
+namespace DEFAULT {
+
+using range = btas::Range;
+
+}  // namespace DEFAULT
+}  // namespace btas
+
 
 
 namespace boost {

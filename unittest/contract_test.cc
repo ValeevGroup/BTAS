@@ -14,7 +14,10 @@ using btas::Range;
 using DTensor = btas::Tensor<double>;
 
 static std::ostream& operator<<(std::ostream& s, const DTensor& X) {
-  for (auto i : X.range()) s << i << " " << X(i) << "\n";
+  for (const auto& i : X.range()) {
+    btas::array_adaptor<typename DTensor::index_type>::print(i, s);
+    s << " " << X(i) << "\n";
+  }
   return s;
 }
 

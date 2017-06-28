@@ -10,6 +10,7 @@
 
 #include <functional>
 
+#include <btas/range.h>
 #include <btas/storage_traits.h>
 #include <btas/util/sequence_adaptor.h>
 #include <btas/tensorview_iterator.h>

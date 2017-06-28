@@ -6,12 +6,17 @@
 #include <vector>
 #include <array>
 #include <cassert>
+
+#include <boost/version.hpp>
+#include <boost/serialization/array.hpp>
+#ifdef HAVE_BOOST_CONTAINER
+#include <boost/container/small_vector.hpp>
+#endif
+
 #include <btas/tensor_traits.h>
 #include <btas/generic/numeric_type.h>
 #include <btas/varray/varray.h>
 #include <btas/serialization.h>
-#include <boost/version.hpp>
-#include <boost/serialization/array.hpp>
 
 namespace btas {
 
@@ -135,6 +140,15 @@ namespace btas {
     array_adaptor<std::vector<T> >::print(x,os);
     return os;
   }
+
+#ifdef HAVE_BOOST_CONTAINER
+  template <typename T, size_t N>
+  std::ostream& operator<<(std::ostream& os, const boost::container::small_vector<T,N>& x) {
+    array_adaptor<boost::container::small_vector<T,N>>::print(x,os);
+    return os;
+  }
+#endif
+
 }
 
 namespace std {
@@ -225,6 +239,12 @@ namespace std {
   struct make_unsigned<btas::varray<T> > {
       typedef btas::varray<typename make_unsigned<T>::type > type;
   };
+#ifdef HAVE_BOOST_CONTAINER
+  template <typename T, size_t N>
+  struct make_unsigned<boost::container::small_vector<T,N> > {
+      typedef boost::container::small_vector<typename make_unsigned<T>::type,N> type;
+  };
+#endif
   template <typename T, size_t N>
   struct make_unsigned<T[N]> {
       typedef typename make_unsigned<T>::type uT;
@@ -253,6 +273,12 @@ namespace btas {
   struct replace_value_type<btas::varray<T>,U> {
       typedef btas::varray<U> type;
   };
+#ifdef HAVE_BOOST_CONTAINER
+  template <typename T, size_t N, typename U>
+  struct replace_value_type<boost::container::small_vector<T, N>,U> {
+      typedef boost::container::small_vector<U, N> type;
+  };
+#endif
   template <typename T, size_t N, typename U>
   struct replace_value_type<T[N],U> {
       typedef U (type)[N];
@@ -275,5 +301,40 @@ namespace boost {
 } // namespace boost
 #  endif // boost < 1.56 does not serialize std::array ... provide our own
 #endif // not defined BOOST_SERIALIZATION_STD_ARRAY? provide our own
+
+template <typename T>
+struct type_printer;
+
+#ifdef HAVE_BOOST_CONTAINER
+namespace boost {
+  namespace serialization {
+
+  /// boost serialization for boost::container::small_vector
+  template<class Archive, typename T, size_t N>
+  void serialize (Archive& ar, boost::container::small_vector<T,N>& x, const unsigned int version)
+  {
+      boost::serialization::split_free(ar, x, version);
+  }
+  template<class Archive, typename T, size_t N>
+  void save (Archive& ar, const boost::container::small_vector<T,N>& x, const unsigned int version)
+  {
+      const boost::serialization::collection_size_type count(x.size());
+      ar << BOOST_SERIALIZATION_NVP(count);
+      if (count != decltype(count)(0))
+        ar << boost::serialization::make_array(x.data(), count);
+  }
+  template<class Archive, typename T, size_t N>
+  void load (Archive& ar, boost::container::small_vector<T,N>& x, const unsigned int version)
+  {
+      boost::serialization::collection_size_type count;
+      ar >> BOOST_SERIALIZATION_NVP(count);
+      x.resize(count);
+      if (count != decltype(count)(0))
+        ar >> boost::serialization::make_array(x.data(), count);
+  }
+
+  } // namespace serialization
+} // namespace boost
+#endif
 
 #endif /* __BTAS_ARRAYADAPTOR_H_ */

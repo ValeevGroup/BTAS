@@ -42,7 +42,7 @@ namespace btas {
                                           >::type
           >
   void permute(const _TensorX& X, std::initializer_list<_T> pi, _TensorY& Y) {
-      permute(X, btas::varray<_T>(pi) , Y);
+      permute(X, btas::DEFAULT::index<_T>(pi) , Y);
   }
 
   /// permute \c X annotated with \c aX into \c Y annotated with \c aY
@@ -85,7 +85,7 @@ namespace btas {
 
    // calculate permutation
 
-   btas::varray<size_t> prm(Xrank);
+   btas::DEFAULT::index<size_t> prm(Xrank);
 
    const auto first = std::begin(aX);
    const auto last  = std::end(aX);
@@ -109,7 +109,7 @@ namespace btas {
           >
   void permute(const _TensorX& X, std::initializer_list<_T> aX,
                      _TensorY& Y, std::initializer_list<_T> aY) {
-      permute(X, btas::varray<_T>(aX), Y, btas::varray<_T>(aY));
+      permute(X, btas::DEFAULT::index<_T>(aX), Y, btas::varray<_T>(aY));
   }
 
 } // namespace btas

@@ -3,10 +3,15 @@
 cmake_minimum_required (VERSION 3.1.0)
 project (BTAS)
 
+include(FeatureSummary)
+
 # Configure options
 option(BTAS_BUILD_UNITTEST "Causes building BTAS unit tests" ON)
 option(BTAS_EXPERT "BTAS Expert mode: disables automatically downloading or building dependencies" OFF)
 option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw" OFF)
+
+set(TARGET_MAX_INDEX_RANK 6 CACHE STRING "Determines the rank for which the default BTAS index type will use stack (default: 6); this requires Boost.Container")
+add_feature_info("TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK}" TRUE "default BTAS index type will use stack for rank<=${TARGET_MAX_INDEX_RANK}")
 
 # Set BTAS version
 set(BTAS_MAJOR_VERSION 0)
@@ -94,7 +99,7 @@ endif()
 # configure BTAS_ASSERT
 ##########################
 if (BTAS_ASSERT_THROWS)
-  add_definitions(-DBTAS_ASSERT_THROWS)
+  add_definitions(-DBTAS_ASSERT_THROWS=1)
 endif(BTAS_ASSERT_THROWS)
 
 ##########################
@@ -128,3 +133,6 @@ ADD_CUSTOM_TARGET(release
   COMMENT "Switch CMAKE_BUILD_TYPE to Release"
   )
 
+feature_summary(WHAT ALL
+                DESCRIPTION "=== BTAS Feature Info ===")
+                

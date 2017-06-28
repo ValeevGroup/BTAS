@@ -9,9 +9,9 @@
 #define BTAS_ORDINAL_H_
 
 #include <btas/types.h>
+#include <btas/defaults.h>
 #include <btas/array_adaptor.h>
 #include <btas/index_traits.h>
-#include <btas/varray/varray.h>
 
 #include <boost/assert.hpp>
 
@@ -22,7 +22,7 @@ namespace btas {
   /// the map is contiguous (i.e. whether adjacent indices have adjacent ordinal
   /// values).
   template <CBLAS_ORDER _Order = CblasRowMajor,
-            typename _Index = btas::varray<long>,
+            typename _Index = btas::DEFAULT::index_type,
             class = typename std::enable_if<btas::is_index<_Index>::value>
            >
   class BoxOrdinal {

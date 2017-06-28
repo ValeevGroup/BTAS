@@ -10,7 +10,6 @@ using std::endl;
 using btas::Range1;
 using btas::Range;
 using btas::RangeNd;
-using btas::varray;
 
 TEST_CASE("Range1d")
     {
@@ -55,7 +54,7 @@ TEST_CASE("Range")
             //FIXME
             //index == tmp can not be compiled.
             //const btas::varray<long> tmp={j/6,(j%6)/3,j%3};
-            const btas::varray<long> index= *i;
+            const auto index= *i;
 //            CHECK(index == tmp);
             CHECK(index[0] == j/6);
             CHECK(index[1] == (j%6)/3);
@@ -131,7 +130,7 @@ TEST_CASE("Range")
         auto gr= btas::group(r,0,2);
         CHECK(gr.rank()== 2);
         CHECK(gr.area()== 18);
-        for(auto i : r){
+        for(const auto& i : r){
 
             //FIXME 
             //In current code, the grouped indices are recalculated to give a new index. The new index begins with 0.
@@ -145,8 +144,8 @@ TEST_CASE("Range")
         auto fr =btas::flatten(r);
         CHECK(fr.rank() == 1);
         CHECK(fr.area()== 18);
-        for(auto i : r){
-            CHECK(r.ordinal(i) == fr.ordinal(Range::index_type ({i[0]*r.extent(1)*r.extent(2)+i[1]*r.extent(2)+i[2]})));
+        for(const auto& i : r){
+            CHECK(r.ordinal(i) == fr.ordinal(Range::index_type{static_cast<Range::index_type::value_type>(i[0]*r.extent(1)*r.extent(2)+i[1]*r.extent(2)+i[2])}));
         }
         }
     SECTION("TieIndex")

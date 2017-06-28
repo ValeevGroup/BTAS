@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include <btas/types.h>
+#include <btas/defaults.h>
 #include <btas/tensor_traits.h>
 
 #include <btas/util/resize.h>
@@ -72,7 +73,7 @@ void contract(
    std::sort(std::begin(__sort_indexC), std::end(__sort_indexC));
    assert(std::unique(std::begin(__sort_indexC), std::end(__sort_indexC)) == std::end(__sort_indexC));
 
-   typedef btas::varray<size_t> Permutation;
+   typedef btas::DEFAULT::index_type Permutation;
 
    // permute index A
    Permutation __permute_indexA;
@@ -215,10 +216,10 @@ void contract(
          _TensorC& C, std::initializer_list<_UC> aC)
 {
     contract(alpha,
-             A, btas::varray<_UA>(aA),
-             B, btas::varray<_UB>(aB),
+             A, btas::DEFAULT::index<_UA>(aA),
+             B, btas::DEFAULT::index<_UB>(aB),
              beta,
-             C, btas::varray<_UC>(aC)
+             C, btas::DEFAULT::index<_UC>(aC)
             );
 }
 

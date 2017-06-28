@@ -13,8 +13,8 @@ namespace btas {
 template<typename _T, class _TensorA, class _TensorB, class _TensorC,
          typename _UA, typename _UB, typename _UC
         >
-void contract_211(const _T& alpha, const _TensorA& A, const btas::varray<_UA>& aA, const _TensorB& B, const btas::varray<_UB>& aB,
-                  const _T& beta, _TensorC& C, const btas::varray<_UC>& aC, const bool conjgA, const bool conjgB) {
+void contract_211(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index<_UA>& aA, const _TensorB& B, const btas::DEFAULT::index<_UB>& aB,
+                  const _T& beta, _TensorC& C, const btas::DEFAULT::index<_UC>& aC, const bool conjgA, const bool conjgB) {
   assert(aA.size() == 2 && aB.size() == 1 && aC.size() == 1);
   assert(A.range().ordinal().contiguous() && B.range().ordinal().contiguous() && C.range().ordinal().contiguous());
   if (conjgB) throw std::logic_error("complex conjugation of 1-index tensors is not considered in contract_211");
@@ -31,8 +31,8 @@ void contract_211(const _T& alpha, const _TensorA& A, const btas::varray<_UA>& a
 template<typename _T, class _TensorA, class _TensorB, class _TensorC,
          typename _UA, typename _UB, typename _UC
         >
-void contract_222(const _T& alpha, const _TensorA& A, const btas::varray<_UA>& aA, const _TensorB& B, const btas::varray<_UB>& aB,
-                  const _T& beta, _TensorC& C, const btas::varray<_UC>& aC, const bool conjgA, const bool conjgB) {
+void contract_222(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index<_UA>& aA, const _TensorB& B, const btas::DEFAULT::index<_UB>& aB,
+                  const _T& beta, _TensorC& C, const btas::DEFAULT::index<_UC>& aC, const bool conjgA, const bool conjgB) {
   // TODO we do not consider complex matrixces yet.
   assert(aA.size() == 2 && aB.size() == 2 && aC.size() == 2);
   assert(A.range().ordinal().contiguous() && B.range().ordinal().contiguous() && C.range().ordinal().contiguous());
@@ -61,8 +61,8 @@ void contract_222(const _T& alpha, const _TensorA& A, const btas::varray<_UA>& a
 template<typename _T, class _TensorA, class _TensorB, class _TensorC,
          typename _UA, typename _UB, typename _UC
         >
-void contract_323(const _T& alpha, const _TensorA& A, const btas::varray<_UA>& aA, const _TensorB& B, const btas::varray<_UB>& aB,
-                  const _T& beta, _TensorC& C, const btas::varray<_UC>& aC, const bool conjgA, const bool conjgB) {
+void contract_323(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index<_UA>& aA, const _TensorB& B, const btas::DEFAULT::index<_UB>& aB,
+                  const _T& beta, _TensorC& C, const btas::DEFAULT::index<_UC>& aC, const bool conjgA, const bool conjgB) {
   assert(aA.size() == 3 && aB.size() == 2 && aC.size() == 3);
   assert(A.range().ordinal().contiguous() && B.range().ordinal().contiguous() && C.range().ordinal().contiguous());
   if (conjgA) throw std::logic_error("complex conjugation of 3-index tensors is not considered in contract_323");
@@ -124,8 +124,8 @@ void contract_323(const _T& alpha, const _TensorA& A, const btas::varray<_UA>& a
 template<typename _T, class _TensorA, class _TensorB, class _TensorC,
          typename _UA, typename _UB, typename _UC
         >
-void contract_332(const _T& alpha, const _TensorA& A, const btas::varray<_UA>& aA, const _TensorB& B, const btas::varray<_UB>& aB,
-                  const _T& beta, _TensorC& C, const btas::varray<_UC>& aC, const bool conjgA, const bool conjgB) {
+void contract_332(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index<_UA>& aA, const _TensorB& B, const btas::DEFAULT::index<_UB>& aB,
+                  const _T& beta, _TensorC& C, const btas::DEFAULT::index<_UC>& aC, const bool conjgA, const bool conjgB) {
   assert(aA.size() == 3 && aB.size() == 3 && aC.size() == 2);
   assert(A.range().ordinal().contiguous() && B.range().ordinal().contiguous() && C.range().ordinal().contiguous());
 
@@ -215,17 +215,17 @@ void contract(
   assert(C.rank() == aC.size());
 
   if (A.rank() == 2 && B.rank() == 1 && C.rank() == 1) {
-    contract_211(alpha, A, btas::varray<_UA>(aA), B, btas::varray<_UB>(aB), beta, C, btas::varray<_UC>(aC), conjgA, conjgB);
+    contract_211(alpha, A, btas::DEFAULT::index<_UA>(aA), B, btas::DEFAULT::index<_UB>(aB), beta, C, btas::DEFAULT::index<_UC>(aC), conjgA, conjgB);
   } else if (A.rank() == 1 && B.rank() == 2 && C.rank() == 1) {
-    contract_211(alpha, B, btas::varray<_UA>(aB), A, btas::varray<_UB>(aA), beta, C, btas::varray<_UC>(aC), conjgB, conjgA);
+    contract_211(alpha, B, btas::DEFAULT::index<_UA>(aB), A, btas::DEFAULT::index<_UB>(aA), beta, C, btas::DEFAULT::index<_UC>(aC), conjgB, conjgA);
   } else if (A.rank() == 2 && B.rank() == 2 && C.rank() == 2) {
-    contract_222(alpha, A, btas::varray<_UA>(aA), B, btas::varray<_UB>(aB), beta, C, btas::varray<_UC>(aC), conjgA, conjgB);
+    contract_222(alpha, A, btas::DEFAULT::index<_UA>(aA), B, btas::DEFAULT::index<_UB>(aB), beta, C, btas::DEFAULT::index<_UC>(aC), conjgA, conjgB);
   } else if (A.rank() == 3 && B.rank() == 2 && C.rank() == 3) {
-    contract_323(alpha, A, btas::varray<_UA>(aA), B, btas::varray<_UB>(aB), beta, C, btas::varray<_UC>(aC), conjgA, conjgB);
+    contract_323(alpha, A, btas::DEFAULT::index<_UA>(aA), B, btas::DEFAULT::index<_UB>(aB), beta, C, btas::DEFAULT::index<_UC>(aC), conjgA, conjgB);
   } else if (A.rank() == 2 && B.rank() == 3 && C.rank() == 3) {
-    contract_323(alpha, B, btas::varray<_UA>(aB), A, btas::varray<_UB>(aA), beta, C, btas::varray<_UC>(aC), conjgB, conjgA);
+    contract_323(alpha, B, btas::DEFAULT::index<_UA>(aB), A, btas::DEFAULT::index<_UB>(aA), beta, C, btas::DEFAULT::index<_UC>(aC), conjgB, conjgA);
   } else if (A.rank() == 3 && B.rank() == 3 && C.rank() == 2) {
-    contract_332(alpha, A, btas::varray<_UA>(aA), B, btas::varray<_UB>(aB), beta, C, btas::varray<_UC>(aC), conjgA, conjgB);
+    contract_332(alpha, A, btas::DEFAULT::index<_UA>(aA), B, btas::DEFAULT::index<_UB>(aB), beta, C, btas::DEFAULT::index<_UC>(aC), conjgA, conjgB);
   } else {
     std::stringstream ss; ss << "not yet implemented: rank(A): " << A.rank() << " rank(B): " << B.rank() << " rank(C): " << C.rank();
     throw std::logic_error(ss.str());
