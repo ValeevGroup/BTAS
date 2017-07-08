@@ -560,6 +560,11 @@ namespace btas {
           return 0;
       }
 
+      /// An alias for area()
+      size_type volume() const {
+        return area();
+      }
+
       /// Index iterator factory
 
       /// The iterator dereferences to an index. The order of iteration matches
