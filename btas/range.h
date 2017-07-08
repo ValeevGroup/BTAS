@@ -955,6 +955,22 @@ namespace btas {
         return ordinal_(std::forward<Index>(index)...);
       }
 
+      /// Range stride accessor (just a shortcut to ordinal().stride() )
+
+      /// \return An Index type that contains the stride of each dimension
+      /// \throw nothing
+      auto stride() const -> decltype(this->ordinal().stride()) {
+        return this->ordinal().stride();
+      }
+
+      /// Range stride data accessor (just a shortcut to ordinal().stride_data() )
+
+      /// \return A pointer to a sequence of integers that contains the strides of each dimension
+      /// \throw nothing
+      auto stride_data() const -> decltype(this->ordinal().stride_data()) {
+        return this->ordinal().stride_data();
+      }
+
       /// Constructs a Range slice defined by the upper and lower bounds within this Range
 
       /// \tparam Index1 An array type convertible to \c index_type

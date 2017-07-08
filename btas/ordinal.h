@@ -101,6 +101,10 @@ namespace btas {
         return stride_;
       }
 
+      auto stride_data() const -> decltype(std::data(this->stride())) {
+        return std::data(stride_);
+      }
+
       value_type offset() const {
         return offset_;
       }
