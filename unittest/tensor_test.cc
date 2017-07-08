@@ -1,9 +1,6 @@
 #include "btas/tensor.h"
 #include <btas/btas.h>
 #include <btas/tarray.h>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/complex.hpp>
 #include <random>
 #include "btas/tarray.h"
 #include "btas/tensorview.h"
@@ -13,6 +10,12 @@
 #include <fstream>
 #include <iostream>
 #include <set>
+
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/serialization/complex.hpp>
+#endif  // BTAS_HAS_BOOST_SERIALIZATION
 
 using std::cout;
 using std::endl;
@@ -239,6 +242,7 @@ TEST_CASE("Tensor Operations") {
     CHECK(dot(Ctest1, Ctest1) < eps_double);
   }
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
   SECTION("Serialization") {
     const auto archive_fname = "tensor_operations.serialization.archive";
 
@@ -280,4 +284,6 @@ TEST_CASE("Tensor Operations") {
     }
     std::remove(archive_fname);
   }
+#endif  // BTAS_HAS_BOOST_SERIALIZATION
+
 }

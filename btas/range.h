@@ -9,12 +9,19 @@
 #define BTAS_RANGE_H_
 
 #include <algorithm>
-#include <vector>
 #include <functional>
-#include <numeric>
 #include <initializer_list>
+#include <numeric>
+#include <vector>
 
+#include <btas/features.h>
+
+#ifndef BTAS_HAS_BOOST_ITERATOR
+#error \
+    "BTAS is cannot be used without Boost.Iterator; add Boost dir to the include path"
+#else
 #include <boost/iterator/transform_iterator.hpp>
+#endif
 
 #include <btas/defaults.h>
 #include <btas/range_iterator.h>

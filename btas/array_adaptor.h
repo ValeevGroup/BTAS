@@ -7,9 +7,9 @@
 #include <array>
 #include <cassert>
 
-#include <boost/version.hpp>
-#include <boost/serialization/array.hpp>
-#ifdef HAVE_BOOST_CONTAINER
+#include <btas/features.h>
+
+#ifdef BTAS_HAS_BOOST_CONTAINER
 #include <boost/container/small_vector.hpp>
 #endif
 
@@ -141,7 +141,7 @@ namespace btas {
     return os;
   }
 
-#ifdef HAVE_BOOST_CONTAINER
+#ifdef BTAS_HAS_BOOST_CONTAINER
   template <typename T, size_t N>
   std::ostream& operator<<(std::ostream& os, const boost::container::small_vector<T,N>& x) {
     array_adaptor<boost::container::small_vector<T,N>>::print(x,os);
@@ -239,7 +239,7 @@ namespace std {
   struct make_unsigned<btas::varray<T> > {
       typedef btas::varray<typename make_unsigned<T>::type > type;
   };
-#ifdef HAVE_BOOST_CONTAINER
+#ifdef BTAS_HAS_BOOST_CONTAINER
   template <typename T, size_t N>
   struct make_unsigned<boost::container::small_vector<T,N> > {
       typedef boost::container::small_vector<typename make_unsigned<T>::type,N> type;
@@ -273,7 +273,7 @@ namespace btas {
   struct replace_value_type<btas::varray<T>,U> {
       typedef btas::varray<U> type;
   };
-#ifdef HAVE_BOOST_CONTAINER
+#ifdef BTAS_HAS_BOOST_CONTAINER
   template <typename T, size_t N, typename U>
   struct replace_value_type<boost::container::small_vector<T, N>,U> {
       typedef boost::container::small_vector<U, N> type;
@@ -302,10 +302,7 @@ namespace boost {
 #  endif // boost < 1.56 does not serialize std::array ... provide our own
 #endif // not defined BOOST_SERIALIZATION_STD_ARRAY? provide our own
 
-template <typename T>
-struct type_printer;
-
-#ifdef HAVE_BOOST_CONTAINER
+#ifdef BTAS_HAS_BOOST_CONTAINER
 namespace boost {
   namespace serialization {
 

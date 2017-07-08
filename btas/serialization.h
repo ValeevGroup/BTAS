@@ -1,7 +1,9 @@
 #ifndef __BTAS_SERIALIZATION_H
 #define __BTAS_SERIALIZATION_H 1
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
 #include <array>
+#include <boost/version.hpp>
 #include <boost/serialization/is_bitwise_serializable.hpp>
 #include <boost/serialization/array.hpp>
 
@@ -11,5 +13,6 @@ namespace boost { namespace serialization {
   template <typename T, size_t N>
   struct is_bitwise_serializable<std::array<T,N> > : is_bitwise_serializable<T> { };
 }}
+#endif  // BTAS_HAS_BOOST_SERIALIZATION
 
 #endif
