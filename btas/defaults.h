@@ -23,6 +23,9 @@ namespace DEFAULT {
 
 /// default index type
 #ifdef HAVE_BOOST_CONTAINER
+# ifndef BTAS_TARGET_MAX_INDEX_RANK
+# define BTAS_TARGET_MAX_INDEX_RANK 6
+# endif
 template <typename Integer> using index = boost::container::small_vector<Integer, BTAS_TARGET_MAX_INDEX_RANK>;
 #else
 template <typename Integer> using index = btas::varray<Integer>;
