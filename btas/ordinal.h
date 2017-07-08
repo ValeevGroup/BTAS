@@ -8,12 +8,12 @@
 #ifndef BTAS_ORDINAL_H_
 #define BTAS_ORDINAL_H_
 
+#include <cassert>
+
 #include <btas/types.h>
 #include <btas/defaults.h>
 #include <btas/array_adaptor.h>
 #include <btas/index_traits.h>
-
-#include <boost/assert.hpp>
 
 namespace btas {
 
@@ -39,8 +39,8 @@ namespace btas {
       friend class BoxOrdinal;
 
       BoxOrdinal() {
-        BOOST_ASSERT((contiguous_ = false) || true); // workaround for Boost serialization
-                                                     // it breaks Debug builds when reading uninitialized bools
+        assert((contiguous_ = false) || true); // workaround for Boost serialization
+                                               // it breaks Debug builds when reading uninitialized bools
       }
 
       template <typename Index1,
@@ -150,7 +150,7 @@ namespace btas {
       template <typename I>
       typename std::enable_if<std::is_integral<I>::value, bool>::type
       includes(const I& ord) const {
-        assert(false); // "BoxOrdinal::includes() is not not yet implemented"
+        assert(false && "BoxOrdinal::includes() is not not yet implemented");
       }
 
     private:

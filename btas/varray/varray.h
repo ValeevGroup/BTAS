@@ -4,9 +4,12 @@
 #include <algorithm>
 #include <cassert>
 #include <btas/serialization.h>
+
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
 #include <boost/serialization/split_free.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/collection_size_type.hpp>
+#endif  // BTAS_HAS_BOOST_SERIALIZATION
 
 namespace btas {
 
@@ -100,7 +103,9 @@ private:
    allocator_type& alloc() { return static_cast<allocator_type&>(*this); }
    const allocator_type& alloc() const { return static_cast<const allocator_type&>(*this); }
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
    friend class boost::serialization::access;
+#endif
 
 public:
 
@@ -390,6 +395,7 @@ inline bool operator!= (const btas::varray<T>& a,
 
 } // namespace btas
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
 namespace boost {
   namespace serialization {
 
@@ -419,6 +425,7 @@ namespace boost {
 
   } // namespace serialization
 } // namespace boost
+#endif  // BTAS_HAS_BOOST_SERIALIZATION
 
 template <typename T>
 inline bool operator== (const btas::varray<T>& a,

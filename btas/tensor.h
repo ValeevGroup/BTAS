@@ -13,8 +13,10 @@
 #include <btas/tensorview.h>
 #include <btas/array_adaptor.h>
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/vector.hpp>
+#endif  // BTAS_HAS_BOOST_SERIALIZATION
 
 namespace btas {
 
@@ -700,6 +702,7 @@ namespace btas {
 
 } // namespace btas
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
 namespace boost {
   namespace serialization {
 
@@ -733,5 +736,6 @@ namespace boost {
 
   } // namespace serialization
 } // namespace boost
+#endif  // BTAS_HAS_BOOST_SERIALIZATION
 
 #endif // __BTAS_TENSOR_H

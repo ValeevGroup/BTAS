@@ -3,9 +3,11 @@
 #include <set>
 #include <fstream>
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/complex.hpp>
+#endif  // BTAS_HAS_BOOST_SERIALIZATION
 
 using namespace std;
 
@@ -259,6 +261,7 @@ int main()
     gemm(CblasNoTrans, CblasTrans, 1.0, a, b, 0.0, c);
   }
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
   // test 11: serialization
   {
     const auto archive_fname = "test1.archive";
@@ -296,6 +299,7 @@ int main()
     }
     std::remove(archive_fname);
   }
+#endif
 
   //////////////////////////////////////////////////////////////////////////////
   // CoRange tests
