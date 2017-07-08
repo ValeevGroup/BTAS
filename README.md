@@ -7,8 +7,12 @@ Prerequisites
 =============
 
 * C++11 compiler
+* Boost C++ libraries
+  - Iterator
+  - (optional) Container for fast small vectors
+  - (optional) Serialization for serialization (not header-only)
 * (optional) LAPACK library for optimized operations
-* (optional) cmake and Boost C++ libraries to build and run unit tests
+* (optional) CMake to build and run unit tests
 
 To compile unit tests in the source directory:
 * cmake .
