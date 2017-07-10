@@ -1,6 +1,14 @@
 # Create the ta_test executable
 set(executable btas_test)
-file(GLOB btas_test_src_files *.cc)
+set(btas_test_src_files
+  contract_test.cc
+  range_test.cc
+  tensor_blas_test.cc
+  tensor_func_test.cc
+  tensor_test.cc
+  tensorview_test.cc
+  test.cc
+)
 add_executable(${executable} EXCLUDE_FROM_ALL ${btas_test_src_files})
 
 # Add include directories and compiler flags for ta_test

@@ -12,6 +12,8 @@
 #include <tuple>
 #include <utility>
 
+#include <btas/error.h>
+
 namespace btas {
 
   /// Computes T -> T
@@ -81,19 +83,19 @@ namespace btas {
         bool_type(const bool_type& other) = default;
         bool_type(bool_type&& other) = default;
         bool_type(bool b) {
-          assert(b == value);
+          BTAS_ASSERT(b == value);
         }
-        operator bool() const {
+        constexpr operator bool() const noexcept {
           return value;
         }
-        bool operator()() const noexcept {
+        constexpr bool operator()() const noexcept {
           return value;
         }
     };
 
     template <bool B>
     bool operator==(const bool_type<B>& one, bool two) {
-      assert(bool_type<B>::value == two);
+      BTAS_ASSERT(bool_type<B>::value == two);
       return true;
     }
 

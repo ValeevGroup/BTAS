@@ -20,23 +20,89 @@
 
 namespace btas {
 
+  // \internal btas::TensorView has a policy that configures whether to  to support constexpr mutability (as part of the type), or trackable at runtime.
+  // Such design allows to reduce code bloat due to the need to instantiate the code using views for const and non-const type variants; it also
+  // makes it easier to use view by avoiding the need for metaprogramming when dealing with views with constexpr mutability. The
+  // runtime tracking of mutability incurs extra storage overhead (TensorView will have an extra bool member) and extra performance overhead due to
+  // extra runtime logic; the runtime overhead can be avoided by disabling BTAS_ASSERT after testing. Expert users can avoid storage overhead by
+  // using constexpr mutability tracking.
+
+
   enum TensorViewPolicy_ConstnessPolicy {
     TensorViewPolicy_RuntimeConst = 1,
     TensorViewPolicy_CompiletimeConst = 0
   };
 
   /// TensorViewPolicy configures behavior of certain features of TensorView
-  /// \tparam RuntimeConst: if true, constness of data access is checked at runtime. This involves
+  /// \tparam runtimeconst If true, constness of data access is checked at runtime. This involves
   ///      extra space overhead (enough to store a boolean readwrite flag). Non-const data access members
-  ///      will also check whether readwrite is set using assert (hence runtime overhead can be eliminated after
+  ///      will also check whether readwrite is set using BTAS_ASSERT (hence runtime overhead can be eliminated after
   ///      testing. This feature is needed if you want to use a single TensorView<T,Range,Storage> type
-  ///      for mutable (non-const) and immutable (const) views. The default value is false, which requires use
-  ///      of TensorView<T,Range,const Storage>, aka TensorConstView<T.Range,Storage>, for immutable views.
+  ///      for mutable (non-const) and immutable (const) views.
   template <TensorViewPolicy_ConstnessPolicy ConstnessPolicy = TensorViewPolicy_CompiletimeConst>
   struct TensorViewPolicy {
       /// true if constness tracked at runtime
       static constexpr bool runtimeconst = (ConstnessPolicy == TensorViewPolicy_RuntimeConst);
   };
+
+  namespace detail {
+
+  struct bool_wrapper {
+    bool value;
+    bool_wrapper() = default;
+    bool_wrapper(const bool_wrapper& other) = default;
+    bool_wrapper(bool_wrapper&& other) = default;
+    inline bool_wrapper(bool b) : value(b) {}
+    inline operator bool() const noexcept { return value; }
+    inline bool operator()() const noexcept { return value; }
+  };
+  inline bool operator==(const bool_wrapper& one, const bool_wrapper& two) {
+    return one.value == two.value;
+  }
+
+  /// Helper class to implement the constness logic, as well as to guarantee empty
+  /// base optimization for constexpr constness policy.
+  template <typename Policy, typename Storage>
+  struct TensorViewMutabilityImpl
+      : public std::conditional<
+            std::is_same<Policy, TensorViewPolicy<
+                                     TensorViewPolicy_RuntimeConst>>::value &&
+                not std::is_const<Storage>::value,
+            bool_wrapper,
+            btas::detail::bool_type<not std::is_const<Storage>::value>>::type {
+    using impl_type = typename std::conditional<
+        std::is_same<Policy, TensorViewPolicy<
+                                 TensorViewPolicy_RuntimeConst>>::value &&
+            not std::is_const<Storage>::value,
+        bool_wrapper,
+        btas::detail::bool_type<not std::is_const<Storage>::value>>::type;
+
+    /// By default, make TensorView mutable if Storage is mutable and Policy is constexpr.
+    /// @return a default TensorViewWritable<Policy,Storage>
+    TensorViewMutabilityImpl() : TensorViewMutabilityImpl(make_default()) {}
+
+    TensorViewMutabilityImpl(TensorViewMutabilityImpl& other) : impl_type(other) {}
+    TensorViewMutabilityImpl(const TensorViewMutabilityImpl&) : impl_type(false) {}
+    TensorViewMutabilityImpl& operator=(TensorViewMutabilityImpl& other) {
+      *this = other;
+      return *this;
+    }
+    TensorViewMutabilityImpl& operator=(const TensorViewMutabilityImpl& other) {
+      *this = impl_type(false);
+      return *this;
+    }
+    TensorViewMutabilityImpl(TensorViewMutabilityImpl&&) = default;
+    TensorViewMutabilityImpl& operator=(TensorViewMutabilityImpl&&) = default;
+
+    TensorViewMutabilityImpl(bool is_mutable) : impl_type(is_mutable) {}
+
+    static constexpr TensorViewMutabilityImpl make_default() {
+      return TensorViewMutabilityImpl(std::is_same<Policy, TensorViewPolicy<
+          TensorViewPolicy_RuntimeConst>>::value ? false : not std::is_const<Storage>::value);
+    }
+  };
+
+  }  // namespace detail
 
   /// View (aka generalized slice) of a tensor
 
@@ -50,12 +116,20 @@ namespace btas {
            class _Storage = btas::DEFAULT::storage<_T>,
            class _Policy = btas::TensorViewPolicy<>
            >
-  class TensorView {
+  class TensorView : private detail::TensorViewMutabilityImpl<_Policy,_Storage> {
+
+      typedef detail::TensorViewMutabilityImpl<_Policy,_Storage> mutability_impl_type;
 
     public:
 
-      /// value type
+      /// type of an element
       typedef _T value_type;
+
+      /// type of an lvalue reference to an element
+      typedef value_type& reference;
+
+      /// type of a const lvalue reference to an element
+      typedef const value_type& const_reference;
 
       /// type of Range
       typedef _Range range_type;
@@ -81,114 +155,108 @@ namespace btas {
     private:
       struct Enabler {};
 
+      /// use this to disable non-const members
+      static constexpr bool constexpr_is_writable() {
+        return _Policy::runtimeconst || not std::is_const<storage_type>::value;
+      }
+
     public:
 
       /// default constructor creates an uninitialized view
       TensorView() :
         range_(),
-        storageref_(*((storage_type*)nullptr)),
-        can_write_()
+        storageref_(*((storage_type*)nullptr))
       {}
 
       /// destructor
       ~TensorView() = default;
 
-      /// move-construct from \c range and \c storageref ; write access must be passed explicitly if \c _Policy requires
-      template<class Policy = _Policy, class = typename std::enable_if<not Policy::runtimeconst>::type>
-      explicit
-      TensorView (range_type&& range,
-                  storageref_type&& storageref,
-                  bool can_write = not _Policy::runtimeconst ? not std::is_const<storage_type>::value : false) :
-      range_(range), storageref_(storageref), can_write_(can_write)
+      /// construct from \c range and \c storageref ; write access must be passed explicitly if \c _Policy requires
+      template<class Range, class Storage, class Policy = _Policy, class = typename std::enable_if<not Policy::runtimeconst>::type>
+      TensorView (Range&& range,
+                  Storage&& storageref,
+                  bool can_write = mutability_impl_type::make_default()) :
+                  mutability_impl_type(can_write), range_(std::forward<Range>(range)), storageref_(std::forward<Storage>(storageref))
       {
       }
 
       /// conversion from const Tensor into TensorConstView
-      template<class _Tensor,
-               class Storage = _Storage,
-               class = typename std::enable_if<is_boxtensor<_Tensor>::value &&
-                                               std::is_const<Storage>::value>::type
-              >
-      TensorView (const _Tensor& x)
-      : range_ (x.range()),
-        storageref_(std::cref(x.storage())),
-        can_write_(false)
-      {
-      }
+      template <
+          class _Tensor, class Storage = _Storage,
+          class = typename std::enable_if<
+              is_boxtensor<_Tensor>::value && std::is_const<Storage>::value &&
+              std::is_same<
+                  typename std::decay<typename _Tensor::storage_type>::type,
+                  typename std::decay<Storage>::type>::value>::type>
+      TensorView(const _Tensor& x)
+          : mutability_impl_type(false),
+            range_(x.range()),
+            storageref_(std::cref(x.storage())) {}
 
-      /// conversion from const Tensor to non-const View only possible if \c Policy::runtimeconst is \c true
-      template<class _Tensor,
-               class Storage = _Storage,
-               class Policy = _Policy,
-               class = typename std::enable_if<is_boxtensor<_Tensor>::value &&
-                                               not std::is_const<Storage>::value &&
-                                               Policy::runtimeconst>::type
-              >
-      TensorView (const _Tensor& x)
-      : range_ (x.range()),
-        storageref_(std::ref(const_cast<storage_type&>(x.storage()))),
-        can_write_(false)
-      {
+      /// conversion from const Tensor to non-const View only possible if \c
+      /// Policy::runtimeconst is \c true
+      /// \note this is not explicit to allow simple assignments like \code TensorView view = tensor; \endcode
+      template <
+          class _Tensor, class Storage = _Storage, class Policy = _Policy,
+          class = typename std::enable_if<
+              is_boxtensor<_Tensor>::value &&
+              not std::is_const<Storage>::value && Policy::runtimeconst &&
+              std::is_same<
+                  typename std::decay<typename _Tensor::storage_type>::type,
+                  typename std::decay<Storage>::type>::value>::type>
+      TensorView(const _Tensor& x)
+          : mutability_impl_type(false),
+            range_(x.range()),
+            storageref_(std::ref(const_cast<storage_type&>(x.storage()))) {}
+
+      /// this constructor exists to generate a readable error upon conversion
+      /// from const Tensor to compile-time non-const View
+      template <class _Tensor, class Storage = _Storage, class Policy = _Policy>
+      TensorView(
+          const _Tensor& x,
+          typename std::enable_if<
+              is_boxtensor<_Tensor>::value &&
+              not std::is_const<Storage>::value && not Policy::runtimeconst &&
+              std::is_same<
+                  typename std::decay<typename _Tensor::storage_type>::type,
+                  typename std::decay<Storage>::type>::value>::type* = nullptr)
+          : TensorView() {
+        static_assert(false,
+                      "attempt to create a compile-time-const TensorView from "
+                      "a const Tensor");
       }
 
       /// conversion from non-const Tensor
-      template<class _Tensor,
-               class Storage = _Storage,
-               class = typename std::enable_if<is_boxtensor<_Tensor>::value &&
-                                               std::is_same<typename _Tensor::storage_type,Storage>::value>::type>
-      TensorView (_Tensor& x)
-      : range_ (x.range()),
-        storageref_(std::ref(x.storage())),
-        can_write_(true)
-      {
-      }
+      template <
+          class _Tensor, class Storage = _Storage,
+          class = typename std::enable_if<
+              is_boxtensor<_Tensor>::value &&
+              not std::is_const<_Tensor>::value &&
+              std::is_same<
+                  typename _Tensor::storage_type,
+                  Storage>::value>::type>
+      TensorView(_Tensor& x)
+          : mutability_impl_type(true),
+            range_(x.range()),
+            storageref_(std::ref(x.storage())) {}
 
       /// conversion from non-const TensorView
-      template<class __T,
-               class __Range,
-               class __Storage,
-               class __Policy,
-               class = typename std::enable_if<not std::is_const<__Storage>::value>::type>
-      TensorView (TensorView<__T,__Range,__Storage,__Policy>& x)
-      : range_ (x.range()),
-        storageref_(std::ref(x.storage())),
-        can_write_(_Policy::runtimeconst ? bool(x.can_write_) : not std::is_const<storage_type>::value)
-      {
-      }
+      template <
+          class __T, class __Range, class __Storage, class __Policy,
+          class = typename std::enable_if<
+              not std::is_const<__Storage>::value &&
+              std::is_same<
+                                __Storage,
+                                _Storage>::value>::type>
+      explicit TensorView(TensorView<__T, __Range, __Storage, __Policy>& x)
+          : range_(x.range()),
+            storageref_(std::ref(x.storage())),
+            mutability_impl_type(x) {}
 
-      /// standard copy constructor
-      TensorView (const TensorView& x) :
-        range_ (x.range_),
-        storageref_(x.storageref_),
-        can_write_(false)
-      {
-      }
-
-      /// copy assignment
-      TensorView&
-      operator= (const TensorView& x)
-      {
-        range_ = x.range_;
-        storageref_ = x.storageref_;
-        can_write_ = x.can_write_;
-        return *this;
-      }
-
-      /// move constructor
-      TensorView (TensorView&& x) : range_(), storageref_(x.storageref_), can_write_(x.can_write_)
-      {
-        std::swap(range_, x.range_);
-      }
-
-      /// move assignment operator
-      TensorView&
-      operator= (TensorView&& x)
-      {
-        std::swap(range_, x.range_);
-        std::swap(storageref_, x.storageref_);
-        std::swap(can_write_, x.can_write_);
-        return *this;
-      }
+      TensorView (const TensorView& x) = default;
+      TensorView& operator= (const TensorView& x) = default;
+      TensorView (TensorView&& x) = default;
+      TensorView& operator= (TensorView&& x) = default;
 
       /// number of indices (tensor rank)
       size_type
@@ -301,20 +369,14 @@ namespace btas {
 
       /// Immutable access to an element without range check.
 
-      /// Available when \c value_type == \c storage_type::value_type
-      /// \return const reference to the element indexed by {\c first, \c rest}
-      template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value &&
-                               std::is_same<value_type,typename storage_type::value_type>::value,
-                              const value_type&
-                             >::type
-      operator() (const index0& first, const _args&... rest) const
+      /// Available when \c value_type == \c storage_type::value_type.
+      /// \return const reference to the element indexed by \c index
+      template<typename ... Index>
+      typename std::enable_if<not is_index<typename std::decay<Index>::type...>::value && std::is_same<value_type,typename storage_type::value_type>::value,
+      const_reference>::type
+      operator() (Index&& ... index) const
       {
-        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
-        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
-        index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
-        return storageref_.get()[ range_.ordinal(index) ];
+        return storageref_.get()[ range_.ordinal(std::forward<Index>(index)...) ];
       }
 
       /// Immutable access to an element without range check.
@@ -323,8 +385,8 @@ namespace btas {
       /// \return const reference to the element indexed by \c index
       template <typename Index>
       typename std::enable_if<is_index<Index>::value &&
-                               std::is_same<value_type,typename storage_type::value_type>::value,
-                              const value_type&
+                              std::is_same<value_type,typename storage_type::value_type>::value,
+                              const_reference
                              >::type
       operator() (const Index& index) const
       {
@@ -333,22 +395,15 @@ namespace btas {
 
       /// Mutable access to an element without range check.
 
-      /// Available when \c value_type == \c storage_type::value_type
-      /// \return reference to the element indexed by {\c first, \c rest}
-      template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value &&
-                              std::is_same<value_type,typename storage_type::value_type>::value &&
-                              not std::is_const<storage_type>::value,
-                              value_type&
-                             >::type
-      operator() (const index0& first, const _args&... rest)
+      /// Available when \c value_type == \c storage_type::value_type.
+      /// \return const reference to the element indexed by \c index
+      template<typename ... Index>
+      typename std::enable_if<not is_index<typename std::decay<Index>::type...>::value && std::is_same<value_type,typename storage_type::value_type>::value && TensorView::constexpr_is_writable(),
+      reference>::type
+      operator() (Index&& ... index)
       {
         assert_writable();
-        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
-        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
-        index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
-        return storageref_.get()[ range_.ordinal(index) ];
+        return storageref_.get()[ range_.ordinal(std::forward<Index>(index)...) ];
       }
 
       /// Mutable access to an element without range check (rank() == general)
@@ -357,9 +412,8 @@ namespace btas {
       /// \return reference to the element indexed by \c index
       template <typename Index>
       typename std::enable_if<is_index<Index>::value &&
-                              std::is_same<value_type,typename storage_type::value_type>::value &&
-                              not std::is_const<storage_type>::value,
-                              value_type&
+                              std::is_same<value_type,typename storage_type::value_type>::value && TensorView::constexpr_is_writable(),
+                              reference
                              >::type
       operator() (const Index& index)
       {
@@ -369,25 +423,20 @@ namespace btas {
 
       /// Immutable access to an element without range check.
 
-      /// Available when \c value_type != \c storage_type::value_type
-      /// \return value of the element indexed by {\c first, \c rest}
-      template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value &&
-                              not std::is_same<value_type,typename storage_type::value_type>::value,
-                              value_type>::type
-      operator() (const index0& first, const _args&... rest) const
+      /// Available when \c value_type != \c storage_type::value_type.
+      /// \return value of the element indexed by \c index , converted to \c value_type
+      template<typename ... Index>
+      typename std::enable_if<not is_index<typename std::decay<Index>::type...>::value && not std::is_same<value_type,typename storage_type::value_type>::value,
+      value_type>::type
+      operator() (Index&& ... index) const
       {
-        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
-        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
-        index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
-        return storageref_.get()[ range_.ordinal(index) ];
+        return static_cast<value_type>(storageref_.get()[ range_.ordinal(std::forward<Index>(index)...) ]);
       }
 
       /// Immutable access to an element without range check (rank() == general)
 
       /// Available when \c value_type != \c storage_type::value_type
-      /// \return value of the element indexed by \c index
+      /// \return value of the element indexed by \c index , converted to \c value_type
       template <typename Index>
       typename std::enable_if<is_index<Index>::value &&
                               not std::is_same<value_type,typename storage_type::value_type>::value,
@@ -395,64 +444,91 @@ namespace btas {
                              >::type
       operator() (const Index& index) const
       {
-        return storageref_.get()[range_.ordinal(index)];
+        return static_cast<value_type>(storageref_.get()[range_.ordinal(index)]);
       }
 
+      /// Immutable access to an element with range check.
 
-      /// \return element without range check
-      template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value &&
-                              std::is_same<value_type,typename storage_type::value_type>::value,
-                              const value_type&>::type
-      at (const index0& first, const _args&... rest) const
+      /// Available when \c value_type == \c storage_type::value_type.
+      /// \return const reference to the element indexed by \c index
+      template<typename ... Index>
+      typename std::enable_if<not is_index<typename std::decay<Index>::type...>::value && std::is_same<value_type,typename storage_type::value_type>::value,
+      const_reference>::type
+      at (Index&& ... index) const
       {
-        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
-        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
-        index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
-        assert( range_.includes(index) );
-        return storageref_.get()[ range_.ordinal(index) ];
+        BTAS_ASSERT( range_.includes(std::forward<Index>(index)...) );
+        return this->operator()(std::forward<Index>(index)...);
       }
 
-      /// \return element without range check (rank() == general)
+      /// Immutable access to an element with range check.
+
+      /// Available when \c value_type == \c storage_type::value_type.
+      /// \return const reference to the element indexed by \c index
       template <typename Index>
       typename std::enable_if<is_index<Index>::value &&
                               std::is_same<value_type,typename storage_type::value_type>::value,
-                              const value_type&>::type
+                              const_reference>::type
       at (const Index& index) const
       {
-        assert( range_.includes(index) );
-        return storageref_.get()[ range_.ordinal(index) ];
+        BTAS_ASSERT( range_.includes(index) );
+        return this->operator()(index);
       }
 
-      /// access element without range check
-      template<typename index0, typename... _args>
-      typename std::enable_if<std::is_integral<index0>::value &&
-                              std::is_same<value_type,typename storage_type::value_type>::value &&
-                              not std::is_const<storage_type>::value,
-                              value_type&>::type
-      at (const index0& first, const _args&... rest)
+      /// Mutable access to an element with range check.
+
+      /// Available when \c value_type == \c storage_type::value_type.
+      /// \return reference to the element indexed by \c index
+      template<typename ... Index>
+      typename std::enable_if<not is_index<typename std::decay<Index>::type...>::value && std::is_same<value_type,typename storage_type::value_type>::value && TensorView::constexpr_is_writable(),
+      reference>::type
+      at (Index&& ... index)
       {
         assert_writable();
-        typedef typename common_signed_type<index0, typename index_type::value_type>::type ctype;
-        auto indexv = {static_cast<ctype>(first), static_cast<ctype>(rest)...};
-        index_type index = array_adaptor<index_type>::construct(indexv.size());
-        std::copy(std::begin(indexv), std::end(indexv), std::begin(index));
-        assert( range_.includes(index) );
-        return storageref_.get()[ range_.ordinal(index) ];
+        BTAS_ASSERT( range_.includes(std::forward<Index>(index)...) );
+        return this->operator()(std::forward<Index>(index)...);
       }
 
-      /// access element without range check (rank() == general)
+      /// Mutable access to an element with range check.
+
+      /// Available when \c value_type == \c storage_type::value_type.
+      /// \return reference to the element indexed by \c index
       template <typename Index>
       typename std::enable_if<is_index<Index>::value &&
                               std::is_same<value_type,typename storage_type::value_type>::value &&
-                              not std::is_const<storage_type>::value,
-                              value_type&>::type
+                              TensorView::constexpr_is_writable(),
+                              reference>::type
       at (const Index& index)
       {
         assert_writable();
-        assert( range_.includes(index) );
-        return storageref_.get()[ range_.ordinal(index) ];
+        BTAS_ASSERT( range_.includes(index) );
+        return this->operator()(index);
+      }
+
+      /// Immutable access to an element with range check.
+
+      /// Available when \c value_type != \c storage_type::value_type.
+      /// \return the element value indexed by \c index , converted to \c value_type
+      template<typename ... Index>
+      typename std::enable_if<not is_index<typename std::decay<Index>::type...>::value && not std::is_same<value_type,typename storage_type::value_type>::value,
+      value_type>::type
+      at (Index&& ... index) const
+      {
+        BTAS_ASSERT( range_.includes(std::forward<Index>(index)...) );
+        return this->operator()(std::forward<Index>(index)...);
+      }
+
+      /// Immutable access to an element with range check.
+
+      /// Available when \c value_type != \c storage_type::value_type.
+      /// \return the element value indexed by \c index , converted to \c value_type
+      template <typename Index>
+      typename std::enable_if<is_index<Index>::value &&
+                              not std::is_same<value_type,typename storage_type::value_type>::value,
+                              value_type>::type
+      at (const Index& index) const
+      {
+        BTAS_ASSERT( range_.includes(index) );
+        return this->operator()(index);
       }
 
       /// swap this and x
@@ -461,7 +537,7 @@ namespace btas {
       {
         std::swap(range_, x.range_);
         std::swap(storageref_, x.storageref_);
-        std::swap(can_write_, x.can_write_);
+        std::swap(static_cast<mutability_impl_type&>(*this), static_cast<mutability_impl_type&>(x));
       }
 
       //  ========== Finished Public Interface and Its Reference Implementations ==========
@@ -522,29 +598,29 @@ namespace btas {
 #endif
 
       bool writable() const {
-        return can_write_;
+        return static_cast<bool>(static_cast<const mutability_impl_type&>(*this));
       }
 
     private:
 
       range_type range_;///< range object
       storageref_type storageref_;///< dataref
-      typedef typename std::conditional<_Policy::runtimeconst,
-                                        bool,
-                                        btas::detail::bool_type<not std::is_const<storage_type>::value>
-                                       >::type writable_type;
-      writable_type can_write_;
+//      typedef typename std::conditional<_Policy::runtimeconst,
+//                                        bool,
+//                                        btas::detail::bool_type<not std::is_const<storage_type>::value>
+//                                       >::type writable_type;
+//      writable_type can_write_;
 
       /// use this in non-const members to assert writability if Policy calls for runtime const check
       void assert_writable() const {
         if (_Policy::runtimeconst)
-          BTAS_ASSERT(can_write_);
+          BTAS_ASSERT(writable());
       }
 
       /// construct from \c range and \c storage; pass \c can_write explicitly if needed
       explicit TensorView (range_type&& range, storage_type& storage,
-                           bool can_write = not _Policy::runtimeconst ? not std::is_const<storage_type>::value : false) :
-          range_(std::move(range)), storageref_(std::ref(storage)), can_write_(can_write) {
+                           bool can_write = mutability_impl_type::make_default()) :
+          range_(std::move(range)), storageref_(std::ref(storage)), mutability_impl_type(can_write) {
       }
 
       template <typename T,
@@ -1046,10 +1122,10 @@ namespace btas {
   /// \attention use make_cmap if you must force a const view; this will provide const view, however, if \c storage is a const reference.
   template <typename T,
             typename Range>
-  TensorMap<T, Range>
+  TensorMap<T, typename std::decay<Range>::type>
   make_map(T* data, Range&& range)
   {
-    return TensorMap<T, Range>(std::move(range),
+    return TensorMap<T, typename std::decay<Range>::type>(std::forward<Range>(range),
                                std::ref(btas::infinite_sequence_adaptor<T*>(data)));
   }
 
@@ -1061,10 +1137,10 @@ namespace btas {
   /// \attention use make_cmap if you must force a const view; this will provide const view, however, if \c storage is a const reference.
   template <typename T,
             typename Range>
-  TensorConstMap<T, Range>
+  TensorConstMap<T, typename std::decay<Range>::type>
   make_map(const T* data, Range&& range)
   {
-    return TensorConstMap<T, Range>(std::move(range),
+    return TensorConstMap<T, typename std::decay<Range>::type>(std::forward<Range>(range),
                                     std::cref(btas::infinite_sequence_adaptor<const T*>(data)));
   }
 
@@ -1075,12 +1151,12 @@ namespace btas {
   /// \attention use make_cmap if you must force a const view; this will provide const view, however, if \c storage is a const reference.
   template <typename T,
             typename Range>
-  TensorConstMap<typename std::remove_const<T>::type, Range>
+  TensorConstMap<typename std::remove_const<T>::type, typename std::decay<Range>::type>
   make_cmap(T* data, Range&& range)
   {
     typedef typename std::remove_const<T>::type value_type;
-    typedef TensorConstMap<value_type, Range> result_type;
-    return result_type(std::move(range),
+    typedef TensorConstMap<value_type, typename std::decay<Range>::type> result_type;
+    return result_type(std::forward<Range>(range),
                        std::cref(btas::infinite_sequence_adaptor<const T*>(const_cast<const T*>(data))));
   }
 

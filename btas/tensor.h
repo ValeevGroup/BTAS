@@ -46,13 +46,13 @@ namespace btas {
       ///\name Container requirements (c++std:[container.requirements.general]).
       ///@{
 
-      /// value type
+      /// type of an element
       typedef _T value_type;
 
-      /// lvalue type of _T
+      /// type of an lvalue reference to an element
       typedef value_type& reference;
 
-      /// const lvalue type of _T
+      /// type of a const lvalue reference to an element
       typedef const value_type& const_reference;
 
       /// element iterator
