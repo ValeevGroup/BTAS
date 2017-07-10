@@ -221,7 +221,7 @@ namespace btas {
                   typename std::decay<typename _Tensor::storage_type>::type,
                   typename std::decay<Storage>::type>::value>::type* = nullptr)
           : TensorView() {
-        static_assert(false,
+        static_assert(!is_boxtensor<_Tensor>::value,
                       "attempt to create a compile-time-const TensorView from "
                       "a const Tensor");
       }
