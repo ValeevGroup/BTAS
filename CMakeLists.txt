@@ -107,6 +107,7 @@ endif(BTAS_ASSERT_THROWS)
 ##########################
 
 include_directories(${PROJECT_SOURCE_DIR})
+add_subdirectory(doc)
 
 ##########################
 # checking/testing
