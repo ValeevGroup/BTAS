@@ -1430,7 +1430,7 @@ using range = btas::Range;
 }  // namespace btas
 
 
-
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
 namespace boost {
 namespace serialization {
 
@@ -1460,5 +1460,6 @@ namespace serialization {
 
 }
 }
+#endif
 
 #endif /* BTAS_RANGE_H_ */

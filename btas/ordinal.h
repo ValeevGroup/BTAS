@@ -231,11 +231,13 @@ namespace btas {
         }
       }
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
       friend class boost::serialization::access;
       template<class Archive>
       void serialize(Archive& ar, const unsigned int version) {
         ar & BOOST_SERIALIZATION_NVP(stride_) & BOOST_SERIALIZATION_NVP(offset_) & BOOST_SERIALIZATION_NVP(contiguous_);
       }
+#endif
 
       stride_type stride_; //!< stride of each dimension (stride in the language of NumPy)
       value_type offset_; //!< lobound . stride so that easy to compute ordinal: ordinal(index) = index . stride - offset

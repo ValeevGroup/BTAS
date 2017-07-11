@@ -285,6 +285,7 @@ namespace btas {
   };
 }
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
 #ifndef BOOST_SERIALIZATION_STD_ARRAY // legacy switch to disable BTAS-provided serialization of std:array
 #define BOOST_SERIALIZATION_STD_ARRAY
 #  if BOOST_VERSION / 100 < 1056
@@ -301,8 +302,9 @@ namespace boost {
 } // namespace boost
 #  endif // boost < 1.56 does not serialize std::array ... provide our own
 #endif // not defined BOOST_SERIALIZATION_STD_ARRAY? provide our own
+#endif
 
-#ifdef BTAS_HAS_BOOST_CONTAINER
+#if defined(BTAS_HAS_BOOST_CONTAINER) && defined(BTAS_HAS_BOOST_SERIALIZATION)
 namespace boost {
   namespace serialization {
 
