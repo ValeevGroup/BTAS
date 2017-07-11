@@ -650,6 +650,9 @@ namespace btas {
       friend class TensorView;
   }; // end of TensorView
 
+  // N.B. The equality and inequality operators are implemented by the generic ops in tensor.h
+  struct;
+
   /// TensorConstView is a read-only variant of TensorView
   template <typename _T,
             class _Range   = btas::DEFAULT::range,

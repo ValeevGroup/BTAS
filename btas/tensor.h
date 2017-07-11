@@ -664,7 +664,7 @@ namespace btas {
     return os;
   }
 
-  /// Tensor comparison operator
+  /// The equality operator
 
   template <class _Tensor1, class _Tensor2,
             class = typename std::enable_if<btas::is_boxtensor<_Tensor1>::value>::type,
@@ -686,6 +686,14 @@ namespace btas {
         cview2 vt2(t2);
         return std::equal(vt1.cbegin(), vt1.cend(), vt2.cbegin());
       }
+  }
+
+  /// The inequality operator
+  template <class _Tensor1, class _Tensor2,
+              class = typename std::enable_if<btas::is_boxtensor<_Tensor1>::value>::type,
+              class = typename std::enable_if<btas::is_boxtensor<_Tensor2>::value>::type >
+    bool operator!=(const _Tensor1& t1, const _Tensor2& t2) {
+    return !(t1 == t2);
   }
 
   /// Tensor with const number of dimensions
