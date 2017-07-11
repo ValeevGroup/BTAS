@@ -3,6 +3,10 @@
 
 #include <cassert>
 
+// check prerequisite headers, in case btas is used as headers-only, bail if not
+#define BTAS_SIGNAL_MISSING_PREREQUISITES
+#include <btas/features.h>
+
 #include <btas/generic/dot_impl.h>
 #include <btas/generic/scal_impl.h>
 #include <btas/generic/axpy_impl.h>

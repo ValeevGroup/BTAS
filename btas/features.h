@@ -3,9 +3,11 @@
  *
  * include this to import macros describing features of BTAS
  * the only available macros are:
- * - BTAS_IS_USABLE : #define'd to 1 if BTAS is usable, 0 otherwise
- * - BTAS_HAS_BOOST_CONTAINER : #define'd to 1 if BTAS detected Boost.Container (header-only) library
- * - BTAS_HAS_BOOST_SERIALIZATION : #define'd to 1 if BTAS detected Boost.Serialization library
+ * - BTAS_IS_USABLE : #define'd to 1 if BTAS is usable
+ * - BTAS_HAS_BOOST_CONTAINER : #define'd to 1 if BTAS detected Boost.Container
+ *
+ * ALSO: a library configured with cmake (hence, non-header-only) will define BTAS_HAS_BOOST_SERIALIZATION (via a compiler flag) to 1 if
+ * Boost.Serialization library were found.
  */
 
 #ifndef BTAS_FEATURES_H_
@@ -29,7 +31,10 @@
 #ifdef BTAS_HAS_BOOST_ITERATOR
 #define BTAS_IS_USABLE 1
 #else
-#define BTAS_IS_USABLE 0
+#ifdef BTAS_SIGNAL_MISSING_PREREQUISITES
+#error \
+    "Cannot find Boost.Iterators headers => BTAS is not usable as a headers-only library; download latest Boost from boost.org and provide -I/path/to/boost to the compiler"
+#endif
 #endif
 
 #endif /* BTAS_FEATURES_H_ */
