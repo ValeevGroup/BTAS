@@ -45,24 +45,24 @@ namespace btas {
 
       template <typename Index1,
                 typename Index2,
-                class = typename std::enable_if<btas::is_index<Index1>::value && btas::is_index<Index2>::value>::type
+                class = typename std::enable_if<btas::is_index<typename std::decay<Index1>::type>::value && btas::is_index<typename std::decay<Index2>::type>::value>::type
                >
-      BoxOrdinal(const Index1& lobound,
-                 const Index2& upbound) {
-          init(lobound, upbound);
+      BoxOrdinal(Index1&& lobound,
+                 Index2&& upbound) {
+          init(std::forward<Index1>(lobound), std::forward<Index2>(upbound));
       }
 
       template <typename Index1,
                 typename Index2,
-                typename Weight,
-                class = typename std::enable_if<btas::is_index<Index1>::value &&
-                                                btas::is_index<Index2>::value &&
-                                                btas::is_index<Weight>::value>::type
+                typename Stride,
+                class = typename std::enable_if<btas::is_index<typename std::decay<Index1>::type>::value &&
+                                                btas::is_index<typename std::decay<Index2>::type>::value &&
+                                                btas::is_index<typename std::decay<Stride>::type>::value>::type
                >
-      BoxOrdinal(const Index1& lobound,
-                 const Index2& upbound,
-                 const Weight& stride) {
-          init(lobound, upbound, stride);
+      BoxOrdinal(Index1&& lobound,
+                 Index2&& upbound,
+                 Stride&& stride) {
+          init(std::forward<Index1>(lobound), std::forward<Index2>(upbound), std::forward<Stride>(stride));
       }
 
       BoxOrdinal(stride_type&& stride,
