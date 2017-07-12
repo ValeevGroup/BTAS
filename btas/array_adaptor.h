@@ -3,9 +3,10 @@
 
 // adaptors for std "array" containers
 
-#include <vector>
+#include <algorithm>
 #include <array>
 #include <cassert>
+#include <vector>
 
 #include <btas/features.h>
 
@@ -106,7 +107,9 @@ namespace btas {
       }
       static array construct(std::size_t N,
                              value_type value) {
-        return array(N, value);
+        array result(N);
+        std::fill(result.begin(), result.end(), value);
+        return result;
       }
       static void resize(array& x, std::size_t N) {
         x.resize(N);
