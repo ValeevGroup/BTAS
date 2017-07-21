@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <cassert>
 #include <btas/generic/gemm_impl.h>
+#include <btas/generic/gemv_impl.h>
 #include <btas/generic/scal_impl.h>
 
 namespace btas {
