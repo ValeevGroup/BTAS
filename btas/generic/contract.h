@@ -31,7 +31,7 @@ namespace btas {
 ///       |       |           | |
 ///       n       l           n l
 ///
-/// NOTE: in case of TArray, this performs many unuse instances of gemv and gemm depend on tensor rank
+/// NOTE: in case of TArray, this performs many unused instances of gemv and gemm depend on tensor rank
 ///
 template<
    typename _T,
@@ -169,7 +169,7 @@ void contract(
    // call BLAS functions
    if(rank(A) == k && rank(B) == k)
    {
-      assert(false); // dot should be called instead
+      assert(false && "dot should be called instead");
    }
    else if(k == 0)
    {
