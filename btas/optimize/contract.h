@@ -34,7 +34,7 @@ template<typename _T, class _TensorA, class _TensorB, class _TensorC,
         >
 void contract_222(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index<_UA>& aA, const _TensorB& B, const btas::DEFAULT::index<_UB>& aB,
                   const _T& beta, _TensorC& C, const btas::DEFAULT::index<_UC>& aC, const bool conjgA, const bool conjgB) {
-  // TODO we do not consider complex matrixces yet.
+  // TODO we do not consider complex matrices yet.
   assert(aA.size() == 2 && aB.size() == 2 && aC.size() == 2);
   assert(A.range().ordinal().contiguous() && B.range().ordinal().contiguous() && C.range().ordinal().contiguous());
   if (std::find(aA.begin(), aA.end(), aC.front()) != aA.end()) {
