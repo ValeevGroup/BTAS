@@ -71,11 +71,11 @@ namespace btas {
 
     public:
 
-      /// default constructor
-      Tensor () { }
+      Tensor () = default;
+      ~Tensor () = default;
 
-      /// destructor
-      ~Tensor () { }
+      /// default constructor taking optional (unused) value initializer
+      Tensor (value_type) : Tensor() { }
 
       /// constructor with index extent
       template<typename... _args>
