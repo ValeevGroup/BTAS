@@ -45,22 +45,26 @@ public:
 
   ~CP_ALS() = default;
 
-  // Flat is only true when tensor is 4 dimensional
+  //Builds rank R approximation starting from r=1 to R
+  //direct method doesn't compute Khatri-Rao intermediate
+  //r_test ||T(0) - U(0)||F where U(1) is the recomposed
+    //approximate tensor and  T(1) is the tensor flattened
+    //along mode 0. Not required for finite rank decomposition
+  //Max_R is the max rank, used by finite error computation
+  //skip allows rank R approximation to be built from skip
+    //many columns at a time
+  //ep_ALS is the threshold for the ALS minimization
+  //epsilon is the threshold for the CP decomposition
+
   void compute(const int rank, const bool direct = true,
                const bool r_test = false, const double max_R = 1e5,
                const int skip = 1, const double ep_ALS = 0.1) {
-    // most basic compute
-    // This will optimize the tensor approximation with rank r for a single R
-    // and return the vector of factor matrices
     Build(rank, direct, max_R, r_test, skip, ep_ALS);
   }
 
   void compute(const double epsilon = 1e-2, const bool direct = true,
                const double max_R = 1e5, const int skip = 1,
                const double ep_ALS = 0.1) {
-    // this method computes the rank decompositions from r=1 to max_R until
-    // the Frobenius norm difference between the initial tensor and the
-    // decomposition is below some threshold.
     int rank = (A.empty()) ? 0 : A[0].extent(0);
     while (rank_test > epsilon && rank < max_R) {
       rank += skip;
@@ -71,6 +75,7 @@ public:
     std::cout << "The decomposition finished with rank " << rank
               << " and epsilon " << rank_test << std::endl;
   }
+  //computes ||T(0) - U(0)||F and returns the result
   double difference() {
     std::cout.precision(16);
     auto rank = A[0].extent(1);
@@ -87,8 +92,9 @@ public:
     diff = std::abs(norm(Flatten(0) - oldmat));
     return diff;
   }
-
-  std::vector<Tensor> A; // vector of factor matrices
+  //Vector of (number of modes) factor matrices
+  //plus an array of weights, stored last.
+  std::vector<Tensor> A;  
 
 private:
   ///////Global variables//////////
@@ -112,7 +118,7 @@ private:
              const int skip, const double ep_ALS) {
     std::cout.precision(15);
     for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += skip) {
-      for (auto j = 0; j < dim; ++j) { // select a factor matrix
+      for (auto j = 0; j < dim; ++j) {
         if (i == 0) { // creates a factor matrix when A is empty
           Tensor a(Range{tensor_ref.range(j), Range1{i + 1}});
           a.fill(rand());
@@ -122,9 +128,7 @@ private:
             Tensor lam(Range{Range1{i + 1}});
             A.push_back(lam);
           }
-        } else { // builds onto factor matrices when R > 1
-                 // This could be done by A -> A^T then adding a row then (A')^T
-                 // -> A'
+        } else { // rebuilds factor matrix with column dimension increased by skip
           Tensor b(Range{A[0].range(0), Range1{i + 1}});
           b.fill(rand());
           for (int l = A[0].extent(1); l < i + 1; ++l)
@@ -160,11 +164,9 @@ private:
       test = 0.0;
       for (auto i = 0; i < dim; i++) {
         if (dir)
-          direct(i, rank);
+          direct(i, rank); //Does not compute the Khatri-Rao product
         else
-          update_w_KRP(i, rank); // generates the next iteration of factor
-                                 // matrix to minimize the least squares
-                                 // problem.
+          update_w_KRP(i, rank); 
       }
     }
     // only checks loss function if required
@@ -181,25 +183,26 @@ private:
     }
   }
 
-  // This update requires computation of the khatri-rao product every time its
-  // called
   void update_w_KRP(int n, int rank) {
-    // multiply the components together to get the least squares minimization
     Tensor temp(A[n].extent(0), rank);
     Tensor an(A[n].range());
 #ifdef _HAS_INTEL_MKL
-
+    //with MKL no flattening required
     LD_Switch(n, 'b');
     auto KhatriRao = generate_KRP(n, rank, false);
     contract_w_krp(KhatriRao, rank, temp);
     LD_Switch(n, 'f');
 
 #else // BTAS_HAS_CBLAS
+    //Without MKL flattening required
     gemm(CblasNoTrans, CblasNoTrans, 1.0, Flatten(n),
          generate_KRP(n, rank, true), 0.0, temp);
 #endif
     gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank), 0.0,
          an);
+    //normalizes the updated factor matrix and compares it to the previous
+    //iterations optimization
+    //this optimization doesn't require recomputing of the flattened matrix 
     for (auto l = 0; l < rank; ++l)
       A[dim](l) = normCol(an, l);
     test += norm(A[n] - an);
@@ -304,6 +307,7 @@ private:
 
   void contract_w_krp(Tensor &KhatriRao, int rank, Tensor &product,
                       bool first_index = true) {
+    //contraction of tensor objects of different dimension, currently general implementation
     enum { i, j, k, l, m, n, o, p, r };
     Range range = tensor_ref.range();
     if (first_index) {
@@ -420,7 +424,6 @@ private:
     // Keep track of the Left hand Khatri-Rao product of matrices and
     // Continues to multiply be right hand products, skipping
     // the matrix at index n.
-    // The product works backwards from Last factor matrix to the first.
     Tensor temp(Range{Range1{A.at(n).extent(0)}, Range1{rank}});
     Tensor left_side_product(Range{Range1{rank}, Range1{rank}});
     if (!forward) { // forward direction
@@ -449,7 +452,7 @@ private:
 
   void KhatriRaoProduct(
       const Tensor &B, const Tensor &C,
-      Tensor &BC_product) { // can probably redo this method to make it faster
+      Tensor &BC_product) { 
     // The khatri-rao product is an outer product of column vectors in
     // two matrices, then ordered to make a super column in a new matrix
     // The dimension of this product is  B(NXM) (.) C(KXM) = D(N*K X M)
@@ -536,12 +539,7 @@ private:
 
   double norm(const Tensor &Mat) { return sqrt(dot(Mat, Mat)); }
 
-  // SVD referencing code from
-  // http://www.netlib.org/lapack/explore-html/de/ddd/lapacke_8h_af31b3cb47f7cc3b9f6541303a2968c9f.html
   Tensor pseudoInverse(int n, const int R) { // works no error
-    // R is the rank *a is the pointer to the left
-    // most peice of data in the matrix list
-    // This is not finished need to dot UsVT together to get A back.
     auto a = generate_V(n, R);
     Tensor s(Range{Range1{R}});
     Tensor U(Range{Range1{R}, Range1{R}});
@@ -610,7 +608,8 @@ private:
     fill(0, X, n, indexi, indexj, J, tensor_itr);
     return X;
   }
-  // following the formula for flattening layed out by Kolda and Baderm
+  //recursivly calls fill to calculate the correct column step
+  //size for the matrix flattened on the n-th fiber
   void fill(int depth, Tensor &X, int n, int indexi, int indexj,
             std::vector<int> &J, iterator &tensor_itr) {
     if (depth < dim) {
