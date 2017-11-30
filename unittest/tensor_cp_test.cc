@@ -1,3 +1,4 @@
+#ifdef BTAS_HAS_CBLAS
 #include "test.h"
 
 #include <iostream>
@@ -127,3 +128,4 @@ TEST_CASE("Dimension 5")
     }
   }
 }
+#endif //btas_has_cblas
