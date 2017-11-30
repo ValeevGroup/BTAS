@@ -52,9 +52,8 @@ addons:
       - cmake-data
 before_install:
   - ./bin/travisci_before_$TRAVIS_OS_NAME.sh
-install: travis_wait 60 mvn install
 script:
-  - ./bin/travisci_build_$TRAVIS_OS_NAME.sh
+  - - travis_wait 115 timeout 6500 ./bin/travisci_build_$TRAVIS_OS_NAME.sh
 after_failure:
   - cat build/CMakeFiles/CMakeOutput.log
   - cat build/CMakeFiles/CMakeError.log
