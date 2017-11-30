@@ -37,21 +37,6 @@ TEST_CASE("Dimension 3")
       std::cout << A1.difference() << "\n" << results(0,0) << std::endl;
       CHECK((A1.difference() - results(0,0)) <= epsilon);
     }
-    {
-      CP_ALS<tensor> A1(D3);
-      A1.compute(5,true,false, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(1,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D3);
-      A1.compute(5,false,true, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(2,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D3);
-      A1.compute(5,true,true, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(3,0)) <= epsilon);
-    }
   }
 	SECTION("Finite error")
 	{
@@ -59,41 +44,6 @@ TEST_CASE("Dimension 3")
       CP_ALS<tensor> A1(D3);
       A1 .compute(1e-2, true, 1e3, 1, 1e-4);
       CHECK((A1.difference() - results(4,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D3);
-      A1 .compute(1e-2, true, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(5,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D3);
-      A1 .compute(1e-4, true, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(6,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D3);
-      A1 .compute(1e-4, true, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(7,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D3);
-      A1 .compute(1e-2, false, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(8,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D3);
-      A1 .compute(1e-2, false, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(9,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D3);
-      A1 .compute(1e-4, false, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(10,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D3);
-      A1 .compute(1e-4, false, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(11,0)) <= epsilon);
     }
 	}
 }
@@ -127,21 +77,6 @@ TEST_CASE("Dimension 4")
       A1.compute(5,false, false, 1e3, 1, 1e-4);
       CHECK((A1.difference() - results(0,0)) <= epsilon);
     }
-    {
-      CP_ALS<tensor> A1(D4);
-      A1.compute(5,true, false, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(1,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D4);
-      A1.compute(5,false, true, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(2,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D4);
-      A1.compute(5,true, true, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(3,0)) <= epsilon);
-    }
 	}
 	SECTION("Finite error")
 	{
@@ -150,41 +85,6 @@ TEST_CASE("Dimension 4")
       A1 .compute(1e-2, true, 1e3, 1, 1e-4);
       CHECK((A1.difference() - results(4,0)) <= epsilon);
     }
-    {
-      CP_ALS<tensor> A1(D4);
-      A1 .compute(1e-2, true, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(5,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D4);
-      A1 .compute(1e-4, true, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(6,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D4);
-      A1 .compute(1e-4, true, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(7,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D4);
-      A1 .compute(1e-2, false, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(8,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D4);
-      A1 .compute(1e-2, false, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(9,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D4);
-      A1 .compute(1e-4, false, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(10,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D4);
-      A1 .compute(1e-4, false, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(11,0)) <= epsilon);
-    }	
   }
 }
 
@@ -217,21 +117,6 @@ TEST_CASE("Dimension 5")
       A1.compute(5,false, false, 1e3, 1, 1e-4);
       CHECK((A1.difference() - results(0,0)) <= epsilon);
     }
-    {
-      CP_ALS<tensor> A1(D5);
-      A1.compute(5,true, false, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(1,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D5);
-      A1.compute(5,false, true, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(2,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D5);
-      A1.compute(5,true, true, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(3,0)) <= epsilon);
-    }
   }
   SECTION("Finite error")
   {
@@ -240,40 +125,5 @@ TEST_CASE("Dimension 5")
       A1 .compute(1e-2, true, 1e3, 1, 1e-4);
       CHECK((A1.difference() - results(4,0)) <= epsilon);
     }
-    {
-      CP_ALS<tensor> A1(D5);
-      A1 .compute(1e-2, true, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(5,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D5);
-      A1 .compute(1e-4, true, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(6,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D5);
-      A1 .compute(1e-4, true, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(7,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D5);
-      A1 .compute(1e-2, false, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(8,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D5);
-      A1 .compute(1e-2, false, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(9,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D5);
-      A1 .compute(1e-4, false, 1e3, 1, 1e-4);
-      CHECK((A1.difference() - results(10,0)) <= epsilon);
-    }
-    {
-      CP_ALS<tensor> A1(D5);
-      A1 .compute(1e-4, false, 1e3, 2, 1e-4);
-      CHECK((A1.difference() - results(11,0)) <= epsilon);
-    } 
   }
 }
