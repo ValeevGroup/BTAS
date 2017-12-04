@@ -74,9 +74,6 @@ namespace btas {
       Tensor () = default;
       ~Tensor () = default;
 
-      /// default constructor taking optional (unused) value initializer
-      Tensor (value_type) : Tensor() { }
-
       /// constructor with index extent
       template<typename... _args>
       explicit
