@@ -21,9 +21,6 @@ namespace btas {
 
 } // namespace btas
 
-// configure BTAS_ASSERT
-#ifdef BTAS_ASSERT_THROWS
-
 #define BTAS_STRINGIZE( s ) #s
 
 #define BTAS_EXCEPTION_MESSAGE( file , line , mess ) \
@@ -35,11 +32,14 @@ namespace btas {
       throw btas::exception ( BTAS_EXCEPTION_MESSAGE( __FILE__ , __LINE__ , m ) ); \
     }
 
-#define BTAS_ASSERT( a )  if(! ( a ) ) BTAS_EXCEPTION( "assertion failed" )
+// configure BTAS_ASSERT
+#ifdef BTAS_ASSERT_THROWS
+
+#  define BTAS_ASSERT( a )  if(! ( a ) ) BTAS_EXCEPTION( "assertion failed" )
 
 #else // defined BTAS_ASSERT_THROWS
 
-#define BTAS_ASSERT( a )  assert((a));
+#  define BTAS_ASSERT( a )  assert((a));
 
 #endif // defined BTAS_ASSERT_THROWS
 
