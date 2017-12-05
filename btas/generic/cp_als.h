@@ -1,6 +1,6 @@
 // std
-#ifndef CP
-#define CP
+#ifndef  BTAS_GENERIC_CP_ALS_H
+#define  BTAS_GENERIC_CP_ALS_H
 
 #include <algorithm>
 #include <array>
@@ -631,4 +631,4 @@ private:
 };
 
 } // namespace btas
-#endif // CP
+#endif //  BTAS_GENERIC_CP_ALS_H
