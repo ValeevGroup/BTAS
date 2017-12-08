@@ -252,7 +252,7 @@ namespace btas {
 
       /// assign scalar to this (i.e. fill this with scalar)
       template <typename Scalar>
-      typename std::enable_if<!std::is_same<Tensor,std::decay_t<Scalar>>::value, Tensor&>::type
+      typename std::enable_if<!std::is_same<Tensor,typename std::decay<Scalar>::type>::value, Tensor&>::type
       operator= (Scalar&& v)
       {
         using std::begin; using std::end;
