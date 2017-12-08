@@ -250,6 +250,16 @@ namespace btas {
         return *this;
       }
 
+      /// assign scalar to this (i.e. fill this with scalar)
+      template <typename Scalar>
+      typename std::enable_if<!std::is_same<Tensor,std::decay_t<Scalar>>::value, Tensor&>::type
+      operator= (Scalar&& v)
+      {
+        using std::begin; using std::end;
+        std::fill(begin(storage_), end(storage_), static_cast<typename storage_type::value_type>(v));
+        return *this;
+      }
+
       /// number of indices (tensor rank)
       size_type
       rank () const
