@@ -11,6 +11,7 @@
 #include <btas/defaults.h>
 #include <btas/tensor_traits.h>
 #include <btas/tensorview.h>
+#include <btas/type_traits.h>
 #include <btas/array_adaptor.h>
 
 #ifdef BTAS_HAS_BOOST_SERIALIZATION
@@ -251,8 +252,8 @@ namespace btas {
       }
 
       /// assign scalar to this (i.e. fill this with scalar)
-      template <typename Scalar>
-      typename std::enable_if<!std::is_same<Tensor,typename std::decay<Scalar>::type>::value, Tensor&>::type
+      template <typename Scalar, typename = std::void_t<decltype(static_cast<typename storage_type::value_type>(std::declval<Scalar>()))>>
+      Tensor&
       operator= (Scalar&& v)
       {
         using std::begin; using std::end;
