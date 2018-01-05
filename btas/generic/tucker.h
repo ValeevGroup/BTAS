@@ -1,5 +1,5 @@
-#ifndef BTAS_TUCKER
-#define BTAS_TUCKER
+#ifndef BTAS_TUCKER_DECOMP_H
+#define BTAS_TUCKER_DECOMP_H
 #ifdef _HAS_INTEL_MKL
 #include "core_contract.h"
 #include "flatten.h"
@@ -72,4 +72,4 @@ template <typename Tensor> double norm(const Tensor &Mat) {
 }
 } // namespace btas
 #endif //_HAS_INTEL_MKL
-#endif // BTAS_TUCKER
+#endif // BTAS_TUCKER_DECOMP_H

@@ -1,5 +1,5 @@
-#ifndef BTAS_HAS_CP
-#define BTAS_HAS_CP
+#ifndef BTAS_GENERIC_CP_ALS_H
+#define BTAS_GENERIC_CP_ALS_H
 
 /*!Canonical Product*/
 
@@ -521,4 +521,4 @@ private:
 };
 
 } // namespace btas
-#endif // BTAS_HAS_CP
+#endif // BTAS_GENERIC_CP_ALS_H

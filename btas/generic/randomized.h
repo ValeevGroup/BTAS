@@ -1,5 +1,5 @@
-#ifndef BTAS_RANDOMIZED
-#define BTAS_RANDOMIZED
+#ifndef BTAS_RANDOMIZED_DECOMP_H
+#define BTAS_RANDOMIZED_DECOMP_H
 #include "core_contract.h"
 #include <btas/btas.h>
 #include <btas/error.h>
@@ -125,4 +125,4 @@ template <typename Tensor> bool QR_decomp(Tensor &A) {
 
 } // namespace btas
 #endif // HAS_INTEL_MKL
-#endif // BTAS_RANDOMIZED
+#endif // BTAS_RANDOMIZED_DECOMP_H

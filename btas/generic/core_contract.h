@@ -1,5 +1,5 @@
-#ifndef BTAS_CORE_CONTRACT
-#define BTAS_CORE_CONTRACT
+#ifndef BTAS_CORE_CONTRACT_H
+#define BTAS_CORE_CONTRACT_H
 #include "swap.h"
 #include <btas/btas.h>
 namespace btas {
@@ -34,4 +34,4 @@ void core_contract(Tensor &A, Tensor &Q, int mode, bool transpose = true) {
   swap_to_first(A, mode, true, false);
 }
 } // namespace btas
-#endif // BTAS_CORE_CONTRACT
+#endif // BTAS_CORE_CONTRACT_H

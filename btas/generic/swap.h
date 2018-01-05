@@ -1,5 +1,5 @@
-#ifndef BTAS_SWAP
-#define BTAS_SWAP
+#ifndef BTAS_SWAP_H
+#define BTAS_SWAP_H
 #ifdef _HAS_INTEL_MKL
 #include <mkl_trans.h>
 #include <btas/btas.h>
@@ -99,4 +99,4 @@ namespace btas{
   }
 }//namespace btas
 #endif //_HAS_INTEL_MKL
-#endif //BTAS_SWAP
+#endif //BTAS_SWAP_H

@@ -1,5 +1,5 @@
-#ifndef BTAS_FLATTEN
-#define BTAS_FLATTEN
+#ifndef BTAS_FLATTEN_H
+#define BTAS_FLATTEN_H
 namespace btas {
 
 /// methods to produce to matricize a tensor along the n-th fiber
@@ -49,4 +49,4 @@ void fill(Tensor &A, int depth, Tensor &X, int mode, int indexi, int indexj,
   }
 }
 } // namespace btas
-#endif
+#endif //BTAS_FLATTEN_H
