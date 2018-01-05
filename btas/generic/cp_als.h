@@ -1,34 +1,26 @@
-// std
-#ifndef CP
-#define CP
+#ifndef BTAS_HAS_CP
+#define BTAS_HAS_CP
+
+/*!Canonical Product*/
 
 #include <algorithm>
-#include <array>
-#include <assert.h>
-#include <chrono>
 #include <iostream>
-#include <iterator>
-#include <random>
-#include <set>
 #include <stdlib.h>
-// BTAS
-#include <btas/generic/Khatri_Rao_Product.h>
-#include <btas/generic/flatten.h>
-#include <btas/generic/swap.h>
+
 #include <btas/btas.h>
 #include <btas/error.h>
-#ifdef _HAS_INTEL_MKL
-#include <mkl_trans.h>
-#endif
+#include "khatri_rao_product.h"
+#include "core_contract.h"
+#include "flatten.h"
+#include "randomized.h"
+#include "swap.h"
+#include "tucker.h"
 
 namespace btas {
 
-template <typename Tensor> class CP_ALS {
+template <typename Tensor> class cp_als {
 public:
-  using value_type = typename Tensor::value_type;
-  typedef typename std::vector<value_type>::const_iterator iterator;
-
-  CP_ALS(Tensor &tensor)
+  cp_als(Tensor &tensor)
       : tensor_ref(tensor), ndim(tensor_ref.rank()), size(tensor_ref.size()) {
 
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
@@ -40,134 +32,160 @@ public:
 #endif
   }
 
-  ~CP_ALS() = default;
+  ~cp_als() = default;
 
-  // Flat is only true when tensor is 4 dimensional
+  /// Computes decomposition of Nth order tensor T 
+  /// with CP rank = rank\n
+  /// Initial guess for factor matrices start at rank = 1 
+  /// and build to rank = rank by increments of step, to minimize 
+  /// error.
   double compute(const int rank, const bool direct = true,
-                 const bool r_test = false, const double max_R = 1e5,
-                 const int skip = 1, const double ep_ALS = 0.1) {
-    // most basic compute
-    // This will optimize the tensor approximation with rank r for a single R
-    // and return the vector of factor matrices
-    double rank_test = 0.0;
-    Build(rank, direct, max_R, r_test, skip, ep_ALS, rank_test);
-    return rank_test;
+                 const bool calculate_epsilon = false, const double max_rank = 1e5,
+                 const int step = 1, const double tcutALS = 0.1) {
+    double epsilon = 0.0;
+    build(rank, direct, max_rank, calculate_epsilon, step, tcutALS, epsilon);
+    return epsilon;
   }
 
-  double compute(const double epsilon = 1e-2, const bool direct = true,
-                 const double max_R = 1e5, const int skip = 1,
-                 const double ep_ALS = 0.1) {
-    // this method computes the rank decompositions from r=1 to max_R until
-    // the Frobenius norm difference between the initial tensor and the
-    // decomposition is below some threshold.
+  /// Computes the decomposition of Nth order tensor T 
+  /// to rank <= max_rank with \n
+  /// \t |T_exact - T_approx|_F <= tcutCP \n
+  /// with rank increasing each iteration by step.
+  double compute(const double tcutCP = 1e-2, const bool direct = true,
+                 const double max_rank = 1e5, const int step = 1,
+                 const double tcutALS = 0.1) {
     int rank = (A.empty()) ? 0 : A[0].extent(0);
-    double rank_test = epsilon + 1;
-    while (rank_test > epsilon && rank < max_R) {
-      rank += skip;
-      Build(rank, direct, max_R, true, skip, ep_ALS, rank_test);
-      std::cout << "With rank " << rank << " there is a difference of "
-                << rank_test << std::endl;
+    double epsilon = tcutCP + 1;
+    while (epsilon > tcutCP && rank < max_rank) {
+      rank += step;
+      build(rank, direct, max_rank, true, step, tcutALS, epsilon);
     }
-    std::cout << "The decomposition finished with rank " << rank
-              << " and epsilon " << rank_test << std::endl;
-    return rank_test;
+    return epsilon;
+  }
+  /// Computes decomposition of Nth order tensor T 
+  /// with CP rank <= desired_rank\n
+  /// Initial guess for factor matrices start at rank = 1 
+  /// and build to rank = rank by geometric steps of geometric_step, to minimize 
+  /// error.
+  double compute_geometric(const int desired_rank, int geometric_step = 2, 
+                           const bool direct = false, const bool calculate_epsilon = false,
+                           const double max_rank = 1e5, const double tcutALS = 0.1){
+    if(geometric_step <= 0){
+      std::cout << "The step size must be larger than 0" << std::endl;
+      return 0;
+    }
+    double epsilon = 0.0;
+    int rank = 1;
+    while (rank <= desired_rank && rank < max_rank){
+      build(rank, direct, max_rank, calculate_epsilon, geometric_step, tcutALS, epsilon);
+      if(geometric_step == 1)
+        rank++;
+      else
+        rank *= geometric_step;
+    }
+    return epsilon;
   }
 #ifdef _HAS_INTEL_MKL
-  void compress_compute_tucker(double epsilon_svd, const bool opt_rank = true,
-                               const double epsilon = 1e-2, const int rank = 0,
+  /// Requires MKL. Computes an approximate core tensor using 
+  /// Tucker decomposition, i.e.  \n
+  ///  T(I_1, I_2, I_3) --> T(R1, R2, R3) \n
+  /// Where R1 < I_1, R2 < I_2 and R3 < I_3
+  /// see <a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088"> \n
+  /// Using this approximation the CP decomposition is computed to 
+  /// either finite error or finite rank. \n
+  /// Default settings calculate to finite error.
+  /// factor matrices are scaled by the Tucker transformations.
+  double compress_compute_tucker(double tcutSVD, const bool opt_rank = true,
+                               const double tcutCP = 1e-2, const int rank = 0,
                                const bool direct = true,
-                               const bool r_test = false,
-                               const double max_R = 1e5, const int skip = 1,
-                               const double ep_ALS = .01) {
+                               const bool calculate_epsilon = false,
+                               const double max_rank = 1e5, const int step = 1,
+                               const double tcutALS = .01) {
     // Tensor compression
     std::vector<Tensor> transforms;
-    Tensor test = tensor_ref;
-    std::cout << tensor_ref << std::endl;
-    Tucker_compression(epsilon_svd, transforms);
-    Tensor help = Tensor(tensor_ref.range());
-    help.fill(0.0);
-    std::cout << tensor_ref << std::endl;
+    tucker_compression(tensor_ref, tcutSVD, transforms);
+    size = tensor_ref.size();
+    double epsilon = -1.0;
+
     // CP decomposition
     if (opt_rank)
-      compute(epsilon, direct, max_R, skip, ep_ALS);
+      epsilon = compute(tcutCP, direct, max_rank, step, tcutALS);
     else if (rank == 0) {
       std::cout << "Must specify a rank > 0" << std::endl;
-      return;
+      return epsilon;
     } else
-      compute(rank, direct, r_test, max_R, skip, ep_ALS);
+      epsilon = compute(rank, direct, calculate_epsilon, max_rank, step, tcutALS);
 
-    for (int i = 0; i < A[0].extent(0); i++)
-      for (int j = 0; j < A[1].extent(0); j++)
-        for (int k = 0; k < A[0].extent(1); k++)
-          if (tensor_ref.rank() == 2)
-            help(i, j) += A[ndim](k) * A[0](i, k) * A[1](j, k);
-          else
-            for (int l = 0; l < A[2].extent(0); l++)
-              help(i, j, l) +=
-                  A[ndim](k) * A[0](i, k) * A[1](j, k) * A[2](l, k);
-    tensor_ref = help;
-    for (int i = 0; i < ndim; i++) {
-      contract_core(transforms[i], i, false);
+    //scale factor matrices
+    for(int i = 0; i < ndim; i++){
+      Tensor tt(transforms[i].extent(0), A[i].extent(1));
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, transforms[i], A[i], 0.0, tt);
+      A[i] = tt;
     }
-    std::cout << "norm btwn tensor_ref and test " << norm(tensor_ref - test)
-              << std::endl;
-  }
 
-  void compress_compute_rand(int desired_compression_rank,
+    return epsilon;
+  }
+  /// Requires MKL. Computes an approximate core tensor using 
+  /// random projection, i.e.  \n
+  ///  T(I_1, I_2, I_3) --> T(R, R, R) \n
+  /// Where R < I_1, R < I_2 and R < I_3
+  /// see <a href="https://arxiv.org/pdf/1703.09074.pdf"> \n
+  /// Using this approximation the CP decomposition is computed to 
+  /// either finite error or finite rank. \n
+  /// Default settings calculate to finite error.\n
+  /// Factor matrices are scaled by randomized transformation.
+  double compress_compute_rand(int desired_compression_rank,
                              const int oversampl = 10, const int powerit = 2,
                              const bool opt_rank = true,
-                             const double epsilon = 1e-2, const int rank = 0,
+                             const double tcutCP = 1e-2, const int rank = 0,
                              const bool direct = true,
-                             const bool r_test = false,
-                             const double max_R = 1e5, const int skip = 1,
-                             const double ep_ALS = .1) {
-    Tensor test = tensor_ref;
+                             const bool calculate_epsilon = false,
+                             const double max_rank = 1e5, const int step = 1,
+                             const double tcutALS = .1) {
     std::vector<Tensor> transforms;
-    Randomized_Decomposition(desired_compression_rank, transforms, oversampl,
-                             powerit);
+    randomized_decomposition(tensor_ref, desired_compression_rank, transforms,
+                             oversampl, powerit);
+    size = tensor_ref.size();
+    double epsilon = -1.0;
+
     if (opt_rank)
-      compute(epsilon, direct, max_R, skip, ep_ALS);
+      epsilon = compute(tcutCP, direct, max_rank, step, tcutALS);
     else if (rank == 0) {
       std::cout << "Must specify a rank > 0" << std::endl;
-      return;
+      return epsilon;
     } else
-      compute(rank, direct, r_test, max_R, skip, ep_ALS);
-    std::vector<double> norms(ndim, 0);
-    for (int i = 0; i < ndim; i++)
-      norms[i] = norm(A[i]);
-    for (int i = 0; i < ndim; i++) {
-      Tensor hold(transforms[i].extent(0), A[i].extent(1));
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, transforms[i], A[i], 0.0, hold);
-      A[i] = hold;
-      for (int j = 0; j < A[i].extent(1); j++)
-        A[ndim](j) = normCol(i, j);
+      epsilon = compute(rank, direct, calculate_epsilon, max_rank, step, tcutALS);
+
+    //scale factor matrices
+    for(int i = 0; i < ndim; i++){
+      Tensor tt(transforms[i].extent(0), A[i].extent(1));
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, transforms[i], A[i], 0.0, tt);
+      A[i] = tt;
     }
-    tensor_ref = test;
-    size = 1;
-    for (int i = 0; i < ndim; i++)
-      size *= tensor_ref.extent(i);
+
+    return epsilon;
   }
 #endif //_HAS_INTEL_MKL
 
-  std::vector<Tensor> A; // vector of factor matrices
-
+  //returns 
+  std::vector<Tensor> get_factor_matrices(){
+    if(A != NULL)
+      return A;
+    else
+      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__,
+                           "Attempting to use a NULL object first compute CP decomposition");
+  }
 private:
-  ///////Global variables//////////
-
+  std::vector<Tensor> A; // vector of factor matrices
   Tensor &tensor_ref; // this is a reference.
   const int ndim;
   int size;
 
-  // This is the rank r residual between tensor_ref and A
-
-  ///////CP-ALS Specific functions to build and optimize guesses /////////
-
   // creates factor matricies starting with R=1 and moves to R = rank
   // Where R is the column dimension of the factor matrices.
-  void Build(const int rank, const bool dir, const int max_R, const bool r_test,
-             const int skip, const double ep_ALS, double &rank_test) {
-    std::cout.precision(8);
-    for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += skip) {
+  void build(const int rank, const bool dir, const int max_rank, const bool calculate_epsilon,
+             const int step, const double tcutALS, double &epsilon) {
+    for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
       for (auto j = 0; j < ndim; ++j) { // select a factor matrix
         if (i == 0) { // creates a factor matrix when A is empty
           Tensor a(Range{tensor_ref.range(j), Range1{i + 1}});
@@ -200,18 +218,18 @@ private:
           }
         }
       }
-      ALS(i + 1, dir, max_R, r_test, ep_ALS,
-          rank_test); // performs the least squares minimization to generate the
+      ALS(i + 1, dir, max_rank, calculate_epsilon, tcutALS,
+          epsilon); // performs the least squares minimization to generate the
                       // best CP rank i+1 approximation
     }
   }
 
   // performs the ALS method to minimize the loss function for a single rank
-  void ALS(const int rank, const bool dir, const int max_R, const bool r_test,
-           const double ep_ALS, double &rank_test) {
+  void ALS(const int rank, const bool dir, const int max_rank, const bool calculate_epsilon,
+           const double tcutALS, double &epsilon) {
     auto count = 0;
     double test = 1.0;
-    while (count <= max_R && test > ep_ALS) {
+    while (count <= max_rank && test > tcutALS) {
       count++;
       test = 0.0;
       for (auto i = 0; i < ndim; i++) {
@@ -224,7 +242,7 @@ private:
       }
     }
     // only checks loss function if required
-    if (r_test) {
+    if (calculate_epsilon) {
       Tensor oldmat(tensor_ref.extent(0), size / tensor_ref.extent(0));
       for (int i = 0; i < rank; i++) {
         scal(A[0].extent(0), A[ndim](i), std::begin(A[0]) + i, rank);
@@ -234,7 +252,7 @@ private:
       for (int i = 0; i < rank; i++) {
         scal(A[0].extent(0), 1 / A[ndim](i), std::begin(A[0]) + i, rank);
       }
-      rank_test = (norm(Flatten(tensor_ref, 0) - oldmat));
+      epsilon = (norm(flatten(tensor_ref, 0) - oldmat));
     }
   }
 
@@ -273,7 +291,7 @@ private:
     swap_to_first(tensor_ref, n, true);
 
 #else // BTAS_HAS_CBLAS
-    gemm(CblasNoTrans, CblasNoTrans, 1.0, Flatten(tensor_ref, n),
+    gemm(CblasNoTrans, CblasNoTrans, 1.0, flatten(tensor_ref, n),
          generate_KRP(n, rank, true), 0.0, temp);
 #endif
     gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank), 0.0,
@@ -294,6 +312,7 @@ private:
   // N = 3, n = I2
   // T(I0, I1, I2) --> T(I0, I1 I2)
   // (T(I0, I1 I2))^T A(I0, R) --> T(I1 I2, R)
+  // T(I1, I2, R) (x) T(I1, R) --> T(I2, R)
   void direct(const int n, const int rank, double &test) {
     int LH_size = size;
     int contract_dim = ndim - 1;
@@ -392,7 +411,6 @@ private:
         for (int i = 0; i < rank; i++)
           for (int k = 0; k < rank; k++)
             V(i, k) *= lhs_prod(i, k);
-        // vdMul(rank*rank, V.data(), lhs_prod.data(), V.data());
       }
     }
     return V;
@@ -405,16 +423,16 @@ private:
     // The product works backwards from Last factor matrix to the first.
     Tensor temp(Range{Range1{A.at(n).extent(0)}, Range1{rank}});
     Tensor left_side_product(Range{Range1{rank}, Range1{rank}});
-    if (forward) { // forward direction
+    if (forward) { 
       for (auto i = 0; i < ndim; ++i) {
         if ((i == 0 && n != 0) || (i == 1 && n == 0)) {
           left_side_product = A.at(i);
         } else if (i != n) {
-          KhatriRaoProduct(left_side_product, A[i], temp);
+          khatri_rao_product(left_side_product, A[i], temp);
           left_side_product = temp;
         }
       }
-    } else { // backward direction
+    } else {
       for (auto i = ndim - 1; i > -1; --i) {
         if ((i == ndim - 1 && n != ndim - 1) ||
             (i == ndim - 2 && n == ndim - 1)) {
@@ -422,25 +440,12 @@ private:
         }
 
         else if (i != n) {
-          KhatriRaoProduct<Tensor>(left_side_product, A[i], temp);
+          khatri_rao_product<Tensor>(left_side_product, A[i], temp);
           left_side_product = temp;
         }
       }
     }
     return left_side_product;
-  }
-
-  void print(Tensor &A, int cols) {
-    auto n_cols = 0;
-    for (auto &beta : tensor_ref) {
-      std::cout << beta << ", ";
-      n_cols++;
-      if (n_cols == cols) {
-        n_cols = 0;
-        std::cout << std::endl;
-      }
-    }
-    std::cout << std::endl;
   }
 
   double normCol(const int factor, const int col) {
@@ -465,9 +470,6 @@ private:
   // SVD referencing code from
   // http://www.netlib.org/lapack/explore-html/de/ddd/lapacke_8h_af31b3cb47f7cc3b9f6541303a2968c9f.html
   Tensor pseudoInverse(int n, const int R) { // works no error
-    // R is the rank *a is the pointer to the left
-    // most peice of data in the matrix list
-    // This is not finished need to dot UsVT together to get A back.
     auto a = generate_V(n, R);
     Tensor s(Range{Range1{R}});
     Tensor U(Range{Range1{R}, Range1{R}});
@@ -516,218 +518,7 @@ private:
 
     return U;
   }
-
-// Modifies tensor_ref to reduce compress the data without
-// Tucker3 decomposition using random distributions of the
-// columns and a power sampling method
-#ifdef _HAS_INTEL_MKL
-  void Randomized_Decomposition(int des_rank, std::vector<Tensor> &transforms,
-                                int oversampl = 10, int powerit = 2) {
-    des_rank += oversampl;
-    for (int i = 0; i < ndim; i++) {
-      auto Bn = Flatten(tensor_ref, i);
-      Tensor G(Bn.extent(1), des_rank);
-      G.fill(gauss_rand());
-      G.fill(rand());
-      Tensor Y(Bn.extent(0), des_rank);
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, Bn, G, 0.0, Y);
-      for (int j = 0; j < powerit; j++) {
-        LU_decomp(Y);
-        Tensor Z(Bn.extent(1), Y.extent(1));
-        gemm(CblasTrans, CblasNoTrans, 1.0, Bn, Y, 0.0, Z);
-        LU_decomp(Z);
-        Y.resize(Range{Range1{Bn.extent(0)}, Range1{Z.extent(1)}});
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, Bn, Z, 0.0, Y);
-      }
-      QR_decomp(Y);
-      transforms.push_back(Y);
-      Tensor S(Y.extent(1), Y.extent(1));
-      gemm(CblasTrans, CblasNoTrans, 1.0, Y, Y, 0.0, S);
-      std::cout << "S" << std::endl;
-      print(S);
-      contract_core(Y, i);
-      contract_core(Y, i, false);
-      std::cout << tensor_ref << std::endl;
-      print(tensor_ref);
-      size = tensor_ref.size();
-    }
-  }
-  void LU_decomp(Tensor &A) { // returns the product of the pivot and the lower
-                              // triangular matrix
-    btas::Tensor<int> piv(std::min(A.extent(0), A.extent(1)));
-    Tensor L(A.range());
-    Tensor P(A.extent(0), A.extent(0));
-    P.fill(0.0);
-    L.fill(0.0);
-    auto info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, A.extent(0), A.extent(1),
-                               A.data(), A.extent(1), piv.data());
-    if (info < 0) {
-      std::cout << "Error with LU decomposition" << std::endl;
-      return;
-    }
-    if (info != 0) {
-    }
-    // indexing the pivod matrix
-    for (auto &j : piv)
-      j -= 1;
-    int pivsize = piv.extent(0);
-    piv.resize(Range{Range1{A.extent(0)}});
-    for (int i = 0; i < piv.extent(0); i++) {
-      if (i == piv(i) || i >= pivsize) {
-        for (int j = 0; j < i; j++) {
-          if (i == piv(j)) {
-            piv(i) = j;
-            break;
-          }
-        }
-      }
-      if (i >= pivsize) {
-        piv(i) = i;
-        for (int j = 0; j < i; j++)
-          if (i == piv(j)) {
-            piv(i) = j;
-            break;
-          }
-      }
-    }
-    // generating the pivot matrix
-    for (int i = 0; i < piv.extent(0); i++)
-      P(piv(i), i) = 1;
-    // generating L
-    for (int i = 0; i < L.extent(0); i++) {
-      for (int j = 0; j < i && j < L.extent(1); j++) {
-        L(i, j) = A(i, j);
-      }
-      if (i < L.extent(1))
-        L(i, i) = 1;
-    }
-    // contracting P L
-    gemm(CblasNoTrans, CblasNoTrans, 1.0, P, L, 0.0, A);
-  }
-  void QR_decomp(Tensor &A) {
-    Tensor B(1, std::min(A.extent(0), A.extent(1)));
-    int Qm = A.extent(0);
-    int Qn = A.extent(1);
-    auto info = LAPACKE_dgeqrf(LAPACK_ROW_MAJOR, A.extent(0), A.extent(1),
-                               A.data(), A.extent(1), B.data());
-    if (info == 0) {
-      info = LAPACKE_dorgqr(LAPACK_ROW_MAJOR, Qm, Qn, Qn, A.data(), A.extent(1),
-                            B.data());
-      if (info != 0) {
-        std::cout << "Error in computing Q" << std::endl;
-        return;
-      }
-    } else {
-      std::cout << "Error in first lapack call QR" << std::endl;
-      return;
-    }
-  }
-
-  void contract_core(Tensor &Q, int mode, bool transpose = true) {
-    swap_to_first(tensor_ref, mode, false, false);
-    std::vector<int> temp_dims, tref_indices, Q_indicies;
-
-    // make size of contraction for contract algorithm
-    temp_dims.push_back((transpose) ? Q.extent(1) : Q.extent(0));
-    for (int i = 1; i < ndim; i++)
-      temp_dims.push_back(tensor_ref.extent(i));
-    Tensor temp(Range{temp_dims});
-    temp_dims.clear();
-
-    // Make contraction indices
-    Q_indicies.push_back((transpose) ? 0 : ndim);
-    Q_indicies.push_back((transpose) ? ndim : 0);
-    temp_dims.push_back(ndim);
-    tref_indices.push_back(0);
-    for (int i = 1; i < ndim; i++) {
-      tref_indices.push_back(i);
-      temp_dims.push_back(i);
-    }
-
-    contract(1.0, Q, Q_indicies, tensor_ref, tref_indices, 0.0, temp,
-             temp_dims);
-    tensor_ref = temp;
-    size = tensor_ref.range().area();
-    swap_to_first(tensor_ref, mode, true, false);
-  }
-  double gauss_rand() {
-    std::random_device rd;
-    std::mt19937 gen(1);
-    std::normal_distribution<double> distribution(1.0, 1.0);
-    return distribution(gen);
-  }
-  void print(Tensor &A) {
-    if (A.rank() == 2) {
-      std::cout << "{" << std::endl;
-      for (int i = 0; i < A.extent(0); i++) {
-        std::cout << "{" << std::endl;
-        for (int j = 0; j < A.extent(1); j++)
-          std::cout << A(i, j) << ",";
-        std::cout << "}," << std::endl;
-      }
-      std::cout << "}," << std::endl;
-    } else
-      for (auto &i : A)
-        std::cout << i << ", ";
-    std::cout << std::endl;
-  }
-  void Tucker_compression(double epsilon_svd, std::vector<Tensor> &transforms) {
-    double norm2 = norm(tensor_ref);
-    norm2 *= norm2;
-
-    for (int i = 0; i < ndim; i++) {
-      auto flat = Flatten(tensor_ref, i);
-      auto threshold = epsilon_svd * epsilon_svd * norm2 / ndim;
-      int R = flat.extent(0);
-      Tensor S(R, R), s_real(R, 1), s_image(R, 1), U(R, R), Vl(1, 1);
-      s_real.fill(0.0);
-      s_image.fill(0.0);
-      U.fill(0.0);
-      Vl.fill(0.0);
-
-      gemm(CblasNoTrans, CblasTrans, 1.0, flat, flat, 0.0, S);
-      auto info = LAPACKE_dgeev(LAPACK_ROW_MAJOR, 'N', 'V', R, S.data(), R,
-                                s_real.data(), s_image.data(), Vl.data(), R,
-                                U.data(), R);
-      if (info)
-        return;
-
-      int rank = 0;
-      Tensor Ipiv(R, R);
-      Ipiv.fill(0.0);
-      // Eigenvalues are unsorted
-      // This algorithm sorts the eigenvalues and generates the piviting matrix
-      // for the right eigenvector which reduces the column dimension to rank
-      for (int j = 0; j < R; j++) {
-        auto hold = -1e10;
-        int swap = 0;
-        for (int k = 0; k < R; k++) {
-          if (s_real(k, 0) > hold) {
-            hold = s_real(k, 0);
-            swap = k;
-          }
-        }
-        s_real(swap, 0) = -1e10;
-        if (hold < epsilon_svd)
-          break;
-        Ipiv(j, swap) = 1.0;
-        rank++;
-      }
-      s_real = Tensor(0);
-      S.resize(Range{Range1{R}, Range1{R}});
-      gemm(CblasNoTrans, CblasTrans, 1.0, U, Ipiv, 0.0, S);
-      auto lower_bound = {0, 0};
-      auto upper_bound = {R, rank};
-      auto view = btas::make_view(S.range().slice(lower_bound, upper_bound),
-                                  S.storage());
-      U.resize(Range{Range1{R}, Range1{rank}});
-      std::copy(view.begin(), view.end(), U.begin());
-      transforms.push_back(U);
-      contract_core(U, i);
-    }
-  }
-#endif //_HAS_INTEL_MKL
 };
 
 } // namespace btas
-#endif // CP
+#endif // BTAS_HAS_CP
