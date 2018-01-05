@@ -69,6 +69,7 @@ TEST_CASE("CP_ALS"){
       CHECK((diff - results(1,0)) <= epsilon);
     }
   }
+#ifdef _HAS_INTEL_MKL
   SECTION("MODE = 3, Tucker + CP"){
   	{
       cp_als<tensor> A1(D3);
@@ -83,7 +84,8 @@ TEST_CASE("CP_ALS"){
       CHECK((diff - results(3,0)) <= epsilon);
     }
   }
-
+#endif
+	
   SECTION("MODE = 4, Finite rank"){
   	{
       cp_als<tensor> A1(D4);
@@ -98,6 +100,7 @@ TEST_CASE("CP_ALS"){
       CHECK((diff - results(5,0)) <= epsilon);
     }
   }
+#ifdef _HAS_INTEL_MKL
   SECTION("MODE = 4, Tucker + CP"){
   	{
       cp_als<tensor> A1(D4);
@@ -112,7 +115,8 @@ TEST_CASE("CP_ALS"){
       CHECK((diff - results(7,0)) <= epsilon);
     }
   }
-
+#endif
+	
   SECTION("MODE = 5, Finite rank"){
   	{
       cp_als<tensor> A1(D5);
@@ -127,6 +131,7 @@ TEST_CASE("CP_ALS"){
       CHECK((diff - results(9,0)) <= epsilon);
     }
   }
+#ifdef _HAS_INTEL_MKL
   SECTION("MODE = 5, Tucker + CP"){
   	{
       cp_als<tensor> A1(D5);
@@ -140,6 +145,6 @@ TEST_CASE("CP_ALS"){
       double diff = A1. compress_compute_rand(1,0);
       CHECK((diff - results(11,0)) <= epsilon);
     }
-  }
+#endif
 }
 #endif //BTAS_HAS_CBLAS
