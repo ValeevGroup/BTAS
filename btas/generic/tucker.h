@@ -6,6 +6,8 @@
 #include <btas/btas.h>
 #include <stdlib.h>
 namespace btas {
+  /// Computes the tucker compression of a Nth order tensor A.
+  /// See http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088
 template <typename Tensor>
 void tucker_compression(Tensor &A, double epsilon_svd,
                         std::vector<Tensor> &transforms) {
@@ -64,6 +66,7 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     core_contract(A, U, i);
   }
 }
+
 template <typename Tensor> double norm(const Tensor &Mat) {
   return sqrt(dot(Mat, Mat));
 }

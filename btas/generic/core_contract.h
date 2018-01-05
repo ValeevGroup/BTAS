@@ -3,6 +3,10 @@
 #include "swap.h"
 #include <btas/btas.h>
 namespace btas {
+  /// Function used by Tucker and Randomized compression.
+  /// Takes an Nth order tensor swaps the mode of interest
+  /// to the front and contracts it with a rank reducing 
+  /// factor matrix. A is returned as a contracted tensor
 template <typename Tensor>
 void core_contract(Tensor &A, Tensor &Q, int mode, bool transpose = true) {
   auto ndim = A.rank();

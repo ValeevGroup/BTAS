@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #ifdef _HAS_INTEL_MKL
 namespace btas {
-
+/// provides a random number from a gaussian distribution
 template <typename T>
 T gauss_rand() {
   std::random_device rd;
@@ -16,6 +16,8 @@ T gauss_rand() {
   return distribution(gen);
 }
 
+/// Calculates the randomized compression of tensor A
+/// Refer to https://arxiv.org/pdf/1703.09074.pdf
 template <typename Tensor>
 void randomized_decomposition(Tensor &A, int des_rank,
                               std::vector<Tensor> &transforms,
@@ -47,6 +49,7 @@ void randomized_decomposition(Tensor &A, int des_rank,
   }
 }
 
+//Computes the LU decomposition of tensor A
 template <typename Tensor>
 void LU_decomp(Tensor &A) { // returns the product of the pivot and the lower
                             // triangular matrix
@@ -101,6 +104,7 @@ void LU_decomp(Tensor &A) { // returns the product of the pivot and the lower
   gemm(CblasNoTrans, CblasNoTrans, 1.0, P, L, 0.0, A);
 }
 
+//Computes the QR decomposition of matrix A
 template <typename Tensor> bool QR_decomp(Tensor &A) {
   Tensor B(1, std::min(A.extent(0), A.extent(1)));
   int Qm = A.extent(0);

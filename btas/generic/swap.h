@@ -11,12 +11,12 @@
 //make LD_in_front = true and same goes for swap to back
 //do not mix swap to first and swap to back
 namespace btas{
+	/// Swaps the nth mode of an Nth order tensor to the front preserving the 
+	/// order of the other modes. \n
+	/// swap_to_first(T, I3, false, false) =
+	/// T(I1, I2, I3, I4, I5) --> T(I3, I1, I2, I4, I5)
 	template <typename Tensor>
 	void swap_to_first(Tensor& A, int mode, bool LD_in_front = false, bool for_ALS_update = true){
-		//For switching when the dimension of interests is in the back use b/B
-		//otherwise use f/F
-		// A{T1,T2,T3,T4,T5} (3,b) -> A{T3,T1,T2,T4,T5}
-		// A{T3, T1, T2, T4, T5} (3, f) -> A{T1, T2, T3, T4, T5}
 		if(mode == 0)
 			return;
 		std::vector<int> aug_dims;
@@ -68,6 +68,11 @@ namespace btas{
 		}
 		A.resize(aug_dims);
 	}
+
+	/// Swaps the nth order of an Nth order tensor to the end.
+	/// Does not preserve order.\n
+	/// swap_to_back(T, I2, false) = 
+	/// T(I1, I2, I3) --> T(I3, I1, I2)
 	template <typename Tensor>
 	void swap_to_back(Tensor& A, int mode, bool is_in_back = false){
   	if(mode > A.rank())

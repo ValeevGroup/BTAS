@@ -2,11 +2,11 @@
 #define BTAS_KRP
 #include <btas/btas.h>
 namespace btas{
+	/// The khatri-rao product is an outer product of column vectors of A
+	/// and B, the product is then ordered to make a super column in a new matrix
+	/// The dimension of this product is  B(NXM) (.) C(KXM) = D(N*K X M)
 	template<class Tensor>
 	void khatri_rao_product(const Tensor &A, const Tensor &B, Tensor &AB_product) { 
-	 	// The khatri-rao product is an outer product of column vectors in
-	  // two matrices, then ordered to make a super column in a new matrix
-	  // The dimension of this product is  B(NXM) (.) C(KXM) = D(N*K X M)
 	  if(A.rank() > 2 || B.rank() > 2)
 	  	BTAS_EXCEPTION("A.rank() > 2 || B.rank() > 2, Matrices required");
 	  AB_product.resize(

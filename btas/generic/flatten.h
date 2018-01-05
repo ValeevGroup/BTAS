@@ -1,8 +1,9 @@
 #ifndef BTAS_FLATTEN
 #define BTAS_FLATTEN
 namespace btas {
+
+/// methods to produce to matricize a tensor along the n-th fiber
 template <typename Tensor>
-// methods to produce to matricize a tensor along the n-th fiber
 Tensor flatten(Tensor &A, int mode) {
   using value_type = typename Tensor::value_type;
   typedef typename std::vector<value_type>::const_iterator iterator;
@@ -22,7 +23,11 @@ Tensor flatten(Tensor &A, int mode) {
   fill(A, 0, X, mode, indexi, indexj, J, tensor_itr);
   return X;
 }
-// following the formula for flattening layed out by Kolda and Baderm
+
+/// following the formula for flattening layed out by Kolda and Bader
+/// http://epubs.siam.org/doi/pdf/10.1137/07070111X
+/// Recursive method utilized by flatten, if you want to flatten a tensor
+/// call flatten, not fill. 
 template <typename Tensor, typename iterator>
 void fill(Tensor &A, int depth, Tensor &X, int mode, int indexi, int indexj,
           std::vector<int> &J, iterator &tensor_itr) {
