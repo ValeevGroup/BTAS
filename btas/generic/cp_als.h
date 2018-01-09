@@ -32,21 +32,21 @@ namespace btas {
   matrices
 
   // Operations
-  A.compute_rank(rank)                       // Computes the CP_ALS of tensor to rank
+  A.compute_rank(rank)                       // Computes the CP_ALS of tensor to rank.
 
   A.compute_error(omega)                     // Computes the CP_ALS of tensor to 2-norm
-                                             // error < omega
+                                             // error < omega.
 
   A.compute_geometric(rank, step)            // Computes CP_ALS of tensor to rank with
-                                             // geometric steps of step between guesses
+                                             // geometric steps of step between guesses.
 
   A.compress_compute_tucker(tcut_SVD)        // Computes Tucker decomposition using 
                                              // truncated SVD method then computes finite
-                                             // error CP decomposition on core tensor
+                                             // error CP decomposition on core tensor.
 
   A.compress_compute_rand(rank)              // Computes random decomposition on Tensor to
                                              // make core tensor with every mode size rank
-                                             // Then computes CP decomposition of core
+                                             // Then computes CP decomposition of core.
 
  //See documentation for full range of options
 
