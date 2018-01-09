@@ -9,7 +9,7 @@ namespace btas {
 /// Function used by Tucker and Randomized compression.
 /// Takes an Nth order tensor swaps the mode of interest, mode,
 /// to the front and contracts it with a rank reducing
-/// factor matrix.
+/// factor matrix. 
 
 /// \param[in, out] A The Nth order tensor to be contracted with Q
 /// \param[in] Q Matrix contracts with the mode mode of A
