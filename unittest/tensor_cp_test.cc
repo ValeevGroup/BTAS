@@ -57,29 +57,29 @@ TEST_CASE("CP_ALS"){
 
   SECTION("MODE = 3, Finite rank"){
   	{
-      cp_als<tensor> A1(D3);
-      double diff = A1.compute(5,false,true, 1e3, 1, 1e-2);
+      CP_ALS<tensor> A1(D3);
+      double diff = A1.compute_rank(5,false,true, 1, 1e3, 1e-2);
       CHECK((diff - results(0,0)) <= epsilon);
     }
   }
   SECTION("MODE = 3, Finite error"){
   	{
-      cp_als<tensor> A1(D3);
-      double diff = A1.compute(1e-2, true, 1e3, 1, 1e-2);
+      CP_ALS<tensor> A1(D3);
+      double diff = A1.compute_error(1e-2, true, 1, 1e3, 1e-2);
       CHECK((diff - results(1,0)) <= epsilon);
     }
   }
 #ifdef _HAS_INTEL_MKL
   SECTION("MODE = 3, Tucker + CP"){
   	{
-      cp_als<tensor> A1(D3);
+      CP_ALS<tensor> A1(D3);
       double diff = A1.compress_compute_tucker(.1, false, 1e-2, 5, true, true);
       CHECK((diff - results(2,0)) <= epsilon);
     }
   }
   SECTION("MODE = 3, Random + CP"){
   	{
-      cp_als<tensor> A1(D3);
+      CP_ALS<tensor> A1(D3);
       double diff = A1.compress_compute_rand(2, 0, 2, false, 1e-2, 5, true, true );
       CHECK((diff - results(3,0)) <= epsilon);
     }
@@ -88,30 +88,30 @@ TEST_CASE("CP_ALS"){
 	
   SECTION("MODE = 4, Finite rank"){
   	{
-      cp_als<tensor> A1(D4);
-      double diff = A1.compute(5,false,true, 1e3, 1, 1e-2);
+      CP_ALS<tensor> A1(D4);
+      double diff = A1.compute_rank(5,false,true, 1, 1e3, 1e-2);
       CHECK((diff - results(4,0)) <= epsilon);
     }
   }
   SECTION("MODE = 4, Finite error"){
   	{
-      cp_als<tensor> A1(D4);
-      double diff = A1.compute(1e-2, true, 1e3, 1, 1e-2);
+      CP_ALS<tensor> A1(D4);
+      double diff = A1.compute_error(1e-2, true, 1, 1e3, 1e-2);
       CHECK((diff - results(5,0)) <= epsilon);
     }
   }
 #ifdef _HAS_INTEL_MKL
   SECTION("MODE = 4, Tucker + CP"){
   	{
-      cp_als<tensor> A1(D4);
+      CP_ALS<tensor> A1(D4);
       double diff = A1.compress_compute_tucker(.1, false, 1e-2, 5, true, true);
       CHECK((diff - results(6,0)) <= epsilon);
     }
   }
   SECTION("MODE = 4, Random + CP"){
   	{
-      cp_als<tensor> A1(D4);
-      double diff = A1.compress_compute_rand(3, 0, 2, false, 1e-2, 5, true, true );
+      CP_ALS<tensor> A1(D4);
+      double diff = A1.compress_compute_rand(3, 0, 2, false, 1e-2, 5, true, true );;
       CHECK((diff - results(7,0)) <= epsilon);
     }
   }
@@ -119,32 +119,33 @@ TEST_CASE("CP_ALS"){
 	
   SECTION("MODE = 5, Finite rank"){
   	{
-      cp_als<tensor> A1(D5);
-      double diff = A1.compute(5,false,true, 1e3, 1, 1e-2);
+      CP_ALS<tensor> A1(D5);
+      double diff = A1.compute_rank(5,false,true, 1, 1e3, 1e-2);
       CHECK((diff - results(8,0)) <= epsilon);
     }
   }
   SECTION("MODE = 5, Finite error"){
   	{
-      cp_als<tensor> A1(D5);
-      double diff = A1.compute(1e-2, true, 1e3, 1, 1e-2);
+      CP_ALS<tensor> A1(D5);
+      double diff = A1.compute_error(1e-2, true, 1, 1e3, 1e-2);
       CHECK((diff - results(9,0)) <= epsilon);
     }
   }
 #ifdef _HAS_INTEL_MKL
   SECTION("MODE = 5, Tucker + CP"){
   	{
-      cp_als<tensor> A1(D5);
+      CP_ALS<tensor> A1(D5);
       double diff = A1.compress_compute_tucker(.1, false, 1e-2, 5, true, true);
       CHECK((diff - results(10,0)) <= epsilon);
     }
   }
   SECTION("MODE = 5, Random + CP"){
   	{
-      cp_als<tensor> A1(D5);
+      CP_ALS<tensor> A1(D5);
       double diff = A1. compress_compute_rand(1,0);
       CHECK((diff - results(11,0)) <= epsilon);
     }
+  }
 #endif
 }
 #endif //BTAS_HAS_CBLAS

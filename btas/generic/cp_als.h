@@ -1,26 +1,73 @@
 #ifndef BTAS_GENERIC_CP_ALS_H
 #define BTAS_GENERIC_CP_ALS_H
 
-/*!Canonical Product*/
-
 #include <algorithm>
+#include <cstdlib>
 #include <iostream>
-#include <stdlib.h>
 
-#include <btas/btas.h>
-#include <btas/error.h>
-#include "khatri_rao_product.h"
 #include "core_contract.h"
 #include "flatten.h"
+#include "khatri_rao_product.h"
 #include "randomized.h"
 #include "swap.h"
 #include "tucker.h"
+#include <btas/btas.h>
+#include <btas/error.h>
 
 namespace btas {
 
-template <typename Tensor> class cp_als {
+/** @addtogroup CP_ALS
+
+  /section sec_CP_ALS CP_ALS class
+   A function to calculate the Canonical Product (CP) decomposition of an Nth
+  order tensor using alternating least squares (ALS). Supports tensors with row
+  major storage only with fixed (compile-time) and variable (run-time)
+  ranks. Also provides Tucker and randomized Tucker-like compressions coupled
+  with CP-ALS decomposition. Does not support strided ranges.
+
+  /subsection sec_CP_ALS_Synopsis Synopsis
+  @code
+  // Constructors
+  CP_ALS A(tensor)                    // CP_ALS object with empty factor
+  matrices
+
+  // Operations
+  A.compute_rank(rank)                       // Computes the CP_ALS of tensor to rank
+
+  A.compute_error(omega)                     // Computes the CP_ALS of tensor to 2-norm
+                                             // error < omega
+
+  A.compute_geometric(rank, step)            // Computes CP_ALS of tensor to rank with
+                                             // geometric steps of step between guesses
+
+  A.compress_compute_tucker(tcut_SVD)        // Computes Tucker decomposition using 
+                                             // truncated SVD method then computes finite
+                                             // error CP decomposition on core tensor
+
+  A.compress_compute_rand(rank)              // Computes random decomposition on Tensor to
+                                             // make core tensor with every mode size rank
+                                             // Then computes CP decomposition of core
+
+ //See documentation for full range of options
+
+  // Accessing Factor Matrices
+  A.get_factor_matrices()             // Returns a vector of factor matrices, if
+                                      // they have been computed
+  @endcode
+*/
+
+/// A function to calculate the Canonical Product (CP) decomposition of an Nth
+/// order tensor using alternating least squares (ALS). Supports tensors with
+/// row major storage only with fixed and (compile-time) and variable (run-time)
+/// ranks. Also provides Tucker and randomized Tucker-like compressions coupled
+/// with CP-ALS decomposition. Does not support strided ranges.
+
+template <typename Tensor> class CP_ALS {
 public:
-  cp_als(Tensor &tensor)
+  /// Constructor of object CP_ALS
+  /// \param[in] tensor The tensor object to be decomposed
+
+  CP_ALS(Tensor &tensor)
       : tensor_ref(tensor), ndim(tensor_ref.rank()), size(tensor_ref.size()) {
 
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
@@ -32,75 +79,137 @@ public:
 #endif
   }
 
-  ~cp_als() = default;
+  ~CP_ALS() = default;
 
-  /// Computes decomposition of Nth order tensor T 
+  /// Computes decomposition of Nth order tensor T
   /// with CP rank = rank\n
-  /// Initial guess for factor matrices start at rank = 1 
-  /// and build to rank = rank by increments of step, to minimize 
+  /// Initial guess for factor matrices start at rank = 1
+  /// and build to rank = rank by increments of step, to minimize
   /// error.
-  double compute(const int rank, const bool direct = true,
-                 const bool calculate_epsilon = false, const double max_rank = 1e5,
-                 const int step = 1, const double tcutALS = 0.1) {
-    double epsilon = 0.0;
-    build(rank, direct, max_rank, calculate_epsilon, step, tcutALS, epsilon);
+
+  /// \param[in] rank The rank of the CP decomposition.
+  /// \param[in] direct The CP decomposition be computed without calculating the
+  /// Khatri-Rao product? Default = true. \param[in] calculate_epsilon Should
+  /// the 2-norm error be calculated ||T_exact - T_approx|| = epsilon. Default =
+  /// false. \param[in] step CP_ALS built from r =1 to r = rank. R increments by
+  /// step; default = 1. \param[in] max_als Max number of iterations allowed to
+  /// converge the ALS approximation \param[in] tcutALS How small difference in
+  /// factor matrices must be to consider ALS of a single rank converged.
+  /// Default = 0.1. \returns 2-norm error between exact and approximate
+  /// tensor, -1 if calculate_epsilon = false.
+
+  double compute_rank(const int rank, const bool direct = true,
+                      const bool calculate_epsilon = false, const int step = 1,
+                      const int max_als = 1e5, const double tcutALS = 0.1) {
+    double epsilon = -1.0;
+    build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon);
     return epsilon;
   }
 
-  /// Computes the decomposition of Nth order tensor T 
-  /// to rank <= max_rank with \n
-  /// \t |T_exact - T_approx|_F <= tcutCP \n
+  /// Computes the decomposition of Nth order tensor T
+  /// to rank <= max_als with \n
+  /// || T_exact - T_approx ||_F <= tcutCP \n
   /// with rank increasing each iteration by step.
-  double compute(const double tcutCP = 1e-2, const bool direct = true,
-                 const double max_rank = 1e5, const int step = 1,
-                 const double tcutALS = 0.1) {
+
+  /// \param[in] tcutCP How small epsilon must be to consider the CP
+  /// decomposition converged. Default = 1e-2. \param[in] direct The CP
+  /// decomposition be computed without calculating the Khatri-Rao product?
+  /// Default = true. \param[in] step CP_ALS built from r =1 to r = rank. r
+  /// increments by step; default = 1. \param[in] max_rank The highest rank
+  /// approximation computed before giving up on CP-ALS. Default = 1e5.
+  /// \param[in] max_als Max number of iterations allowed to converge the ALS
+  /// approximation \param[in] tcutALS How small difference in factor matrices
+  /// must be to consider ALS of a single rank converged. Default = 0.1.
+  /// \returns 2-norm error between exact and approximate tensor
+
+  double compute_error(const double tcutCP = 1e-2, const bool direct = true,
+                       const int step = 1, const int max_rank = 1e5,
+                       const double max_als = 1e5, const double tcutALS = 0.1) {
     int rank = (A.empty()) ? 0 : A[0].extent(0);
     double epsilon = tcutCP + 1;
     while (epsilon > tcutCP && rank < max_rank) {
       rank += step;
-      build(rank, direct, max_rank, true, step, tcutALS, epsilon);
+      build(rank, direct, max_als, true, step, tcutALS, epsilon);
     }
     return epsilon;
   }
-  /// Computes decomposition of Nth order tensor T 
+
+  /// Computes decomposition of Nth order tensor T
   /// with CP rank <= desired_rank\n
-  /// Initial guess for factor matrices start at rank = 1 
-  /// and build to rank = rank by geometric steps of geometric_step, to minimize 
+  /// Initial guess for factor matrices start at rank = 1
+  /// and build to rank = rank by geometric steps of geometric_step, to minimize
   /// error.
-  double compute_geometric(const int desired_rank, int geometric_step = 2, 
-                           const bool direct = false, const bool calculate_epsilon = false,
-                           const double max_rank = 1e5, const double tcutALS = 0.1){
-    if(geometric_step <= 0){
+
+  /// \param[in] desired_rank Rank of CP decomposition, r, will build by
+  /// geometric step until r > desired_rank. \param[in] geometric_step CP_ALS
+  /// built from r =1 to r = rank. r increments by r *= geometric_step; default
+  /// = 2. \param[in] direct The CP decomposition be computed without
+  /// calculating the Khatri-Rao product? Default = true. \param[in] max_als Max
+  /// number of iterations allowed to converge the ALS approximation \param[in]
+  /// calculate_epsilon Should the 2-norm error be calculated ||T_exact -
+  /// T_approx|| = epsilon. Default = false. \param[in] tcutALS How small
+  /// difference in factor matrices must be to consider ALS of a single rank
+  /// converged. Default = 0.1. \returns 2-norm error between exact and
+  /// approximate tensor, -1.0 if calculate_epsilon = false
+
+  double compute_geometric(const int desired_rank, int geometric_step = 2,
+                           const bool direct = false, const int max_als = 1e5,
+                           const bool calculate_epsilon = false,
+                           const double tcutALS = 0.1) {
+    if (geometric_step <= 0) {
       std::cout << "The step size must be larger than 0" << std::endl;
       return 0;
     }
-    double epsilon = 0.0;
+    double epsilon = -1.0;
     int rank = 1;
-    while (rank <= desired_rank && rank < max_rank){
-      build(rank, direct, max_rank, calculate_epsilon, geometric_step, tcutALS, epsilon);
-      if(geometric_step == 1)
+    while (rank <= desired_rank && rank < max_als) {
+      build(rank, direct, max_als, calculate_epsilon, geometric_step, tcutALS,
+            epsilon);
+      if (geometric_step == 1)
         rank++;
       else
         rank *= geometric_step;
     }
     return epsilon;
   }
+
 #ifdef _HAS_INTEL_MKL
-  /// Requires MKL. Computes an approximate core tensor using 
+
+  /// Requires MKL. Computes an approximate core tensor using
   /// Tucker decomposition, i.e.  \n
   ///  T(I_1, I_2, I_3) --> T(R1, R2, R3) \n
   /// Where R1 < I_1, R2 < I_2 and R3 < I_3
-  /// see <a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088"> \n
-  /// Using this approximation the CP decomposition is computed to 
-  /// either finite error or finite rank. \n
-  /// Default settings calculate to finite error.
-  /// factor matrices are scaled by the Tucker transformations.
+  /// see <a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088">
+  /// \n Using this approximation the CP decomposition is computed to either
+  /// finite error or finite rank. \n Default settings calculate to finite
+  /// error. factor matrices are scaled by the Tucker transformations.
+
+  /// \param[in] tcutSVD Truncation threshold for SVD of each mode in Tucker
+  /// decomposition. \param[in] opt_rank Should the CP decomposition of tucker
+  /// core tensor find the optimal rank with error < tcutCP? Default = true.
+  /// \param[in] tcutCP How small epsilon must be to consider the CP
+  /// decomposition converged. Default = 1e-2. \param[in] rank If finding CP
+  /// decomposition to finite rank, define rank here. Default this is not used.
+  /// \param[in] direct The CP decomposition be computed without calculating the
+  /// Khatri-Rao product? Default = true. \param[in] calculate_epsilon Should
+  /// the 2-norm error be calculated ||T_exact - T_approx|| = epsilon. Default =
+  /// true. \param[in] step CP_ALS built from r =1 to r = rank. r increments by
+  /// step; default = 1. \param[in] max_rank The highest rank approximation
+  /// computed before giving up on CP-ALS. Default = 1e5. \param[in] max_als If
+  /// CP decomposition is to finite error, max_als is the highest rank
+  /// approximation computed before giving up on CP-ALS. Default = 1e5.
+  /// \param[in] tcutALS How small difference in factor matrices must be to
+  /// consider ALS of a single rank converged. Default = 0.1. \returns
+  /// 2-norm error between exact and approximate tensor, -1.0 if
+  /// calculate_epsilon = false
+
   double compress_compute_tucker(double tcutSVD, const bool opt_rank = true,
-                               const double tcutCP = 1e-2, const int rank = 0,
-                               const bool direct = true,
-                               const bool calculate_epsilon = false,
-                               const double max_rank = 1e5, const int step = 1,
-                               const double tcutALS = .01) {
+                                 const double tcutCP = 1e-2, const int rank = 0,
+                                 const bool direct = true,
+                                 const bool calculate_epsilon = true,
+                                 const int step = 1, const int max_rank = 1e5,
+                                 const double max_als = 1e5,
+                                 const double tcutALS = 0.1) {
     // Tensor compression
     std::vector<Tensor> transforms;
     tucker_compression(tensor_ref, tcutSVD, transforms);
@@ -109,15 +218,16 @@ public:
 
     // CP decomposition
     if (opt_rank)
-      epsilon = compute(tcutCP, direct, max_rank, step, tcutALS);
+      epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS);
     else if (rank == 0) {
       std::cout << "Must specify a rank > 0" << std::endl;
       return epsilon;
     } else
-      epsilon = compute(rank, direct, calculate_epsilon, max_rank, step, tcutALS);
+      epsilon =
+          compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS);
 
-    //scale factor matrices
-    for(int i = 0; i < ndim; i++){
+    // scale factor matrices
+    for (int i = 0; i < ndim; i++) {
       Tensor tt(transforms[i].extent(0), A[i].extent(1));
       gemm(CblasNoTrans, CblasNoTrans, 1.0, transforms[i], A[i], 0.0, tt);
       A[i] = tt;
@@ -125,39 +235,66 @@ public:
 
     return epsilon;
   }
-  /// Requires MKL. Computes an approximate core tensor using 
+
+  /// Requires MKL. Computes an approximate core tensor using
   /// random projection, i.e.  \n
   ///  T(I_1, I_2, I_3) --> T(R, R, R) \n
   /// Where R < I_1, R < I_2 and R < I_3
   /// see <a href="https://arxiv.org/pdf/1703.09074.pdf"> \n
-  /// Using this approximation the CP decomposition is computed to 
+  /// Using this approximation the CP decomposition is computed to
   /// either finite error or finite rank. \n
   /// Default settings calculate to finite error.\n
   /// Factor matrices are scaled by randomized transformation.
+
+  /// \param[in] desired_compression_rank The new dimension of each mode after
+  /// randomized compression. \param[in] oversampl Oversampling added to the
+  /// desired_compression_rank required to provide a more optimal decomposition.
+  /// Default = suggested = 10. \param[in] powerit Number of power iterations,
+  /// as specified in the literature, to scale the spectrum of each mode.
+  /// Default = suggested = 2. \param[in] opt_rank Should the CP decomposition
+  /// of tucker core tensor find the optimal rank with error < tcutCP? Default =
+  /// true. \param[in] tcutCP How small epsilon must be to consider the CP
+  /// decomposition converged. Default = 1e-2. \param[in] rank If finding CP
+  /// decomposition to finite rank, define rank here. Default this is not used.
+  /// \param[in] direct The CP decomposition be computed without calculating the
+  /// Khatri-Rao product? Default = true. \param[in] calculate_epsilon Should
+  /// the 2-norm error be calculated ||T_exact - T_approx|| = epsilon. Default =
+  /// true. \param[in] step CP_ALS built from r =1 to r = rank. r increments by
+  /// step; default = 1. \param[in] max_rank The highest rank approximation
+  /// computed before giving up on CP-ALS. Default = 1e5. \param[in] max_als If
+  /// CP decomposition is to finite error, max_als is the highest rank
+  /// approximation computed before giving up on CP-ALS. Default = 1e5.
+  /// \param[in] tcutALS How small difference in factor matrices must be to
+  /// consider ALS of a single rank converged. Default = 0.1. \returns
+  /// 2-norm error between exact and approximate tensor, -1.0 if
+  /// calculate_epsilon = false
+
   double compress_compute_rand(int desired_compression_rank,
-                             const int oversampl = 10, const int powerit = 2,
-                             const bool opt_rank = true,
-                             const double tcutCP = 1e-2, const int rank = 0,
-                             const bool direct = true,
-                             const bool calculate_epsilon = false,
-                             const double max_rank = 1e5, const int step = 1,
-                             const double tcutALS = .1) {
+                               const int oversampl = 10, const int powerit = 2,
+                               const bool opt_rank = true,
+                               const double tcutCP = 1e-2, const int rank = 0,
+                               const bool direct = true,
+                               const bool calculate_epsilon = false,
+                               const int step = 1, const int max_rank = 1e5,
+                               const double max_als = 1e5,
+                               const double tcutALS = .1) {
     std::vector<Tensor> transforms;
-    randomized_decomposition(tensor_ref, desired_compression_rank, transforms,
-                             oversampl, powerit);
+    randomized_decomposition(tensor_ref, transforms, desired_compression_rank, oversampl,
+                             powerit);
     size = tensor_ref.size();
     double epsilon = -1.0;
 
     if (opt_rank)
-      epsilon = compute(tcutCP, direct, max_rank, step, tcutALS);
+      epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS);
     else if (rank == 0) {
       std::cout << "Must specify a rank > 0" << std::endl;
       return epsilon;
     } else
-      epsilon = compute(rank, direct, calculate_epsilon, max_rank, step, tcutALS);
+      epsilon =
+          compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS);
 
-    //scale factor matrices
-    for(int i = 0; i < ndim; i++){
+    // scale factor matrices
+    for (int i = 0; i < ndim; i++) {
       Tensor tt(transforms[i].extent(0), A[i].extent(1));
       gemm(CblasNoTrans, CblasNoTrans, 1.0, transforms[i], A[i], 0.0, tt);
       A[i] = tt;
@@ -165,29 +302,53 @@ public:
 
     return epsilon;
   }
+
 #endif //_HAS_INTEL_MKL
 
-  //returns 
-  std::vector<Tensor> get_factor_matrices(){
-    if(A != NULL)
+  /// returns the rank r optimized factor matrices
+  /// \return Factor matrices stored in a vector. For 3rd order tensor matrices
+  /// [0]-[2] are factor matrices and vector [3] is the scaling factors for each
+  /// rank \throw  Exception if the CP decomposition is not yet computed.
+
+  std::vector<Tensor> get_factor_matrices() {
+    if (!A.empty())
       return A;
     else
-      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__,
-                           "Attempting to use a NULL object first compute CP decomposition");
+      BTAS_EXCEPTION(
+          "Attempting to use a NULL object first compute CP decomposition");
   }
-private:
-  std::vector<Tensor> A; // vector of factor matrices
-  Tensor &tensor_ref; // this is a reference.
-  const int ndim;
-  int size;
 
-  // creates factor matricies starting with R=1 and moves to R = rank
-  // Where R is the column dimension of the factor matrices.
-  void build(const int rank, const bool dir, const int max_rank, const bool calculate_epsilon,
-             const int step, const double tcutALS, double &epsilon) {
+private:
+  std::vector<Tensor> A; // The vector of factor matrices
+  Tensor &tensor_ref;    // The reference tensor being decomposed
+  const int ndim;        // Number of modes in the reference tensor
+  int size;              // Number of elements in the reference tensor
+
+  /// creates factor matricies starting with R=1 and moves to R = rank
+  /// incrementing column dimension, R, by step
+
+  /// \param[in] rank The rank of the CP decomposition.
+  /// \param[in] direct The CP decomposition be computed without calculating the
+  /// Khatri-Rao product? \param[in] max_als If CP decomposition is to finite
+  /// error, max_als is the highest rank approximation computed before giving up
+  /// on CP-ALS. Default = 1e5. \param[in] calculate_epsilon Should the 2-norm
+  /// error be calculated ||T_exact - T_approx|| = epsilon. \param[in] step
+  /// CP_ALS built from r =1 to r = rank. r increments by step. \param[in]
+  /// tcutALS How small difference in factor matrices must be to consider ALS of
+  /// a single rank converged. Default = 0.1. \param[in, out] epsilon The 2-norm
+  /// error between the exact and approximated reference tensor
+
+  void build(const int rank, const bool direct, const int max_als,
+             const bool calculate_epsilon, const int step, const double tcutALS,
+             double &epsilon) {
+    // This loop keeps track of column dimension
     for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
+      // This loop walks through the factor matrices
       for (auto j = 0; j < ndim; ++j) { // select a factor matrix
-        if (i == 0) { // creates a factor matrix when A is empty
+        // If no factor matrices exists, make a set of factor matrices
+        // and fill them with random numbers that are column normalized
+        // and create the weighting vector lambda
+        if (i == 0) {
           Tensor a(Range{tensor_ref.range(j), Range1{i + 1}});
           a.fill(rand());
           normCol(a, i);
@@ -196,9 +357,12 @@ private:
             Tensor lam(Range{Range1{i + 1}});
             A.push_back(lam);
           }
-        } else { // builds onto factor matrices when R > 1
-                 // This could be done by A -> A^T then adding a row then (A')^T
-                 // -> A'
+        }
+
+        // If the factor matrices have memory allocated, rebuild each matrix
+        // with new column dimension col_dimension_old + skip
+        // fill the new columns with random numbers and normalize the columns
+        else {
           Tensor b(Range{A[0].range(0), Range1{i + 1}});
           b.fill(rand());
           for (int l = A[0].extent(1); l < i + 1; ++l)
@@ -218,30 +382,44 @@ private:
           }
         }
       }
-      ALS(i + 1, dir, max_rank, calculate_epsilon, tcutALS,
-          epsilon); // performs the least squares minimization to generate the
-                      // best CP rank i+1 approximation
+
+      // compute the ALS of factor matrices with rank = i + 1.
+      ALS(i + 1, direct, max_als, calculate_epsilon, tcutALS, epsilon);
     }
   }
 
-  // performs the ALS method to minimize the loss function for a single rank
-  void ALS(const int rank, const bool dir, const int max_rank, const bool calculate_epsilon,
-           const double tcutALS, double &epsilon) {
+  /// performs the ALS method to minimize the loss function for a single rank
+  /// \param[in] rank The rank of the CP decomposition.
+  /// \param[in] dir The CP decomposition be computed without calculating the
+  /// Khatri-Rao product? \param[in] max_als If CP decomposition is to finite
+  /// error, max_als is the highest rank approximation computed before giving up
+  /// on CP-ALS. Default = 1e5. \param[in] calculate_epsilon Should the 2-norm
+  /// error be calculated ||T_exact - T_approx|| = epsilon. \param[in] tcutALS
+  /// How small difference in factor matrices must be to consider ALS of a
+  /// single rank converged. Default = 0.1. \param[in, out] epsilon The 2-norm
+  /// error between the exact and approximated reference tensor
+
+  void ALS(const int rank, const bool dir, const int max_als,
+           const bool calculate_epsilon, const double tcutALS,
+           double &epsilon) {
     auto count = 0;
     double test = 1.0;
-    while (count <= max_rank && test > tcutALS) {
+
+    // Until either the initial guess is converged or it runs out of iterations
+    // update the factor matrices with or without Khatri-Rao product
+    // intermediate
+    while (count <= max_als && test > tcutALS) {
       count++;
       test = 0.0;
       for (auto i = 0; i < ndim; i++) {
         if (dir)
           direct(i, rank, test);
         else
-          update_w_KRP(i, rank, test); // generates the next iteration of factor
-                                       // matrix to minimize the least squares
-                                       // problem.
+          update_w_KRP(i, rank, test);
       }
     }
-    // only checks loss function if required
+
+    // Checks loss function if required
     if (calculate_epsilon) {
       Tensor oldmat(tensor_ref.extent(0), size / tensor_ref.extent(0));
       for (int i = 0; i < rank; i++) {
@@ -256,18 +434,26 @@ private:
     }
   }
 
-  // This update requires computation of the khatri-rao product every time its
-  // called
+  /// Calculates an optimized CP factor matrix using Khatri-Rao product
+  /// intermediate \param[in] n The mode being optimized, all other modes held
+  /// constant \param[in] rank The current rank, column dimension of the factor
+  /// matrices \param[in out] test The difference between previous and current
+  /// iteration factor matrix
   void update_w_KRP(int n, int rank, double &test) {
-    // multiply the components together to get the least squares minimization
+
     Tensor temp(A[n].extent(0), rank);
     Tensor an(A[n].range());
-#ifdef _HAS_INTEL_MKL
-    auto KhatriRao = generate_KRP(n, rank, true);
-    swap_to_first(tensor_ref, n);
-    std::vector<size_t> tref_dims, KRP_dims, An_dims;
 
-    // resize KRP
+#ifdef _HAS_INTEL_MKL
+
+    // Computes the Khatri-Rao product intermediate
+    auto KhatriRao = generate_KRP(n, rank, true);
+
+    // moves mode n of the reference tensor to the front to simplify contraction
+    swap_to_first(tensor_ref, n);
+    std::vector<size_t> tref_indices, KRP_dims, An_indices;
+
+    // resize the Khatri-Rao product to the proper dimensions
     for (int i = 1; i < ndim; i++) {
       KRP_dims.push_back(tensor_ref.extent(i));
     }
@@ -275,75 +461,131 @@ private:
     KhatriRao.resize(KRP_dims);
     KRP_dims.clear();
 
-    // build contraction vectors
-    An_dims.push_back(0);
-    An_dims.push_back(ndim);
-    tref_dims.push_back(0);
+    // build contraction indices to contract over correct modes
+    An_indices.push_back(0);
+    An_indices.push_back(ndim);
+    tref_indices.push_back(0);
     for (int i = 1; i < ndim; i++) {
-      tref_dims.push_back(i);
+      tref_indices.push_back(i);
       KRP_dims.push_back(i);
     }
     KRP_dims.push_back(ndim);
 
-    // contract
-    contract(1.0, tensor_ref, tref_dims, KhatriRao, KRP_dims, 0.0, temp,
-             An_dims);
+    contract(1.0, tensor_ref, tref_indices, KhatriRao, KRP_dims, 0.0, temp,
+             An_indices);
+
+    // move the nth mode of the reference tensor back where it belongs
     swap_to_first(tensor_ref, n, true);
 
 #else // BTAS_HAS_CBLAS
+
+    // without MKL program cannot perform the swapping algorithm, must compute
+    // flattened intermediate
     gemm(CblasNoTrans, CblasNoTrans, 1.0, flatten(tensor_ref, n),
          generate_KRP(n, rank, true), 0.0, temp);
 #endif
+
+    // contract the product from above with the psuedoinverse of the Hadamard
+    // produce an optimize factor matrix
     gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank), 0.0,
          an);
+
+    // compute the difference between this new factor matrix and the previous
+    // iteration
     for (auto l = 0; l < rank; ++l)
       A[ndim](l) = normCol(an, l);
     test += norm(A[n] - an);
+
+    // Replace the old factor matrix with the new optimized result
     A[n] = an;
   }
-  // No Khatri-Rao product computed, immediate contraction
-  // N = 4, n = I2
-  // T(I0, I1, I2, I3) --> T(I0 I1 I2, I3)
-  // T(I0 I1 I2, I3) x A( I3, R) ---> T(I0 I1 I2, R)
-  // T(I0 I1 I2, R) --> T(I0 I1, I2, R) --> T(I0 I1, I2 R)
-  // T(I0 I1, I2 R) --> T(I0, I1, I2 R) (x) A(I1, R) --> T(I0, I2 R)
-  // T(I0, I2, R) (x) T(I0, R) --> T(I2, R)
 
-  // N = 3, n = I2
-  // T(I0, I1, I2) --> T(I0, I1 I2)
-  // (T(I0, I1 I2))^T A(I0, R) --> T(I1 I2, R)
-  // T(I1, I2, R) (x) T(I1, R) --> T(I2, R)
+  /// Computes an optimized factor matrix holding all others constant.
+  /// No Khatri-Rao product computed, immediate contraction
+  /// N = 4, n = I2
+  /// T(I0, I1, I2, I3) --> T(I0 I1 I2, I3)
+  /// T(I0 I1 I2, I3) x A( I3, R) ---> T(I0 I1 I2, R)
+  /// T(I0 I1 I2, R) --> T(I0 I1, I2, R) --> T(I0 I1, I2 R)
+  /// T(I0 I1, I2 R) --> T(I0, I1, I2 R) (x) A(I1, R) --> T(I0, I2 R)
+  /// T(I0, I2, R) (x) T(I0, R) --> T(I2, R)
+
+  /// N = 3, n = I2
+  /// T(I0, I1, I2) --> T(I0, I1 I2)
+  /// (T(I0, I1 I2))^T A(I0, R) --> T(I1 I2, R)
+  /// T(I1, I2, R) (x) T(I1, R) --> T(I2, R)
+
+  /// \param[in] n The mode being optimized, all other modes held constant
+  /// \param[in] rank The current rank, column dimension of the factor matrices
+  /// \param[in out] test The difference between previous and current iteration
+  /// factor matrix
+
   void direct(const int n, const int rank, double &test) {
     int LH_size = size;
-    int contract_dim = ndim - 1;
+    int contract_dim =
+        ndim - 1; // keeps track of how many dimensions required to contract
     int pseudo_rank = rank;
-    Tensor temp(1, 1);
-    Range R = tensor_ref.range();
-    Tensor an(A[n].range());
+
+    Tensor temp(
+        1,
+        1); // This will store tensor_ref contractions before the final product
+    Range R = tensor_ref.range(); // Tensor_ref's size will be changed to
+    Tensor an(A[n].range()); // This will store the final contraction and will
+                             // be contracted with the pseudoinverse
+
+    // Decided to make the last mode a special case, all other modes computed
+    // this way.
     if (n < ndim - 1) {
+
+      // The last mode will always be contracted first.
       tensor_ref.resize(Range{Range1{size / tensor_ref.extent(contract_dim)},
                               Range1{tensor_ref.extent(contract_dim)}});
+
+      // resize temp to store the contraction
       temp.resize(Range{Range1{tensor_ref.extent(0)}, Range1{rank}});
+
+      // contract the last mode
       gemm(CblasNoTrans, CblasNoTrans, 1.0, tensor_ref, A[contract_dim], 0.0,
            temp);
+
+      // resize tensor_ref, no longer required in this method
       tensor_ref.resize(R);
+
+      // will transition between keeping temp a matrix and a three index tensor.
+      // Here consider temp(size of tensor_ref/dimension contracted, rank)
       LH_size /= tensor_ref.extent(contract_dim);
       contract_dim--;
+
       while (contract_dim > 0) {
+
+        // Now temp is three index object where temp has size
+        // (size of tensor_ref/product of dimension contracted, dimension to be
+        // contracted, rank)
         temp.resize(Range{Range1{LH_size / tensor_ref.extent(contract_dim)},
                           Range1{tensor_ref.extent(contract_dim)},
                           Range1{pseudo_rank}});
         Tensor contract_tensor(
             Range{Range1{temp.extent(0)}, Range1{temp.extent(2)}});
+
+        // If the middle dimension is the mode not being contracted, I will move
+        // it to the right hand side temp((size of tensor_ref/product of
+        // dimension contracted, rank * mode n dimension)
         if (n == contract_dim) {
           pseudo_rank *= tensor_ref.extent(contract_dim);
-        } else if (contract_dim > n) {
+        }
+
+        // If the code hasn't hit the mode of interest yet, it will contract
+        // over the middle dimension and sum over the rank.
+        else if (contract_dim > n) {
           for (int i = 0; i < temp.extent(0); i++)
             for (int r = 0; r < rank; r++)
               for (int j = 0; j < temp.extent(1); j++)
                 contract_tensor(i, r) += temp(i, j, r) * A[contract_dim](j, r);
           temp = contract_tensor;
-        } else {
+        }
+
+        // If the code has passed the mode of interest, it will contract over
+        // the middle dimension and sum over rank * mode n dimension
+        else {
           for (int i = 0; i < temp.extent(0); i++)
             for (int r = 0; r < rank; r++)
               for (int k = 0; k < tensor_ref.extent(n); k++)
@@ -356,6 +598,12 @@ private:
         LH_size /= tensor_ref.extent(contract_dim);
         contract_dim--;
       }
+
+      // If the mode of interest is the 0th mode, then the while loop above
+      // contracts over all other dimensions and resulting temp is of the
+      // correct dimension If the mode of interest isn't 0th mode, must contract
+      // out the 0th mode here, the above algorithm can't perform this
+      // contraction because the mode of interest is coupled with the rank
       if (n != 0) {
         temp.resize(Range{Range1{tensor_ref.extent(0)},
                           Range1{tensor_ref.extent(n)}, Range1{rank}});
@@ -366,41 +614,61 @@ private:
               contract_tensor(j, r) += A[0](i, r) * temp(i, j, r);
         temp = contract_tensor;
       }
+
+      // multiply resulting matrix temp by pseudoinverse to calculate optimized
+      // factor matrix
       gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank), 0.0,
            an);
-    } else {
+    }
+
+    // If the mode of interest is the last mode, simply start contraction with
+    // the first mode, then work through the tensor until all modes but ndim - 1
+    // has been contracted.
+    else {
       contract_dim = 0;
       tensor_ref.resize(Range{Range1{tensor_ref.extent(0)},
                               Range1{size / tensor_ref.extent(0)}});
       temp.resize(Range{Range1{rank}, Range1{size / tensor_ref.extent(0)}});
+
       gemm(CblasTrans, CblasNoTrans, 1.0, A[0], tensor_ref, 0.0, temp);
       tensor_ref.resize(R);
+
       LH_size /= tensor_ref.extent(contract_dim);
       contract_dim++;
+
       while (contract_dim < ndim - 1) {
         temp.resize(Range{Range1{rank}, Range1{tensor_ref.extent(contract_dim)},
                           Range1{LH_size / tensor_ref.extent(contract_dim)}});
         Tensor contract_tensor(Range{Range1{rank}, Range1{temp.extent(2)}});
+
         for (int i = 0; i < temp.extent(2); i++)
           for (int r = 0; r < rank; r++)
             for (int j = 0; j < temp.extent(1); j++)
               contract_tensor(r, i) += temp(r, j, i) * A[contract_dim](j, r);
+
         temp = contract_tensor;
         LH_size /= tensor_ref.extent(contract_dim);
         contract_dim++;
       }
+
       gemm(CblasTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank), 0.0,
            an);
     }
+
+    // compute the difference between this new factor matrix and the previous
+    // iteration
     for (auto l = 0; l < rank; ++l)
       A[ndim](l) = normCol(an, l);
     test += norm(A[n] - an);
     A[n] = an;
   }
 
+  /// Generates V by first Multiply A^T.A then Hadamard product V(i,j) *=
+  /// A^T.A(i,j);
+  /// \param[in] n The mode being optimized, all other modes held constant
+  /// \param[in] rank The current rank, column dimension of the factor matrices
+
   Tensor generate_V(const int n, const int rank) {
-    // To generate V first Multiply A^T.A then Hadamard product V(i,j) *=
-    // A^T.A(i,j);
     Tensor V(rank, rank);
     V.fill(1.0);
     for (auto j = 0; j < ndim; ++j) {
@@ -416,14 +684,19 @@ private:
     return V;
   }
 
+  // Keep track of the Left hand Khatri-Rao product of matrices and
+  // Continues to multiply be right hand products, skipping
+  // the matrix at index n.
+  /// \param[in] n The mode being optimized, all other modes held constant
+  /// \param[in] rank The current rank, column dimension of the factor matrices
+  /// \param[in] forward Should the Khatri-Rao product move through the factor
+  /// matrices in the forward (0 to ndim) or backward (ndim to 0) direction
+
   Tensor generate_KRP(const int n, const int rank, const bool forward) {
-    // Keep track of the Left hand Khatri-Rao product of matrices and
-    // Continues to multiply be right hand products, skipping
-    // the matrix at index n.
-    // The product works backwards from Last factor matrix to the first.
     Tensor temp(Range{Range1{A.at(n).extent(0)}, Range1{rank}});
     Tensor left_side_product(Range{Range1{rank}, Range1{rank}});
-    if (forward) { 
+
+    if (forward) {
       for (auto i = 0; i < ndim; ++i) {
         if ((i == 0 && n != 0) || (i == 1 && n == 0)) {
           left_side_product = A.at(i);
@@ -432,7 +705,9 @@ private:
           left_side_product = temp;
         }
       }
-    } else {
+    }
+
+    else {
       for (auto i = ndim - 1; i > -1; --i) {
         if ((i == ndim - 1 && n != ndim - 1) ||
             (i == ndim - 2 && n == ndim - 1)) {
@@ -448,32 +723,59 @@ private:
     return left_side_product;
   }
 
+  /// \param[in] factor Which factor matrix to normalize
+  /// \param[in] col Which column of the factor matrix to normalize
+  /// \return The norm of the col column of the factor factor matrix
+
   double normCol(const int factor, const int col) {
     const double *AF_ptr = A[factor].data() + col;
+
     double norm = sqrt(dot(A[factor].extent(0), AF_ptr, A[factor].extent(1),
                            AF_ptr, A[factor].extent(1)));
+
     scal(A[factor].extent(0), 1 / norm, std::begin(A[factor]) + col,
          A[factor].extent(1));
+
     return norm;
   }
+
+  /// \param[in, out] Mat The matrix whose column will be normalized, return
+  /// column col normalized matrix \param[in] col The column of matrix Mat to be
+  /// normalized.
+  /// \return the norm of the col column of the matrix Mat
 
   double normCol(Tensor &Mat, int col) {
     const double *Mat_ptr = Mat.data() + col;
+
     double norm = sqrt(
         dot(Mat.extent(0), Mat_ptr, Mat.extent(1), Mat_ptr, Mat.extent(1)));
+
     scal(Mat.extent(0), 1 / norm, std::begin(Mat) + col, Mat.extent(1));
+
     return norm;
   }
 
+  /// \param[in, out] Mat Calculates the 2-norm of the matrix mat
+  /// \return the 2-norm.
+
   double norm(const Tensor &Mat) { return sqrt(dot(Mat, Mat)); }
 
-  // SVD referencing code from
-  // http://www.netlib.org/lapack/explore-html/de/ddd/lapacke_8h_af31b3cb47f7cc3b9f6541303a2968c9f.html
-  Tensor pseudoInverse(int n, const int R) { // works no error
+  /// SVD referencing code from
+  /// http://www.netlib.org/lapack/explore-html/de/ddd/lapacke_8h_af31b3cb47f7cc3b9f6541303a2968c9f.html
+
+  /// \param[in] n The mode being optimized, all other modes held constant
+  /// \param[in] R The current rank, column dimension of the factor matrices
+  /// \return V^{-1} The psuedoinverse of the matrix V.
+
+  Tensor pseudoInverse(int n, const int R) {
+
+    // CP_ALS method requires the psuedoinverse of matrix V
     auto a = generate_V(n, R);
     Tensor s(Range{Range1{R}});
     Tensor U(Range{Range1{R}, Range1{R}});
     Tensor Vt(Range{Range1{R}, Range1{R}});
+
+// btas has no generic SVD for MKL LAPACKE
 #ifdef _HAS_INTEL_MKL
     double worksize;
     double *work = &worksize;
@@ -501,8 +803,12 @@ private:
 
     free(work);
 #else // BTAS_HAS_CBLAS
+
     gesvd('A', 'A', a, s, U, Vt);
+
 #endif
+
+    // Inverse the Singular values with threshold 1e-13 = 0
     double lr_thresh = 1e-13;
     Tensor s_inv(Range{Range1{R}, Range1{R}});
     for (auto i = 0; i < R; ++i) {
@@ -513,6 +819,8 @@ private:
     }
     s.resize(Range{Range1{R}, Range1{R}});
 
+    // Compute the matrix A^-1 from the inverted singular values and the U and
+    // V^T provided by the SVD
     gemm(CblasNoTrans, CblasNoTrans, 1.0, U, s_inv, 0.0, s);
     gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
 
@@ -521,4 +829,5 @@ private:
 };
 
 } // namespace btas
+
 #endif // BTAS_GENERIC_CP_ALS_H

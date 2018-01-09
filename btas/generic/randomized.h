@@ -1,15 +1,20 @@
 #ifndef BTAS_RANDOMIZED_DECOMP_H
 #define BTAS_RANDOMIZED_DECOMP_H
+
 #include "core_contract.h"
 #include <btas/btas.h>
 #include <btas/error.h>
+
 #include <random>
 #include <stdlib.h>
+
 #ifdef _HAS_INTEL_MKL
+
 namespace btas {
-/// provides a random number from a gaussian distribution
-template <typename T>
-T gauss_rand() {
+
+/// \returns random number from a gaussian distribution
+
+template <typename T> T gauss_rand() {
   std::random_device rd;
   std::mt19937 gen(1);
   std::normal_distribution<T> distribution(1.0, 1.0);
@@ -18,59 +23,114 @@ T gauss_rand() {
 
 /// Calculates the randomized compression of tensor A
 /// Refer to https://arxiv.org/pdf/1703.09074.pdf
+/// \param[in, out] A In: An N mode reference tensor to be randomly decomposed.
+/// Out: The core tensor to the random decomposition \param[in, out] transforms
+/// In: An empty vector.  Out: The Randomized decomposition factor matrices.
+/// \param[in] des_rank The rank one wishes to reduce each mode in the core
+/// tensor. \param[in] oversampl Oversampling added to the
+/// desired_compression_rank required to provide a more optimal decomposition.
+/// Default = suggested = 10. \param[in] powerit Number of power iterations, as
+/// specified in the literature, to scale the spectrum of each mode. Default =
+/// suggested = 2.
+
 template <typename Tensor>
-void randomized_decomposition(Tensor &A, int des_rank,
-                              std::vector<Tensor> &transforms,
-                              int oversampl = 10, int powerit = 2) {
+void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
+                              int des_rank, int oversampl = 10,
+                              int powerit = 2) {
+  // Grab the tensor's type, using gauss_rand (i.e. float, double)
   using value_type = typename Tensor::value_type;
+
+  // Add the oversampling to the desired rank
   auto ndim = A.rank();
   des_rank += oversampl;
-  for (int i = 0; i < ndim; i++) {
-    auto Bn = flatten(A, i);
-    Tensor G(Bn.extent(1), des_rank);
-    G.fill(gauss_rand<value_type>());
-    Tensor Y(Bn.extent(0), des_rank);
-    gemm(CblasNoTrans, CblasNoTrans, 1.0, Bn, G, 0.0, Y);
+
+  // Walk through all the modes of A
+  for (int n = 0; n < ndim; n++) {
+    // Flatten A
+    auto An = flatten(A, n);
+
+    // Make and fill the random matrix Gamma
+    Tensor G(An.extent(1), des_rank);
+    //G.fill(gauss_rand<value_type>());
+    G.fill(rand());
+
+    // Project The random matrix onto the flatten reference tensor
+    Tensor Y(An.extent(0), des_rank);
+    gemm(CblasNoTrans, CblasNoTrans, 1.0, An, G, 0.0, Y);
+
+    // Start power iteration
     for (int j = 0; j < powerit; j++) {
+      // Find L of an LU decomposition of the projected flattened tensor
       LU_decomp(Y);
-      Tensor Z(Bn.extent(1), Y.extent(1));
-      gemm(CblasTrans, CblasNoTrans, 1.0, Bn, Y, 0.0, Z);
+      Tensor Z(An.extent(1), Y.extent(1));
+
+      // Find the L of an LU decomposition of the L above (called Y) projected
+      // onto the rlattened reference tensor
+      gemm(CblasTrans, CblasNoTrans, 1.0, An, Y, 0.0, Z);
       LU_decomp(Z);
-      Y.resize(Range{Range1{Bn.extent(0)}, Range1{Z.extent(1)}});
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, Bn, Z, 0.0, Y);
+
+      // Project the second L from above (called Z) onto the flattened reference
+      // tensor and start power iteration over again.
+      Y.resize(Range{Range1{An.extent(0)}, Range1{Z.extent(1)}});
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, An, Z, 0.0, Y);
     }
+
+    // Compute the QR from Y above.  If the QR is non-singular push it into
+    // transforms and project the unitary matrix onto the reference tensor
     bool QR_good = true;
     QR_good = QR_decomp(Y);
-    if(!QR_good){
-      BTAS_EXCEPTION("QR did not complete successfully due to chosen dimension. Choose desired_compression_rank <= smallest dimension of tensor A");
+
+    if (!QR_good) {
+      BTAS_EXCEPTION("QR did not complete successfully due to chosen "
+                     "dimension. Choose desired_compression_rank <= smallest "
+                     "dimension of tensor A");
     }
+
     transforms.push_back(Y);
-    core_contract(A, Y, i);
+
+    core_contract(A, Y, n);
   }
 }
 
-//Computes the LU decomposition of tensor A
-template <typename Tensor>
-void LU_decomp(Tensor &A) { // returns the product of the pivot and the lower
-                            // triangular matrix
+/// Computes L of the LU decomposition of tensor A
+/// \param[in, out] A In: A reference matrix which will be LU decomposed.  Out:
+/// The L of an LU decomposition of A.
+
+template <typename Tensor> void LU_decomp(Tensor &A) {
+
   btas::Tensor<int> piv(std::min(A.extent(0), A.extent(1)));
   Tensor L(A.range());
   Tensor P(A.extent(0), A.extent(0));
   P.fill(0.0);
   L.fill(0.0);
+
+  // LAPACKE LU decomposition gives back dense L and U to be
+  // restored into lower and upper triangular form, and a pivoting
+  // matrix for L
   auto info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, A.extent(0), A.extent(1),
                              A.data(), A.extent(1), piv.data());
+
+  // This means there was a problem with the LU that must be dealt with,
+  // The decomposition cannot be continued.
   if (info < 0) {
     std::cout << "Error with LU decomposition" << std::endl;
     return;
   }
+
+  // This means that part of the LU is singular which may cause a problem in
+  // ones QR decomposition but LU can be computed fine.
   if (info != 0) {
   }
+
   // indexing the pivot matrix
   for (auto &j : piv)
     j -= 1;
+
   int pivsize = piv.extent(0);
   piv.resize(Range{Range1{A.extent(0)}});
+
+  // Walk through the full pivot array and
+  // put the correct index values throughout
   for (int i = 0; i < piv.extent(0); i++) {
     if (i == piv(i) || i >= pivsize) {
       for (int j = 0; j < i; j++) {
@@ -89,10 +149,12 @@ void LU_decomp(Tensor &A) { // returns the product of the pivot and the lower
         }
     }
   }
-  // generating the pivot matrix
+
+  // generating the pivot matrix from the correct indices found above
   for (int i = 0; i < piv.extent(0); i++)
     P(piv(i), i) = 1;
-  // generating L
+
+  // Use the output of LAPACKE to make a lower triangular matrix, L
   for (int i = 0; i < L.extent(0); i++) {
     for (int j = 0; j < i && j < L.extent(1); j++) {
       L(i, j) = A(i, j);
@@ -100,20 +162,34 @@ void LU_decomp(Tensor &A) { // returns the product of the pivot and the lower
     if (i < L.extent(1))
       L(i, i) = 1;
   }
-  // contracting P L
+
+  // contracting the pivoting matrix with L to put in correct order
   gemm(CblasNoTrans, CblasNoTrans, 1.0, P, L, 0.0, A);
 }
 
-//Computes the QR decomposition of matrix A
+// Computes the QR decomposition of matrix A
+/// \param[in, out] A In: A reference matrix which will be QR decomposed.  Out:
+/// The Q of an QR decomposition of A.
+
 template <typename Tensor> bool QR_decomp(Tensor &A) {
+
   Tensor B(1, std::min(A.extent(0), A.extent(1)));
   int Qm = A.extent(0);
   int Qn = A.extent(1);
+
+  // LAPACKE doesn't directly calculate Q. Must first call this function to
+  // generate precursors to Q
   auto info = LAPACKE_dgeqrf(LAPACK_ROW_MAJOR, A.extent(0), A.extent(1),
                              A.data(), A.extent(1), B.data());
+
   if (info == 0) {
+    // This function generates Q.
     info = LAPACKE_dorgqr(LAPACK_ROW_MAJOR, Qm, Qn, Qn, A.data(), A.extent(1),
                           B.data());
+
+    // If there was some problem generating Q, i.e. it is singular, the
+    // randomized decompsoition will fail.  There is an exception thrown if
+    // there is a problem to stop the randomized decomposition
     if (info != 0) {
       return false;
     }
@@ -124,5 +200,7 @@ template <typename Tensor> bool QR_decomp(Tensor &A) {
 }
 
 } // namespace btas
+
 #endif // HAS_INTEL_MKL
+
 #endif // BTAS_RANDOMIZED_DECOMP_H
