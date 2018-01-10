@@ -21,7 +21,7 @@ void khatri_rao_product(const Tensor &A, const Tensor &B, Tensor &AB) {
     BTAS_EXCEPTION("A.rank() > 2 || B.rank() > 2, Matrices required");
   
   // Resize the product
-  AB_product.resize(
+  AB.resize(
       Range{Range1{A.extent(0) * B.extent(0)}, Range1{A.extent(1)}});
   
   // Calculate Khatri-Rao product by multiplying rows of A by rows of B.

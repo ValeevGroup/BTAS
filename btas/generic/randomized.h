@@ -42,7 +42,7 @@ void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
 
   // Add the oversampling to the desired rank
   auto ndim = A.rank();
-  des_rank += oversampl;
+  auto rank = des_rank + oversampl;
 
   // Walk through all the modes of A
   for (int n = 0; n < ndim; n++) {
@@ -50,12 +50,12 @@ void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
     auto An = flatten(A, n);
 
     // Make and fill the random matrix Gamma
-    Tensor G(An.extent(1), des_rank);
+    Tensor G(An.extent(1), rank);
     //G.fill(gauss_rand<value_type>());
     G.fill(rand());
 
     // Project The random matrix onto the flatten reference tensor
-    Tensor Y(An.extent(0), des_rank);
+    Tensor Y(An.extent(0), rank);
     gemm(CblasNoTrans, CblasNoTrans, 1.0, An, G, 0.0, Y);
 
     // Start power iteration
