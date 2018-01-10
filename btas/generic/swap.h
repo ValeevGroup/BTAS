@@ -19,18 +19,18 @@ namespace btas {
 
 /// Swaps the nth mode of an Nth order tensor to the front preserving the
 /// order of the other modes. \n
-/// swap_to_first(T, I3, false, false) =
-/// T(I1, I2, I3, I4, I5) --> T(I3, I1, I2, I4, I5)
+/// swap_to_first(A, I3, false, false) =
+/// A(I1, I2, I3, I4, I5) --> A(I3, I1, I2, I4, I5)
 
-/// \param[in, out] A In: A N mode tensor.  Out: the permuted mode N tensor.
-/// \param[in] mode The mode of tensor A one wishes to permute to the front.
-/// \param[in] is_in_front The mode of tensor A has already been permuted to the
+/// \param[in, out] A In: An order-N tensor.  Out: the order-N tensor with mode \c mode permuted.
+/// \param[in] mode The mode of \c A one wishes to permute to the front.
+/// \param[in] is_in_front \c Mode of \c A has already been permuted to the
 /// front. Default = false. \param[in] for_ALS_update Different indexing is
 /// required for the ALS, if making a general swap this should be false.
 
 template <typename Tensor>
-void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
-                   bool for_ALS_update = true) {
+void swap_to_first(Tensor &A, const int mode, const bool is_in_front = false,
+                   const bool for_ALS_update = true) {
   // If the mode of interest is the the first mode you are done.
   if (mode == 0)
     return;
@@ -108,13 +108,13 @@ void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
 /// swap_to_back(T, I2, false) =
 /// T(I1, I2, I3) --> T(I3, I1, I2)
 
-/// \param[in, out] A In: A N mode tensor.  Out: the permuted mode N tensor.
-/// \param[in] mode The mode of tensor A one wishes to permute to the back.
-/// \param[in] is_in_back The mode of tensor A has already been permuted to the
+/// \param[in, out] A In: An order-N tensor.  Out: the order-N tensor with mode \c mode permuted.
+/// \param[in] mode The mode of \c A one wishes to permute to the back.
+/// \param[in] is_in_back \c Mode of \c A has already been permuted to the
 /// back. Default = false.
 
 template <typename Tensor>
-void swap_to_back(Tensor &A, int mode, bool is_in_back = false) {
+void swap_to_back(Tensor &A, const int mode, const bool is_in_back = false) {
   if (mode > A.rank())
     BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__,
                            "mode > A.rank(), mode out of range");

@@ -7,18 +7,18 @@
 namespace btas {
 
 /// Function used by Tucker and Randomized compression.
-/// Takes an Nth order tensor swaps the mode of interest, mode,
+/// Takes an order-N tensor swaps the mode of interest, \c mode,
 /// to the front and contracts it with a rank reducing
-/// factor matrix.
+/// factor matrix, \c Q, discovered by Tucker or Randomized decomposition methods.
 
-/// \param[in, out] A The Nth order tensor to be contracted with Q
-/// \param[in] Q Matrix contracts with the mode mode of A
+/// \param[in, out] A The order-N tensor to be contracted with Q
+/// \param[in] Q Factor matrix to be contracted with mode \c mode of \c A
 /// \param[in] mode Mode of A to be contracted with Q
-/// \param[in] transpose Is Q transposed in the matrix, tensor contraction?
+/// \param[in] transpose Is Q transposed in the matrix/tensor contraction?
 /// Default value = true.
 
 template <typename Tensor>
-void core_contract(Tensor &A, Tensor &Q, int mode, bool transpose = true) {
+void core_contract(Tensor &A, const Tensor &Q, const int mode, const bool transpose = true) {
 
   auto ndim = A.rank();
 

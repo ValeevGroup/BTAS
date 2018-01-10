@@ -3,14 +3,14 @@
 
 namespace btas {
 
-/// methods to produce to matricize a tensor along the n-th fiber
-/// \param[in] A Nth order tensor one wishes to flatten.
-/// \param[in] mode The mode of A to be flattened, i.e. \n
-/// A(I_1, I_2, I_3, ..., I_mode, ..., I_N) -> A(I_mode, J)\n
-/// where J = I_1 * I_2 * ...I_mode-1 * I_mode+1 * ... * I_N.
-/// \return Flattened matrix with dimension (I_mode, J)
+/// methods to produce to matricize an order-N tensor along the n-th fiber
+/// \param[in] A The order-N tensor one wishes to flatten.
+/// \param[in] mode The mode of \c A to be flattened, i.e.
+/// \f[ A(I_1, I_2, I_3, ..., I_{mode}, ..., I_N) -> A(I_{mode}, J)\f]
+/// where \f$J = I_1 * I_2 * ...I_{mode-1} * I_{mode+1} * ... * I_N.\f$
+/// \return Matrix with dimension \f$(I_{mode}, J)\f$
 
-template <typename Tensor> Tensor flatten(Tensor &A, int mode) {
+template <typename Tensor> Tensor flatten(const Tensor &A, const int mode) {
   using value_type = typename Tensor::value_type;
   typedef typename std::vector<value_type>::const_iterator iterator;
   
@@ -40,22 +40,23 @@ template <typename Tensor> Tensor flatten(Tensor &A, int mode) {
 }
 
 /// following the formula for flattening layed out by Kolda and Bader
-/// http://epubs.siam.org/doi/pdf/10.1137/07070111X
-/// Recursive method utilized by flatten, if you want to flatten a tensor
+/// <a href=http://epubs.siam.org/doi/pdf/10.1137/07070111X> See reference. </a>
+/// Recursive method utilized by flatten.\n **Important** if you want to flatten a tensor
 /// call flatten, not fill.
 
-/// \param[in] A The reference tensor which is being flattened
-/// \param[in] depth The recursion depth should not exceed the A.rank()
-/// \param[in, out] X In: The flattened matrix to be filled with correct
-/// elements of A. Out: The flattened A matrix along the mode-th mode \param[in]
-/// mode The mode which A is being flattened. \param[in] indexi The row index of
+/// \param[in] A  The reference tensor to be flattened
+/// \param[in] depth The recursion depth. Should not exceed the A.rank()
+/// \param[in, out] X In: An empty matrix to be filled with correct
+/// elements of \c A flattened on the \c mode fiber. Should be size \f$ (I_{mode}, J)\f$
+/// Out: The flattened A matrix along the \c mode fiber \param[in]
+/// mode The mode which A is to be flattened. \param[in] indexi The row index of
 /// matrix X \param[in] indexj The column index of matrix X \param[in] J The
-/// step size for the row dimension of X \param[in] tensor_itr An iterator of A,
-/// the value of the iterator is placed in the correct location in X using
-/// recursive function calls.
+/// step size for the row dimension of X \param[in] tensor_itr An iterator of \c A.
+/// The value of the iterator is placed in the correct position of X using
+/// recursive calls of fill()m.
 
 template <typename Tensor, typename iterator>
-void fill(Tensor &A, int depth, Tensor &X, int mode, int indexi, int indexj,
+void fill(const Tensor &A, int depth, Tensor &X, int mode, int indexi, int indexj,
           std::vector<int> &J, iterator &tensor_itr) {
   auto ndim = A.rank();
   if (depth < ndim) {

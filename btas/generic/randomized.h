@@ -21,22 +21,22 @@ template <typename T> T gauss_rand() {
   return distribution(gen);
 }
 
-/// Calculates the randomized compression of tensor A
-/// Refer to https://arxiv.org/pdf/1703.09074.pdf
-/// \param[in, out] A In: An N mode reference tensor to be randomly decomposed.
-/// Out: The core tensor to the random decomposition \param[in, out] transforms
-/// In: An empty vector.  Out: The Randomized decomposition factor matrices.
-/// \param[in] des_rank The rank one wishes to reduce each mode in the core
-/// tensor. \param[in] oversampl Oversampling added to the
-/// desired_compression_rank required to provide a more optimal decomposition.
+/// Calculates the randomized compression of tensor \c A.
+/// <a href=https://arxiv.org/pdf/1703.09074.pdf> See reference </a>
+/// \param[in, out] A In: An order-N tensor to be randomly decomposed.
+/// Out: The core tensor of random decomposition \param[in, out] transforms
+/// In: An empty vector.  Out: The randomized decomposition factor matrices.
+/// \param[in] des_rank The rank of each mode of \c A after randomized 
+/// decomposition. \param[in] oversampl Oversampling added to \c
+/// desired_compression_rank required to provide an optimal decomposition.
 /// Default = suggested = 10. \param[in] powerit Number of power iterations, as
 /// specified in the literature, to scale the spectrum of each mode. Default =
 /// suggested = 2.
 
 template <typename Tensor>
 void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
-                              int des_rank, int oversampl = 10,
-                              int powerit = 2) {
+                              const int des_rank, const int oversampl = 10,
+                              const int powerit = 2) {
   // Grab the tensor's type, using gauss_rand (i.e. float, double)
   using value_type = typename Tensor::value_type;
 
@@ -92,9 +92,9 @@ void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
   }
 }
 
-/// Computes L of the LU decomposition of tensor A
-/// \param[in, out] A In: A reference matrix which will be LU decomposed.  Out:
-/// The L of an LU decomposition of A.
+/// Computes L of the LU decomposition of tensor \c A
+/// \param[in, out] A In: A reference matrix to be LU decomposed.  Out:
+/// The L of an LU decomposition of \c A.
 
 template <typename Tensor> void LU_decomp(Tensor &A) {
 
@@ -167,9 +167,9 @@ template <typename Tensor> void LU_decomp(Tensor &A) {
   gemm(CblasNoTrans, CblasNoTrans, 1.0, P, L, 0.0, A);
 }
 
-// Computes the QR decomposition of matrix A
-/// \param[in, out] A In: A reference matrix which will be QR decomposed.  Out:
-/// The Q of an QR decomposition of A.
+// Computes the QR decomposition of matrix \c A
+/// \param[in, out] A In: A Reference matrix to be QR decomposed.  Out:
+/// The Q of a QR decomposition of \c A.
 
 template <typename Tensor> bool QR_decomp(Tensor &A) {
 

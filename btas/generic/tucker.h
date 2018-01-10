@@ -10,16 +10,16 @@
 #include <cstdlib>
 
 namespace btas {
-/// Computes the tucker compression of a Nth order tensor A.
-/// See http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088
+/// Computes the tucker compression of an order-N tensor A.
+/// <a href=http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088> See reference. </a>
 
-/// \param[in, out] A In: Tucker decomposition is applied to A.  Out: The core
+/// \param[in, out] A In: Order-N tensor to be decomposed.  Out: The core
 /// tensor of the Tucker decomposition \param[in] epsilon_svd The threshold
 /// truncation value for the Truncated Tucker-SVD decomposition \param[in, out]
 /// transforms In: An empty vector.  Out: The Tucker factor matrices.
 
 template <typename Tensor>
-void tucker_compression(Tensor &A, double epsilon_svd,
+void tucker_compression(Tensor &A, const double epsilon_svd,
                         std::vector<Tensor> &transforms) {
   double norm2 = norm(A);
   norm2 *= norm2;

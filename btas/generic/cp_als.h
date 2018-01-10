@@ -56,8 +56,8 @@ namespace btas {
   @endcode
 */
 
-/// A function to calculate the Canonical Product (CP) decomposition of an Nth
-/// order tensor using alternating least squares (ALS). Supports tensors with
+/// A function to calculate the Canonical Product (CP) decomposition of an order-N
+/// tensor using alternating least squares (ALS). Supports tensors with
 /// row major storage only with fixed and (compile-time) and variable (run-time)
 /// ranks. Also provides Tucker and randomized Tucker-like compressions coupled
 /// with CP-ALS decomposition. Does not support strided ranges.
@@ -81,22 +81,23 @@ public:
 
   ~CP_ALS() = default;
 
-  /// Computes decomposition of Nth order tensor T
-  /// with CP rank = rank\n
+  /// Computes decomposition of the order-N tensor \c tensor
+  /// with CP rank = \c rank\n
   /// Initial guess for factor matrices start at rank = 1
-  /// and build to rank = rank by increments of step, to minimize
+  /// and build to rank = \c rank by increments of \c step, to minimize
   /// error.
 
   /// \param[in] rank The rank of the CP decomposition.
-  /// \param[in] direct The CP decomposition be computed without calculating the
+  /// \param[in] direct Should the CP decomposition be computed without calculating the
   /// Khatri-Rao product? Default = true. \param[in] calculate_epsilon Should
-  /// the 2-norm error be calculated ||T_exact - T_approx|| = epsilon. Default =
-  /// false. \param[in] step CP_ALS built from r =1 to r = rank. R increments by
-  /// step; default = 1. \param[in] max_als Max number of iterations allowed to
+  /// the 2-norm error be calculated \f$ ||T_{exact} - T_{approx}|| = \epsilon. \f$ Default =
+  /// false. \param[in] step CP_ALS built from r =1 to r = \c rank. r increments by
+  /// \c step; default = 1. \param[in] max_als Max number of iterations allowed to
   /// converge the ALS approximation \param[in] tcutALS How small difference in
   /// factor matrices must be to consider ALS of a single rank converged.
   /// Default = 0.1. \returns 2-norm error between exact and approximate
   /// tensor, -1 if calculate_epsilon = false.
+  /// \returns 2-norm error between exact and approximate tensor, \f$ \epsilon \f$
 
   double compute_rank(const int rank, const bool direct = true,
                       const bool calculate_epsilon = false, const int step = 1,
@@ -106,21 +107,22 @@ public:
     return epsilon;
   }
 
-  /// Computes the decomposition of Nth order tensor T
-  /// to rank <= max_als with \n
-  /// || T_exact - T_approx ||_F <= tcutCP \n
-  /// with rank increasing each iteration by step.
+  /// Computes the decomposition of the order-N tensor \c tensor
+  /// to \f$ rank \leq \f$ \c max_als such that
+  /// \f[ || T_{exact} - T_{approx}||_F = \epsilon \leq tcutCP \f] 
+  /// with rank incrementing by \c step.
 
-  /// \param[in] tcutCP How small epsilon must be to consider the CP
-  /// decomposition converged. Default = 1e-2. \param[in] direct The CP
-  /// decomposition be computed without calculating the Khatri-Rao product?
-  /// Default = true. \param[in] step CP_ALS built from r =1 to r = rank. r
-  /// increments by step; default = 1. \param[in] max_rank The highest rank
+  /// \param[in] tcutCP How small \f$\epsilon\f$ must be to consider the CP
+  /// decomposition converged. Default = 1e-2. \param[in] direct Should the 
+  /// CP decomposition be computed without calculating the
+  /// Khatri-Rao product? Default = true.
+  /// \param[in] step CP_ALS built from r =1 to r = \c rank. r
+  /// increments by \c step; default = 1. \param[in] max_rank The highest rank
   /// approximation computed before giving up on CP-ALS. Default = 1e5.
   /// \param[in] max_als Max number of iterations allowed to converge the ALS
   /// approximation \param[in] tcutALS How small difference in factor matrices
   /// must be to consider ALS of a single rank converged. Default = 0.1.
-  /// \returns 2-norm error between exact and approximate tensor
+  /// \returns 2-norm error between exact and approximate tensor, \f$ \epsilon \f$
 
   double compute_error(const double tcutCP = 1e-2, const bool direct = true,
                        const int step = 1, const int max_rank = 1e5,
@@ -134,23 +136,23 @@ public:
     return epsilon;
   }
 
-  /// Computes decomposition of Nth order tensor T
-  /// with CP rank <= desired_rank\n
+  /// Computes decomposition of the order-N tensor \c tensor
+  /// with \f$ CP rank \leq \f$ \c desired_rank \n
   /// Initial guess for factor matrices start at rank = 1
-  /// and build to rank = rank by geometric steps of geometric_step, to minimize
+  /// and build to rank = \c rank by geometric steps of \c geometric_step, to minimize
   /// error.
 
   /// \param[in] desired_rank Rank of CP decomposition, r, will build by
-  /// geometric step until r > desired_rank. \param[in] geometric_step CP_ALS
-  /// built from r =1 to r = rank. r increments by r *= geometric_step; default
-  /// = 2. \param[in] direct The CP decomposition be computed without
-  /// calculating the Khatri-Rao product? Default = true. \param[in] max_als Max
+  /// geometric step until \f$ r \leq \f$ \c desired_rank. \param[in] geometric_step CP_ALS
+  /// built from r =1 to r = \c rank. r increments by r *= \c geometric_step; default
+  /// = 2. \param[in] direct Should the CP decomposition be computed without calculating the
+  /// Khatri-Rao product? Default = true. \param[in] max_als Max
   /// number of iterations allowed to converge the ALS approximation \param[in]
-  /// calculate_epsilon Should the 2-norm error be calculated ||T_exact -
-  /// T_approx|| = epsilon. Default = false. \param[in] tcutALS How small
+  /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{exact} -
+  /// T_{approx}|| = \epsilon \f$. Default = false. \param[in] tcutALS How small
   /// difference in factor matrices must be to consider ALS of a single rank
   /// converged. Default = 0.1. \returns 2-norm error between exact and
-  /// approximate tensor, -1.0 if calculate_epsilon = false
+  /// approximate tensor, -1.0 if calculate_epsilon = false, \f$ \epsilon \f$
 
   double compute_geometric(const int desired_rank, int geometric_step = 2,
                            const bool direct = false, const int max_als = 1e5,
@@ -177,33 +179,34 @@ public:
 
   /// Requires MKL. Computes an approximate core tensor using
   /// Tucker decomposition, i.e.  \n
-  ///  T(I_1, I_2, I_3) --> T(R1, R2, R3) \n
-  /// Where R1 < I_1, R2 < I_2 and R3 < I_3
-  /// see <a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088">
+  ///  \f[ T(I_1, I_2, I_3) --> T(R_1, R_2, R_3) \f]
+  /// Where \f$R_1 < I_1, R_2 < I_2 \f$and \f$ R_3 < I_3 \f$
+  /// <a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088"> See reference here <\a>
   /// \n Using this approximation the CP decomposition is computed to either
   /// finite error or finite rank. \n Default settings calculate to finite
-  /// error. factor matrices are scaled by the Tucker transformations.
+  /// error. Factor matrices from get_factor_matrices()
+  /// are scaled by the Tucker transformations.
 
   /// \param[in] tcutSVD Truncation threshold for SVD of each mode in Tucker
   /// decomposition. \param[in] opt_rank Should the CP decomposition of tucker
   /// core tensor find the optimal rank with error < tcutCP? Default = true.
   /// \param[in] tcutCP How small epsilon must be to consider the CP
   /// decomposition converged. Default = 1e-2. \param[in] rank If finding CP
-  /// decomposition to finite rank, define rank here. Default this is not used.
+  /// decomposition to finite rank, define CP rank. Default 0 will throw error for compute_rank.
   /// \param[in] direct The CP decomposition be computed without calculating the
   /// Khatri-Rao product? Default = true. \param[in] calculate_epsilon Should
-  /// the 2-norm error be calculated ||T_exact - T_approx|| = epsilon. Default =
-  /// true. \param[in] step CP_ALS built from r =1 to r = rank. r increments by
-  /// step; default = 1. \param[in] max_rank The highest rank approximation
+  /// the 2-norm error be calculated \f$ ||T_{exact} - T_{approx}|| = \epsilon\f$. Default =
+  /// true. \param[in] step CP_ALS built from r =1 to r = \c rank. r increments by
+  /// \c step; default = 1. \param[in] max_rank The highest rank approximation
   /// computed before giving up on CP-ALS. Default = 1e5. \param[in] max_als If
   /// CP decomposition is to finite error, max_als is the highest rank
   /// approximation computed before giving up on CP-ALS. Default = 1e5.
   /// \param[in] tcutALS How small difference in factor matrices must be to
   /// consider ALS of a single rank converged. Default = 0.1. \returns
   /// 2-norm error between exact and approximate tensor, -1.0 if
-  /// calculate_epsilon = false
+  /// calculate_epsilon = false, \f$ \epsilon \f$
 
-  double compress_compute_tucker(double tcutSVD, const bool opt_rank = true,
+  double compress_compute_tucker(const double tcutSVD, const bool opt_rank = true,
                                  const double tcutCP = 1e-2, const int rank = 0,
                                  const bool direct = true,
                                  const bool calculate_epsilon = true,
@@ -238,9 +241,9 @@ public:
 
   /// Requires MKL. Computes an approximate core tensor using
   /// random projection, i.e.  \n
-  ///  T(I_1, I_2, I_3) --> T(R, R, R) \n
-  /// Where R < I_1, R < I_2 and R < I_3
-  /// see <a href="https://arxiv.org/pdf/1703.09074.pdf"> \n
+  ///  \f$ T(I_1, I_2, I_3) --> T(R, R, R) \f$\n
+  /// Where \f$ R < I_1, R < I_2 and R < I_3 \f$
+  /// <a href="https://arxiv.org/pdf/1703.09074.pdf"> See reference here <\a>\n
   /// Using this approximation the CP decomposition is computed to
   /// either finite error or finite rank. \n
   /// Default settings calculate to finite error.\n
@@ -255,10 +258,10 @@ public:
   /// of tucker core tensor find the optimal rank with error < tcutCP? Default =
   /// true. \param[in] tcutCP How small epsilon must be to consider the CP
   /// decomposition converged. Default = 1e-2. \param[in] rank If finding CP
-  /// decomposition to finite rank, define rank here. Default this is not used.
-  /// \param[in] direct The CP decomposition be computed without calculating the
+  /// decomposition to finite rank, define CP rank. Default 0 will throw error for compute_rank.
+  /// \param[in] direct Should the CP decomposition be computed without calculating the
   /// Khatri-Rao product? Default = true. \param[in] calculate_epsilon Should
-  /// the 2-norm error be calculated ||T_exact - T_approx|| = epsilon. Default =
+  /// the 2-norm error be calculated \$f||T_exact - T_approx|| = \epsilon \f$. Default =
   /// true. \param[in] step CP_ALS built from r =1 to r = rank. r increments by
   /// step; default = 1. \param[in] max_rank The highest rank approximation
   /// computed before giving up on CP-ALS. Default = 1e5. \param[in] max_als If
@@ -267,9 +270,9 @@ public:
   /// \param[in] tcutALS How small difference in factor matrices must be to
   /// consider ALS of a single rank converged. Default = 0.1. \returns
   /// 2-norm error between exact and approximate tensor, -1.0 if
-  /// calculate_epsilon = false
+  /// calculate_epsilon = false, \f$ \epsilon \f$
 
-  double compress_compute_rand(int desired_compression_rank,
+  double compress_compute_rand(const int desired_compression_rank,
                                const int oversampl = 10, const int powerit = 2,
                                const bool opt_rank = true,
                                const double tcutCP = 1e-2, const int rank = 0,
@@ -305,10 +308,10 @@ public:
 
 #endif //_HAS_INTEL_MKL
 
-  /// returns the rank r optimized factor matrices
-  /// \return Factor matrices stored in a vector. For 3rd order tensor matrices
-  /// [0]-[2] are factor matrices and vector [3] is the scaling factors for each
-  /// rank \throw  Exception if the CP decomposition is not yet computed.
+  /// returns the rank \c rank optimized factor matrices
+  /// \return Factor matrices stored in a vector.\n For example, a order-3 tensor has 
+  /// factor matrices in positions [0]-[2]. In [3] there is scaling factor vector of size \c rank
+  /// \throw  Exception if the CP decomposition is not yet computed.
 
   std::vector<Tensor> get_factor_matrices() {
     if (!A.empty())
@@ -324,7 +327,7 @@ private:
   const int ndim;        // Number of modes in the reference tensor
   int size;              // Number of elements in the reference tensor
 
-  /// creates factor matricies starting with R=1 and moves to R = rank
+  /// creates factor matricies starting with R=1 and moves to R = \c rank
   /// incrementing column dimension, R, by step
 
   /// \param[in] rank The rank of the CP decomposition.
@@ -439,7 +442,7 @@ private:
   /// constant \param[in] rank The current rank, column dimension of the factor
   /// matrices \param[in out] test The difference between previous and current
   /// iteration factor matrix
-  void update_w_KRP(int n, int rank, double &test) {
+  void update_w_KRP(const int n, const int rank, double &test) {
 
     Tensor temp(A[n].extent(0), rank);
     Tensor an(A[n].range());
@@ -767,7 +770,7 @@ private:
   /// \param[in] R The current rank, column dimension of the factor matrices
   /// \return V^{-1} The psuedoinverse of the matrix V.
 
-  Tensor pseudoInverse(int n, const int R) {
+  Tensor pseudoInverse(const int n, const int R) {
 
     // CP_ALS method requires the psuedoinverse of matrix V
     auto a = generate_V(n, R);
