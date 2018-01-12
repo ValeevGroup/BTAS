@@ -18,7 +18,7 @@ namespace btas {
 /// Default value = true.
 
 template <typename Tensor>
-void core_contract(Tensor &A, const Tensor &Q, const int mode, const bool transpose = true) {
+void core_contract(Tensor &A, const Tensor &Q, int mode, bool transpose = true) {
 
   auto ndim = A.rank();
 

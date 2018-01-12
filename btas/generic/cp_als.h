@@ -99,9 +99,9 @@ public:
   /// tensor, -1 if calculate_epsilon = false.
   /// \returns 2-norm error between exact and approximate tensor, \f$ \epsilon \f$
 
-  double compute_rank(const int rank, const bool direct = true,
-                      const bool calculate_epsilon = false, const int step = 1,
-                      const int max_als = 1e5, const double tcutALS = 0.1) {
+  double compute_rank(int rank, bool direct = true,
+                      bool calculate_epsilon = false, int step = 1,
+                      int max_als = 1e5, double tcutALS = 0.1) {
     double epsilon = -1.0;
     build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon);
     return epsilon;
@@ -124,9 +124,9 @@ public:
   /// must be to consider ALS of a single rank converged. Default = 0.1.
   /// \returns 2-norm error between exact and approximate tensor, \f$ \epsilon \f$
 
-  double compute_error(const double tcutCP = 1e-2, const bool direct = true,
-                       const int step = 1, const int max_rank = 1e5,
-                       const double max_als = 1e5, const double tcutALS = 0.1) {
+  double compute_error(double tcutCP = 1e-2, bool direct = true,
+                       int step = 1, int max_rank = 1e5,
+                       double max_als = 1e5, double tcutALS = 0.1) {
     int rank = (A.empty()) ? 0 : A[0].extent(0);
     double epsilon = tcutCP + 1;
     while (epsilon > tcutCP && rank < max_rank) {
@@ -154,10 +154,10 @@ public:
   /// converged. Default = 0.1. \returns 2-norm error between exact and
   /// approximate tensor, -1.0 if calculate_epsilon = false, \f$ \epsilon \f$
 
-  double compute_geometric(const int desired_rank, int geometric_step = 2,
-                           const bool direct = false, const int max_als = 1e5,
-                           const bool calculate_epsilon = false,
-                           const double tcutALS = 0.1) {
+  double compute_geometric(int desired_rank, int geometric_step = 2,
+                           bool direct = false, int max_als = 1e5,
+                           bool calculate_epsilon = false,
+                           double tcutALS = 0.1) {
     if (geometric_step <= 0) {
       std::cout << "The step size must be larger than 0" << std::endl;
       return 0;
@@ -206,13 +206,13 @@ public:
   /// 2-norm error between exact and approximate tensor, -1.0 if
   /// calculate_epsilon = false, \f$ \epsilon \f$
 
-  double compress_compute_tucker(const double tcutSVD, const bool opt_rank = true,
-                                 const double tcutCP = 1e-2, const int rank = 0,
-                                 const bool direct = true,
-                                 const bool calculate_epsilon = true,
-                                 const int step = 1, const int max_rank = 1e5,
-                                 const double max_als = 1e5,
-                                 const double tcutALS = 0.1) {
+  double compress_compute_tucker(double tcutSVD, bool opt_rank = true,
+                                 double tcutCP = 1e-2, int rank = 0,
+                                 bool direct = true,
+                                 bool calculate_epsilon = true,
+                                 int step = 1, int max_rank = 1e5,
+                                 double max_als = 1e5,
+                                 double tcutALS = 0.1) {
     // Tensor compression
     std::vector<Tensor> transforms;
     tucker_compression(tensor_ref, tcutSVD, transforms);
@@ -272,15 +272,15 @@ public:
   /// 2-norm error between exact and approximate tensor, -1.0 if
   /// calculate_epsilon = false, \f$ \epsilon \f$
 
-  double compress_compute_rand(const int desired_compression_rank,
-                               const int oversampl = 10, const int powerit = 2,
-                               const bool opt_rank = true,
-                               const double tcutCP = 1e-2, const int rank = 0,
-                               const bool direct = true,
-                               const bool calculate_epsilon = false,
-                               const int step = 1, const int max_rank = 1e5,
-                               const double max_als = 1e5,
-                               const double tcutALS = .1) {
+  double compress_compute_rand(int desired_compression_rank,
+                               int oversampl = 10, int powerit = 2,
+                               bool opt_rank = true,
+                               double tcutCP = 1e-2, int rank = 0,
+                               bool direct = true,
+                               bool calculate_epsilon = false,
+                               int step = 1, int max_rank = 1e5,
+                               double max_als = 1e5,
+                               double tcutALS = .1) {
     std::vector<Tensor> transforms;
     randomized_decomposition(tensor_ref, transforms, desired_compression_rank, oversampl,
                              powerit);
@@ -341,8 +341,8 @@ private:
   /// a single rank converged. Default = 0.1. \param[in, out] epsilon The 2-norm
   /// error between the exact and approximated reference tensor
 
-  void build(const int rank, const bool direct, const int max_als,
-             const bool calculate_epsilon, const int step, const double tcutALS,
+  void build(int rank, bool direct, int max_als,
+             bool calculate_epsilon, int step, double tcutALS,
              double &epsilon) {
     // This loop keeps track of column dimension
     for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
@@ -402,8 +402,8 @@ private:
   /// single rank converged. Default = 0.1. \param[in, out] epsilon The 2-norm
   /// error between the exact and approximated reference tensor
 
-  void ALS(const int rank, const bool dir, const int max_als,
-           const bool calculate_epsilon, const double tcutALS,
+  void ALS(int rank, bool dir, int max_als,
+           bool calculate_epsilon, double tcutALS,
            double &epsilon) {
     auto count = 0;
     double test = 1.0;
@@ -442,7 +442,7 @@ private:
   /// constant \param[in] rank The current rank, column dimension of the factor
   /// matrices \param[in out] test The difference between previous and current
   /// iteration factor matrix
-  void update_w_KRP(const int n, const int rank, double &test) {
+  void update_w_KRP(int n, int rank, double &test) {
 
     Tensor temp(A[n].extent(0), rank);
     Tensor an(A[n].range());
@@ -522,7 +522,7 @@ private:
   /// \param[in out] test The difference between previous and current iteration
   /// factor matrix
 
-  void direct(const int n, const int rank, double &test) {
+  void direct(int n, int rank, double &test) {
     int LH_size = size;
     int contract_dim =
         ndim - 1; // keeps track of how many dimensions required to contract
@@ -671,7 +671,7 @@ private:
   /// \param[in] n The mode being optimized, all other modes held constant
   /// \param[in] rank The current rank, column dimension of the factor matrices
 
-  Tensor generate_V(const int n, const int rank) {
+  Tensor generate_V(int n, int rank) {
     Tensor V(rank, rank);
     V.fill(1.0);
     for (auto j = 0; j < ndim; ++j) {
@@ -695,7 +695,7 @@ private:
   /// \param[in] forward Should the Khatri-Rao product move through the factor
   /// matrices in the forward (0 to ndim) or backward (ndim to 0) direction
 
-  Tensor generate_KRP(const int n, const int rank, const bool forward) {
+  Tensor generate_KRP(int n, int rank, bool forward) {
     Tensor temp(Range{Range1{A.at(n).extent(0)}, Range1{rank}});
     Tensor left_side_product(Range{Range1{rank}, Range1{rank}});
 
@@ -730,7 +730,7 @@ private:
   /// \param[in] col Which column of the factor matrix to normalize
   /// \return The norm of the col column of the factor factor matrix
 
-  double normCol(const int factor, const int col) {
+  double normCol(int factor, int col) {
     const double *AF_ptr = A[factor].data() + col;
 
     double norm = sqrt(dot(A[factor].extent(0), AF_ptr, A[factor].extent(1),
@@ -758,7 +758,7 @@ private:
     return norm;
   }
 
-  /// \param[in, out] Mat Calculates the 2-norm of the matrix mat
+  /// \param[in] Mat Calculates the 2-norm of the matrix mat
   /// \return the 2-norm.
 
   double norm(const Tensor &Mat) { return sqrt(dot(Mat, Mat)); }
@@ -770,7 +770,7 @@ private:
   /// \param[in] R The current rank, column dimension of the factor matrices
   /// \return V^{-1} The psuedoinverse of the matrix V.
 
-  Tensor pseudoInverse(const int n, const int R) {
+  Tensor pseudoInverse(int n, int R) {
 
     // CP_ALS method requires the psuedoinverse of matrix V
     auto a = generate_V(n, R);

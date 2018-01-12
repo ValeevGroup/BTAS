@@ -19,7 +19,7 @@ namespace btas {
 /// transforms In: An empty vector.  Out: The Tucker factor matrices.
 
 template <typename Tensor>
-void tucker_compression(Tensor &A, const double epsilon_svd,
+void tucker_compression(Tensor &A, double epsilon_svd,
                         std::vector<Tensor> &transforms) {
   double norm2 = norm(A);
   norm2 *= norm2;

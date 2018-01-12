@@ -29,8 +29,8 @@ namespace btas {
 /// required for the ALS, if making a general swap this should be false.
 
 template <typename Tensor>
-void swap_to_first(Tensor &A, const int mode, const bool is_in_front = false,
-                   const bool for_ALS_update = true) {
+void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
+                   bool for_ALS_update = true) {
   // If the mode of interest is the the first mode you are done.
   if (mode == 0)
     return;
@@ -114,7 +114,7 @@ void swap_to_first(Tensor &A, const int mode, const bool is_in_front = false,
 /// back. Default = false.
 
 template <typename Tensor>
-void swap_to_back(Tensor &A, const int mode, const bool is_in_back = false) {
+void swap_to_back(Tensor &A, int mode, bool is_in_back = false) {
   if (mode > A.rank())
     BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__,
                            "mode > A.rank(), mode out of range");

@@ -35,8 +35,8 @@ template <typename T> T gauss_rand() {
 
 template <typename Tensor>
 void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
-                              const int des_rank, const int oversampl = 10,
-                              const int powerit = 2) {
+                              int des_rank, int oversampl = 10,
+                              int powerit = 2) {
   // Grab the tensor's type, using gauss_rand (i.e. float, double)
   using value_type = typename Tensor::value_type;
 

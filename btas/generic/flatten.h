@@ -10,7 +10,7 @@ namespace btas {
 /// where \f$J = I_1 * I_2 * ...I_{mode-1} * I_{mode+1} * ... * I_N.\f$
 /// \return Matrix with dimension \f$(I_{mode}, J)\f$
 
-template <typename Tensor> Tensor flatten(const Tensor &A, const int mode) {
+template <typename Tensor> Tensor flatten(const Tensor &A, int mode) {
   using value_type = typename Tensor::value_type;
   typedef typename std::vector<value_type>::const_iterator iterator;
   
@@ -57,7 +57,7 @@ template <typename Tensor> Tensor flatten(const Tensor &A, const int mode) {
 
 template <typename Tensor, typename iterator>
 void fill(const Tensor &A, int depth, Tensor &X, int mode, int indexi, int indexj,
-          std::vector<int> &J, iterator &tensor_itr) {
+          const std::vector<int> &J, iterator &tensor_itr) {
   auto ndim = A.rank();
   if (depth < ndim) {
     
