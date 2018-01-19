@@ -285,8 +285,11 @@ namespace btas {
     /**
      * BaseRangeNd defines a box in the index space, and the iteration order on it.
      * The iteration order depends on the CBLAS_ORDER parameter (ordering of dimensions).
+     * It implements most of the \ref sec_TWG_Range_Concept_Range_Box "TWG.BoxRange" concept, except it does
+     * not define ordinals.
      *
      * \tparam _Derived implementation of Range, to be derived from \c BaseRangeNd as \c public \c BaseRangeNd<Derived>
+     *
      */
     template <typename _Derived>
     class BaseRangeNd {
@@ -674,9 +677,8 @@ namespace btas {
 
     }; // class BaseRangeNd
 
-    /// Range conforms to the \ref labelTWGRange "TWG.Range" concept
-
-    /// Extends BaseRangeNd to compute ordinals, as specified by \c _Ordinal
+    /// RangeNd extends BaseRangeNd to compute ordinals, as specified by \c _Ordinal .
+    /// It conforms to the \ref sec_TWG_Range_Concept_Range_Box "TWG.BoxRange" concept.
     template <CBLAS_ORDER _Order = CblasRowMajor,
               typename _Index = btas::DEFAULT::index_type,
               typename _Ordinal = btas::BoxOrdinal<_Order,_Index>,
