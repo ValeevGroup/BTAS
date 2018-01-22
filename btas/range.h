@@ -482,12 +482,6 @@ namespace btas {
         return *this;
       }
 
-      void swap(BaseRangeNd& other) {
-        std::swap(lobound_, other.lobound_);
-        std::swap(upbound_, other.upbound_);
-        std::swap(extent_, other.extent_);
-      }
-
     public:
 
       /// Access a particular subrange of Range
@@ -611,6 +605,14 @@ namespace btas {
 
         // if the current location is outside the range, make it equal to range end iterator
         std::copy(std::begin(upbound_), std::end(upbound_), std::begin(i));
+      }
+
+      /// implements swap
+      void swap(BaseRangeNd& other) noexcept {
+        using std::swap;
+        swap(lobound_, other.lobound_);
+        swap(upbound_, other.upbound_);
+        swap(extent_, other.extent_);
       }
 
 #if 0
@@ -1417,7 +1419,7 @@ namespace btas {
 
         static constexpr int value = (_Order == CblasRowMajor) ? row_major : column_major;
     };
-}
+}  // namespace btas
 
 //
 //  Default range type
