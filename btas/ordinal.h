@@ -84,8 +84,11 @@ namespace btas {
       BoxOrdinal(const BoxOrdinal<_O,_I>& other) {
           auto n = other.rank();
           stride_ = array_adaptor<stride_type>::construct(n);
-          std::copy(std::begin(other.stride_), std::end(other.stride_),
-                    std::begin(stride_));
+          using std::cbegin;
+          using std::begin;
+          using std::cend;
+          std::copy(cbegin(other.stride_), cend(other.stride_),
+                    begin(stride_));
           offset_ = other.offset_;
           contiguous_ = other.contiguous_;
       }
@@ -101,10 +104,17 @@ namespace btas {
         return stride_;
       }
 
+      // no easy way without C++14 to invoke data(stride) in ADL-capable way
+#if __cplusplus < 201402L
       auto stride_data() const -> decltype(std::data(this->stride())) {
         return std::data(stride_);
       }
-
+#else
+      auto stride_data() const {
+        using std::data;
+        return data(stride_);
+      }
+#endif
       value_type offset() const {
         return offset_;
       }
@@ -119,8 +129,9 @@ namespace btas {
         assert(index.size() == rank());
         value_type o = 0;
         const auto end = this->rank();
+        using std::cbegin;
         for(std::size_t i = 0; i != end; ++i)
-          o += *(std::begin(index) + i) * *(std::begin(this->stride_) + i);
+          o += *(cbegin(index) + i) * *(cbegin(this->stride_) + i);
 
         return o - offset_;
       }
@@ -130,7 +141,8 @@ namespace btas {
       typename std::enable_if<not btas::is_index<typename std::decay<Index>::type...>::value, value_type>::type
       operator()(Index&& ... index) const {
         assert(sizeof...(index) == rank());
-        value_type o = zip(std::begin(this->stride_), std::forward<Index>(index)...);
+        using std::cbegin;
+        value_type o = zip(cbegin(this->stride_), std::forward<Index>(index)...);
         return o - offset_;
       }
 
@@ -173,8 +185,9 @@ namespace btas {
           for(typename std::make_signed<decltype(n)>::type i = n - 1;
               i >= 0; --i) {
             stride_[i] = volume;
-            auto li = *(std::begin(lobound) + i);
-            auto ui = *(std::begin(upbound) + i);
+            using std::cbegin;
+            auto li = *(cbegin(lobound) + i);
+            auto ui = *(cbegin(upbound) + i);
             offset_ += li * volume;
             volume *= (ui - li);
           }
@@ -182,8 +195,9 @@ namespace btas {
         else {
           for(decltype(n) i = 0; i != n; ++i) {
             stride_[i] = volume;
-            auto li = *(std::begin(lobound) + i);
-            auto ui = *(std::begin(upbound) + i);
+            using std::cbegin;
+            auto li = *(cbegin(lobound) + i);
+            auto ui = *(cbegin(upbound) + i);
             offset_ += li * volume;
             volume *= (ui - li);
           }
@@ -206,7 +220,10 @@ namespace btas {
         value_type volume = 1;
         offset_ = 0;
         stride_ = array_adaptor<stride_type>::construct(n);
-        std::copy(std::begin(stride), std::end(stride), std::begin(stride_));
+        using std::cbegin;
+        using std::begin;
+        using std::cend;
+        std::copy(cbegin(stride), cend(stride), begin(stride_));
 
         // Compute offset and check whether contiguous
         contiguous_ = true;
@@ -214,8 +231,8 @@ namespace btas {
           for(typename std::make_signed<decltype(n)>::type i = n - 1;
               i >= 0; --i) {
             contiguous_ &= (volume == stride_[i]);
-            auto li = *(std::begin(lobound) + i);
-            auto ui = *(std::begin(upbound) + i);
+            auto li = *(cbegin(lobound) + i);
+            auto ui = *(cbegin(upbound) + i);
             offset_ += li * stride_[i];
             volume *= (ui - li);
           }
@@ -223,8 +240,8 @@ namespace btas {
         else {
           for(decltype(n) i = 0; i != n; ++i) {
             contiguous_ &= (volume == stride_[i]);
-            auto li = *(std::begin(lobound) + i);
-            auto ui = *(std::begin(upbound) + i);
+            auto li = *(cbegin(lobound) + i);
+            auto ui = *(cbegin(upbound) + i);
             offset_ += li * stride_[i];
             volume *= (ui - li);
           }
@@ -263,9 +280,12 @@ namespace btas {
     stride_type stride;
     stride = array_adaptor<stride_type>::construct(rank);
 
-    std::for_each(std::begin(perm), std::end(perm), [&](const typename AxisPermutation::value_type& i){
-      const auto pi = *(std::begin(perm) + i);
-      *(std::begin(stride)+i) = *(std::begin(st) + pi);
+    using std::cbegin;
+    using std::begin;
+    using std::cend;
+    std::for_each(cbegin(perm), cend(perm), [&](const typename AxisPermutation::value_type& i){
+      const auto pi = *(cbegin(perm) + i);
+      *(begin(stride)+i) = *(cbegin(st) + pi);
     });
 
     return BoxOrdinal<_Order, _Index>(std::move(stride), ord.offset(), ord.contiguous());
