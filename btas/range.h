@@ -482,7 +482,15 @@ namespace btas {
         return *this;
       }
 
-    public:
+      /// implements swap
+      void swap(BaseRangeNd& other) noexcept {
+        using std::swap;
+        swap(lobound_, other.lobound_);
+        swap(upbound_, other.upbound_);
+        swap(extent_, other.extent_);
+      }
+
+     public:
 
       /// Access a particular subrange of Range
 
@@ -605,14 +613,6 @@ namespace btas {
 
         // if the current location is outside the range, make it equal to range end iterator
         std::copy(std::begin(upbound_), std::end(upbound_), std::begin(i));
-      }
-
-      /// implements swap
-      void swap(BaseRangeNd& other) noexcept {
-        using std::swap;
-        swap(lobound_, other.lobound_);
-        swap(upbound_, other.upbound_);
-        swap(extent_, other.extent_);
       }
 
 #if 0
@@ -943,6 +943,13 @@ namespace btas {
       /// returns the ordinal object
       const _Ordinal& ordinal() const {
         return ordinal_;
+      }
+
+      /// implements swap
+      void swap(RangeNd& other) noexcept {
+        base_type::swap(other);
+        using std::swap;
+        swap(ordinal_, other.ordinal_);
       }
 
       /// calculates the ordinal value of \c i
