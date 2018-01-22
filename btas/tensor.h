@@ -619,7 +619,9 @@ namespace btas {
       void
       fill (const value_type& val)
       {
-        std::fill(std::begin(storage_), std::end(storage_), val);
+        using std::begin;
+        using std::end;
+        std::fill(begin(storage_), end(storage_), val);
       }
 
       /// generate all elements by gen()
@@ -627,7 +629,9 @@ namespace btas {
       void
       generate (Generator gen)
       {
-          std::generate(std::begin(storage_), std::end(storage_), gen);
+        using std::begin;
+        using std::end;
+        std::generate(begin(storage_), end(storage_), gen);
       }
 
     private:
