@@ -689,12 +689,14 @@ namespace btas {
             class = typename std::enable_if<btas::is_boxtensor<_Tensor1>::value>::type,
             class = typename std::enable_if<btas::is_boxtensor<_Tensor2>::value>::type >
   bool operator==(const _Tensor1& t1, const _Tensor2& t2) {
+      using std::cbegin;
+      using std::cend;
       if (t1.range().order == t2.range().order &&
           t1.range().ordinal().contiguous() &&
           t2.range().ordinal().contiguous()) // plain Tensor
-        return congruent(t1.range(), t2.range()) && std::equal(std::cbegin(t1.storage()),
-                                                               std::cend(t1.storage()),
-                                                               std::cbegin(t2.storage()));
+        return congruent(t1.range(), t2.range()) && std::equal(cbegin(t1.storage()),
+                                                               cend(t1.storage()),
+                                                               cbegin(t2.storage()));
       else { // not plain, or different orders
         auto cong = congruent(t1.range(), t2.range());
         if (not cong)
@@ -703,7 +705,7 @@ namespace btas {
         typedef TensorView<typename _Tensor2::value_type, typename _Tensor2::range_type, const typename _Tensor2::storage_type>  cview2;
         cview1 vt1(t1);
         cview2 vt2(t2);
-        return std::equal(vt1.cbegin(), vt1.cend(), vt2.cbegin());
+        return std::equal(cbegin(vt1), cend(vt1), cbegin(vt2));
       }
   }
 
