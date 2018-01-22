@@ -533,11 +533,12 @@ namespace btas {
 
       /// swap this and x
       void
-      swap (TensorView& x)
+      swap (TensorView& x) noexcept
       {
-        std::swap(range_, x.range_);
-        std::swap(storageref_, x.storageref_);
-        std::swap(static_cast<mutability_impl_type&>(*this), static_cast<mutability_impl_type&>(x));
+        using std::swap;
+        swap(range_, x.range_);
+        swap(storageref_, x.storageref_);
+        swap(static_cast<mutability_impl_type&>(*this), static_cast<mutability_impl_type&>(x));
       }
 
       //  ========== Finished Public Interface and Its Reference Implementations ==========
