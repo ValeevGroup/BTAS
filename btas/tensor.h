@@ -329,32 +329,36 @@ namespace btas {
         return cend();
       }
 
-      /// \return const iterator begin, even if this is not itself const
+      /// \return const iterator begin
       const_iterator
       cbegin() const
       {
-        return std::begin(const_cast<const storage_type&>(storage_));
+        using std::cbegin;
+        return cbegin(storage_);
       }
 
-      /// \return const iterator end, even if this is not itself const
+      /// \return const iterator end
       const_iterator
       cend() const
       {
-        return std::end(const_cast<const storage_type&>(storage_));
+        using std::cend;
+        return cend(storage_);
       }
 
       /// \return iterator begin
       iterator
       begin()
       {
-        return std::begin(storage_);
+        using std::begin;
+        return begin(storage_);
       }
 
       /// \return iterator end
       iterator
       end()
       {
-        return std::end(storage_);
+        using std::end;
+        return end(storage_);
       }
 
       /// \return number of elements
