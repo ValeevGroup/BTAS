@@ -482,7 +482,7 @@ namespace btas {
         return *this;
       }
 
-      /// implements swap
+      /// swaps the contents of \c *this with \c other
       void swap(BaseRangeNd& other) noexcept {
         using std::swap;
         swap(lobound_, other.lobound_);
@@ -940,12 +940,12 @@ namespace btas {
         return *this;
       }
 
-      /// returns the ordinal object
+      /// \return a const reference to the ordinal object
       const _Ordinal& ordinal() const {
         return ordinal_;
       }
 
-      /// implements swap
+      /// swaps the contents of \c *this with \c other
       void swap(RangeNd& other) noexcept {
         base_type::swap(other);
         using std::swap;
@@ -1101,15 +1101,14 @@ namespace btas {
       return os;
     }
 
-    /// Exchange the values of the give two ranges.
+    /// swaps the contents of \c r0 with \c r1
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal
              >
-    inline void swap(RangeNd<_Order,_Index,_Ordinal>& r0, RangeNd<_Order,_Index,_Ordinal>& r1) { // no throw
+    inline void swap(RangeNd<_Order,_Index,_Ordinal>& r0, RangeNd<_Order,_Index,_Ordinal>& r1) noexcept {
       r0.swap(r1);
     }
-
 
     /// Range equality comparison
 
