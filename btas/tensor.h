@@ -205,9 +205,13 @@ namespace btas {
       Tensor&
       operator= (const _Tensor& x)
       {
+          using std::cbegin;
+          using std::cend;
+          using std::begin;
+          using std::end;
           range_ = range_type(x.range().lobound(), x.range().upbound());
           array_adaptor<storage_type>::resize(storage_, range_.area());
-          std::copy(std::begin(x), std::end(x), std::begin(storage_));
+          std::copy(cbegin(x), cend(x), begin(storage_));
           return *this;
       }
 
@@ -218,17 +222,22 @@ namespace btas {
       Tensor&
       operator= (const _Tensor& x)
       {
+          using std::cbegin;
+          using std::cend;
+          using std::begin;
+          using std::end;
           range_ = range_type(x.range().lobound(), x.range().upbound());
           if (&x.storage() != &this->storage()) { // safe to copy immediately, unless copying into self
             array_adaptor<storage_type>::resize(storage_, range_.area());
-            std::copy(std::begin(x), std::end(x), std::begin(storage_));
+            std::copy(cbegin(x), cend(x), begin(storage_));
           }
           else {
             // must use temporary if copying into self :(
             storage_type new_storage;
             array_adaptor<storage_type>::resize(new_storage, range_.area());
-            std::copy(std::begin(x), std::end(x), std::begin(new_storage));
-            std::swap(storage_,new_storage);
+            std::copy(cbegin(x), cend(x), begin(new_storage));
+            using std::swap;
+            swap(storage_,new_storage);
           }
           return *this;
       }
@@ -566,8 +575,12 @@ namespace btas {
       Tensor&
       operator+= (const Tensor& x)
       {
-        assert( std::equal(range_.begin(), range_.end(), x.range_.begin()) );
-        std::transform(std::begin(storage_), std::end(storage_), std::begin(x.storage_), std::begin(storage_), std::plus<value_type>());
+        using std::cbegin;
+        using std::cend;
+        using std::begin;
+        using std::end;
+        assert( std::equal(begin(range_), end(range_), begin(x.range_)) );
+        std::transform(cbegin(storage_), cend(storage_), cbegin(x.storage_), begin(storage_), std::plus<value_type>());
         return *this;
       }
 
@@ -583,9 +596,13 @@ namespace btas {
       Tensor&
       operator-= (const Tensor& x)
       {
+        using std::cbegin;
+        using std::cend;
+        using std::begin;
+        using std::end;
         assert(
-            std::equal(range_.begin(), range_.end(), x.range_.begin()));
-        std::transform(std::begin(storage_), std::end(storage_), std::begin(x.storage_), std::begin(storage_), std::minus<value_type>());
+            std::equal(begin(range_), end(range_), begin(x.range_)));
+        std::transform(cbegin(storage_), cend(storage_), cbegin(x.storage_), begin(storage_), std::minus<value_type>());
         return *this;
       }
 
