@@ -31,43 +31,36 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     auto threshold = epsilon_svd * epsilon_svd * norm2 / ndim;
 
     int R = flat.extent(0);
-    Tensor S(R, R), s_real(R, 1), s_image(R, 1), U(R, R), Vl(1, 1);
-    s_real.fill(0.0);
-    s_image.fill(0.0);
-    U.fill(0.0);
-    Vl.fill(0.0);
+    Tensor S(R, R), lambda(R, 1);
 
     // Contract A_n^T A_n to reduce the dimension of the SVD object to I_n X
-    // I_n.
     gemm(CblasNoTrans, CblasTrans, 1.0, flat, flat, 0.0, S);
 
     // Calculate SVD of smaller object.
-    auto info =
-        LAPACKE_dgeev(LAPACK_ROW_MAJOR, 'N', 'V', R, S.data(), R, s_real.data(),
-                      s_image.data(), Vl.data(), R, U.data(), R);
+    auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R, lambda.data());
     if (info)
-      return;
+      BTAS_EXCEPTION("Error in computing the tucker SVD");
 
     // Find the truncation rank based on the threshold.
     int rank = 0;
-    for (auto &eigvals : s_real)
-      if (eigvals > threshold)
+    for (auto &eigvals : lambda){
+      if (eigvals < threshold)
         rank++;
-    s_real = Tensor(0);
+    }
 
     // Truncate the column space of the unitary factor matrix.
-    auto lower_bound = {0, 0};
-    auto upper_bound = {R, rank};
+    lambda = Tensor(R, R-rank);
+    auto lower_bound = {0, rank};
+    auto upper_bound = {R, R};
     auto view =
-        btas::make_view(U.range().slice(lower_bound, upper_bound), U.storage());
-    Vl.resize(Range{Range1{R}, Range1{rank}});
-    std::copy(view.begin(), view.end(), Vl.begin());
+        btas::make_view(S.range().slice(lower_bound, upper_bound), S.storage());
+    std::copy(view.begin(), view.end(), lambda.begin());
 
     // Push the factor matrix back as a transformation.
-    transforms.push_back(Vl);
+    transforms.push_back(lambda);
 
     // Contract the factor matrix with the reference tensor, A.
-    core_contract(A, Vl, i);
+    core_contract(A, lambda, i);
   }
 }
 

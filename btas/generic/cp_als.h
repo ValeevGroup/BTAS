@@ -101,9 +101,11 @@ public:
 
   double compute_rank(int rank, bool direct = true,
                       bool calculate_epsilon = false, int step = 1,
-                      int max_als = 1e5, double tcutALS = 0.1) {
+                      int max_als = 1e5, double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0) {
+    if(SVD_initial_guess && SVD_rank > rank)
+      BTAS_EXCEPTION("Initial guess is larger than the final CP rank");
     double epsilon = -1.0;
-    build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon);
+    build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank);
     return epsilon;
   }
 
@@ -126,12 +128,16 @@ public:
 
   double compute_error(double tcutCP = 1e-2, bool direct = true,
                        int step = 1, int max_rank = 1e5,
-                       double max_als = 1e5, double tcutALS = 0.1) {
-    int rank = (A.empty()) ? 0 : A[0].extent(0);
+                       double max_als = 1e5, double tcutALS = 0.1,bool SVD_initial_guess = false, int SVD_rank = 0) {
+    int rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 0) : A[0].extent(0);
     double epsilon = tcutCP + 1;
     while (epsilon > tcutCP && rank < max_rank) {
-      rank += step;
-      build(rank, direct, max_als, true, step, tcutALS, epsilon);
+      if(!SVD_initial_guess)
+        rank += step;
+      build(rank, direct, max_als, true, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank);
+      std::cout << "epsilon = " << epsilon << "\nrank = " << rank << std::endl;
+      if(SVD_initial_guess)
+        rank += step;
     }
     return epsilon;
   }
@@ -157,17 +163,20 @@ public:
   double compute_geometric(int desired_rank, int geometric_step = 2,
                            bool direct = false, int max_als = 1e5,
                            bool calculate_epsilon = false,
-                           double tcutALS = 0.1) {
+                           double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0) {
     if (geometric_step <= 0) {
-      std::cout << "The step size must be larger than 0" << std::endl;
-      return 0;
+      BTAS_EXCEPTION("The step size must be larger than 0");
+    }
+    if(SVD_initial_guess && SVD_rank > desired_rank){
+      BTAS_EXCEPTION("Initial guess is larger than final CP decomposition");
     }
     double epsilon = -1.0;
-    int rank = 1;
+    int rank = (SVD_initial_guess) ? SVD_rank : 1;
+
     while (rank <= desired_rank && rank < max_als) {
       build(rank, direct, max_als, calculate_epsilon, geometric_step, tcutALS,
-            epsilon);
-      if (geometric_step == 1)
+            epsilon, SVD_initial_guess, SVD_rank);
+      if (geometric_step <= 1)
         rank++;
       else
         rank *= geometric_step;
@@ -212,7 +221,9 @@ public:
                                  bool calculate_epsilon = true,
                                  int step = 1, int max_rank = 1e5,
                                  double max_als = 1e5,
-                                 double tcutALS = 0.1) {
+                                 double tcutALS = 0.1,
+                                 bool SVD_initial_guess = false,
+                                 int SVD_rank = 0) {
     // Tensor compression
     std::vector<Tensor> transforms;
     tucker_compression(tensor_ref, tcutSVD, transforms);
@@ -221,13 +232,13 @@ public:
 
     // CP decomposition
     if (opt_rank)
-      epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS);
+      epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS, SVD_initial_guess, SVD_rank);
     else if (rank == 0) {
       std::cout << "Must specify a rank > 0" << std::endl;
       return epsilon;
     } else
       epsilon =
-          compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS);
+          compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS, SVD_initial_guess, SVD_rank);
 
     // scale factor matrices
     for (int i = 0; i < ndim; i++) {
@@ -280,7 +291,9 @@ public:
                                bool calculate_epsilon = false,
                                int step = 1, int max_rank = 1e5,
                                double max_als = 1e5,
-                               double tcutALS = .1) {
+                               double tcutALS = .1,
+                               bool SVD_initial_guess = false,
+                               int SVD_rank = 0) {
     std::vector<Tensor> transforms;
     randomized_decomposition(tensor_ref, transforms, desired_compression_rank, oversampl,
                              powerit);
@@ -288,13 +301,13 @@ public:
     double epsilon = -1.0;
 
     if (opt_rank)
-      epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS);
+      epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS, SVD_initial_guess, SVD_rank);
     else if (rank == 0) {
       std::cout << "Must specify a rank > 0" << std::endl;
       return epsilon;
     } else
       epsilon =
-          compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS);
+          compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS, SVD_initial_guess, SVD_rank);
 
     // scale factor matrices
     for (int i = 0; i < ndim; i++) {
@@ -343,51 +356,90 @@ private:
 
   void build(int rank, bool direct, int max_als,
              bool calculate_epsilon, int step, double tcutALS,
-             double &epsilon) {
+             double &epsilon, bool SVD_initial_guess, int SVD_rank) {
     // This loop keeps track of column dimension
-    for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
-      // This loop walks through the factor matrices
-      for (auto j = 0; j < ndim; ++j) { // select a factor matrix
-        // If no factor matrices exists, make a set of factor matrices
-        // and fill them with random numbers that are column normalized
-        // and create the weighting vector lambda
-        if (i == 0) {
-          Tensor a(Range{tensor_ref.range(j), Range1{i + 1}});
-          a.fill(rand());
-          normCol(a, i);
-          A.push_back(a);
-          if (j + 1 == ndim) {
-            Tensor lam(Range{Range1{i + 1}});
-            A.push_back(lam);
-          }
+    if(A.empty() && SVD_initial_guess){
+      if(SVD_rank == 0)
+        BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
+
+      for(int i = 0; i < ndim; i++){
+        auto flat = flatten(tensor_ref, i);
+        int R = flat.extent(0);
+        if (SVD_rank > R)
+          BTAS_EXCEPTION("SVD_rank must be less than or equal to the smallest dimension of the tensor being decomposed");
+        Tensor S(R, R), lambda(R);
+
+        gemm(CblasNoTrans, CblasTrans, 1.0, flat, flat, 0.0, S);
+
+        auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R, lambda.data());
+        if (info)
+          BTAS_EXCEPTION("Error in computing the tucker SVD");
+
+
+        lambda = Tensor(R, SVD_rank);
+        auto lower_bound = {0, R - SVD_rank};
+        auto upper_bound = {R, R};
+        auto view =
+                btas::make_view(S.range().slice(lower_bound, upper_bound), S.storage());
+        std::copy(view.begin(), view.end(), lambda.begin());
+        A.push_back(lambda);
+        lambda = Tensor(Range{Range1{SVD_rank}});
+        lambda.fill(0.0);
+        for(int j = 0; j < SVD_rank; j++){
+          if(i != ndim -1)
+            normCol(i, j);
+          else
+            lambda(j) = normCol(i,j);
         }
+        if(i == ndim -1)
+          A.push_back(lambda);
+      }
+      ALS(SVD_rank, direct, max_als, calculate_epsilon, 0.01, epsilon);
+    }
+    else {
+      for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
+        // This loop walks through the factor matrices
+        for (auto j = 0; j < ndim; ++j) { // select a factor matrix
+          // If no factor matrices exists, make a set of factor matrices
+          // and fill them with random numbers that are column normalized
+          // and create the weighting vector lambda
+          if (i == 0) {
+            Tensor a(Range { tensor_ref.range(j), Range1{i + 1}});
+            a.fill(rand());
+            normCol(a, i);
+            A.push_back(a);
+            if (j + 1 == ndim) {
+              Tensor lam(Range { Range1{i + 1}});
+              A.push_back(lam);
+            }
+          }
 
-        // If the factor matrices have memory allocated, rebuild each matrix
-        // with new column dimension col_dimension_old + skip
-        // fill the new columns with random numbers and normalize the columns
-        else {
-          Tensor b(Range{A[0].range(0), Range1{i + 1}});
-          b.fill(rand());
-          for (int l = A[0].extent(1); l < i + 1; ++l)
-            normCol(b, l);
-          for (int k = 0; k < b.extent(0); k++)
-            for (int l = 0; l < A[0].extent(1); l++)
-              b(k, l) = A[0](k, l);
+            // If the factor matrices have memory allocated, rebuild each matrix
+            // with new column dimension col_dimension_old + skip
+            // fill the new columns with random numbers and normalize the columns
+          else {
+            Tensor b(Range { A[0].range(0), Range1{i + 1}});
+            b.fill(rand());
+            for (int l = A[0].extent(1); l < i + 1; ++l)
+              normCol(b, l);
+            for (int k = 0; k < b.extent(0); k++)
+              for (int l = 0; l < A[0].extent(1); l++)
+                b(k, l) = A[0](k, l);
 
-          A.erase(A.begin());
-          A.push_back(b);
-          if (j + 1 == ndim) {
-            b.resize(Range{Range1{i + 1}});
-            for (int k = 0; k < A[0].extent(0); k++)
-              b(k) = A[0](k);
             A.erase(A.begin());
             A.push_back(b);
+            if (j + 1 == ndim) {
+              b.resize(Range{Range1{i + 1}});
+              for (int k = 0; k < A[0].extent(0); k++)
+                b(k) = A[0](k);
+              A.erase(A.begin());
+              A.push_back(b);
+            }
           }
         }
+        // compute the ALS of factor matrices with rank = i + 1.
+        ALS(i + 1, direct, max_als, calculate_epsilon, tcutALS, epsilon);
       }
-
-      // compute the ALS of factor matrices with rank = i + 1.
-      ALS(i + 1, direct, max_als, calculate_epsilon, tcutALS, epsilon);
     }
   }
 
