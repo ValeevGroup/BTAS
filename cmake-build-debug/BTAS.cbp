@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="BTAS"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\cmake\;CMake Files\cmake\modules\;CMake Files\external\;CMake Files\doc\;CMake Files\unittest\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/Users/karlpierce/software/BTAS/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/Users/karlpierce/software/BTAS/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="release">
+				<Option working_dir="/Users/karlpierce/software/BTAS/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 release"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="debug">
+				<Option working_dir="/Users/karlpierce/software/BTAS/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 debug"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test">
+				<Option working_dir="/Users/karlpierce/software/BTAS/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/Users/karlpierce/software/BTAS/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="check">
+				<Option working_dir="/Users/karlpierce/software/BTAS/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 check"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="External">
+				<Option working_dir="/Users/karlpierce/software/BTAS/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 External"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="doc">
+				<Option working_dir="/Users/karlpierce/software/BTAS/cmake-build-debug/doc"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/doc/Makefile&quot;  VERBOSE=1 doc"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/doc/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/doc/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/doc/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="btas_test">
+				<Option output="/Users/karlpierce/software/BTAS/cmake-build-debug/unittest/btas_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/karlpierce/software/BTAS/cmake-build-debug/unittest"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DBTAS_HAS_BOOST_ITERATOR=1"/>
+					<Add option="-DBTAS_HAS_BOOST_CONTAINER=1"/>
+					<Add option="-DBTAS_TARGET_MAX_INDEX_RANK=6"/>
+					<Add option="-DBTAS_HAS_BOOST_SERIALIZATION=1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Users/karlpierce/software/BTAS"/>
+					<Add directory="/Users/karlpierce/software/BTAS/unittest"/>
+					<Add directory="/Users/karlpierce/software/BTAS/cmake-build-debug/unittest"/>
+					<Add directory="/opt/intel/compilers_and_libraries_2018.1.126/mac/mkl/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include/c++/v1"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/unittest/Makefile&quot;  VERBOSE=1 btas_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/unittest/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/unittest/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/unittest/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="btas_test/fast">
+				<Option output="/Users/karlpierce/software/BTAS/cmake-build-debug/unittest/btas_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/karlpierce/software/BTAS/cmake-build-debug/unittest"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DBTAS_HAS_BOOST_ITERATOR=1"/>
+					<Add option="-DBTAS_HAS_BOOST_CONTAINER=1"/>
+					<Add option="-DBTAS_TARGET_MAX_INDEX_RANK=6"/>
+					<Add option="-DBTAS_HAS_BOOST_SERIALIZATION=1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Users/karlpierce/software/BTAS"/>
+					<Add directory="/Users/karlpierce/software/BTAS/unittest"/>
+					<Add directory="/Users/karlpierce/software/BTAS/cmake-build-debug/unittest"/>
+					<Add directory="/opt/intel/compilers_and_libraries_2018.1.126/mac/mkl/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include/c++/v1"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/9.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/unittest/Makefile&quot;  VERBOSE=1 btas_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/unittest/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/unittest/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/karlpierce/software/BTAS/cmake-build-debug/unittest/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/Users/karlpierce/software/BTAS/cmake-build-debug/doc/Doxyfile">
+			<Option target="doc"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/unittest/contract_test.cc">
+			<Option target="btas_test"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/unittest/range_test.cc">
+			<Option target="btas_test"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/unittest/tensor_blas_test.cc">
+			<Option target="btas_test"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/unittest/tensor_cp_test.cc">
+			<Option target="btas_test"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/unittest/tensor_func_test.cc">
+			<Option target="btas_test"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/unittest/tensor_test.cc">
+			<Option target="btas_test"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/unittest/tensorview_test.cc">
+			<Option target="btas_test"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/unittest/test.cc">
+			<Option target="btas_test"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/unittest/test.h">
+			<Option target="btas_test"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/cmake/modules/AppendFlags.cmake">
+			<Option virtualFolder="CMake Files\cmake\modules\"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/external/boost.cmake">
+			<Option virtualFolder="CMake Files\external\"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/doc/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\doc\"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/doc/Doxyfile.in">
+			<Option virtualFolder="CMake Files\doc\"/>
+		</Unit>
+		<Unit filename="/Users/karlpierce/software/BTAS/unittest/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\unittest\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
