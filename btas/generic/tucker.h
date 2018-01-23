@@ -11,7 +11,8 @@
 
 namespace btas {
 /// Computes the tucker compression of an order-N tensor A.
-/// <a href=http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088> See reference. </a>
+/// <a href=http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088> See
+/// reference. </a>
 
 /// \param[in, out] A In: Order-N tensor to be decomposed.  Out: The core
 /// tensor of the Tucker decomposition \param[in] epsilon_svd The threshold
@@ -37,19 +38,20 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     gemm(CblasNoTrans, CblasTrans, 1.0, flat, flat, 0.0, S);
 
     // Calculate SVD of smaller object.
-    auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R, lambda.data());
+    auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R,
+                              lambda.data());
     if (info)
       BTAS_EXCEPTION("Error in computing the tucker SVD");
 
     // Find the truncation rank based on the threshold.
     int rank = 0;
-    for (auto &eigvals : lambda){
+    for (auto &eigvals : lambda) {
       if (eigvals < threshold)
         rank++;
     }
 
     // Truncate the column space of the unitary factor matrix.
-    lambda = Tensor(R, R-rank);
+    lambda = Tensor(R, R - rank);
     auto lower_bound = {0, rank};
     auto upper_bound = {R, R};
     auto view =

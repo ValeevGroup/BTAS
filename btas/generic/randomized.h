@@ -20,7 +20,9 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
   using value_type = typename Tensor::value_type;
   for (auto i = 0; i < A.extent(1); i++) {
     std::random_device rd;
-    std::mt19937 gen(rd());
+    // uncomment for more randomness
+    // std::mt19937 gen(rd());
+    std::mt19937 gen(1.0); // comment out for more randomness.
     std::normal_distribution<value_type> distribution(0.0, 10.0);
     value_type norm = 0.0;
     for (auto j = 0; j < A.extent(0); j++) {

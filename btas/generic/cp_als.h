@@ -32,21 +32,31 @@ namespace btas {
   matrices
 
   // Operations
-  A.compute_rank(rank)                       // Computes the CP_ALS of tensor to rank.
+  A.compute_rank(rank)                       // Computes the CP_ALS of tensor to
+                                             // rank.
 
-  A.compute_error(omega)                     // Computes the CP_ALS of tensor to 2-norm
+  A.compute_error(omega)                     // Computes the CP_ALS of tensor to
+                                             // 2-norm
                                              // error < omega.
 
-  A.compute_geometric(rank, step)            // Computes CP_ALS of tensor to rank with
-                                             // geometric steps of step between guesses.
+  A.compute_geometric(rank, step)            // Computes CP_ALS of tensor to
+                                             // rank with
+                                             // geometric steps of step between
+                                             // guesses.
 
-  A.compress_compute_tucker(tcut_SVD)        // Computes Tucker decomposition using 
-                                             // truncated SVD method then computes finite
-                                             // error CP decomposition on core tensor.
+  A.compress_compute_tucker(tcut_SVD)        // Computes Tucker decomposition
+                                             // using
+                                             // truncated SVD method then
+                                             // computes finite
+                                             // error CP decomposition on core
+                                             // tensor.
 
-  A.compress_compute_rand(rank)              // Computes random decomposition on Tensor to
-                                             // make core tensor with every mode size rank
-                                             // Then computes CP decomposition of core.
+  A.compress_compute_rand(rank)              // Computes random decomposition on
+                                             // Tensor to
+                                             // make core tensor with every mode
+                                             // size rank
+                                             // Then computes CP decomposition
+                                             // of core.
 
  //See documentation for full range of options
 
@@ -56,8 +66,8 @@ namespace btas {
   @endcode
 */
 
-/// A function to calculate the Canonical Product (CP) decomposition of an order-N
-/// tensor using alternating least squares (ALS). Supports tensors with
+/// A function to calculate the Canonical Product (CP) decomposition of an
+/// order-N tensor using alternating least squares (ALS). Supports tensors with
 /// row major storage only with fixed and (compile-time) and variable (run-time)
 /// ranks. Also provides Tucker and randomized Tucker-like compressions coupled
 /// with CP-ALS decomposition. Does not support strided ranges.
@@ -88,34 +98,40 @@ public:
   /// error.
 
   /// \param[in] rank The rank of the CP decomposition.
-  /// \param[in] direct Should the CP decomposition be computed without calculating the
-  /// Khatri-Rao product? Default = true. \param[in] calculate_epsilon Should
-  /// the 2-norm error be calculated \f$ ||T_{exact} - T_{approx}|| = \epsilon. \f$ Default =
-  /// false. \param[in] step CP_ALS built from r =1 to r = \c rank. r increments by
-  /// \c step; default = 1. \param[in] max_als Max number of iterations allowed to
-  /// converge the ALS approximation \param[in] tcutALS How small difference in
-  /// factor matrices must be to consider ALS of a single rank converged.
-  /// Default = 0.1. \returns 2-norm error between exact and approximate
-  /// tensor, -1 if calculate_epsilon = false.
-  /// \returns 2-norm error between exact and approximate tensor, \f$ \epsilon \f$
+  /// \param[in] direct Should the CP decomposition be computed without
+  /// calculating the Khatri-Rao product? Default = true. \param[in]
+  /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{exact} -
+  /// T_{approx}|| = \epsilon. \f$ Default = false. \param[in] step CP_ALS built
+  /// from r =1 to r = \c rank. r increments by \c step; default = 1. \param[in]
+  /// max_als Max number of iterations allowed to converge the ALS approximation
+  /// \param[in] tcutALS How small difference in factor matrices must be to
+  /// consider ALS of a single rank converged. Default = 0.1. \returns 2-norm
+  /// error between exact and approximate tensor, -1 if calculate_epsilon =
+  /// false. \param[in] SVD_initial_guess Should the initial factor matrices be
+  /// approximated with left singular values? \param[in] SVD_rank if \c
+  /// SVD_initial_guess is true specify the rank of the initial guess such that
+  /// 0< SVD_rank < smallest mode of reference tensor \returns 2-norm error
+  /// between exact and approximate tensor, \f$ \epsilon \f$
 
   double compute_rank(int rank, bool direct = true,
                       bool calculate_epsilon = false, int step = 1,
-                      int max_als = 1e5, double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0) {
-    if(SVD_initial_guess && SVD_rank > rank)
+                      int max_als = 1e5, double tcutALS = 0.1,
+                      bool SVD_initial_guess = false, int SVD_rank = 0) {
+    if (SVD_initial_guess && SVD_rank > rank)
       BTAS_EXCEPTION("Initial guess is larger than the final CP rank");
     double epsilon = -1.0;
-    build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank);
+    build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon,
+          SVD_initial_guess, SVD_rank);
     return epsilon;
   }
 
   /// Computes the decomposition of the order-N tensor \c tensor
   /// to \f$ rank \leq \f$ \c max_als such that
-  /// \f[ || T_{exact} - T_{approx}||_F = \epsilon \leq tcutCP \f] 
+  /// \f[ || T_{exact} - T_{approx}||_F = \epsilon \leq tcutCP \f]
   /// with rank incrementing by \c step.
 
   /// \param[in] tcutCP How small \f$\epsilon\f$ must be to consider the CP
-  /// decomposition converged. Default = 1e-2. \param[in] direct Should the 
+  /// decomposition converged. Default = 1e-2. \param[in] direct Should the
   /// CP decomposition be computed without calculating the
   /// Khatri-Rao product? Default = true.
   /// \param[in] step CP_ALS built from r =1 to r = \c rank. r
@@ -124,19 +140,25 @@ public:
   /// \param[in] max_als Max number of iterations allowed to converge the ALS
   /// approximation \param[in] tcutALS How small difference in factor matrices
   /// must be to consider ALS of a single rank converged. Default = 0.1.
-  /// \returns 2-norm error between exact and approximate tensor, \f$ \epsilon \f$
+  /// \param[in] SVD_initial_guess Should the initial factor matrices be
+  /// approximated with left singular values? \param[in] SVD_rank if \c
+  /// SVD_initial_guess is true specify the rank of the initial guess such that
+  /// 0< SVD_rank < smallest mode of reference tensor \returns 2-norm error
+  /// between exact and approximate tensor, \f$ \epsilon \f$
 
-  double compute_error(double tcutCP = 1e-2, bool direct = true,
-                       int step = 1, int max_rank = 1e5,
-                       double max_als = 1e5, double tcutALS = 0.1,bool SVD_initial_guess = false, int SVD_rank = 0) {
-    int rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 0) : A[0].extent(0);
+  double compute_error(double tcutCP = 1e-2, bool direct = true, int step = 1,
+                       int max_rank = 1e5, double max_als = 1e5,
+                       double tcutALS = 0.1, bool SVD_initial_guess = false,
+                       int SVD_rank = 0) {
+    int rank =
+        (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 0) : A[0].extent(0);
     double epsilon = tcutCP + 1;
     while (epsilon > tcutCP && rank < max_rank) {
-      if(!SVD_initial_guess)
+      if (!SVD_initial_guess)
         rank += step;
-      build(rank, direct, max_als, true, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank);
-      std::cout << "epsilon = " << epsilon << "\nrank = " << rank << std::endl;
-      if(SVD_initial_guess)
+      build(rank, direct, max_als, true, step, tcutALS, epsilon,
+            SVD_initial_guess, SVD_rank);
+      if (SVD_initial_guess)
         rank += step;
     }
     return epsilon;
@@ -145,29 +167,34 @@ public:
   /// Computes decomposition of the order-N tensor \c tensor
   /// with \f$ CP rank \leq \f$ \c desired_rank \n
   /// Initial guess for factor matrices start at rank = 1
-  /// and build to rank = \c rank by geometric steps of \c geometric_step, to minimize
-  /// error.
+  /// and build to rank = \c rank by geometric steps of \c geometric_step, to
+  /// minimize error.
 
   /// \param[in] desired_rank Rank of CP decomposition, r, will build by
-  /// geometric step until \f$ r \leq \f$ \c desired_rank. \param[in] geometric_step CP_ALS
-  /// built from r =1 to r = \c rank. r increments by r *= \c geometric_step; default
-  /// = 2. \param[in] direct Should the CP decomposition be computed without calculating the
-  /// Khatri-Rao product? Default = true. \param[in] max_als Max
-  /// number of iterations allowed to converge the ALS approximation \param[in]
-  /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{exact} -
-  /// T_{approx}|| = \epsilon \f$. Default = false. \param[in] tcutALS How small
-  /// difference in factor matrices must be to consider ALS of a single rank
-  /// converged. Default = 0.1. \returns 2-norm error between exact and
-  /// approximate tensor, -1.0 if calculate_epsilon = false, \f$ \epsilon \f$
+  /// geometric step until \f$ r \leq \f$ \c desired_rank. \param[in]
+  /// geometric_step CP_ALS built from r =1 to r = \c rank. r increments by r *=
+  /// \c geometric_step; default = 2. \param[in] direct Should the CP
+  /// decomposition be computed without calculating the Khatri-Rao product?
+  /// Default = true. \param[in] max_als Max number of iterations allowed to
+  /// converge the ALS approximation \param[in] calculate_epsilon Should the
+  /// 2-norm error be calculated \f$ ||T_{exact} - T_{approx}|| = \epsilon \f$.
+  /// Default = false. \param[in] tcutALS How small difference in factor
+  /// matrices must be to consider ALS of a single rank converged. Default =
+  /// 0.1. \param[in] SVD_initial_guess Should the initial factor matrices be
+  /// approximated with left singular values? \param[in] SVD_rank if \c
+  /// SVD_initial_guess is true specify the rank of the initial guess such that
+  /// 0< SVD_rank < smallest mode of reference tensor \returns 2-norm error
+  /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
+  /// \f$ \epsilon \f$
 
   double compute_geometric(int desired_rank, int geometric_step = 2,
                            bool direct = false, int max_als = 1e5,
-                           bool calculate_epsilon = false,
-                           double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0) {
+                           bool calculate_epsilon = false, double tcutALS = 0.1,
+                           bool SVD_initial_guess = false, int SVD_rank = 0) {
     if (geometric_step <= 0) {
       BTAS_EXCEPTION("The step size must be larger than 0");
     }
-    if(SVD_initial_guess && SVD_rank > desired_rank){
+    if (SVD_initial_guess && SVD_rank > desired_rank) {
       BTAS_EXCEPTION("Initial guess is larger than final CP decomposition");
     }
     double epsilon = -1.0;
@@ -190,40 +217,40 @@ public:
   /// Tucker decomposition, i.e.  \n
   ///  \f[ T(I_1, I_2, I_3) --> T(R_1, R_2, R_3) \f]
   /// Where \f$R_1 < I_1, R_2 < I_2 \f$and \f$ R_3 < I_3 \f$
-  /// <a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088"> See reference here <\a>
-  /// \n Using this approximation the CP decomposition is computed to either
-  /// finite error or finite rank. \n Default settings calculate to finite
-  /// error. Factor matrices from get_factor_matrices()
-  /// are scaled by the Tucker transformations.
+  /// <a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088"> See
+  /// reference here <\a> \n Using this approximation the CP decomposition is
+  /// computed to either finite error or finite rank. \n Default settings
+  /// calculate to finite error. Factor matrices from get_factor_matrices() are
+  /// scaled by the Tucker transformations.
 
   /// \param[in] tcutSVD Truncation threshold for SVD of each mode in Tucker
   /// decomposition. \param[in] opt_rank Should the CP decomposition of tucker
   /// core tensor find the optimal rank with error < tcutCP? Default = true.
   /// \param[in] tcutCP How small epsilon must be to consider the CP
   /// decomposition converged. Default = 1e-2. \param[in] rank If finding CP
-  /// decomposition to finite rank, define CP rank. Default 0 will throw error for compute_rank.
-  /// \param[in] direct The CP decomposition be computed without calculating the
-  /// Khatri-Rao product? Default = true. \param[in] calculate_epsilon Should
-  /// the 2-norm error be calculated \f$ ||T_{exact} - T_{approx}|| = \epsilon\f$. Default =
-  /// true. \param[in] step CP_ALS built from r =1 to r = \c rank. r increments by
-  /// \c step; default = 1. \param[in] max_rank The highest rank approximation
-  /// computed before giving up on CP-ALS. Default = 1e5. \param[in] max_als If
-  /// CP decomposition is to finite error, max_als is the highest rank
-  /// approximation computed before giving up on CP-ALS. Default = 1e5.
-  /// \param[in] tcutALS How small difference in factor matrices must be to
-  /// consider ALS of a single rank converged. Default = 0.1. \returns
-  /// 2-norm error between exact and approximate tensor, -1.0 if
-  /// calculate_epsilon = false, \f$ \epsilon \f$
+  /// decomposition to finite rank, define CP rank. Default 0 will throw error
+  /// for compute_rank. \param[in] direct The CP decomposition be computed
+  /// without calculating the Khatri-Rao product? Default = true. \param[in]
+  /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{exact} -
+  /// T_{approx}|| = \epsilon\f$. Default = true. \param[in] step CP_ALS built
+  /// from r =1 to r = \c rank. r increments by \c step; default = 1. \param[in]
+  /// max_rank The highest rank approximation computed before giving up on
+  /// CP-ALS. Default = 1e5. \param[in] max_als If CP decomposition is to finite
+  /// error, max_als is the highest rank approximation computed before giving up
+  /// on CP-ALS. Default = 1e5. \param[in] tcutALS How small difference in
+  /// factor matrices must be to consider ALS of a single rank converged.
+  /// Default = 0.1. \param[in] SVD_initial_guess Should the initial factor
+  /// matrices be approximated with left singular values? \param[in] SVD_rank if
+  /// \c SVD_initial_guess is true specify the rank of the initial guess such
+  /// that 0< SVD_rank < smallest mode of reference tensor \returns 2-norm error
+  /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
+  /// \f$ \epsilon \f$
 
-  double compress_compute_tucker(double tcutSVD, bool opt_rank = true,
-                                 double tcutCP = 1e-2, int rank = 0,
-                                 bool direct = true,
-                                 bool calculate_epsilon = true,
-                                 int step = 1, int max_rank = 1e5,
-                                 double max_als = 1e5,
-                                 double tcutALS = 0.1,
-                                 bool SVD_initial_guess = false,
-                                 int SVD_rank = 0) {
+  double compress_compute_tucker(
+      double tcutSVD, bool opt_rank = true, double tcutCP = 1e-2, int rank = 0,
+      bool direct = true, bool calculate_epsilon = true, int step = 1,
+      int max_rank = 1e5, double max_als = 1e5, double tcutALS = 0.1,
+      bool SVD_initial_guess = false, int SVD_rank = 0) {
     // Tensor compression
     std::vector<Tensor> transforms;
     tucker_compression(tensor_ref, tcutSVD, transforms);
@@ -232,13 +259,14 @@ public:
 
     // CP decomposition
     if (opt_rank)
-      epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS, SVD_initial_guess, SVD_rank);
+      epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS,
+                              SVD_initial_guess, SVD_rank);
     else if (rank == 0) {
       std::cout << "Must specify a rank > 0" << std::endl;
       return epsilon;
     } else
-      epsilon =
-          compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS, SVD_initial_guess, SVD_rank);
+      epsilon = compute_rank(rank, direct, calculate_epsilon, step, max_als,
+                             tcutALS, SVD_initial_guess, SVD_rank);
 
     // scale factor matrices
     for (int i = 0; i < ndim; i++) {
@@ -269,45 +297,45 @@ public:
   /// of tucker core tensor find the optimal rank with error < tcutCP? Default =
   /// true. \param[in] tcutCP How small epsilon must be to consider the CP
   /// decomposition converged. Default = 1e-2. \param[in] rank If finding CP
-  /// decomposition to finite rank, define CP rank. Default 0 will throw error for compute_rank.
-  /// \param[in] direct Should the CP decomposition be computed without calculating the
-  /// Khatri-Rao product? Default = true. \param[in] calculate_epsilon Should
-  /// the 2-norm error be calculated \$f||T_exact - T_approx|| = \epsilon \f$. Default =
-  /// true. \param[in] step CP_ALS built from r =1 to r = rank. r increments by
-  /// step; default = 1. \param[in] max_rank The highest rank approximation
-  /// computed before giving up on CP-ALS. Default = 1e5. \param[in] max_als If
-  /// CP decomposition is to finite error, max_als is the highest rank
-  /// approximation computed before giving up on CP-ALS. Default = 1e5.
-  /// \param[in] tcutALS How small difference in factor matrices must be to
-  /// consider ALS of a single rank converged. Default = 0.1. \returns
+  /// decomposition to finite rank, define CP rank. Default 0 will throw error
+  /// for compute_rank. \param[in] direct Should the CP decomposition be
+  /// computed without calculating the Khatri-Rao product? Default = true.
+  /// \param[in] calculate_epsilon Should the 2-norm error be calculated
+  /// \$f||T_exact - T_approx|| = \epsilon \f$. Default = true. \param[in] step
+  /// CP_ALS built from r =1 to r = rank. r increments by step; default = 1.
+  /// \param[in] max_rank The highest rank approximation computed before giving
+  /// up on CP-ALS. Default = 1e5. \param[in] max_als If CP decomposition is to
+  /// finite error, max_als is the highest rank approximation computed before
+  /// giving up on CP-ALS. Default = 1e5. \param[in] tcutALS How small
+  /// difference in factor matrices must be to consider ALS of a single rank
+  /// converged. Default = 0.1. \param[in] SVD_initial_guess Should the initial
+  /// factor matrices be approximated with left singular values? \param[in]
+  /// SVD_rank if \c SVD_initial_guess is true specify the rank of the initial
+  /// guess such that 0< SVD_rank < smallest mode of reference tensor \returns
   /// 2-norm error between exact and approximate tensor, -1.0 if
   /// calculate_epsilon = false, \f$ \epsilon \f$
 
-  double compress_compute_rand(int desired_compression_rank,
-                               int oversampl = 10, int powerit = 2,
-                               bool opt_rank = true,
-                               double tcutCP = 1e-2, int rank = 0,
-                               bool direct = true,
-                               bool calculate_epsilon = false,
-                               int step = 1, int max_rank = 1e5,
-                               double max_als = 1e5,
-                               double tcutALS = .1,
-                               bool SVD_initial_guess = false,
-                               int SVD_rank = 0) {
+  double compress_compute_rand(
+      int desired_compression_rank, int oversampl = 10, int powerit = 2,
+      bool opt_rank = true, double tcutCP = 1e-2, int rank = 0,
+      bool direct = true, bool calculate_epsilon = false, int step = 1,
+      int max_rank = 1e5, double max_als = 1e5, double tcutALS = .1,
+      bool SVD_initial_guess = false, int SVD_rank = 0) {
     std::vector<Tensor> transforms;
-    randomized_decomposition(tensor_ref, transforms, desired_compression_rank, oversampl,
-                             powerit);
+    randomized_decomposition(tensor_ref, transforms, desired_compression_rank,
+                             oversampl, powerit);
     size = tensor_ref.size();
     double epsilon = -1.0;
 
     if (opt_rank)
-      epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS, SVD_initial_guess, SVD_rank);
+      epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS,
+                              SVD_initial_guess, SVD_rank);
     else if (rank == 0) {
       std::cout << "Must specify a rank > 0" << std::endl;
       return epsilon;
     } else
-      epsilon =
-          compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS, SVD_initial_guess, SVD_rank);
+      epsilon = compute_rank(rank, direct, calculate_epsilon, step, max_als,
+                             tcutALS, SVD_initial_guess, SVD_rank);
 
     // scale factor matrices
     for (int i = 0; i < ndim; i++) {
@@ -322,9 +350,10 @@ public:
 #endif //_HAS_INTEL_MKL
 
   /// returns the rank \c rank optimized factor matrices
-  /// \return Factor matrices stored in a vector.\n For example, a order-3 tensor has 
-  /// factor matrices in positions [0]-[2]. In [3] there is scaling factor vector of size \c rank
-  /// \throw  Exception if the CP decomposition is not yet computed.
+  /// \return Factor matrices stored in a vector.\n For example, a order-3
+  /// tensor has factor matrices in positions [0]-[2]. In [3] there is scaling
+  /// factor vector of size \c rank \throw  Exception if the CP decomposition is
+  /// not yet computed.
 
   std::vector<Tensor> get_factor_matrices() {
     if (!A.empty())
@@ -353,50 +382,56 @@ private:
   /// tcutALS How small difference in factor matrices must be to consider ALS of
   /// a single rank converged. Default = 0.1. \param[in, out] epsilon The 2-norm
   /// error between the exact and approximated reference tensor
+  /// \param[in] SVD_initial_guess build inital guess from left singular vectors
+  /// \param[in] SVD_rank rank of the initial guess using left singular vector
 
-  void build(int rank, bool direct, int max_als,
-             bool calculate_epsilon, int step, double tcutALS,
-             double &epsilon, bool SVD_initial_guess, int SVD_rank) {
-    // This loop keeps track of column dimension
-    if(A.empty() && SVD_initial_guess){
-      if(SVD_rank == 0)
-        BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
+  void build(int rank, bool direct, int max_als, bool calculate_epsilon,
+             int step, double tcutALS, double &epsilon, bool SVD_initial_guess,
+             int SVD_rank) {
+    // If its the first time into build and SVD_initial_guess
+    // build and optimize the initial guess based on the left
+    // singular vectors of the reference tensor.
+    if (A.empty() && SVD_initial_guess) {
+      if (SVD_rank == 0)
+        BTAS_EXCEPTION(
+            "Must specify the rank of the initial approximation using SVD");
 
-      for(int i = 0; i < ndim; i++){
+      for (int i = 0; i < ndim; i++) {
         auto flat = flatten(tensor_ref, i);
         int R = flat.extent(0);
         if (SVD_rank > R)
-          BTAS_EXCEPTION("SVD_rank must be less than or equal to the smallest dimension of the tensor being decomposed");
+          BTAS_EXCEPTION("SVD_rank must be less than or equal to the smallest "
+                         "dimension of the tensor being decomposed");
         Tensor S(R, R), lambda(R);
 
         gemm(CblasNoTrans, CblasTrans, 1.0, flat, flat, 0.0, S);
 
-        auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R, lambda.data());
+        auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R,
+                                  lambda.data());
         if (info)
           BTAS_EXCEPTION("Error in computing the tucker SVD");
-
 
         lambda = Tensor(R, SVD_rank);
         auto lower_bound = {0, R - SVD_rank};
         auto upper_bound = {R, R};
-        auto view =
-                btas::make_view(S.range().slice(lower_bound, upper_bound), S.storage());
+        auto view = btas::make_view(S.range().slice(lower_bound, upper_bound),
+                                    S.storage());
         std::copy(view.begin(), view.end(), lambda.begin());
         A.push_back(lambda);
         lambda = Tensor(Range{Range1{SVD_rank}});
         lambda.fill(0.0);
-        for(int j = 0; j < SVD_rank; j++){
-          if(i != ndim -1)
+        for (int j = 0; j < SVD_rank; j++) {
+          if (i != ndim - 1)
             normCol(i, j);
           else
-            lambda(j) = normCol(i,j);
+            lambda(j) = normCol(i, j);
         }
-        if(i == ndim -1)
+        if (i == ndim - 1)
           A.push_back(lambda);
       }
       ALS(SVD_rank, direct, max_als, calculate_epsilon, 0.01, epsilon);
-    }
-    else {
+    } else {
+      // This loop keeps track of column dimension
       for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
         // This loop walks through the factor matrices
         for (auto j = 0; j < ndim; ++j) { // select a factor matrix
@@ -404,21 +439,21 @@ private:
           // and fill them with random numbers that are column normalized
           // and create the weighting vector lambda
           if (i == 0) {
-            Tensor a(Range { tensor_ref.range(j), Range1{i + 1}});
+            Tensor a(Range{tensor_ref.range(j), Range1{i + 1}});
             a.fill(rand());
             normCol(a, i);
             A.push_back(a);
             if (j + 1 == ndim) {
-              Tensor lam(Range { Range1{i + 1}});
+              Tensor lam(Range{Range1{i + 1}});
               A.push_back(lam);
             }
           }
 
-            // If the factor matrices have memory allocated, rebuild each matrix
-            // with new column dimension col_dimension_old + skip
-            // fill the new columns with random numbers and normalize the columns
+          // If the factor matrices have memory allocated, rebuild each matrix
+          // with new column dimension col_dimension_old + skip
+          // fill the new columns with random numbers and normalize the columns
           else {
-            Tensor b(Range { A[0].range(0), Range1{i + 1}});
+            Tensor b(Range{A[0].range(0), Range1{i + 1}});
             b.fill(rand());
             for (int l = A[0].extent(1); l < i + 1; ++l)
               normCol(b, l);
@@ -454,9 +489,8 @@ private:
   /// single rank converged. Default = 0.1. \param[in, out] epsilon The 2-norm
   /// error between the exact and approximated reference tensor
 
-  void ALS(int rank, bool dir, int max_als,
-           bool calculate_epsilon, double tcutALS,
-           double &epsilon) {
+  void ALS(int rank, bool dir, int max_als, bool calculate_epsilon,
+           double tcutALS, double &epsilon) {
     auto count = 0;
     double test = 1.0;
 
