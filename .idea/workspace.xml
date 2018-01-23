@@ -38,7 +38,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1a6151c4-6742-4a21-b85a-a8b685e653eb" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/btas/generic/randomized.h" afterPath="$PROJECT_DIR$/btas/generic/randomized.h" />
+      <change beforePath="$PROJECT_DIR$/.idea/BTAS.iml" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -58,10 +63,10 @@
         <entry file="file://$PROJECT_DIR$/btas/generic/randomized.h">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="352">
-              <caret line="102" column="5" lean-forward="true" selection-start-line="102" selection-start-column="5" selection-end-line="102" selection-end-column="5" />
+              <caret line="102" column="5" lean-forward="false" selection-start-line="102" selection-start-column="5" selection-end-line="102" selection-end-column="5" />
               <folding>
                 <element signature="e#67#93#0" expanded="true" />
-                <marker date="1516721509745" expanded="false" signature="4049:6015" ph="..." />
+                <marker date="1516722207141" expanded="false" signature="4060:6026" ph="..." />
               </folding>
             </state>
           </provider>
@@ -275,7 +280,7 @@
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#67#93#0" expanded="true" />
-            <marker date="1516721509745" expanded="false" signature="4049:6015" ph="..." />
+            <marker date="1516722207141" expanded="false" signature="4060:6026" ph="..." />
           </folding>
         </state>
       </provider>
@@ -303,10 +308,10 @@
     <entry file="file://$PROJECT_DIR$/btas/generic/randomized.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="352">
-          <caret line="102" column="5" lean-forward="true" selection-start-line="102" selection-start-column="5" selection-end-line="102" selection-end-column="5" />
+          <caret line="102" column="5" lean-forward="false" selection-start-line="102" selection-start-column="5" selection-end-line="102" selection-end-column="5" />
           <folding>
             <element signature="e#67#93#0" expanded="true" />
-            <marker date="1516721509745" expanded="false" signature="4049:6015" ph="..." />
+            <marker date="1516722207141" expanded="false" signature="4060:6026" ph="..." />
           </folding>
         </state>
       </provider>
