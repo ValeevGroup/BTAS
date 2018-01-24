@@ -117,6 +117,8 @@ public:
                       bool calculate_epsilon = false, int step = 1,
                       int max_als = 1e5, double tcutALS = 0.1,
                       bool SVD_initial_guess = false, int SVD_rank = 0) {
+    if(rank <= 0)
+      BTAS_EXCEPTION("Decomposition rank must be greater than 0");
     if (SVD_initial_guess && SVD_rank > rank)
       BTAS_EXCEPTION("Initial guess is larger than the final CP rank");
     double epsilon = -1.0;
@@ -261,10 +263,7 @@ public:
     if (opt_rank)
       epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS,
                               SVD_initial_guess, SVD_rank);
-    else if (rank == 0) {
-      std::cout << "Must specify a rank > 0" << std::endl;
-      return epsilon;
-    } else
+    else
       epsilon = compute_rank(rank, direct, calculate_epsilon, step, max_als,
                              tcutALS, SVD_initial_guess, SVD_rank);
 
@@ -330,10 +329,7 @@ public:
     if (opt_rank)
       epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS,
                               SVD_initial_guess, SVD_rank);
-    else if (rank == 0) {
-      std::cout << "Must specify a rank > 0" << std::endl;
-      return epsilon;
-    } else
+    else
       epsilon = compute_rank(rank, direct, calculate_epsilon, step, max_als,
                              tcutALS, SVD_initial_guess, SVD_rank);
 
