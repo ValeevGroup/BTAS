@@ -16,16 +16,15 @@
 
 namespace btas {
 
-/** @addtogroup CP_ALS
+/** \brief Computes the Canonical Product (CP) decomposition of an order-N
+  tensor using alternating least squares (ALS).
 
-  /section sec_CP_ALS CP_ALS class
-   A function to calculate the Canonical Product (CP) decomposition of an Nth
-  order tensor using alternating least squares (ALS). Supports tensors with row
+  This computes the CP decomposition of btas::Tensor objects with row
   major storage only with fixed (compile-time) and variable (run-time)
   ranks. Also provides Tucker and randomized Tucker-like compressions coupled
   with CP-ALS decomposition. Does not support strided ranges.
 
-  /subsection sec_CP_ALS_Synopsis Synopsis
+  Synopsis:
   @code
   // Constructors
   CP_ALS A(tensor)                    // CP_ALS object with empty factor
@@ -55,13 +54,6 @@ namespace btas {
                                       // they have been computed
   @endcode
 */
-
-/// A function to calculate the Canonical Product (CP) decomposition of an order-N
-/// tensor using alternating least squares (ALS). Supports tensors with
-/// row major storage only with fixed and (compile-time) and variable (run-time)
-/// ranks. Also provides Tucker and randomized Tucker-like compressions coupled
-/// with CP-ALS decomposition. Does not support strided ranges.
-
 template <typename Tensor> class CP_ALS {
 public:
   /// Constructor of object CP_ALS
