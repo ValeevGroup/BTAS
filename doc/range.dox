@@ -22,7 +22,7 @@
 
   \subsection sec_TWG_Range_Concept_Range_Description Description
   To be a valid Range, class must be a <a href="http://www.stepanovpapers.com/DeSt98.pdf"><em>regular type</em></a>, define
-  types, and support expresisons specified below.
+  types, and support expressions specified below.
 
   \subsubsection sec_TWG_Range_Concept_Range_Description_Types Associated Types
   <table>

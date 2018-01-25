@@ -113,6 +113,12 @@ namespace std {
 
   };
 
+  // this is illegal
+  // TODO move to btas namespace and rely on ADL to invoke (instead of calling std::ref directly do
+  // \code
+  //   using std::ref;
+  //   ref();
+  // \endcode
   template <class _T>
   reference_wrapper<btas::infinite_sequence_adaptor<_T*>> ref(btas::infinite_sequence_adaptor<_T*>&& t) {
       return reference_wrapper<btas::infinite_sequence_adaptor<_T*>>(t);

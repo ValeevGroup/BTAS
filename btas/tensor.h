@@ -11,6 +11,7 @@
 #include <btas/defaults.h>
 #include <btas/tensor_traits.h>
 #include <btas/tensorview.h>
+#include <btas/type_traits.h>
 #include <btas/array_adaptor.h>
 
 #ifdef BTAS_HAS_BOOST_SERIALIZATION
@@ -204,9 +205,13 @@ namespace btas {
       Tensor&
       operator= (const _Tensor& x)
       {
+          using std::cbegin;
+          using std::cend;
+          using std::begin;
+          using std::end;
           range_ = range_type(x.range().lobound(), x.range().upbound());
           array_adaptor<storage_type>::resize(storage_, range_.area());
-          std::copy(std::begin(x), std::end(x), std::begin(storage_));
+          std::copy(cbegin(x), cend(x), begin(storage_));
           return *this;
       }
 
@@ -217,17 +222,22 @@ namespace btas {
       Tensor&
       operator= (const _Tensor& x)
       {
+          using std::cbegin;
+          using std::cend;
+          using std::begin;
+          using std::end;
           range_ = range_type(x.range().lobound(), x.range().upbound());
           if (&x.storage() != &this->storage()) { // safe to copy immediately, unless copying into self
             array_adaptor<storage_type>::resize(storage_, range_.area());
-            std::copy(std::begin(x), std::end(x), std::begin(storage_));
+            std::copy(cbegin(x), cend(x), begin(storage_));
           }
           else {
             // must use temporary if copying into self :(
             storage_type new_storage;
             array_adaptor<storage_type>::resize(new_storage, range_.area());
-            std::copy(std::begin(x), std::end(x), std::begin(new_storage));
-            std::swap(storage_,new_storage);
+            std::copy(cbegin(x), cend(x), begin(new_storage));
+            using std::swap;
+            swap(storage_,new_storage);
           }
           return *this;
       }
@@ -245,8 +255,19 @@ namespace btas {
       Tensor&
       operator= (Tensor&& x)
       {
-        std::swap(range_, x.range_);
-        std::swap(storage_, x.storage_);
+        using std::swap;
+        swap(range_, x.range_);
+        swap(storage_, x.storage_);
+        return *this;
+      }
+
+      /// assign scalar to this (i.e. fill this with scalar)
+      template <typename Scalar, typename = btas::void_t<decltype(static_cast<typename storage_type::value_type>(std::declval<Scalar>()))>>
+      Tensor&
+      operator= (Scalar&& v)
+      {
+        using std::begin; using std::end;
+        std::fill(begin(storage_), end(storage_), static_cast<typename storage_type::value_type>(v));
         return *this;
       }
 
@@ -318,32 +339,36 @@ namespace btas {
         return cend();
       }
 
-      /// \return const iterator begin, even if this is not itself const
+      /// \return const iterator begin
       const_iterator
       cbegin() const
       {
-        return std::begin(const_cast<const storage_type&>(storage_));
+        using std::cbegin;
+        return cbegin(storage_);
       }
 
-      /// \return const iterator end, even if this is not itself const
+      /// \return const iterator end
       const_iterator
       cend() const
       {
-        return std::end(const_cast<const storage_type&>(storage_));
+        using std::cend;
+        return cend(storage_);
       }
 
       /// \return iterator begin
       iterator
       begin()
       {
-        return std::begin(storage_);
+        using std::begin;
+        return begin(storage_);
       }
 
       /// \return iterator end
       iterator
       end()
       {
-        return std::end(storage_);
+        using std::end;
+        return end(storage_);
       }
 
       /// \return number of elements
@@ -371,8 +396,9 @@ namespace btas {
       void
       swap (Tensor& x)
       {
-        std::swap(range_, x.range_);
-        std::swap(storage_, x.storage_);
+        using std::swap;
+        swap(range_, x.range_);
+        swap(storage_, x.storage_);
       }
 
       ///@} // container requirements
@@ -550,8 +576,12 @@ namespace btas {
       Tensor&
       operator+= (const Tensor& x)
       {
-        assert( std::equal(range_.begin(), range_.end(), x.range_.begin()) );
-        std::transform(std::begin(storage_), std::end(storage_), std::begin(x.storage_), std::begin(storage_), std::plus<value_type>());
+        using std::cbegin;
+        using std::cend;
+        using std::begin;
+        using std::end;
+        assert( std::equal(begin(range_), end(range_), begin(x.range_)) );
+        std::transform(cbegin(storage_), cend(storage_), cbegin(x.storage_), begin(storage_), std::plus<value_type>());
         return *this;
       }
 
@@ -567,9 +597,13 @@ namespace btas {
       Tensor&
       operator-= (const Tensor& x)
       {
+        using std::cbegin;
+        using std::cend;
+        using std::begin;
+        using std::end;
         assert(
-            std::equal(range_.begin(), range_.end(), x.range_.begin()));
-        std::transform(std::begin(storage_), std::end(storage_), std::begin(x.storage_), std::begin(storage_), std::minus<value_type>());
+            std::equal(begin(range_), end(range_), begin(x.range_)));
+        std::transform(cbegin(storage_), cend(storage_), cbegin(x.storage_), begin(storage_), std::minus<value_type>());
         return *this;
       }
 
@@ -586,7 +620,8 @@ namespace btas {
       const value_type*
       data () const
       {
-        return std::data(storage_);
+        using std::data;
+        return data(storage_);
       }
 
       /// \return bare pointer to the first element of data_
@@ -594,14 +629,17 @@ namespace btas {
       value_type*
       data()
       {
-        return std::data(storage_);
+        using std::data;
+        return data(storage_);
       }
 
       /// fill all elements by val
       void
       fill (const value_type& val)
       {
-        std::fill(std::begin(storage_), std::end(storage_), val);
+        using std::begin;
+        using std::end;
+        std::fill(begin(storage_), end(storage_), val);
       }
 
       /// generate all elements by gen()
@@ -609,7 +647,9 @@ namespace btas {
       void
       generate (Generator gen)
       {
-          std::generate(std::begin(storage_), std::end(storage_), gen);
+        using std::begin;
+        using std::end;
+        std::generate(begin(storage_), end(storage_), gen);
       }
 
     private:
@@ -667,12 +707,14 @@ namespace btas {
             class = typename std::enable_if<btas::is_boxtensor<_Tensor1>::value>::type,
             class = typename std::enable_if<btas::is_boxtensor<_Tensor2>::value>::type >
   bool operator==(const _Tensor1& t1, const _Tensor2& t2) {
+      using std::cbegin;
+      using std::cend;
       if (t1.range().order == t2.range().order &&
           t1.range().ordinal().contiguous() &&
           t2.range().ordinal().contiguous()) // plain Tensor
-        return congruent(t1.range(), t2.range()) && std::equal(std::cbegin(t1.storage()),
-                                                               std::cend(t1.storage()),
-                                                               std::cbegin(t2.storage()));
+        return congruent(t1.range(), t2.range()) && std::equal(cbegin(t1.storage()),
+                                                               cend(t1.storage()),
+                                                               cbegin(t2.storage()));
       else { // not plain, or different orders
         auto cong = congruent(t1.range(), t2.range());
         if (not cong)
@@ -681,7 +723,7 @@ namespace btas {
         typedef TensorView<typename _Tensor2::value_type, typename _Tensor2::range_type, const typename _Tensor2::storage_type>  cview2;
         cview1 vt1(t1);
         cview2 vt2(t2);
-        return std::equal(vt1.cbegin(), vt1.cend(), vt2.cbegin());
+        return std::equal(cbegin(vt1), cend(vt1), cbegin(vt2));
       }
   }
 

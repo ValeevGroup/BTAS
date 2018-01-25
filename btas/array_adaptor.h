@@ -156,6 +156,7 @@ namespace btas {
 
 namespace std {
 
+#if __cplusplus < 201402L // add C++14 components to make transition to C++14 easier
   template <typename T, size_t N>
   const T* cbegin(const T(&x)[N]) {
     return &x[0];
@@ -186,7 +187,6 @@ namespace std {
     return x;
   }
 
-#if __cplusplus < 201402L // add useful bits to make transition to C++14 easier
   template <typename C>
   constexpr auto cbegin(const C& x) -> decltype(std::begin(x)) {
     return std::begin(x);

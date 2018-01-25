@@ -285,8 +285,11 @@ namespace btas {
     /**
      * BaseRangeNd defines a box in the index space, and the iteration order on it.
      * The iteration order depends on the CBLAS_ORDER parameter (ordering of dimensions).
+     * It implements most of the \ref sec_TWG_Range_Concept_Range_Box "TWG.BoxRange" concept, except it does
+     * not define ordinals.
      *
      * \tparam _Derived implementation of Range, to be derived from \c BaseRangeNd as \c public \c BaseRangeNd<Derived>
+     *
      */
     template <typename _Derived>
     class BaseRangeNd {
@@ -479,13 +482,15 @@ namespace btas {
         return *this;
       }
 
-      void swap(BaseRangeNd& other) {
-        std::swap(lobound_, other.lobound_);
-        std::swap(upbound_, other.upbound_);
-        std::swap(extent_, other.extent_);
+      /// swaps the contents of \c *this with \c other
+      void swap(BaseRangeNd& other) noexcept {
+        using std::swap;
+        swap(lobound_, other.lobound_);
+        swap(upbound_, other.upbound_);
+        swap(extent_, other.extent_);
       }
 
-    public:
+     public:
 
       /// Access a particular subrange of Range
 
@@ -674,9 +679,8 @@ namespace btas {
 
     }; // class BaseRangeNd
 
-    /// Range conforms to the \ref labelTWGRange "TWG.Range" concept
-
-    /// Extends BaseRangeNd to compute ordinals, as specified by \c _Ordinal
+    /// RangeNd extends BaseRangeNd to compute ordinals, as specified by \c _Ordinal .
+    /// It conforms to the \ref sec_TWG_Range_Concept_Range_Box "TWG.BoxRange" concept.
     template <CBLAS_ORDER _Order = CblasRowMajor,
               typename _Index = btas::DEFAULT::index_type,
               typename _Ordinal = btas::BoxOrdinal<_Order,_Index>,
@@ -936,9 +940,16 @@ namespace btas {
         return *this;
       }
 
-      /// returns the ordinal object
+      /// \return a const reference to the ordinal object
       const _Ordinal& ordinal() const {
         return ordinal_;
+      }
+
+      /// swaps the contents of \c *this with \c other
+      void swap(RangeNd& other) noexcept {
+        base_type::swap(other);
+        using std::swap;
+        swap(ordinal_, other.ordinal_);
       }
 
       /// calculates the ordinal value of \c i
@@ -1090,15 +1101,14 @@ namespace btas {
       return os;
     }
 
-    /// Exchange the values of the give two ranges.
+    /// swaps the contents of \c r0 with \c r1
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal
              >
-    inline void swap(RangeNd<_Order,_Index,_Ordinal>& r0, RangeNd<_Order,_Index,_Ordinal>& r1) { // no throw
+    inline void swap(RangeNd<_Order,_Index,_Ordinal>& r0, RangeNd<_Order,_Index,_Ordinal>& r1) noexcept {
       r0.swap(r1);
     }
-
 
     /// Range equality comparison
 
@@ -1415,7 +1425,7 @@ namespace btas {
 
         static constexpr int value = (_Order == CblasRowMajor) ? row_major : column_major;
     };
-}
+}  // namespace btas
 
 //
 //  Default range type

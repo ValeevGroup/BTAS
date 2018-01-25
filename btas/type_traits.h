@@ -5,7 +5,28 @@
 
 namespace btas {
 
-  /// extends std::common_type to yield a signed integer type if one of the arguments is a signed type
+// import some existing C++17 features, or implement them
+#if __cplusplus <= 201402L
+
+  // GNU stdlibc++ provides void_t if -gnu++11 or -gnu++14 are given
+# if __GNUC__ && defined(__GLIBCXX__) && !__STRICT_ANSI__ && __cplusplus >= 201103L
+#  define HAVE_VOID_T
+# endif
+
+# ifndef HAVE_VOID_T
+  template <typename... Ts>
+  struct make_void {
+    using type = void;
+  };
+  template <typename... Ts>
+  using void_t = typename make_void<Ts...>::type;
+#else
+  using std::void_t;
+# endif
+
+#endif  // C++17 features
+
+/// extends std::common_type to yield a signed integer type if one of the arguments is a signed type
   template <typename I0, typename I1>
   struct common_signed_type {
       typedef typename std::common_type<I0,I1>::type common_type;
