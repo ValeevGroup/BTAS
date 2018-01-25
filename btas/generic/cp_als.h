@@ -190,7 +190,7 @@ public:
   /// \f$ \epsilon \f$
 
   double compute_geometric(int desired_rank, int geometric_step = 2,
-                           bool direct = false, int max_als = 1e5,
+                           bool direct = true, int max_als = 1e5,
                            bool calculate_epsilon = false, double tcutALS = 0.1,
                            bool SVD_initial_guess = false, int SVD_rank = 0) {
     if (geometric_step <= 0) {
@@ -387,11 +387,11 @@ private:
     // If its the first time into build and SVD_initial_guess
     // build and optimize the initial guess based on the left
     // singular vectors of the reference tensor.
+#ifdef _HAS_INTEL_MKL
     if (A.empty() && SVD_initial_guess) {
       if (SVD_rank == 0)
         BTAS_EXCEPTION(
             "Must specify the rank of the initial approximation using SVD");
-
       for (int i = 0; i < ndim; i++) {
         auto flat = flatten(tensor_ref, i);
         int R = flat.extent(0);
@@ -426,7 +426,11 @@ private:
           A.push_back(lambda);
       }
       ALS(SVD_rank, direct, max_als, calculate_epsilon, 0.01, epsilon);
-    } else {
+    } 
+#else  //
+    if(SVD_initial_guess)
+      BTAS_EXCEPTION("Computing the SVD requires LAPACK");
+#endif
       // This loop keeps track of column dimension
       for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
         // This loop walks through the factor matrices
@@ -471,7 +475,6 @@ private:
         // compute the ALS of factor matrices with rank = i + 1.
         ALS(i + 1, direct, max_als, calculate_epsilon, tcutALS, epsilon);
       }
-    }
   }
 
   /// performs the ALS method to minimize the loss function for a single rank
