@@ -12,13 +12,32 @@
 
 namespace btas {
 
-/// \returns random number from a gaussian distribution
+/// \param[in,out] A In: An empty matrix of size column dimension of the nth
+/// mode flattened tensor provided to the randomized compression method by the
+/// desired rank of the randmoized compression method.  Out: A random matrix,
+/// column drawn from a random distribution and orthogonalized
+template <typename Tensor> void generate_random_metric(Tensor &A) {
+  using value_type = typename Tensor::value_type;
+  for (auto i = 0; i < A.extent(1); i++) {
+    std::random_device rd;
+    // uncomment for more randomness
+    // std::mt19937 gen(rd());
+    std::mt19937 gen(1.0); // comment out for more randomness.
+    std::normal_distribution<value_type> distribution(0.0, 10.0);
+    value_type norm = 0.0;
+    for (auto j = 0; j < A.extent(0); j++) {
+      A(j, i) = abs(distribution(gen));
+      norm += A(j, i) * A(j, i);
+    }
 
-template <typename T> T gauss_rand() {
-  std::random_device rd;
-  std::mt19937 gen(1);
-  std::normal_distribution<T> distribution(1.0, 1.0);
-  return distribution(gen);
+    norm = sqrt(norm);
+    for (auto j = 0; j < A.extent(0); j++) {
+      A(j, i) /= norm;
+    }
+
+    distribution.reset();
+  }
+  QR_decomp(A);
 }
 
 /// Calculates the randomized compression of tensor \c A.
@@ -26,7 +45,7 @@ template <typename T> T gauss_rand() {
 /// \param[in, out] A In: An order-N tensor to be randomly decomposed.
 /// Out: The core tensor of random decomposition \param[in, out] transforms
 /// In: An empty vector.  Out: The randomized decomposition factor matrices.
-/// \param[in] des_rank The rank of each mode of \c A after randomized 
+/// \param[in] des_rank The rank of each mode of \c A after randomized
 /// decomposition. \param[in] oversampl Oversampling added to \c
 /// desired_compression_rank required to provide an optimal decomposition.
 /// Default = suggested = 10. \param[in] powerit Number of power iterations, as
@@ -51,8 +70,7 @@ void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
 
     // Make and fill the random matrix Gamma
     Tensor G(An.extent(1), rank);
-    //G.fill(gauss_rand<value_type>());
-    G.fill(rand());
+    generate_random_metric(G);
 
     // Project The random matrix onto the flatten reference tensor
     Tensor Y(An.extent(0), rank);
@@ -87,8 +105,9 @@ void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
     }
 
     transforms.push_back(Y);
-
-    core_contract(A, Y, n);
+  }
+  for (int n = 0; n < ndim; n++) {
+    core_contract(A, transforms[n], n);
   }
 }
 

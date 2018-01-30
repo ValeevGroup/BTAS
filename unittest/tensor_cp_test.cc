@@ -111,7 +111,7 @@ TEST_CASE("CP_ALS"){
   SECTION("MODE = 4, Random + CP"){
   	{
       CP_ALS<tensor> A1(D4);
-      double diff = A1.compress_compute_rand(3, 0, 2, false, 1e-2, 5, true, true );;
+      double diff = A1.compress_compute_rand(3, 0, 2, true, 1e-2 );      
       CHECK((diff - results(7,0)) <= epsilon);
     }
   }
