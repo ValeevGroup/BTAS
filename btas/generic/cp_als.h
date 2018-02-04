@@ -364,10 +364,53 @@ namespace btas {
       if (!A.empty())
         return A;
       else
-        BTAS_EXCEPTION("Attempting to use a NULL object first compute CP decomposition");
+        BTAS_EXCEPTION("Attempting to return a NULL object. Compute CP decomposition first");
     }
 
-   private:
+    /// Function that uses the factor matrices from the CP decomposition and reconstructs the
+    /// approximated tensor
+    /// \returns The tensor approxmimated from the factor matrices of the CP decomposition
+
+    Tensor reconstruct() {
+      if(A.empty())
+        BTAS_EXCEPTION("factor matrices do not exists. You must first compute the CP decomposition");
+
+      // Find the dimensions of the reconstructed tensor
+      std::vector<size_t> dimensions;
+      for (int i = 0; i < ndim; i++) {
+        dimensions.push_back(A[i].extent(0));
+      }
+
+      // Scale the first factor matrix, this choice is arbitrary
+      auto rank = A[0].extent(1);
+      for (int i = 0; i < rank; i++) {
+        scal(A[0].extent(0), A[ndim](i), std::begin(A[0]) + i, rank);
+      }
+
+      // Make the KRP of all the factor matrices execpt the last dimension
+      Tensor KRP = A[0];
+      Tensor hold = A[0];
+      for (int i = 1; i < A.size() - 2; i++) {
+        khatri_rao_product(KRP, A[i], hold);
+        KRP = hold;
+      }
+
+      // contract the rank dimension of the Khatri-Rao product with the rank dimension of the last factor matrix
+      // hold is now the reconstructed tensor
+      hold = Tensor(KRP.extent(0), A[ndim - 1].extent(0));
+      gemm(CblasNoTrans, CblasTrans, 1.0, KRP, A[ndim - 1], 0.0, hold);
+
+      // resize the reconstructed tensor to the correct dimensions
+      hold.resize(dimensions);
+
+      // Remove the scaling applied to the first factor matrix
+      for (int i = 0; i < rank; i++) {
+        scal(A[0].extent(0), 1/A[ndim](i), std::begin(A[0]) + i, rank);
+      }
+      return hold;
+    }
+
+  private:
     std::vector<Tensor> A;  // The vector of factor matrices
     Tensor &tensor_ref;     // The reference tensor being decomposed
     const int ndim;         // Number of modes in the reference tensor
@@ -515,15 +558,7 @@ namespace btas {
 
       // Checks loss function if required
       if (calculate_epsilon) {
-        Tensor oldmat(tensor_ref.extent(0), size / tensor_ref.extent(0));
-        for (int i = 0; i < rank; i++) {
-          scal(A[0].extent(0), A[ndim](i), std::begin(A[0]) + i, rank);
-        }
-        gemm(CblasNoTrans, CblasTrans, 1.0, A[0], generate_KRP(0, rank, false), 0.0, oldmat);
-        for (int i = 0; i < rank; i++) {
-          scal(A[0].extent(0), 1 / A[ndim](i), std::begin(A[0]) + i, rank);
-        }
-        epsilon = (norm(flatten(tensor_ref, 0) - oldmat));
+        epsilon = norm(reconstruct() - tensor_ref);
       }
     }
 
@@ -852,7 +887,6 @@ namespace btas {
       lapack_int lwork = -1;
       lapack_int info = 0;
 
-      char len = 1;
       char A = 'A';
 
       // Call dgesvd with lwork = -1 to query optimal workspace size:
@@ -895,44 +929,6 @@ namespace btas {
       return U;
     }
   };  // class CP_ALS
-
-  /// Function that takes the factor matrices from the CP decomposition and reconstructs the
-  /// exact tensor
-  /// \param[in] factors vector of factor matrices determined through cp-als.
-  /// \returns The full reconstructed tensor constructed from the factor matrices
-  template <typename Tensor>
-  Tensor reconstruct(std::vector<Tensor> factors) {
-    auto ndim = factors.size() - 1;
-
-    // Find the dimensions of the reconstructed tensor
-    std::vector<size_t> dimensions;
-    for (int i = 0; i < ndim; i++) {
-      dimensions.push_back(factors[i].extent(0));
-    }
-
-    // Scale the first factor matrix, this choice is arbitrary
-    auto rank = factors[0].extent(1);
-    for (int i = 0; i < rank; i++) {
-      scal(factors[0].extent(0), factors[ndim](i), std::begin(factors[0]) + i, rank);
-    }
-
-    // Make the KRP of all the factor matrices execpt the last dimension
-    Tensor KRP = factors[0];
-    Tensor hold = factors[0];
-    for (int i = 1; i < factors.size() - 2; i++) {
-      khatri_rao_product(KRP, factors[i], hold);
-      KRP = hold;
-    }
-
-    // contract the rank dimension of the Khatri-Rao product with the rank dimension of the last factor matrix
-    // This is the reconstructed tensor
-    hold = Tensor(KRP.extent(0), factors[ndim - 1].extent(0));
-    gemm(CblasNoTrans, CblasTrans, 1.0, KRP, factors[ndim - 1], 0.0, hold);
-
-    // resize the reconstructed tensor to the correct size
-    hold.resize(dimensions);
-    return hold;
-  }
 
 }  // namespace btas
 
