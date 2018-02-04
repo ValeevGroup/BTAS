@@ -373,7 +373,7 @@ namespace btas {
 
     Tensor reconstruct() {
       if(A.empty())
-        BTAS_EXCEPTION("factor matrices do not exists. You must first compute the CP decomposition");
+        BTAS_EXCEPTION("Factor matrices have not been computed. You must first calculate CP decomposition");
 
       // Find the dimensions of the reconstructed tensor
       std::vector<size_t> dimensions;
