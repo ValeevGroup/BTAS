@@ -390,7 +390,7 @@ namespace btas {
         scal(A[0].extent(0), A[ndim](i), std::begin(A[0]) + i, rank);
       }
 
-      // Make the KRP of all the factor matrices execpt the last dimension
+      // Make the Khatri-Rao product of all the factor matrices execpt the last dimension
       Tensor KRP = A[0];
       Tensor hold = A[0];
       for (int i = 1; i < A.size() - 2; i++) {
@@ -398,15 +398,15 @@ namespace btas {
         KRP = hold;
       }
 
-      // contract the rank dimension of the Khatri-Rao product with the rank dimension of the last factor matrix
-      // hold is now the reconstructed tensor
+      // contract the rank dimension of the Khatri-Rao product with the rank dimension of
+      // the last factor matrix. hold is now the reconstructed tensor
       hold = Tensor(KRP.extent(0), A[ndim - 1].extent(0));
       gemm(CblasNoTrans, CblasTrans, 1.0, KRP, A[ndim - 1], 0.0, hold);
 
       // resize the reconstructed tensor to the correct dimensions
       hold.resize(dimensions);
 
-      // Remove the scaling applied to the first factor matrix
+      // remove the scaling applied to the first factor matrix
       for (int i = 0; i < rank; i++) {
         scal(A[0].extent(0), 1/A[ndim](i), std::begin(A[0]) + i, rank);
       }
