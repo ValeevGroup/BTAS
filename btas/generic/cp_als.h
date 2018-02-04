@@ -364,16 +364,19 @@ namespace btas {
       if (!A.empty())
         return A;
       else
-        BTAS_EXCEPTION("Attempting to return a NULL object. Compute CP decomposition first");
+        BTAS_EXCEPTION("Attempting to return a NULL object. Compute CP decomposition first.");
     }
 
-    /// Function that uses the factor matrices from the CP decomposition and reconstructs the
+    /// Function that uses the factor matrices from the CP
+    /// decomposition and reconstructs the
     /// approximated tensor
-    /// \returns The tensor approxmimated from the factor matrices of the CP decomposition
-
+    /// \returns The tensor approxmimated from the factor
+    /// matrices of the CP decomposition.
+    /// \throws Exception if the CP decomposition is
+    /// not yet computed.
     Tensor reconstruct() {
       if(A.empty())
-        BTAS_EXCEPTION("Factor matrices have not been computed. You must first calculate CP decomposition");
+        BTAS_EXCEPTION("Factor matrices have not been computed. You must first calculate CP decomposition.");
 
       // Find the dimensions of the reconstructed tensor
       std::vector<size_t> dimensions;
