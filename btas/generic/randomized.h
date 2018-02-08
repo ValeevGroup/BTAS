@@ -56,9 +56,6 @@ template <typename Tensor>
 void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
                               int des_rank, int oversampl = 10,
                               int powerit = 2) {
-  // Grab the tensor's type, using gauss_rand (i.e. float, double)
-  using value_type = typename Tensor::value_type;
-
   // Add the oversampling to the desired rank
   auto ndim = A.rank();
   auto rank = des_rank + oversampl;

@@ -54,7 +54,6 @@ void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
     auto temp = (is_in_front) ? aug_dims[0] : aug_dims[mode];
     auto erase = (is_in_front) ? aug_dims.begin() : aug_dims.begin() + mode;
     auto begin = (is_in_front) ? aug_dims.begin() + mode : aug_dims.begin();
-    auto end = begin + 1;
     aug_dims.erase(erase);
     aug_dims.insert(begin, temp);
   }
