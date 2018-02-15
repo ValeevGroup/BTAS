@@ -379,7 +379,7 @@ namespace btas{
           }
           if (i == ndim - 1) A.push_back(lambda);
         }
-        ALS(SVD_rank, direct, max_als, calculate_epsilon, 0.01, epsilon);
+        ALS(SVD_rank, direct, max_als, calculate_epsilon, 0.05, epsilon);
       }
 #else  //
       if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
@@ -428,18 +428,24 @@ namespace btas{
     }
 
     void ALS(int rank, bool dir, int max_als, bool calculate_epsilon, double tcutALS, double &epsilon) {
+      using namespace std::chrono;
+      auto t1 = high_resolution_clock::now();
       auto count = 0;
-      double s = tcutALS + 1.0;
+      double s = 0.0;
       double test_sum = tcutALS + 1.0;
-      const auto s0 = 1.0;
-      const auto alpha = 0.8;
+      const auto s0 = 53.0;
+      //const auto s0 = 100;
+      const auto alpha = 0.2;
+
+      //const auto s0 = 105;
+      //const auto alpha = 0.10;
+
       std::vector<double> lambda(ndim, 1.0);
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
       while (count <= max_als && test_sum > tcutALS) {
         count++;
-        s = 0.0;
         test_sum = 0.0;
 
         for (auto i = 0; i < ndim; i++) {
@@ -571,20 +577,32 @@ namespace btas{
             // If the code hasn't hit the mode of interest yet, it will contract
             // over the middle dimension and sum over the rank.
           else if (contract_dim > n) {
-            for (int i = 0; i < temp.extent(0); i++)
-              for (int r = 0; r < rank; r++)
-                for (int j = 0; j < temp.extent(1); j++) contract_tensor(i, r) += temp(i, j, r) * A[contract_dim](j, r);
+            for (int i = 0; i < temp.extent(0); i++) {
+              for (int r = 0; r < rank; r++) {
+                double accum = 0.0;
+                for (int j = 0; j < temp.extent(1); j++) {
+                  accum += temp(i, j, r) * A[contract_dim](j, r);
+                }
+                contract_tensor(i, r) = accum;
+              }
+            }
             temp = contract_tensor;
           }
 
             // If the code has passed the mode of interest, it will contract over
             // the middle dimension and sum over rank * mode n dimension
           else {
-            for (int i = 0; i < temp.extent(0); i++)
-              for (int r = 0; r < rank; r++)
-                for (int k = 0; k < tensor_ref.extent(n); k++)
-                  for (int j = 0; j < temp.extent(1); j++)
-                    contract_tensor(i, k * rank + r) += temp(i, j, k * rank + r) * A[contract_dim](j, r);
+            for (int i = 0; i < temp.extent(0); i++) {
+              for (int r = 0; r < rank; r++) {
+                for (int k = 0; k < tensor_ref.extent(n); k++) {
+                  double accum = 0.0;
+                  for (int j = 0; j < temp.extent(1); j++) {
+                    accum += temp(i, j, k * rank + r) * A[contract_dim](j, r);
+                  }
+                  contract_tensor(i, k * rank + r) = accum;
+                }
+              }
+            }
             temp = contract_tensor;
           }
 
@@ -600,9 +618,15 @@ namespace btas{
         if (n != 0) {
           temp.resize(Range{Range1{tensor_ref.extent(0)}, Range1{tensor_ref.extent(n)}, Range1{rank}});
           Tensor contract_tensor(Range{Range1{temp.extent(1)}, Range1{rank}});
-          for (int i = 0; i < temp.extent(0); i++)
-            for (int r = 0; r < rank; r++)
-              for (int j = 0; j < temp.extent(1); j++) contract_tensor(j, r) += A[0](i, r) * temp(i, j, r);
+          for (int j = 0; j < temp.extent(1); j++) {
+            for (int r = 0; r < rank; r++) {
+              double accum = 0.0;
+              for (int i = 0; i < temp.extent(0); i++) {
+                accum += A[0](i, r) * temp(i, j, r);
+              }
+              contract_tensor(j, r) = accum;
+            }
+          }
           temp = contract_tensor;
         }
 
@@ -636,9 +660,15 @@ namespace btas{
                             Range1{LH_size / tensor_ref.extent(contract_dim)}});
           Tensor contract_tensor(Range{Range1{rank}, Range1{temp.extent(2)}});
 
-          for (int i = 0; i < temp.extent(2); i++)
-            for (int r = 0; r < rank; r++)
-              for (int j = 0; j < temp.extent(1); j++) contract_tensor(r, i) += temp(r, j, i) * A[contract_dim](j, r);
+          for (int i = 0; i < temp.extent(2); i++) {
+            for (int r = 0; r < rank; r++) {
+              double accum = 0.0;
+              for (int j = 0; j < temp.extent(1); j++) {
+                accum += temp(r, j, i) * A[contract_dim](j, r);
+              }
+              contract_tensor(r, i) = accum;
+            }
+          }
 
           temp = contract_tensor;
           LH_size /= tensor_ref.extent(contract_dim);
@@ -732,7 +762,6 @@ namespace btas{
       double norm = sqrt(dot(Mat.extent(0), Mat_ptr, Mat.extent(1), Mat_ptr, Mat.extent(1)));
 
       scal(Mat.extent(0), 1 / norm, std::begin(Mat) + col, Mat.extent(1));
-
       return norm;
     }
 

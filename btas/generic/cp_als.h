@@ -478,7 +478,7 @@ namespace btas {
           }
           if (i == ndim - 1) A.push_back(lambda);
         }
-        ALS(SVD_rank, direct, max_als, calculate_epsilon, 0.01, epsilon);
+        ALS(SVD_rank, direct, max_als, calculate_epsilon, 0.03, epsilon);
       }
 #else  //
       if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
