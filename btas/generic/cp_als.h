@@ -103,7 +103,6 @@ namespace btas {
     /// approximated with left singular values?
     /// \param[in] SVD_rank if \c
     /// SVD_initial_guess is true specify the rank of the initial guess such that
-    /// 0< SVD_rank < smallest mode of reference tensor
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false.
@@ -139,18 +138,16 @@ namespace btas {
     /// approximated with left singular values?
     /// \param[in] SVD_rank if \c
     /// SVD_initial_guess is true specify the rank of the initial guess such that
-    /// 0< SVD_rank < smallest mode of reference tensor
     /// \returns 2-norm error
     /// between exact and approximate tensor, \f$ \epsilon \f$
 
     double compute_error(double tcutCP = 1e-2, bool direct = true, int step = 1, int max_rank = 1e5,
                          double max_als = 1e5, double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0) {
-      int rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 0) : A[0].extent(0);
+      int rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
       double epsilon = tcutCP + 1;
       while (epsilon > tcutCP && rank < max_rank) {
-        if (!SVD_initial_guess) rank += step;
         build(rank, direct, max_als, true, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank);
-        if (SVD_initial_guess) rank += step;
+        rank++;
       }
       return epsilon;
     }
@@ -179,7 +176,6 @@ namespace btas {
     /// \param[in] SVD_initial_guess Should the initial factor matrices be
     /// approximated with left singular values?
     /// \param[in] SVD_rank if \c SVD_initial_guess is true, specify the rank of the initial guess such that
-    /// 0< SVD_rank < smallest mode of reference tensor
     /// \returns 2-norm error
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
     /// \f$ \epsilon \f$
@@ -247,7 +243,6 @@ namespace btas {
     /// matrices be approximated with left singular values?
     /// \param[in] SVD_rank if
     /// \c SVD_initial_guess is true specify the rank of the initial guess such
-    /// that 0< SVD_rank < smallest mode of reference tensor
     /// \returns 2-norm error
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
     /// \f$ \epsilon \f$
@@ -323,7 +318,6 @@ namespace btas {
     /// factor matrices be approximated with left singular values?
     /// \param[in]
     /// SVD_rank if \c SVD_initial_guess is true specify the rank of the initial
-    /// guess such that 0< SVD_rank < smallest mode of reference tensor
     /// \returns
     /// 2-norm error between exact and approximate tensor, -1.0 if
     /// calculate_epsilon = false, \f$ \epsilon \f$
@@ -413,7 +407,23 @@ namespace btas {
       return hold;
     }
 
-  private:
+    void testing_function(int num_of_tests, int mode_to_test, int rank){
+      for(int i = 0; i < ndim; i++){
+        A.push_back(Tensor(tensor_ref.extent(i), rank));
+        for(auto iter = A[i].begin(); iter != A[i].end(); ++iter){
+          *(iter) = rand();
+        }
+      }
+      A.push_back(Tensor(rank));
+
+      for(int i = 0; i < num_of_tests; i++){
+        double test = 0;
+        direct(mode_to_test, rank, test);
+      }
+
+    }
+
+   private:
     std::vector<Tensor> A;  // The vector of factor matrices
     Tensor &tensor_ref;     // The reference tensor being decomposed
     const int ndim;         // Number of modes in the reference tensor
@@ -448,7 +458,90 @@ namespace btas {
 #ifdef _HAS_INTEL_MKL
       if (A.empty() && SVD_initial_guess) {
         if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
-        for (int i = 0; i < ndim; i++) {
+
+        std::vector<int> modes_w_dim_GT_svd;
+        std::vector<int> modes_w_dim_LT_svd;
+        A = std::vector<Tensor>(ndim);
+
+        // Determine which factor matrices one can fill using SVD initial guess
+        for(int i = 0; i < ndim; i++){
+          if(tensor_ref.extent(i) >= SVD_rank){
+            modes_w_dim_GT_svd.push_back(i);
+          }
+          else{
+            modes_w_dim_LT_svd.push_back(i);
+          }
+        }
+
+        // Fill the set of factor matrices with dimension >= SVD_rank, this is required
+        // because we contract X X^T (where X is reference tensor) to make finding
+        // singular vectors an eigenvalue problem.
+        //for(auto& i: modes_w_dim_GT_svd){
+        for(int i = 0; i < ndim; i++){
+          int R = tensor_ref.extent(i);
+          Tensor S(R,R), lambda(R);
+
+          gemm(CblasNoTrans, CblasTrans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
+
+          auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R, lambda.data());
+          if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
+
+          lambda = Tensor(R, SVD_rank);
+          auto lower_bound = {0, ((R > SVD_rank) ? R - SVD_rank : 0)};
+          auto upper_bound = {R, R};
+          auto view = make_view(S.range().slice(lower_bound, upper_bound), S.storage());
+          auto l_iter = lambda.begin();
+          for(auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter){
+            *(l_iter) = *(iter);
+          }
+          //std::copy(view.begin(), view.end(), lambda.begin());
+          //A.push_back(lambda);
+          A[i] = lambda;
+        }
+
+        // Fill the set of factor matrices with dimension < SVD_rank with random numbers
+        for(auto& i: modes_w_dim_LT_svd){
+          //Tensor factor(tensor_ref.extent(i), SVD_rank);
+          int R = tensor_ref.extent(i);
+          auto lower_bound = {0, R};
+          auto upper_bound = {R, SVD_rank};
+          auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
+          for(auto iter = view.begin(); iter != view.end(); ++iter){
+            *(iter) = rand() % 500;
+          }
+          //A.push_back(factor);
+        }
+
+        /*// If any modes have dimension less than SVD rank then it is possible that A, the set of
+        // factor matrices is out of order.  This will reorder them, by walking through the
+        // correct order and the order that the factor matrices were pushed into A
+        if(!modes_w_dim_LT_svd.empty()){
+          std::vector<int> combined_list;
+          combined_list.reserve(modes_w_dim_GT_svd.size() + modes_w_dim_LT_svd.size());
+          combined_list.insert(combined_list.end(), modes_w_dim_GT_svd.begin(), modes_w_dim_GT_svd.end());
+          combined_list.insert(combined_list.end(), modes_w_dim_LT_svd.begin(), modes_w_dim_LT_svd.end());
+          std::vector<Tensor> B(A.size());
+
+          for(int i = 0; i < ndim; i++){
+            for(int j = 0: j < combined_list.size(); j++){
+              if(combined_list[j] == i){
+                B[i] = A[j];
+              }
+            }
+          }
+          A = B;
+        }*/
+
+        Tensor lambda(Range{Range1{SVD_rank}});
+        auto lambda_ptr = lambda.data();
+        for(auto &i: A){
+          for(int j = 0; j < SVD_rank; j++){
+            *(lambda_ptr + j) = normCol(i,j);
+          }
+        }
+        A.push_back(lambda);
+
+        /*for (int i = 0; i < ndim; i++) {
           auto flat = flatten(tensor_ref, i);
           int R = flat.extent(0);
           if (SVD_rank > R)
@@ -460,7 +553,7 @@ namespace btas {
           gemm(CblasNoTrans, CblasTrans, 1.0, flat, flat, 0.0, S);
 
           auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R, lambda.data());
-          if (info) BTAS_EXCEPTION("Error in computing the tucker SVD");
+          if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
 
           lambda = Tensor(R, SVD_rank);
           auto lower_bound = {0, R - SVD_rank};
@@ -477,8 +570,9 @@ namespace btas {
               lambda(j) = normCol(i, j);
           }
           if (i == ndim - 1) A.push_back(lambda);
-        }
-        ALS(SVD_rank, direct, max_als, calculate_epsilon, 0.03, epsilon);
+        }*/
+
+        ALS(SVD_rank, direct, max_als, calculate_epsilon, tcutALS, epsilon);
       }
 #else  //
       if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
@@ -505,11 +599,27 @@ namespace btas {
           // with new column dimension col_dimension_old + skip
           // fill the new columns with random numbers and normalize the columns
           else {
+            int row_extent = A[0].extent(0), rank_old = A[0].extent(1);
             Tensor b(Range{A[0].range(0), Range1{i + 1}});
-            b.fill(rand());
-            for (int l = A[0].extent(1); l < i + 1; ++l) normCol(b, l);
-            for (int k = 0; k < b.extent(0); k++)
-              for (int l = 0; l < A[0].extent(1); l++) b(k, l) = A[0](k, l);
+
+            {
+              auto lower_old = {0, 0}, upper_old = {row_extent, rank_old};
+              auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
+              auto A_itr = A[0].begin();
+              for(auto iter = old_view.begin(); iter != old_view.end(); ++iter, ++A_itr){
+                *(iter) = *(A_itr);
+              }
+            }
+
+            {
+              auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
+              auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
+              // auto rand = rand();
+              for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
+                *(iter) = rand() % 500;
+                //*(iter) = rand;
+              }
+            }
 
             A.erase(A.begin());
             A.push_back(b);
@@ -543,7 +653,7 @@ namespace btas {
 
     void ALS(int rank, bool dir, int max_als, bool calculate_epsilon, double tcutALS, double &epsilon) {
       auto count = 0;
-      double test = 1.0;
+      double test = tcutALS + 1.0;
 
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
@@ -563,6 +673,8 @@ namespace btas {
       if (calculate_epsilon) {
         epsilon = norm(reconstruct() - tensor_ref);
       }
+
+      //num_ALS += count;
     }
 
     /// Calculates an optimized CP factor matrix using Khatri-Rao product
@@ -648,13 +760,177 @@ namespace btas {
     /// \param[in out] test The difference between previous and current iteration
     /// factor matrix
 
+    void print(Tensor & A){
+      if(A.rank() == 2){
+        for(int i = 0; i < A.extent(0); i++){
+          for(int j = 0; j < A.extent(1); j++) {
+            std::cout << A(i,j) << " ";
+          }
+          std::cout << std::endl;
+        }
+
+      }
+      else
+        for(auto& i: A)
+          std::cout << i << std::endl;
+    }
+
     void direct(int n, int rank, double &test) {
+      //auto t1 = std::chrono::high_resolution_clock::now();
+      //auto t2 = std::chrono::high_resolution_clock::now();
+      //std::chrono::duration<double> time = t2 - t1;
+
+      bool last_dim = n == ndim - 1;
+      int LH_size = size;
+      int contract_dim = last_dim ? 0 : ndim - 1;
+      int offset_dim = tensor_ref.extent(n);
+      int pseudo_rank = rank;
+      double first_gemm = 0, second_gemm = 0, third_gemm = 0, final_gemm = 0;
+
+      std::vector<int> dimensions;
+      for(int i = last_dim ? 1: 0; i < (last_dim ? ndim: ndim - 1); i++){
+        dimensions.push_back(tensor_ref.extent(i));
+      }
+
+      Range R = tensor_ref.range();
+      Tensor an(A[n].range());
+
+      Tensor temp = Tensor(size / tensor_ref.extent(contract_dim), rank);
+      tensor_ref.resize(Range{
+                          Range1{last_dim ? tensor_ref.extent(contract_dim) : size / tensor_ref.extent(contract_dim)},
+                          Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
+
+      //t1 = std::chrono::high_resolution_clock::now();
+      gemm((last_dim ? CblasTrans : CblasNoTrans), CblasNoTrans, 1.0, tensor_ref, A[contract_dim], 0.0, temp);
+      //t2 = std::chrono::high_resolution_clock::now();
+      //time = t2 - t1;
+      //first_gemm = time.count();
+
+      tensor_ref.resize(R);
+      LH_size /= tensor_ref.extent(contract_dim);
+
+      n = last_dim ? ndim - 2: n;
+      contract_dim = ndim - 2;
+
+      while (contract_dim > 0) {
+        // Now temp is three index object where temp has size
+        // (size of tensor_ref/product of dimension contracted, dimension to be
+        // contracted, rank)
+        temp.resize(Range{Range1{LH_size / dimensions[contract_dim]}, Range1{dimensions[contract_dim]},
+                          Range1{pseudo_rank}});
+        Tensor contract_tensor(Range{Range1{temp.extent(0)}, Range1{temp.extent(2)}});
+
+        // If the middle dimension is the mode not being contracted, I will move
+        // it to the right hand side temp((size of tensor_ref/product of
+        // dimension contracted, rank * mode n dimension)
+        if (n == contract_dim) {
+          pseudo_rank *= offset_dim;
+        }
+
+          // If the code hasn't hit the mode of interest yet, it will contract
+          // over the middle dimension and sum over the rank.
+        else if (contract_dim > n) {
+          //t1 = std::chrono::high_resolution_clock::now();
+          auto idx1 = temp.extent(0);
+          auto idx2 = temp.extent(1);
+          for(int i = 0; i < idx1; i++){
+            auto * contract_ptr = contract_tensor.data() + i * rank;
+            for(int j = 0; j < idx2; j++){
+              const auto * temp_ptr = temp.data() + i * idx2 * rank + j * rank;
+
+              const auto * A_ptr = A[(last_dim ? contract_dim + 1: contract_dim)].data() + j * rank;
+              for(int r = 0; r < rank; r++){
+                *(contract_ptr + r) += *(temp_ptr + r) * *(A_ptr + r);
+              }
+            }
+          }
+          //t2 = std::chrono::high_resolution_clock::now();
+          //time = t2 - t1;
+          //second_gemm = time.count();
+          temp = contract_tensor;
+        }
+
+          // If the code has passed the mode of interest, it will contract over
+          // the middle dimension and sum over rank * mode n dimension
+        else {
+          //t1 = std::chrono::high_resolution_clock::now();
+          int idx1 = temp.extent(0), idx2 = temp.extent(1), offset = offset_dim;
+          for(int i = 0; i < idx1; i++){
+            auto * contract_ptr = contract_tensor.data() + i * rank;
+            for(int j = 0; j < idx2; j++){
+              const auto * temp_ptr = temp.data() + i * idx2 * offset * rank + j * offset * rank;
+
+              const auto * A_ptr = A[(last_dim ? contract_dim + 1: contract_dim)].data() + j * rank;
+              for(int k = 0; k < offset; k++){
+                for(int r = 0; r < rank; r++){
+                  *(contract_ptr + k * rank + r) += *(temp_ptr + k * rank + r) * *(A_ptr + r);
+                }
+              }
+            }
+          }
+          //t2 = std::chrono::high_resolution_clock::now();
+          //time = t2 - t1;
+          temp = contract_tensor;
+        }
+
+        LH_size /= tensor_ref.extent(contract_dim);
+        contract_dim--;
+      }
+
+      // If the mode of interest is the 0th mode, then the while loop above
+      // contracts over all other dimensions and resulting temp is of the
+      // correct dimension If the mode of interest isn't 0th mode, must contract
+      // out the 0th mode here, the above algorithm can't perform this
+      // contraction because the mode of interest is coupled with the rank
+      if (n != 0) {
+        //t1 = std::chrono::high_resolution_clock::now();
+        temp.resize(Range{Range1{dimensions[0]}, Range1{dimensions[n]}, Range1{rank}});
+        Tensor contract_tensor(Range{Range1{temp.extent(1)}, Range1{rank}});
+
+        int idx1 = temp.extent(0), idx2 = temp.extent(1);
+        for(int i = 0; i < idx1; i++){
+          const auto * A_ptr = A[(last_dim ? 1 : 0)].data() + i * rank;
+          for(int j = 0; j < idx2; j++){
+            const auto * temp_ptr = temp.data() + i * idx2 * rank + j * rank;
+            auto * contract_ptr = contract_tensor.data() + j * rank;
+            for(int r = 0; r < rank; r++){
+              *(contract_ptr + r) += *(A_ptr + r) * *(temp_ptr + r);
+            }
+          }
+        }
+        //t2 = std::chrono::high_resolution_clock::now();
+        //time = t2 - t1;
+        //third_gemm = time.count();
+        temp = contract_tensor;
+      }
+
+      n = last_dim ? ndim - 1: n;
+      // multiply resulting matrix temp by pseudoinverse to calculate optimized
+      // factor matrix
+      //t1 = std::chrono::high_resolution_clock::now();
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank), 0.0, an);
+      //t2 = std::chrono::high_resolution_clock::now();
+      //time = t2 - t1;
+      //final_gemm = time.count();
+
+      // compute the difference between this new factor matrix and the previous
+      // iteration
+      for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
+      test += norm(A[n] - an);
+      A[n] = an;
+      //printf("%3.8f\t%3.8f\t%3.8f\t%3.8f", first_gemm, second_gemm, third_gemm, final_gemm);
+      //std::cout << std::endl;
+    }
+
+    /*void direct(int n, int rank, double &test) {
+      auto t1 = std::chrono::high_resolution_clock::now();
+      auto t2 = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double> time = t2 - t1;
       int LH_size = size;
       int contract_dim = ndim - 1;  // keeps track of how many dimensions required to contract
       int pseudo_rank = rank;
 
-      Tensor temp(1,
-                  1);                // This will store tensor_ref contractions before the final product
+      Tensor temp(1, 1);                // This will store tensor_ref contractions before the final product
       Range R = tensor_ref.range();  // Tensor_ref's size will be changed to
       Tensor an(A[n].range());       // This will store the final contraction and will
                                      // be contracted with the pseudoinverse
@@ -670,6 +946,7 @@ namespace btas {
         temp.resize(Range{Range1{tensor_ref.extent(0)}, Range1{rank}});
 
         // contract the last mode
+
         gemm(CblasNoTrans, CblasNoTrans, 1.0, tensor_ref, A[contract_dim], 0.0, temp);
 
         // resize tensor_ref, no longer required in this method
@@ -698,20 +975,37 @@ namespace btas {
           // If the code hasn't hit the mode of interest yet, it will contract
           // over the middle dimension and sum over the rank.
           else if (contract_dim > n) {
-            for (int i = 0; i < temp.extent(0); i++)
-              for (int r = 0; r < rank; r++)
-                for (int j = 0; j < temp.extent(1); j++) contract_tensor(i, r) += temp(i, j, r) * A[contract_dim](j, r);
+            auto idx1 = temp.extent(0);
+            auto idx2 = temp.extent(1);
+            for(int i = 0; i < idx1; i++){
+              auto * contract_ptr = contract_tensor.data() + i * rank;
+              for(int j = 0; j < idx2; j++){
+                const auto * temp_ptr = temp.data() + i * idx2 * rank + j * rank;
+                const auto * A_ptr = A[contract_dim].data() + j * rank;
+                for(int r = 0; r < rank; r++){
+                  *(contract_ptr + r) += *(temp_ptr + r) * *(A_ptr + r);
+                }
+              }
+            }
             temp = contract_tensor;
           }
 
           // If the code has passed the mode of interest, it will contract over
           // the middle dimension and sum over rank * mode n dimension
           else {
-            for (int i = 0; i < temp.extent(0); i++)
-              for (int r = 0; r < rank; r++)
-                for (int k = 0; k < tensor_ref.extent(n); k++)
-                  for (int j = 0; j < temp.extent(1); j++)
-                    contract_tensor(i, k * rank + r) += temp(i, j, k * rank + r) * A[contract_dim](j, r);
+            int idx1 = temp.extent(0), idx2 = temp.extent(1), offset = tensor_ref.extent(n);
+            for(int i = 0; i < idx1; i++){
+              auto * contract_ptr = contract_tensor.data() + i * rank;
+              for(int j = 0; j < idx2; j++){
+                const auto * temp_ptr = temp.data() + i * idx2 * offset * rank + j * offset * rank;
+                const auto * A_ptr = A[contract_dim].data() + j * rank;
+                for(int k = 0; k < offset; k++){
+                  for(int r = 0; r < rank; r++){
+                    *(contract_ptr + k * rank + r) += *(temp_ptr + k * rank + r) * *(A_ptr + r);
+                  }
+                }
+              }
+            }
             temp = contract_tensor;
           }
 
@@ -727,9 +1021,18 @@ namespace btas {
         if (n != 0) {
           temp.resize(Range{Range1{tensor_ref.extent(0)}, Range1{tensor_ref.extent(n)}, Range1{rank}});
           Tensor contract_tensor(Range{Range1{temp.extent(1)}, Range1{rank}});
-          for (int i = 0; i < temp.extent(0); i++)
-            for (int r = 0; r < rank; r++)
-              for (int j = 0; j < temp.extent(1); j++) contract_tensor(j, r) += A[0](i, r) * temp(i, j, r);
+
+          int idx1 = temp.extent(0), idx2 = temp.extent(1);
+          for(int i = 0; i < idx1; i++){
+            const auto * A_ptr = A[0].data() + i * rank;
+            for(int j = 0; j < idx2; j++){
+              const auto * temp_ptr = temp.data() + i * idx2 * rank + j * rank;
+              auto * contract_ptr = contract_tensor.data() + j * rank;
+              for(int r = 0; r < rank; r++){
+                *(contract_ptr + r) += *(A_ptr + r) * *(temp_ptr + r);
+              }
+            }
+          }
           temp = contract_tensor;
         }
 
@@ -774,7 +1077,7 @@ namespace btas {
       for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
       test += norm(A[n] - an);
       A[n] = an;
-    }
+    }*/
 
     /// Generates V by first Multiply A^T.A then Hadamard product V(i,j) *=
     /// A^T.A(i,j);
@@ -784,13 +1087,14 @@ namespace btas {
     Tensor generate_V(int n, int rank) {
       Tensor V(rank, rank);
       V.fill(1.0);
-      for (auto j = 0; j < ndim; ++j) {
-        if (j != n) {
-          Tensor T = A.at(j);
+      auto * V_ptr = V.data();
+      for (auto i = 0; i < ndim; ++i) {
+        if (i != n) {
           Tensor lhs_prod(rank, rank);
-          gemm(CblasTrans, CblasNoTrans, 1.0, T, T, 0.0, lhs_prod);
-          for (int i = 0; i < rank; i++)
-            for (int k = 0; k < rank; k++) V(i, k) *= lhs_prod(i, k);
+          gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
+          const auto * lhs_ptr = lhs_prod.data();
+          for(int j = 0; j < rank*rank; j++)
+            *(V_ptr + j) *= *(lhs_ptr +j);
         }
       }
       return V;
