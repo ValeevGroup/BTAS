@@ -755,9 +755,9 @@ namespace btas {
     // T'(I1, I2, I3, R) (*) C(I3, R) = T'(I1, I2, R) (contract along I3, Hadamard along R)
     // T'(I1, I2, R) (*) C(I1, R) = T'(I2, R) = C(I2, R)
     void direct(int n, int rank, double &test, double lambda) {
-      auto t1 = std::chrono::high_resolution_clock::now();
-      auto t2 = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> time = t2 - t1;
+      //auto t1 = std::chrono::high_resolution_clock::now();
+      //auto t2 = std::chrono::high_resolution_clock::now();
+      //std::chrono::duration<double> time = t2 - t1;
 
       bool last_dim = n == ndim - 1;
       // product of all dimensions
