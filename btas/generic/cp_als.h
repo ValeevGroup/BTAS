@@ -62,6 +62,9 @@ namespace btas {
     // Accessing Factor Matrices
     A.get_factor_matrices()             // Returns a vector of factor matrices, if
                                         // they have been computed
+
+    A.reconstruct()                     // Returns the tensor computed using the
+                                        // CP factor matrices
     \endcode
   */
   template <typename Tensor>
@@ -110,7 +113,7 @@ namespace btas {
     double compute_rank(int rank, bool direct = true, bool calculate_epsilon = false, int step = 1, int max_als = 1e5,
                         double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0) {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
-      if (SVD_initial_guess && SVD_rank > rank) BTAS_EXCEPTION("Initial guess is larger than the final CP rank");
+      if (SVD_initial_guess && SVD_rank > rank) BTAS_EXCEPTION("Initial guess is larger than the desired CP rank");
       double epsilon = -1.0;
       build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank);
       return epsilon;
@@ -186,7 +189,7 @@ namespace btas {
         BTAS_EXCEPTION("The step size must be larger than 0");
       }
       if (SVD_initial_guess && SVD_rank > desired_rank) {
-        BTAS_EXCEPTION("Initial guess is larger than final CP decomposition");
+        BTAS_EXCEPTION("Initial guess is larger than desired CP rank");
       }
       double epsilon = -1.0;
       int rank = (SVD_initial_guess) ? SVD_rank : 1;
@@ -459,33 +462,34 @@ namespace btas {
       if (A.empty() && SVD_initial_guess) {
         if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
 
-        std::vector<int> modes_w_dim_GT_svd;
         std::vector<int> modes_w_dim_LT_svd;
         A = std::vector<Tensor>(ndim);
 
         // Determine which factor matrices one can fill using SVD initial guess
         for(int i = 0; i < ndim; i++){
-          if(tensor_ref.extent(i) >= SVD_rank){
-            modes_w_dim_GT_svd.push_back(i);
-          }
-          else{
+          if(tensor_ref.extent(i) < SVD_rank){
             modes_w_dim_LT_svd.push_back(i);
           }
         }
 
-        // Fill the set of factor matrices with dimension >= SVD_rank, this is required
+        // Fill all factor matrices with their singular vectors,
         // because we contract X X^T (where X is reference tensor) to make finding
-        // singular vectors an eigenvalue problem.
-        //for(auto& i: modes_w_dim_GT_svd){
+        // singular vectors an eigenvalue problem some factor matrices will not be
+        // full rank;
+
         for(int i = 0; i < ndim; i++){
           int R = tensor_ref.extent(i);
           Tensor S(R,R), lambda(R);
 
+          // Contract refrence tensor to make it square matrix of mode i
           gemm(CblasNoTrans, CblasTrans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
 
+          // Find the Singular vectors of the matrix using eigenvalue decomposition
           auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R, lambda.data());
           if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
 
+          // Fill a factor matrix with the singular vectors with the largest corresponding singular
+          // values
           lambda = Tensor(R, SVD_rank);
           auto lower_bound = {0, ((R > SVD_rank) ? R - SVD_rank : 0)};
           auto upper_bound = {R, R};
@@ -494,14 +498,12 @@ namespace btas {
           for(auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter){
             *(l_iter) = *(iter);
           }
-          //std::copy(view.begin(), view.end(), lambda.begin());
-          //A.push_back(lambda);
+
           A[i] = lambda;
         }
 
-        // Fill the set of factor matrices with dimension < SVD_rank with random numbers
+        // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd){
-          //Tensor factor(tensor_ref.extent(i), SVD_rank);
           int R = tensor_ref.extent(i);
           auto lower_bound = {0, R};
           auto upper_bound = {R, SVD_rank};
@@ -509,29 +511,10 @@ namespace btas {
           for(auto iter = view.begin(); iter != view.end(); ++iter){
             *(iter) = rand() % 500;
           }
-          //A.push_back(factor);
         }
 
-        /*// If any modes have dimension less than SVD rank then it is possible that A, the set of
-        // factor matrices is out of order.  This will reorder them, by walking through the
-        // correct order and the order that the factor matrices were pushed into A
-        if(!modes_w_dim_LT_svd.empty()){
-          std::vector<int> combined_list;
-          combined_list.reserve(modes_w_dim_GT_svd.size() + modes_w_dim_LT_svd.size());
-          combined_list.insert(combined_list.end(), modes_w_dim_GT_svd.begin(), modes_w_dim_GT_svd.end());
-          combined_list.insert(combined_list.end(), modes_w_dim_LT_svd.begin(), modes_w_dim_LT_svd.end());
-          std::vector<Tensor> B(A.size());
-
-          for(int i = 0; i < ndim; i++){
-            for(int j = 0: j < combined_list.size(); j++){
-              if(combined_list[j] == i){
-                B[i] = A[j];
-              }
-            }
-          }
-          A = B;
-        }*/
-
+        // Normalize the columns of the factor matrices and
+        // set the values al lambda, the weigt of each order 1 tensor
         Tensor lambda(Range{Range1{SVD_rank}});
         auto lambda_ptr = lambda.data();
         for(auto &i: A){
@@ -541,37 +524,7 @@ namespace btas {
         }
         A.push_back(lambda);
 
-        /*for (int i = 0; i < ndim; i++) {
-          auto flat = flatten(tensor_ref, i);
-          int R = flat.extent(0);
-          if (SVD_rank > R)
-            BTAS_EXCEPTION(
-                "SVD_rank must be less than or equal to the smallest "
-                "dimension of the tensor being decomposed");
-          Tensor S(R, R), lambda(R);
-
-          gemm(CblasNoTrans, CblasTrans, 1.0, flat, flat, 0.0, S);
-
-          auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R, lambda.data());
-          if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
-
-          lambda = Tensor(R, SVD_rank);
-          auto lower_bound = {0, R - SVD_rank};
-          auto upper_bound = {R, R};
-          auto view = btas::make_view(S.range().slice(lower_bound, upper_bound), S.storage());
-          std::copy(view.begin(), view.end(), lambda.begin());
-          A.push_back(lambda);
-          lambda = Tensor(Range{Range1{SVD_rank}});
-          lambda.fill(0.0);
-          for (int j = 0; j < SVD_rank; j++) {
-            if (i != ndim - 1)
-              normCol(i, j);
-            else
-              lambda(j) = normCol(i, j);
-          }
-          if (i == ndim - 1) A.push_back(lambda);
-        }*/
-
+        // Optimize this initial guess.
         ALS(SVD_rank, direct, max_als, calculate_epsilon, tcutALS, epsilon);
       }
 #else  //
@@ -760,6 +713,7 @@ namespace btas {
     /// \param[in out] test The difference between previous and current iteration
     /// factor matrix
 
+    // For debug purposes
     void print(Tensor & A){
       if(A.rank() == 2){
         for(int i = 0; i < A.extent(0); i++){
@@ -775,40 +729,65 @@ namespace btas {
           std::cout << i << std::endl;
     }
 
+    // Computes the nth ALS optimized factor matrix without computing
+    // Flattened refrence or computing the Khatri-Rao product
+    // Does this by first contracting a factor matrix with the refrence tensor
+    // Then computes hadamard/contraction products along all other modes except n.
+
+    // Want C(I2, R)
+    // T(I1, I2, I3, I4)
+    // T(I1, I2, I3, I4) * C(I4, R) = T'(I1, I2, I3, R)
+    // T'(I1, I2, I3, R) (*) C(I3, R) = T'(I1, I2, R) (contract along I3, Hadamard along R)
+    // T'(I1, I2, R) (*) C(I1, R) = T'(I2, R) = C(I2, R)
+
     void direct(int n, int rank, double &test) {
       //auto t1 = std::chrono::high_resolution_clock::now();
       //auto t2 = std::chrono::high_resolution_clock::now();
       //std::chrono::duration<double> time = t2 - t1;
 
+      // Determine if n is the last mode, if it is first contract with first mode
+      // and transpose the product
       bool last_dim = n == ndim - 1;
+      // product of all dimensions
       int LH_size = size;
       int contract_dim = last_dim ? 0 : ndim - 1;
       int offset_dim = tensor_ref.extent(n);
       int pseudo_rank = rank;
-      double first_gemm = 0, second_gemm = 0, third_gemm = 0, final_gemm = 0;
+      //double first_gemm = 0, second_gemm = 0, third_gemm = 0, final_gemm = 0;  // These are for timings
 
+      // Store the dimensions which are available to hadamard contract
       std::vector<int> dimensions;
       for(int i = last_dim ? 1: 0; i < (last_dim ? ndim: ndim - 1); i++){
         dimensions.push_back(tensor_ref.extent(i));
       }
 
+      // Modifying the dimension of tensor_ref so store the range here to resize
       Range R = tensor_ref.range();
       Tensor an(A[n].range());
 
+      // Resize the tensor which will store the product of tensor_ref and the first factor matrix
       Tensor temp = Tensor(size / tensor_ref.extent(contract_dim), rank);
       tensor_ref.resize(Range{
                           Range1{last_dim ? tensor_ref.extent(contract_dim) : size / tensor_ref.extent(contract_dim)},
                           Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
 
       //t1 = std::chrono::high_resolution_clock::now();
+      // contract tensor ref and the first factor matrix
       gemm((last_dim ? CblasTrans : CblasNoTrans), CblasNoTrans, 1.0, tensor_ref, A[contract_dim], 0.0, temp);
       //t2 = std::chrono::high_resolution_clock::now();
       //time = t2 - t1;
       //first_gemm = time.count();
 
+      // Resize tensor_ref
       tensor_ref.resize(R);
+      // Remove the dimension which was just contracted out
       LH_size /= tensor_ref.extent(contract_dim);
 
+      // n tells which dimension not to contract, and contract_dim says which dimension I am trying to contract.
+      // If n == contract_dim then that mode is skipped.
+      // if n == ndim - 1, my contract_dim = 0. The gemm transposes to make rank = ndim - 1, so I
+      // move the pointer that preserves the last dimension to n = ndim -2.
+      // In all cases I want to walk through the orders in tensor_ref backward so contract_dim = ndim - 2
       n = last_dim ? ndim - 2: n;
       contract_dim = ndim - 2;
 
@@ -1078,6 +1057,7 @@ namespace btas {
 
       return U;
     }
+
   };  // class CP_ALS
 
 }  // namespace btas
