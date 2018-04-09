@@ -24,6 +24,8 @@ namespace btas {
   using std::void_t;
 # endif
 
+#else   // if have C++17, import C++17 features directly
+  using std::void_t;
 #endif  // C++17 features
 
 /// extends std::common_type to yield a signed integer type if one of the arguments is a signed type
