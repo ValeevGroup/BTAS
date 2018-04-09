@@ -206,11 +206,11 @@ namespace std {
 #endif
 
 #if __cplusplus <= 201402L // add useful bits to make transition to C++17 easier
-  template <class C, typename std::enable_if<std::is_pointer<decltype(declval<C>().data())>::value>::type* = nullptr>
+  template <class C, typename std::enable_if<std::is_pointer<decltype(std::declval<C>().data())>::value>::type* = nullptr>
   constexpr auto data(C& c) -> decltype(c.data()) {
       return c.data();
   }
-  template <class C, typename std::enable_if<std::is_pointer<decltype(declval<C>().data())>::value>::type* = nullptr>
+  template <class C, typename std::enable_if<std::is_pointer<decltype(std::declval<C>().data())>::value>::type* = nullptr>
   constexpr auto data(const C& c) -> decltype(c.data()) {
       return c.data();
   }
