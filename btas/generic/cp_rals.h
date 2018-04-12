@@ -1,5 +1,5 @@
-#ifndef BTAS_GENERIC_CP_ALS_H
-#define BTAS_GENERIC_CP_ALS_H
+#ifndef BTAS_GENERIC_CP_RALS_H
+#define BTAS_GENERIC_CP_RALS_H
 
 #include <algorithm>
 #include <cstdlib>
@@ -68,12 +68,12 @@ namespace btas {
     \endcode
   */
   template <typename Tensor>
-  class CP_ALS {
+  class CP_RALS {
    public:
-    /// Constructor of object CP_ALS
+    /// Constructor of object CP_RALS
     /// \param[in] tensor The tensor object to be decomposed
 
-    CP_ALS(Tensor &tensor) : tensor_ref(tensor), ndim(tensor_ref.rank()), size(tensor_ref.size()) {
+    CP_RALS(Tensor &tensor) : tensor_ref(tensor), ndim(tensor_ref.rank()), size(tensor_ref.size()) {
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
       BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_ALS requires LAPACKE or mkl_lapack");
 #endif
@@ -82,7 +82,7 @@ namespace btas {
 #endif
     }
 
-    ~CP_ALS() = default;
+    ~CP_RALS() = default;
 
     /// Computes decomposition of the order-N tensor \c tensor
     /// with CP rank = \c rank .
@@ -608,17 +608,28 @@ namespace btas {
       auto count = 0;
       double test = tcutALS + 1.0;
 
+      double s = 0.0;
+      const auto s0 = 52.0;
+      const auto alpha = 0.2;
+      std::vector<double> lambda(ndim, 1.0);
+
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
       while (count <= max_als && test > tcutALS) {
         count++;
         test = 0.0;
+        s = 0.0;
+
         for (auto i = 0; i < ndim; i++) {
           if (dir)
-            direct(i, rank, test);
+            direct(i, rank, s, lambda[i]);
           else
-            update_w_KRP(i, rank, test);
+            update_w_KRP(i, rank, s, lambda[i]);
+
+          test += s;
+          s /= norm(A[i]);
+          lambda[i] = (lambda[i] * (s * s) / (s0 * s0) ) * alpha + (1 - alpha) * lambda[i];
         }
       }
 
@@ -638,7 +649,7 @@ namespace btas {
     /// matrices
     /// \param[in out] test The difference between previous and current
     /// iteration factor matrix
-    void update_w_KRP(int n, int rank, double &test) {
+    void update_w_KRP(int n, int rank, double &test, double lambda) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -680,10 +691,14 @@ namespace btas {
       // flattened intermediate
       gemm(CblasNoTrans, CblasNoTrans, 1.0, flatten(tensor_ref, n), generate_KRP(n, rank, true), 0.0, temp);
 #endif
-
+      {
+        auto LamA = A[n];
+        scal(lambda, LamA);
+        temp += LamA;
+      }
       // contract the product from above with the psuedoinverse of the Hadamard
       // produce an optimize factor matrix
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank), 0.0, an);
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, lambda), 0.0, an);
 
       // compute the difference between this new factor matrix and the previous
       // iteration
@@ -739,14 +754,11 @@ namespace btas {
     // T(I1, I2, I3, I4) * C(I4, R) = T'(I1, I2, I3, R)
     // T'(I1, I2, I3, R) (*) C(I3, R) = T'(I1, I2, R) (contract along I3, Hadamard along R)
     // T'(I1, I2, R) (*) C(I1, R) = T'(I2, R) = C(I2, R)
-
-    void direct(int n, int rank, double &test) {
+    void direct(int n, int rank, double &test, double lambda) {
       //auto t1 = std::chrono::high_resolution_clock::now();
       //auto t2 = std::chrono::high_resolution_clock::now();
       //std::chrono::duration<double> time = t2 - t1;
 
-      // Determine if n is the last mode, if it is first contract with first mode
-      // and transpose the product
       bool last_dim = n == ndim - 1;
       // product of all dimensions
       int LH_size = size;
@@ -884,10 +896,13 @@ namespace btas {
       }
 
       n = last_dim ? ndim - 1: n;
+      auto LamA = A[n];
+      scal(lambda, LamA);
+      temp += LamA;
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       //t1 = std::chrono::high_resolution_clock::now();
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank), 0.0, an);
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, lambda), 0.0, an);
       //t2 = std::chrono::high_resolution_clock::now();
       //time = t2 - t1;
       //final_gemm = time.count();
@@ -906,7 +921,7 @@ namespace btas {
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
 
-    Tensor generate_V(int n, int rank) {
+    Tensor generate_V(int n, int rank, double lambda) {
       Tensor V(rank, rank);
       V.fill(1.0);
       auto * V_ptr = V.data();
@@ -918,6 +933,10 @@ namespace btas {
           for(int j = 0; j < rank*rank; j++)
             *(V_ptr + j) *= *(lhs_ptr +j);
         }
+      }
+
+      for(auto j = 0; j < rank; ++j){
+        V(j,j) += lambda;
       }
       return V;
     }
@@ -1002,9 +1021,9 @@ namespace btas {
     /// \param[in] R The current rank, column dimension of the factor matrices
     /// \return V^{-1} The psuedoinverse of the matrix V.
 
-    Tensor pseudoInverse(int n, int R) {
+    Tensor pseudoInverse(int n, int R, double lambda) {
       // CP_ALS method requires the psuedoinverse of matrix V
-      auto a = generate_V(n, R);
+      auto a = generate_V(n, R, lambda);
       Tensor s(Range{Range1{R}});
       Tensor U(Range{Range1{R}, Range1{R}});
       Tensor Vt(Range{Range1{R}, Range1{R}});
@@ -1062,4 +1081,4 @@ namespace btas {
 
 }  // namespace btas
 
-#endif  // BTAS_GENERIC_CP_ALS_H
+#endif  // BTAS_GENERIC_CP_RALS_H

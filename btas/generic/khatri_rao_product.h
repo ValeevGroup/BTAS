@@ -25,10 +25,20 @@ void khatri_rao_product(const Tensor &A, const Tensor &B, Tensor &AB) {
       Range{Range1{A.extent(0) * B.extent(0)}, Range1{A.extent(1)}});
   
   // Calculate Khatri-Rao product by multiplying rows of A by rows of B.
-  for (auto i = 0; i < A.extent(0); ++i)
-    for (auto j = 0; j < B.extent(0); ++j)
-      for (auto k = 0; k < A.extent(1); ++k)
-        AB(i * B.extent(0) + j, k) = A(i, k) * B(j, k);
+  auto A_row = A.extent(0);
+  auto B_row = B.extent(0);
+  auto KRP_dim = A.extent(1);
+  for (auto i = 0; i < A_row; ++i) {
+    const auto *A_ptr = A.data() + i * KRP_dim;
+    for (auto j = 0; j < B_row; ++j) {
+      const auto * B_ptr = B.data() + j * KRP_dim;
+      auto * AB_ptr = AB.data() + i * B_row * KRP_dim + j * KRP_dim;
+      for (auto k = 0; k < KRP_dim; ++k) {
+        //AB(i * B.extent(0) + j, k) = A(i, k) * B(j, k);
+        *(AB_ptr + k) = *(A_ptr + k) * *(B_ptr + k);
+      }
+    }
+  }
 }
 
 } // namespace btas
