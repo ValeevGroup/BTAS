@@ -747,19 +747,9 @@ namespace btas {
 
     // Want A(I2, R)
     // T(I1, I2, I3, I4)
-<<<<<<< Updated upstream
-    // T(I1, I2, I3, I4) * C(I4, R) = T'(I1, I2, I3, R)
-    // T'(I1, I2, I3, R) (*) C(I3, R) = T'(I1, I2, R) (contract along I3, Hadamard along R)
-    // T'(I1, I2, R) (*) C(I1, R) = T'(I2, R) = C(I2, R)
-    void direct(int n, int rank, double &test, double lambda) {
-      //auto t1 = std::chrono::high_resolution_clock::now();
-      //auto t2 = std::chrono::high_resolution_clock::now();
-      //std::chrono::duration<double> time = t2 - t1;
-=======
     // T(I1, I2, I3, I4) * A(I4, R) = T'(I1, I2, I3, R)
     // T'(I1, I2, I3, R) (*) A(I3, R) = T'(I1, I2, R) (contract along I3, Hadamard along R)
     // T'(I1, I2, R) (*) A(I1, R) = T'(I2, R) = A(I2, R)
->>>>>>> Stashed changes
 
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
