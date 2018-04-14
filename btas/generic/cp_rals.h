@@ -106,16 +106,17 @@ namespace btas {
     /// approximated with left singular values?
     /// \param[in] SVD_rank if \c
     /// SVD_initial_guess is true specify the rank of the initial guess such that
+    /// \param[in] symm is \c tensor is symmetric in the last two dimension?
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false.
 
     double compute_rank(int rank, bool direct = true, bool calculate_epsilon = false, int step = 1, int max_als = 1e5,
-                        double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0) {
+                        double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0, bool symm = false) {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       if (SVD_initial_guess && SVD_rank > rank) BTAS_EXCEPTION("Initial guess is larger than the desired CP rank");
       double epsilon = -1.0;
-      build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank);
+      build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, symm);
       return epsilon;
     }
 
@@ -141,15 +142,16 @@ namespace btas {
     /// approximated with left singular values?
     /// \param[in] SVD_rank if \c
     /// SVD_initial_guess is true specify the rank of the initial guess such that
+    /// \param[in] symm is \c tensor is symmetric in the last two dimension?
     /// \returns 2-norm error
     /// between exact and approximate tensor, \f$ \epsilon \f$
 
     double compute_error(double tcutCP = 1e-2, bool direct = true, int step = 1, int max_rank = 1e5,
-                         double max_als = 1e5, double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0) {
+                         double max_als = 1e5, double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0, bool symm = false) {
       int rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
       double epsilon = tcutCP + 1;
       while (epsilon > tcutCP && rank < max_rank) {
-        build(rank, direct, max_als, true, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank);
+        build(rank, direct, max_als, true, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, symm);
         rank++;
       }
       return epsilon;
@@ -179,12 +181,13 @@ namespace btas {
     /// \param[in] SVD_initial_guess Should the initial factor matrices be
     /// approximated with left singular values?
     /// \param[in] SVD_rank if \c SVD_initial_guess is true, specify the rank of the initial guess such that
+    /// \param[in] symm is \c tensor is symmetric in the last two dimension?
     /// \returns 2-norm error
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
     /// \f$ \epsilon \f$
     double compute_geometric(int desired_rank, int geometric_step = 2, bool direct = true, int max_als = 1e5,
                              bool calculate_epsilon = false, double tcutALS = 0.1, bool SVD_initial_guess = false,
-                             int SVD_rank = 0) {
+                             int SVD_rank = 0, bool symm = false) {
       if (geometric_step <= 0) {
         BTAS_EXCEPTION("The step size must be larger than 0");
       }
@@ -195,7 +198,7 @@ namespace btas {
       int rank = (SVD_initial_guess) ? SVD_rank : 1;
 
       while (rank <= desired_rank && rank < max_als) {
-        build(rank, direct, max_als, calculate_epsilon, geometric_step, tcutALS, epsilon, SVD_initial_guess, SVD_rank);
+        build(rank, direct, max_als, calculate_epsilon, geometric_step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, symm);
         if (geometric_step <= 1)
           rank++;
         else
@@ -452,9 +455,10 @@ namespace btas {
     /// error between the exact and approximated reference tensor
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
+    /// \param[in] symm is \c tensor is symmetric in the last two dimension?
 
     void build(int rank, bool direct, int max_als, bool calculate_epsilon, int step, double tcutALS, double &epsilon,
-               bool SVD_initial_guess, int SVD_rank) {
+               bool SVD_initial_guess, int SVD_rank, bool symm) {
     // If its the first time into build and SVD_initial_guess
     // build and optimize the initial guess based on the left
     // singular vectors of the reference tensor.
@@ -525,7 +529,7 @@ namespace btas {
         A.push_back(lambda);
 
         // Optimize this initial guess.
-        ALS(SVD_rank, direct, max_als, calculate_epsilon, tcutALS, epsilon);
+        ALS(SVD_rank, direct, max_als, calculate_epsilon, tcutALS, epsilon, symm);
       }
 #else  //
       if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
@@ -585,7 +589,7 @@ namespace btas {
           }
         }
         // compute the ALS of factor matrices with rank = i + 1.
-        ALS(i + 1, direct, max_als, calculate_epsilon, tcutALS, epsilon);
+        ALS(i + 1, direct, max_als, calculate_epsilon, tcutALS, epsilon, symm);
       }
     }
 
@@ -603,16 +607,19 @@ namespace btas {
     /// single rank converged. Default = 0.1.
     /// \param[in, out] epsilon The 2-norm
     /// error between the exact and approximated reference tensor
+    /// \param[in] symm is \c tensor is symmetric in the last two dimension?
 
-    void ALS(int rank, bool dir, int max_als, bool calculate_epsilon, double tcutALS, double &epsilon) {
+    void ALS(int rank, bool dir, int max_als, bool calculate_epsilon, double tcutALS, double &epsilon, bool symm) {
       auto count = 0;
       double test = tcutALS + 1.0;
 
       double s = 0.0;
-      const auto s0 = 52.0;
+      const auto s0 = 70.0;
       const auto alpha = 0.2;
       std::vector<double> lambda(ndim, 1.0);
-
+      if(symm){
+        A[ndim - 1] = A[ndim -2];
+      }
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
@@ -621,15 +628,18 @@ namespace btas {
         test = 0.0;
         s = 0.0;
 
-        for (auto i = 0; i < ndim; i++) {
+        for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
           if (dir)
-            direct(i, rank, s, lambda[i]);
+            direct(i, rank, symm, s, lambda[i]);
           else
-            update_w_KRP(i, rank, s, lambda[i]);
+            update_w_KRP(i, rank, symm, s, lambda[i]);
 
           test += s;
           s /= norm(A[i]);
           lambda[i] = (lambda[i] * (s * s) / (s0 * s0) ) * alpha + (1 - alpha) * lambda[i];
+        }
+        if(symm){
+          A[ndim - 1] = A[ndim - 2];
         }
       }
 
@@ -637,7 +647,6 @@ namespace btas {
       if (calculate_epsilon) {
         epsilon = norm(reconstruct() - tensor_ref);
       }
-
       //num_ALS += count;
     }
 
@@ -649,7 +658,8 @@ namespace btas {
     /// matrices
     /// \param[in out] test The difference between previous and current
     /// iteration factor matrix
-    void update_w_KRP(int n, int rank, double &test, double lambda) {
+    /// \param[in] symm is \c tensor is symmetric in the last two dimension?
+    void update_w_KRP(int n, int rank, double &test, bool symm, double lambda) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -703,30 +713,15 @@ namespace btas {
       // compute the difference between this new factor matrix and the previous
       // iteration
       for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
-      test += norm(A[n] - an);
+      auto nrm = norm(A[n] - an);
+      if(n == ndim - 2 && symm){
+        test += nrm;
+      }
+      test += nrm;
 
       // Replace the old factor matrix with the new optimized result
       A[n] = an;
     }
-
-    /// Computes an optimized factor matrix holding all others constant.
-    /// No Khatri-Rao product computed, immediate contraction
-    /// N = 4, n = I2
-    /// T(I0, I1, I2, I3) --> T(I0 I1 I2, I3)
-    /// T(I0 I1 I2, I3) x A( I3, R) ---> T(I0 I1 I2, R)
-    /// T(I0 I1 I2, R) --> T(I0 I1, I2, R) --> T(I0 I1, I2 R)
-    /// T(I0 I1, I2 R) --> T(I0, I1, I2 R) (x) A(I1, R) --> T(I0, I2 R)
-    /// T(I0, I2, R) (x) T(I0, R) --> T(I2, R)
-
-    /// N = 3, n = I2
-    /// T(I0, I1, I2) --> T(I0, I1 I2)
-    /// (T(I0, I1 I2))^T A(I0, R) --> T(I1 I2, R)
-    /// T(I1, I2, R) (x) T(I1, R) --> T(I2, R)
-
-    /// \param[in] n The mode being optimized, all other modes held constant
-    /// \param[in] rank The current rank, column dimension of the factor matrices
-    /// \param[in out] test The difference between previous and current iteration
-    /// factor matrix
 
     // For debug purposes
     void print(Tensor & A){
@@ -744,13 +739,15 @@ namespace btas {
           std::cout << i << std::endl;
     }
 
-    // Computes the nth ALS optimized factor matrix without computing
-    // Flattened refrence or computing the Khatri-Rao product
+
+    /// Computes an optimized factor matrix holding all others constant.
+    /// No Khatri-Rao product computed, immediate contraction
     // Does this by first contracting a factor matrix with the refrence tensor
     // Then computes hadamard/contraction products along all other modes except n.
 
-    // Want C(I2, R)
+    // Want A(I2, R)
     // T(I1, I2, I3, I4)
+<<<<<<< Updated upstream
     // T(I1, I2, I3, I4) * C(I4, R) = T'(I1, I2, I3, R)
     // T'(I1, I2, I3, R) (*) C(I3, R) = T'(I1, I2, R) (contract along I3, Hadamard along R)
     // T'(I1, I2, R) (*) C(I1, R) = T'(I2, R) = C(I2, R)
@@ -758,7 +755,23 @@ namespace btas {
       //auto t1 = std::chrono::high_resolution_clock::now();
       //auto t2 = std::chrono::high_resolution_clock::now();
       //std::chrono::duration<double> time = t2 - t1;
+=======
+    // T(I1, I2, I3, I4) * A(I4, R) = T'(I1, I2, I3, R)
+    // T'(I1, I2, I3, R) (*) A(I3, R) = T'(I1, I2, R) (contract along I3, Hadamard along R)
+    // T'(I1, I2, R) (*) A(I1, R) = T'(I2, R) = A(I2, R)
+>>>>>>> Stashed changes
 
+    /// \param[in] n The mode being optimized, all other modes held constant
+    /// \param[in] rank The current rank, column dimension of the factor matrices
+    /// \param[in out] test The difference between previous and current iteration
+    /// factor matrix
+    void direct(int n, int rank, double &test, bool symm,  double lambda) {
+      //auto t1 = std::chrono::high_resolution_clock::now();
+      //auto t2 = std::chrono::high_resolution_clock::now();
+      //std::chrono::duration<double> time = t2 - t1;
+
+      // Determine if n is the last mode, if it is first contract with first mode
+      // and transpose the product
       bool last_dim = n == ndim - 1;
       // product of all dimensions
       int LH_size = size;
@@ -910,7 +923,11 @@ namespace btas {
       // compute the difference between this new factor matrix and the previous
       // iteration
       for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
-      test += norm(A[n] - an);
+      auto nrm = norm(A[n] - an);
+      if(n == ndim - 2 && symm){
+        test += nrm;
+      }
+      test += nrm;
       A[n] = an;
       //printf("%3.8f\t%3.8f\t%3.8f\t%3.8f", first_gemm, second_gemm, third_gemm, final_gemm);
       //std::cout << std::endl;
