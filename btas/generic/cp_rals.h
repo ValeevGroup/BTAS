@@ -630,9 +630,9 @@ namespace btas {
 
         for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
           if (dir)
-            direct(i, rank, symm, s, lambda[i]);
+            direct(i, rank, test, symm, lambda[i]);
           else
-            update_w_KRP(i, rank, symm, s, lambda[i]);
+            update_w_KRP(i, rank, test, symm, lambda[i]);
 
           test += s;
           s /= norm(A[i]);
