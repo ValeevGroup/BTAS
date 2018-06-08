@@ -621,7 +621,7 @@ namespace btas {
       /// construct from \c range and \c storage; pass \c can_write explicitly if needed
       explicit TensorView (range_type&& range, storage_type& storage,
                            bool can_write = mutability_impl_type::make_default()) :
-          range_(std::move(range)), storageref_(std::ref(storage)), mutability_impl_type(can_write) {
+          mutability_impl_type(can_write), range_(std::move(range)), storageref_(std::ref(storage)) {
       }
 
       template <typename T,
