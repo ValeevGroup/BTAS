@@ -136,7 +136,7 @@ namespace btas {
       explicit
       Tensor (const range_type& range, storage_type&& storage) :
       range_(range.ordinal(*range.begin()) == 0 ? range : range_type(range.lobound(), range.upbound())),
-      storage_(storage)
+      storage_(std::move(storage))
       {
         if (storage_.size() != range_.area())
           array_adaptor<storage_type>::resize(storage_, range_.area());
@@ -145,8 +145,8 @@ namespace btas {
       /// move-construct from \c range and \c storage
       explicit
       Tensor (range_type&& range, storage_type&& storage) :
-      range_(range.ordinal(*range.begin()) == 0 ? range : range_type(range.lobound(), range.upbound())),
-      storage_(storage)
+      range_(range.ordinal(*range.begin()) == 0 ? std::move(range) : range_type(range.lobound(), range.upbound())),
+      storage_(std::move(storage))
       {
         if (storage_.size() != range_.area())
           array_adaptor<storage_type>::resize(storage_, range_.area());
@@ -193,7 +193,7 @@ namespace btas {
 
       /// move constructor
       Tensor (Tensor&& x)
-      : range_ (x.range()), storage_(x.storage_)
+      : range_ (std::move(x.range())), storage_(std::move(x.storage_))
       {
       }
 
