@@ -844,9 +844,9 @@ namespace btas {
           //t1 = std::chrono::high_resolution_clock::now();
           int idx1 = temp.extent(0), idx2 = temp.extent(1), offset = offset_dim;
           for(int i = 0; i < idx1; i++){
-            auto * contract_ptr = contract_tensor.data() + i * rank;
+            auto * contract_ptr = contract_tensor.data() + i * pseudo_rank;
             for(int j = 0; j < idx2; j++){
-              const auto * temp_ptr = temp.data() + i * idx2 * offset * rank + j * offset * rank;
+              const auto * temp_ptr = temp.data() + i * idx2 * pseudo_rank + j * pseudo_rank;
 
               const auto * A_ptr = A[(last_dim ? contract_dim + 1: contract_dim)].data() + j * rank;
               for(int k = 0; k < offset; k++){
