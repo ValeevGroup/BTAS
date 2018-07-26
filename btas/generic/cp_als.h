@@ -506,7 +506,8 @@ namespace btas {
           A[i] = lambda;
         }
 
-        srand(3);
+        //srand(3);
+        std::mt19937 generator(3);
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd){
           int R = tensor_ref.extent(i);
@@ -514,8 +515,10 @@ namespace btas {
           auto lower_bound = {0, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
+          std::normal_distribution<double> distribution(num_elements, num_elements/4);
           for(auto iter = view.begin(); iter != view.end(); ++iter){
-            *(iter) = rand() % num_elements;
+            //*(iter) = rand() % num_elements;
+            *(iter) = distribution(generator);
           }
         }
 
@@ -841,9 +844,9 @@ namespace btas {
           //t1 = std::chrono::high_resolution_clock::now();
           int idx1 = temp.extent(0), idx2 = temp.extent(1), offset = offset_dim;
           for(int i = 0; i < idx1; i++){
-            auto * contract_ptr = contract_tensor.data() + i * rank;
+            auto * contract_ptr = contract_tensor.data() + i * pseudo_rank;
             for(int j = 0; j < idx2; j++){
-              const auto * temp_ptr = temp.data() + i * idx2 * offset * rank + j * offset * rank;
+              const auto * temp_ptr = temp.data() + i * idx2 * pseudo_rank + j * pseudo_rank;
 
               const auto * A_ptr = A[(last_dim ? contract_dim + 1: contract_dim)].data() + j * rank;
               for(int k = 0; k < offset; k++){
