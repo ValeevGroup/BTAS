@@ -215,6 +215,33 @@ template <typename Tensor> bool QR_decomp(Tensor &A) {
   }
 }
 
+template <typename Tensor>
+void Inverse_Matrix(Tensor & A){
+  if(A.rank() > 2){
+    //Return exception
+  }
+  btas::Tensor<int> piv(std::min(A.extent(0), A.extent(1)));
+  Tensor L(A.range());
+  Tensor P(A.extent(0), A.extent(0));
+  P.fill(0.0);
+  L.fill(0.0);
+
+  // LAPACKE LU decomposition gives back dense L and U to be
+  // restored into lower and upper triangular form, and a pivoting
+  // matrix for L
+  auto info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, A.extent(0), A.extent(1),
+                             A.data(), A.extent(1), piv.data());
+  if(info != 0){
+    A = Tensor();
+    return;
+  }
+  info = LAPACKE_dgetri(CblasRowMajor, A.extent(0), A.data(), A.extent(0), piv.data());
+  if(info != 0){
+    A = Tensor();
+    return;
+  }
+  return;
+}
 } // namespace btas
 
 #endif // HAS_INTEL_MKL
