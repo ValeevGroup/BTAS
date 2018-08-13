@@ -906,10 +906,10 @@ namespace btas {
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       //t1 = std::chrono::high_resolution_clock::now();
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank), 0.0, an);
       //t2 = std::chrono::high_resolution_clock::now();
       //time = t2 - t1;
       //final_gemm = time.count();
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI), 0.0, an);
 
       // compute the difference between this new factor matrix and the previous
       // iteration
@@ -1032,6 +1032,7 @@ namespace btas {
     Tensor pseudoInverse(int n, int R, bool fast_pI) {
       // CP_ALS method requires the psuedoinverse of matrix V
       auto a = generate_V(n, R);
+#if _HAS_INTEL_MKL
       if(fast_pI) {
         Tensor temp(R, R), inv(R, R);
         // V^{\dag} = (A^T A) ^{-1} A^T
@@ -1040,8 +1041,11 @@ namespace btas {
         gemm(CblasNoTrans, CblasTrans, 1.0, temp, a, 0.0, inv);
         return inv;
       }
+#else
+        fast_pI = false;
+#endif // _HAS_INTEL_MKL
 
-      else {
+      if(!fast_pI) {
         Tensor s(Range{Range1{R}});
         Tensor U(Range{Range1{R}, Range1{R}});
         Tensor Vt(Range{Range1{R}, Range1{R}});
