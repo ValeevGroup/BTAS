@@ -73,7 +73,7 @@ namespace btas {
     /// Constructor of object CP_ALS
     /// \param[in] tensor The tensor object to be decomposed
 
-    CP_ALS(Tensor &tensor) : tensor_ref(tensor), ndim(tensor_ref.rank()), size(tensor_ref.size()) {
+    CP_ALS(Tensor &tensor) : tensor_ref(tensor), ndim(tensor_ref.rank()), size(tensor_ref.size()), num_ALS(0) {
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
       BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_ALS requires LAPACKE or mkl_lapack");
 #endif
@@ -118,6 +118,7 @@ namespace btas {
       if (SVD_initial_guess && SVD_rank > rank) BTAS_EXCEPTION("Initial guess is larger than the desired CP rank");
       double epsilon = -1.0;
       build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, fast_pI, symm);
+      std::cout << "Number of ALS iterations perfromed:  " << num_ALS << std::endl;
       return epsilon;
     }
 
@@ -439,6 +440,7 @@ namespace btas {
     Tensor &tensor_ref;     // The reference tensor being decomposed
     const int ndim;         // Number of modes in the reference tensor
     int size;               // Number of elements in the reference tensor
+    int num_ALS;            // Total number of ALS iterations required to compute the CP decomposition
 
     /// creates factor matricies starting with R=1 and moves to R = \c rank
     /// incrementing column dimension, R, by step
@@ -651,7 +653,7 @@ namespace btas {
       if (calculate_epsilon) {
         epsilon = norm(reconstruct() - tensor_ref);
       }
-      //num_ALS += count;
+      num_ALS += count;
     }
 
     /// Calculates an optimized CP factor matrix using Khatri-Rao product
