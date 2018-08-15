@@ -435,6 +435,27 @@ namespace btas {
 
     }
 
+    /// \breif allows user to provide a set of initial guess
+    /// factor matrices for the CP decomposition
+    /// \param[in] factors a vector of factor matrices to be
+    /// used as the inital guess of the CP decomposition
+
+    void set_factor_matrices(std::vector<Tensor> & factors, int rank = 0){
+      if(factors.size() != ndim) BTAS_EXCEPTION("You must specify a factor matrix for each mode of the reference tensor");
+      for(int i = 0; i < ndim; i++){
+        if(factors[i].empty()){
+          if(rank == 0) BTAS_EXCEPTION("If factor matrix uninitialized please specify rank");
+          A[i] = Tensor(tensor_ref.extent(i), rank);
+          auto A_ptr = A[i].begin();
+          for(int j = 0; j < A[i].size(); j++) *(A_ptr + j) = j;
+        }
+        else{
+          A[i] = factors[i];
+        }
+      }
+      return;
+    }
+
    private:
     std::vector<Tensor> A;  // The vector of factor matrices
     Tensor &tensor_ref;     // The reference tensor being decomposed
