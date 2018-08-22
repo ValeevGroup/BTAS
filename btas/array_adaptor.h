@@ -289,7 +289,7 @@ namespace btas {
 }
 
 #ifdef BTAS_HAS_BOOST_SERIALIZATION
-#ifndef BOOST_SERIALIZATION_STD_ARRAY // legacy switch to disable BTAS-provided serialization of std:array
+#ifndef BOOST_SERIALIZATION_STD_ARRAY // legacy switch to disable BTAS-provided serialization of std::array
 #define BOOST_SERIALIZATION_STD_ARRAY
 #  if BOOST_VERSION / 100 < 1056
 namespace boost {
