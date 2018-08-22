@@ -1032,7 +1032,7 @@ namespace btas {
     Tensor pseudoInverse(int n, int R, bool fast_pI) {
       // CP_ALS method requires the psuedoinverse of matrix V
       auto a = generate_V(n, R);
-#if _HAS_INTEL_MKL
+#ifdef _HAS_INTEL_MKL
       if(fast_pI) {
         Tensor temp(R, R), inv(R, R);
         // V^{\dag} = (A^T A) ^{-1} A^T
