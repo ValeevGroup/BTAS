@@ -216,7 +216,7 @@ template <typename Tensor> bool QR_decomp(Tensor &A) {
 }
 
 template <typename Tensor>
-void Inverse_Matrix(Tensor & A){
+bool Inverse_Matrix(Tensor & A){
   if(A.rank() > 2){
     //Return exception
   }
@@ -233,14 +233,14 @@ void Inverse_Matrix(Tensor & A){
                              A.data(), A.extent(1), piv.data());
   if(info != 0){
     A = Tensor();
-    return;
+    return false;
   }
   info = LAPACKE_dgetri(CblasRowMajor, A.extent(0), A.data(), A.extent(0), piv.data());
   if(info != 0){
     A = Tensor();
-    return;
+    return false;
   }
-  return;
+  return true;
 }
 } // namespace btas
 
