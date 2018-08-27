@@ -440,19 +440,25 @@ namespace btas {
     /// \param[in] factors a vector of factor matrices to be
     /// used as the inital guess of the CP decomposition
 
-    void set_factor_matrices(std::vector<Tensor> & factors, int rank = 0){
+    void set_factor_matrices(std::vector<Tensor> factors, int rank = 0){
       if(factors.size() != ndim) BTAS_EXCEPTION("You must specify a factor matrix for each mode of the reference tensor");
-      for(int i = 0; i < ndim; i++){
-        if(factors[i].empty()){
-          if(rank == 0) BTAS_EXCEPTION("If factor matrix uninitialized please specify rank");
-          A[i] = Tensor(tensor_ref.extent(i), rank);
-          auto A_ptr = A[i].begin();
-          for(int j = 0; j < A[i].size(); j++) *(A_ptr + j) = j;
-        }
-        else{
-          A[i] = factors[i];
+      if(A.empty()){
+        A = factors;
+        A.push_back(normCol(0));
+      }
+      else {
+        for (int i = 0; i < ndim; i++) {
+          if (factors[i].empty()) {
+            if (rank == 0) BTAS_EXCEPTION("If factor matrix uninitialized please specify rank");
+            A[i] = Tensor(tensor_ref.extent(i), rank);
+            auto A_ptr = A[i].begin();
+            for (int j = 0; j < A[i].size(); j++) *(A_ptr + j) = j;
+          } else {
+            A[i] = factors[i];
+          }
         }
       }
+      factors_set = true;
       return;
     }
 
@@ -462,6 +468,7 @@ namespace btas {
     const int ndim;         // Number of modes in the reference tensor
     int size;               // Number of elements in the reference tensor
     int num_ALS;            // Total number of ALS iterations required to compute the CP decomposition
+    bool factors_set = false;
 
     /// creates factor matricies starting with R=1 and moves to R = \c rank
     /// incrementing column dimension, R, by step
@@ -569,7 +576,9 @@ namespace btas {
       if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
 #endif // _HAS_INTEL_MKL
       // This loop keeps track of column dimension
+      bool opt_in_for_loop = false;
       for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
+        opt_in_for_loop = true;
         // This loop walks through the factor matrices
         for (auto j = 0; j < ndim; ++j) {  // select a factor matrix
           // If no factor matrices exists, make a set of factor matrices
@@ -624,6 +633,9 @@ namespace btas {
         }
         // compute the ALS of factor matrices with rank = i + 1.
         ALS(i + 1, direct, max_als, calculate_epsilon, tcutALS, epsilon, fast_pI, symm);
+      }
+      if(factors_set && ! opt_in_for_loop){
+        ALS(rank, direct, max_als, calculate_epsilon, tcutALS, epsilon, fast_pI, symm);
       }
     }
 
