@@ -1060,9 +1060,12 @@ namespace btas {
         Tensor temp(R, R), inv(R, R);
         // V^{\dag} = (A^T A) ^{-1} A^T
         gemm(CblasTrans, CblasNoTrans, 1.0, a, a, 0.0, temp);
-        Inverse_Matrix(temp);
-        gemm(CblasNoTrans, CblasTrans, 1.0, temp, a, 0.0, inv);
-        return inv;
+        fast_pI = Inverse_Matrix(temp);
+        if(fast_pI) {
+          gemm(CblasNoTrans, CblasTrans, 1.0, temp, a, 0.0, inv);
+          return inv;
+        }
+        //QR_decomp(a);
       }
 #else
         fast_pI = false;
