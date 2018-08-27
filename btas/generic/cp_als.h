@@ -554,13 +554,13 @@ namespace btas {
         // Normalize the columns of the factor matrices and
         // set the values al lambda, the weigt of each order 1 tensor
         Tensor lambda(Range{Range1{SVD_rank}});
-        auto lambda_ptr = lambda.data();
-        for(auto &i: A){
-          for(int j = 0; j < SVD_rank; j++){
-            *(lambda_ptr + j) = normCol(i,j);
-          }
-        }
         A.push_back(lambda);
+        for(auto i = 0; i < ndim; ++i){
+//          for(int j = 0; j < SVD_rank; j++){
+//            *(lambda_ptr + j) = normCol(i,j);
+//          }
+          normCol(A[i]);
+        }
 
         // Optimize this initial guess.
         ALS(SVD_rank, direct, max_als, calculate_epsilon, tcutALS, epsilon, fast_pI, symm);
@@ -578,9 +578,9 @@ namespace btas {
           if (i == 0) {
             Tensor a(Range{tensor_ref.range(j), Range1{i + 1}});
             a.fill(rand());
-            normCol(a, i);
             A.push_back(a);
-            if (j + 1 == ndim) {
+            normCol(j);
+            if (j  == ndim) {
               Tensor lam(Range{Range1{i + 1}});
               A.push_back(lam);
             }
@@ -736,7 +736,8 @@ namespace btas {
 
       // compute the difference between this new factor matrix and the previous
       // iteration
-      for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
+      //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
+      normCol(an);
       auto nrm = norm(A[n] - an);
       if(n == ndim - 2 && symm){
         test += nrm;
@@ -936,7 +937,8 @@ namespace btas {
 
       // compute the difference between this new factor matrix and the previous
       // iteration
-      for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
+      //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
+      normCol(an);
       auto nrm = norm(A[n] - an);
       if(n == ndim - 2 && symm){
         test += nrm;
@@ -1010,14 +1012,31 @@ namespace btas {
     /// \param[in] col Which column of the factor matrix to normalize
     /// \return The norm of the col column of the factor factor matrix
 
-    double normCol(int factor, int col) {
-      const double *AF_ptr = A[factor].data() + col;
-
-      double norm = sqrt(dot(A[factor].extent(0), AF_ptr, A[factor].extent(1), AF_ptr, A[factor].extent(1)));
-
-      scal(A[factor].extent(0), 1 / norm, std::begin(A[factor]) + col, A[factor].extent(1));
-
-      return norm;
+    Tensor normCol(int factor) {
+//      const double *AF_ptr = A[factor].data() + col;
+//
+//      double norm = sqrt(dot(A[factor].extent(0), AF_ptr, A[factor].extent(1), AF_ptr, A[factor].extent(1)));
+//
+//      scal(A[factor].extent(0), 1 / norm, std::begin(A[factor]) + col, A[factor].extent(1));
+//
+//      return norm;
+      if(factor >= ndim) BTAS_EXCEPTION("Factor is out of range");
+      auto rank = A[factor].extent(1);
+      auto size = A[factor].size();
+      Tensor lambda(rank);
+      lambda.fill(0.0);
+      auto A_ptr = A[factor].data();
+      auto lam_ptr = lambda.data();
+      for(int i = 0; i < size; ++i){
+        *(lam_ptr + i % rank) += *(A_ptr + i) * *(A_ptr + i);
+      }
+      for(int i = 0; i < rank; ++i){
+        *(lam_ptr + i) = sqrt(*(lam_ptr + i));
+      }
+      for(int i = 0; i < size; ++i){
+        *(A_ptr + i) /= *(lam_ptr + i % rank);
+      }
+      return lambda;
     }
 
     /// \param[in, out] Mat The matrix whose column will be normalized, return
@@ -1026,14 +1045,29 @@ namespace btas {
     /// normalized.
     /// \return the norm of the col column of the matrix Mat
 
-    double normCol(Tensor &Mat, int col) {
-      const double *Mat_ptr = Mat.data() + col;
-
-      double norm = sqrt(dot(Mat.extent(0), Mat_ptr, Mat.extent(1), Mat_ptr, Mat.extent(1)));
-
-      scal(Mat.extent(0), 1 / norm, std::begin(Mat) + col, Mat.extent(1));
-
-      return norm;
+    void normCol(Tensor &Mat) {
+//      const double *Mat_ptr = Mat.data() + col;
+//
+//      double norm = sqrt(dot(Mat.extent(0), Mat_ptr, Mat.extent(1), Mat_ptr, Mat.extent(1)));
+//
+//      scal(Mat.extent(0), 1 / norm, std::begin(Mat) + col, Mat.extent(1));
+//
+//      return norm;
+      if(Mat.rank() > 2) BTAS_EXCEPTION("normCol with rank > 2 not yet supported");
+      auto rank = Mat.extent(1);
+      auto size = Mat.size();
+      A[ndim].fill(0.0);
+      auto Mat_ptr = Mat.data();
+      auto A_ptr = A[ndim].data();
+      for(int i = 0; i < size; ++i){
+        *(A_ptr + i % rank) += *(Mat_ptr + i) * *(Mat_ptr + i);
+      }
+      for(int i = 0; i < rank; ++i){
+        *(A_ptr + i) = sqrt(*(A_ptr + i));
+      }
+      for(int i = 0; i < size; ++i){
+        *(Mat_ptr + i) /= *(A_ptr + i % rank);
+      }
     }
 
     /// \param[in] Mat Calculates the 2-norm of the matrix mat
