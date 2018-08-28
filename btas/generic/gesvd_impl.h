@@ -187,10 +187,10 @@ void gesvd (
    static_assert(std::is_same<typename __traits_Vt::iterator_category, std::random_access_iterator_tag>::value,
                  "iterator Vt must be a random access iterator");
 
-   typename _IteratorA::pointer A = &(*itrA);
-   typename _IteratorS::pointer S = &(*itrS);
-   typename _IteratorU::pointer U = &(*itrU);
-   typename _IteratorVt::pointer Vt = &(*itrVt);
+   typename __traits_A::pointer A = &(*itrA);
+   typename __traits_S::pointer S = &(*itrS);
+   typename __traits_U::pointer U = &(*itrU);
+   typename __traits_Vt::pointer Vt = &(*itrVt);
    gesvd_impl<true>::call(order, jobu, jobvt, Msize, Nsize, A, LDA, S, U, LDU, Vt, LDVt);
 }
 
