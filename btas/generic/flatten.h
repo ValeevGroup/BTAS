@@ -30,7 +30,7 @@ template <typename Tensor> Tensor flatten(const Tensor &A, int mode) {
         if (m != mode)
           J[i] *= A.extent(m);
 
-  iterator tensor_itr = A.begin();
+  auto tensor_itr = A.begin();
 
   // Fill X with the correct values
   fill(A, 0, X, mode, indexi, indexj, J, tensor_itr);
