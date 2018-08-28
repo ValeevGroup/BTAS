@@ -189,9 +189,9 @@ template <typename Tensor> void LU_decomp(Tensor &A) {
 
 template <typename Tensor> bool QR_decomp(Tensor &A) {
 
-  Tensor B(1, std::min(A.extent(0), A.extent(1)));
   int Qm = A.extent(0);
   int Qn = A.extent(1);
+  Tensor B(1, std::min(Qm, Qn));
 
   // LAPACKE doesn't directly calculate Q. Must first call this function to
   // generate precursors to Q
@@ -221,10 +221,7 @@ bool Inverse_Matrix(Tensor & A){
     //Return exception
   }
   btas::Tensor<int> piv(std::min(A.extent(0), A.extent(1)));
-  Tensor L(A.range());
-  Tensor P(A.extent(0), A.extent(0));
-  P.fill(0.0);
-  L.fill(0.0);
+  piv.fill(0);
 
   // LAPACKE LU decomposition gives back dense L and U to be
   // restored into lower and upper triangular form, and a pivoting
