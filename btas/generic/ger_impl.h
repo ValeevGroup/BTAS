@@ -214,9 +214,9 @@ void ger (
    static_assert(std::is_same<typename __traits_A::iterator_category, std::random_access_iterator_tag>::value,
                  "iterator A must be a random access iterator");
 
-   typename _IteratorX::pointer X = &(*itrX);
-   typename _IteratorY::pointer Y = &(*itrY);
-   typename _IteratorA::pointer A = &(*itrA);
+   typename __traits_X::pointer X = &(*itrX);
+   typename __traits_Y::pointer Y = &(*itrY);
+   typename __traits_A::pointer A = &(*itrA);
    ger_impl<std::is_convertible<_T, value_type>::value>::call(order, Msize, Nsize, alpha, X, incX, Y, incY, A, LDA);
 }
 
