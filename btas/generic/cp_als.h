@@ -859,7 +859,7 @@ namespace btas {
         temp.resize(Range{Range1{LH_size / dimensions[contract_dim]}, Range1{dimensions[contract_dim]},
                           Range1{pseudo_rank}});
         Tensor contract_tensor(Range{Range1{temp.extent(0)}, Range1{temp.extent(2)}});
-
+        contract_tensor.fill(0.0);
         // If the middle dimension is the mode not being contracted, I will move
         // it to the right hand side temp((size of tensor_ref/product of
         // dimension contracted, rank * mode n dimension)
@@ -927,6 +927,7 @@ namespace btas {
         t1 = std::chrono::high_resolution_clock::now();
         temp.resize(Range{Range1{dimensions[0]}, Range1{dimensions[n]}, Range1{rank}});
         Tensor contract_tensor(Range{Range1{temp.extent(1)}, Range1{rank}});
+        contract_tensor.fill(0.0);
 
         int idx1 = temp.extent(0), idx2 = temp.extent(1);
         for(int i = 0; i < idx1; i++){
@@ -1125,6 +1126,9 @@ namespace btas {
         if(fast_pI) {
           gemm(CblasNoTrans, CblasTrans, 1.0, temp, a, 0.0, inv);
           return inv;
+        }
+        else{
+          std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
         }
         //QR_decomp(a);
       }
