@@ -475,9 +475,9 @@ void gemm (
    static_assert(std::is_same<typename __traits_C::iterator_category, std::random_access_iterator_tag>::value,
                  "iterator C must be a random access iterator");
 
-   typename _IteratorA::pointer A = &(*itrA);
-   typename _IteratorB::pointer B = &(*itrB);
-   typename _IteratorC::pointer C = &(*itrC);
+   typename __traits_A::pointer A = &(*itrA);
+   typename __traits_B::pointer B = &(*itrB);
+   typename __traits_C::pointer C = &(*itrC);
    gemm_impl<std::is_convertible<_T, value_type>::value>::call(order, transA, transB, Msize, Nsize, Ksize, alpha, A, LDA, B, LDB, beta, C, LDC);
 
 }

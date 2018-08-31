@@ -324,9 +324,9 @@ void gemv (
    static_assert(std::is_same<typename __traits_Y::iterator_category, std::random_access_iterator_tag>::value,
                  "iterator Y must be a random access iterator");
 
-   typename _IteratorA::pointer A = &(*itrA);
-   typename _IteratorX::pointer X = &(*itrX);
-   typename _IteratorY::pointer Y = &(*itrY);
+   typename __traits_A::pointer A = &(*itrA);
+   typename __traits_X::pointer X = &(*itrX);
+   typename __traits_Y::pointer Y = &(*itrY);
    gemv_impl<std::is_convertible<_T, value_type>::value>::call(order, transA, Msize, Nsize, alpha, A, LDA, X, incX, beta, Y, incY);
    //gemv_impl<std::is_convertible<_T, value_type>::value>::call(order, transA, Msize, Nsize, alpha, itrA, LDA, itrX, incX, beta, itrY, incY);
 }
