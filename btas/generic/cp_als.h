@@ -472,6 +472,7 @@ namespace btas {
     int size;               // Number of elements in the reference tensor
     int num_ALS;            // Total number of ALS iterations required to compute the CP decomposition
     bool factors_set = false;
+    bool matlab = true;
     double gemm_first = 0.0, gemm_second = 0.0, gemm_third = 0.0, gemm_fourth = 0.0, gemm_wPI = 0.0;
     double norm_time = 0.0, build_time = 0.0, fit_time = 0.0;
 
@@ -950,7 +951,28 @@ namespace btas {
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       t1 = std::chrono::high_resolution_clock::now();
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI), 0.0, an);
+
+      if(fast_pI && matlab) {
+        btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
+        piv.fill(0);
+
+        auto a = generate_V(n, rank);
+        int LDB = temp.extent(0);
+        auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, a.data(), rank, piv.data(), temp.data(), rank);
+        //auto info = LAPACKE_dpotrs(CblasColMajor, 'U', rank, rank, a.data(), rank, temp.data(), rank);
+
+        if(info == 0) {
+          an = temp;
+        }
+        else{
+          std::cout << "Matlab pseudo-inverse failed" << std::endl;
+          matlab = false;
+        }
+      }
+      if(!fast_pI || !matlab){
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI), 0.0, an);
+      }
+
       t2 = std::chrono::high_resolution_clock::now();
       time = t2 - t1;
       gemm_wPI += time.count();
@@ -1130,7 +1152,6 @@ namespace btas {
         else{
           std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
         }
-        //QR_decomp(a);
       }
 #else
         fast_pI = false;
