@@ -950,13 +950,11 @@ namespace btas {
         auto a = generate_V(n, rank);
         int LDB = temp.extent(0);
         auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, a.data(), rank, piv.data(), temp.data(), rank);
-        //auto info = LAPACKE_dpotrs(CblasColMajor, 'U', rank, rank, a.data(), rank, temp.data(), rank);
-
-        if(info == 0) {
-          an = temp;
+        if (info == 0) {
+            an = temp;
         }
         else{
-          std::cout << "Matlab pseudo-inverse failed" << std::endl;
+          std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
           matlab = false;
         }
       }
