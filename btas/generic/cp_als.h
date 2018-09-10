@@ -496,7 +496,7 @@ namespace btas {
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
 
     void build(int rank, bool direct, int max_als, bool calculate_epsilon, int step, double tcutALS, double &epsilon,
-               bool SVD_initial_guess, int SVD_rank, bool fast_pI, bool symm) {
+               bool SVD_initial_guess, int SVD_rank, bool & fast_pI, bool symm) {
     // If its the first time into build and SVD_initial_guess
     // build and optimize the initial guess based on the left
     // singular vectors of the reference tensor.
@@ -658,7 +658,7 @@ namespace btas {
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
 
-    void ALS(int rank, bool dir, int max_als, bool calculate_epsilon, double tcutALS, double &epsilon, bool fast_pI, bool symm) {
+    void ALS(int rank, bool dir, int max_als, bool calculate_epsilon, double tcutALS, double &epsilon, bool & fast_pI, bool symm) {
       auto count = 0;
       double test = tcutALS + 1.0;
 
@@ -701,7 +701,7 @@ namespace btas {
     /// iteration factor matrix
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void update_w_KRP(int n, int rank, double &test, bool symm, bool fast_pI) {
+    void update_w_KRP(int n, int rank, double &test, bool symm, bool & fast_pI) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -797,7 +797,7 @@ namespace btas {
     /// \param[in] symm does the reference tensor have symmetry in the last two modes
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
 
-    void direct(int n, int rank, double &test, bool symm, bool fast_pI) {
+    void direct(int n, int rank, double &test, bool symm, bool & fast_pI) {
 
       // Determine if n is the last mode, if it is first contract with first mode
       // and transpose the product
@@ -1118,7 +1118,7 @@ namespace btas {
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// \return V^{\dagger} The psuedoinverse of the matrix V.
 
-    Tensor pseudoInverse(int n, int R, bool fast_pI) {
+    Tensor pseudoInverse(int n, int R, bool & fast_pI) {
       // CP_ALS method requires the psuedoinverse of matrix V
       auto a = generate_V(n, R);
 #ifdef _HAS_INTEL_MKL
