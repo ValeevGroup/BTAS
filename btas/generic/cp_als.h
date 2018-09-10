@@ -1158,15 +1158,16 @@ namespace btas {
 
         info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R,
                                    &worksize, lwork);
-        if (info)
-          ;
+        if (info != 0)
+          BTAS_EXCEPTION("SVD pseudo inverse failed");
+
         lwork = (lapack_int) worksize;
         work = (double *) malloc(sizeof(double) * lwork);
 
         info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R, work,
                                    lwork);
-        if (info)
-          ;
+        if (info != 0)
+          BTAS_EXCEPTION("SVD pseudo inverse failed");
 
         free(work);
 #else  // BTAS_HAS_CBLAS
