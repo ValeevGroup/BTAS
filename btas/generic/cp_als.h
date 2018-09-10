@@ -1120,9 +1120,9 @@ namespace btas {
 
     Tensor pseudoInverse(int n, int R, bool & fast_pI) {
       // CP_ALS method requires the psuedoinverse of matrix V
-      auto a = generate_V(n, R);
 #ifdef _HAS_INTEL_MKL
       if(fast_pI) {
+        auto a = generate_V(n, R);
         Tensor temp(R, R), inv(R, R);
         // V^{\dag} = (A^T A) ^{-1} A^T
         gemm(CblasTrans, CblasNoTrans, 1.0, a, a, 0.0, temp);
@@ -1140,6 +1140,7 @@ namespace btas {
 #endif // _HAS_INTEL_MKL
 
       if(!fast_pI) {
+        auto a = generate_V(n, R);
         Tensor s(Range{Range1{R}});
         Tensor U(Range{Range1{R}, Range1{R}});
         Tensor Vt(Range{Range1{R}, Range1{R}});
