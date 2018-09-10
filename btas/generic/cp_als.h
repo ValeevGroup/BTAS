@@ -1179,6 +1179,9 @@ namespace btas {
 
         return U;
       }
+      else{
+        BTAS_EXCEPTION("Pseudo inverse failed" );
+      }
     }
 
   };  // class CP_ALS
