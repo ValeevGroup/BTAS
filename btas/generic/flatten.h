@@ -11,8 +11,6 @@ namespace btas {
 /// \return Matrix with dimension \f$(I_{mode}, J)\f$
 
 template <typename Tensor> Tensor flatten(const Tensor &A, int mode) {
-  using value_type = typename Tensor::value_type;
-  typedef typename std::vector<value_type>::const_iterator iterator;
   
   if (mode >= A.rank())
     BTAS_EXCEPTION("Cannot flatten along mode outside of A.rank()");
