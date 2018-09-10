@@ -119,8 +119,6 @@ namespace btas {
       double epsilon = -1.0;
       build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, fast_pI, symm);
       std::cout << "Number of ALS iterations perfromed:  " << num_ALS << std::endl;
-      std::cout << "first gemm\tsecond gemm\tthird gemm\tfourth gemm\tgemm wpI\tnorm time\tfit time\tbuild time" << std::endl;
-      printf("%3.6f\t%3.6f\t%3.6f\t%3.6f\t%3.6f\t%3.6f\t%3.6f\t%3.6f\n", gemm_first, gemm_second, gemm_third, gemm_fourth, gemm_wPI, norm_time,fit_time,build_time);
 
       return epsilon;
     }
@@ -473,8 +471,6 @@ namespace btas {
     int num_ALS;            // Total number of ALS iterations required to compute the CP decomposition
     bool factors_set = false;
     bool matlab = true;
-    double gemm_first = 0.0, gemm_second = 0.0, gemm_third = 0.0, gemm_fourth = 0.0, gemm_wPI = 0.0;
-    double norm_time = 0.0, build_time = 0.0, fit_time = 0.0;
 
     /// creates factor matricies starting with R=1 and moves to R = \c rank
     /// incrementing column dimension, R, by step
@@ -505,7 +501,6 @@ namespace btas {
     // build and optimize the initial guess based on the left
     // singular vectors of the reference tensor.
 #ifdef _HAS_INTEL_MKL
-      auto t1 = std::chrono::high_resolution_clock::now();
       if (A.empty() && SVD_initial_guess) {
         if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
 
@@ -576,9 +571,6 @@ namespace btas {
           normCol(A[i]);
         }
 
-        auto t2 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> time = t2 - t1;
-        build_time += time.count();
         // Optimize this initial guess.
         ALS(SVD_rank, direct, max_als, calculate_epsilon, tcutALS, epsilon, fast_pI, symm);
       }
@@ -815,7 +807,6 @@ namespace btas {
       int contract_dim = last_dim ? 0 : ndim - 1;
       int offset_dim = tensor_ref.extent(n);
       int pseudo_rank = rank;
-      //double first_gemm = 0, second_gemm = 0, third_gemm = 0, final_gemm = 0;  // These are for timings
 
       // Store the dimensions which are available to hadamard contract
       std::vector<int> dimensions;
@@ -833,12 +824,12 @@ namespace btas {
                           Range1{last_dim ? tensor_ref.extent(contract_dim) : size / tensor_ref.extent(contract_dim)},
                           Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
 
-      auto t1 = std::chrono::high_resolution_clock::now();
+      //auto t1 = std::chrono::high_resolution_clock::now();
       // contract tensor ref and the first factor matrix
       gemm((last_dim ? CblasTrans : CblasNoTrans), CblasNoTrans, 1.0, tensor_ref, A[contract_dim], 0.0, temp);
-      auto t2 = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> time = t2 - t1;
-      gemm_first += time.count();
+      //auto t2 = std::chrono::high_resolution_clock::now();
+      //std::chrono::duration<double> time = t2 - t1;
+      //gemm_first += time.count();
 
       // Resize tensor_ref
       tensor_ref.resize(R);
@@ -871,7 +862,7 @@ namespace btas {
           // If the code hasn't hit the mode of interest yet, it will contract
           // over the middle dimension and sum over the rank.
         else if (contract_dim > n) {
-          t1 = std::chrono::high_resolution_clock::now();
+          //t1 = std::chrono::high_resolution_clock::now();
           auto idx1 = temp.extent(0);
           auto idx2 = temp.extent(1);
           for(int i = 0; i < idx1; i++){
@@ -885,16 +876,16 @@ namespace btas {
               }
             }
           }
-          t2 = std::chrono::high_resolution_clock::now();
-          time = t2 - t1;
-          gemm_second += time.count();
+          //t2 = std::chrono::high_resolution_clock::now();
+          //time = t2 - t1;
+          //gemm_second += time.count();
           temp = contract_tensor;
         }
 
           // If the code has passed the mode of interest, it will contract over
           // the middle dimension and sum over rank * mode n dimension
         else {
-          t1 = std::chrono::high_resolution_clock::now();
+          //t1 = std::chrono::high_resolution_clock::now();
           int idx1 = temp.extent(0), idx2 = temp.extent(1), offset = offset_dim;
           for(int i = 0; i < idx1; i++){
             auto * contract_ptr = contract_tensor.data() + i * pseudo_rank;
@@ -909,9 +900,9 @@ namespace btas {
               }
             }
           }
-          t2 = std::chrono::high_resolution_clock::now();
-          time = t2 - t1;
-          gemm_third += time.count();
+          //t2 = std::chrono::high_resolution_clock::now();
+          //time = t2 - t1;
+          //gemm_third += time.count();
           temp = contract_tensor;
         }
 
@@ -925,7 +916,7 @@ namespace btas {
       // out the 0th mode here, the above algorithm can't perform this
       // contraction because the mode of interest is coupled with the rank
       if (n != 0) {
-        t1 = std::chrono::high_resolution_clock::now();
+        //t1 = std::chrono::high_resolution_clock::now();
         temp.resize(Range{Range1{dimensions[0]}, Range1{dimensions[n]}, Range1{rank}});
         Tensor contract_tensor(Range{Range1{temp.extent(1)}, Range1{rank}});
         contract_tensor.fill(0.0);
@@ -941,16 +932,16 @@ namespace btas {
             }
           }
         }
-        t2 = std::chrono::high_resolution_clock::now();
-        time = t2 - t1;
-        gemm_fourth += time.count();
+        //t2 = std::chrono::high_resolution_clock::now();
+        //time = t2 - t1;
+        //gemm_fourth += time.count();
         temp = contract_tensor;
       }
 
       n = last_dim ? ndim - 1: n;
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
-      t1 = std::chrono::high_resolution_clock::now();
+      //t1 = std::chrono::high_resolution_clock::now();
 
       if(fast_pI && matlab) {
         btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
@@ -973,30 +964,21 @@ namespace btas {
         gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI), 0.0, an);
       }
 
-      t2 = std::chrono::high_resolution_clock::now();
-      time = t2 - t1;
-      gemm_wPI += time.count();
+      //t2 = std::chrono::high_resolution_clock::now();
+      //time = t2 - t1;
+      //gemm_wPI += time.count();
 
       // compute the difference between this new factor matrix and the previous
       // iteration
       //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
-      t1 = std::chrono::high_resolution_clock::now();
+
       normCol(an);
-      t2 = std::chrono::high_resolution_clock::now();
-      time = t2 - t1;
-      norm_time += time.count();
-      t1 = std::chrono::high_resolution_clock::now();
       auto nrm = norm(A[n] - an);
-      t2 = std::chrono::high_resolution_clock::now();
-      time = t2 - t1;
-      fit_time += time.count();
       if(n == ndim - 2 && symm){
         test += nrm;
       }
       test += nrm;
       A[n] = an;
-      //printf("%3.8f\t%3.8f\t%3.8f\t%3.8f", first_gemm, second_gemm, third_gemm, final_gemm);
-      //std::cout << std::endl;
     }
 
     /// Generates V by first Multiply A^T.A then Hadamard product V(i,j) *=
