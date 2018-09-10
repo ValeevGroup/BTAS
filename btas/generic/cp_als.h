@@ -1043,13 +1043,6 @@ namespace btas {
     /// \return The norm of the col column of the factor factor matrix
 
     Tensor normCol(int factor) {
-//      const double *AF_ptr = A[factor].data() + col;
-//
-//      double norm = sqrt(dot(A[factor].extent(0), AF_ptr, A[factor].extent(1), AF_ptr, A[factor].extent(1)));
-//
-//      scal(A[factor].extent(0), 1 / norm, std::begin(A[factor]) + col, A[factor].extent(1));
-//
-//      return norm;
       if(factor >= ndim) BTAS_EXCEPTION("Factor is out of range");
       auto rank = A[factor].extent(1);
       auto size = A[factor].size();
@@ -1076,13 +1069,6 @@ namespace btas {
     /// \return the norm of the col column of the matrix Mat
 
     void normCol(Tensor &Mat) {
-//      const double *Mat_ptr = Mat.data() + col;
-//
-//      double norm = sqrt(dot(Mat.extent(0), Mat_ptr, Mat.extent(1), Mat_ptr, Mat.extent(1)));
-//
-//      scal(Mat.extent(0), 1 / norm, std::begin(Mat) + col, Mat.extent(1));
-//
-//      return norm;
       if(Mat.rank() > 2) BTAS_EXCEPTION("normCol with rank > 2 not yet supported");
       auto rank = Mat.extent(1);
       auto size = Mat.size();
