@@ -942,7 +942,7 @@ namespace btas {
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       //t1 = std::chrono::high_resolution_clock::now();
-
+#ifdef _HAS_INTEL_MKL
       if(fast_pI && matlab) {
         btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
         piv.fill(0);
@@ -958,10 +958,12 @@ namespace btas {
           matlab = false;
         }
       }
+#else
+      matlab = false;
       if(!fast_pI || !matlab){
         gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI), 0.0, an);
       }
-
+#endif
       //t2 = std::chrono::high_resolution_clock::now();
       //time = t2 - t1;
       //gemm_wPI += time.count();
