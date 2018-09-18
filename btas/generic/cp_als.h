@@ -672,12 +672,17 @@ namespace btas {
       while (count <= max_als && test > tcutALS) {
         count++;
         test = 0.0;
-
+        btas::varray<int> num_elements(ndim);
+        int j = 0;
+        for(auto &i: A){
+          num_elements[j] = sqrt(i.size());
+          ++j;
+        }
         for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
           if (dir)
-            direct(i, rank, test, symm, fast_pI);
+            direct(i, rank, test, symm, fast_pI, num_elements);
           else
-            update_w_KRP(i, rank, test, symm, fast_pI);
+            update_w_KRP(i, rank, test, symm, fast_pI, num_elements);
         }
         if(symm){
           A[ndim - 1] = A[ndim - 2];
@@ -701,7 +706,7 @@ namespace btas {
     /// iteration factor matrix
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void update_w_KRP(int n, int rank, double &test, bool symm, bool & fast_pI) {
+    void update_w_KRP(int n, int rank, double &test, bool symm, bool & fast_pI, varray<int> & num_elements) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -752,7 +757,7 @@ namespace btas {
       // iteration
       //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
       normCol(an);
-      auto nrm = norm(A[n] - an);
+      auto nrm = norm(A[n] - an) / num_elements[n];
       if(n == ndim - 2 && symm){
         test += nrm;
       }
@@ -797,7 +802,7 @@ namespace btas {
     /// \param[in] symm does the reference tensor have symmetry in the last two modes
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
 
-    void direct(int n, int rank, double &test, bool symm, bool & fast_pI) {
+    void direct(int n, int rank, double &test, bool symm, bool & fast_pI, varray<int> & num_elements) {
 
       // Determine if n is the last mode, if it is first contract with first mode
       // and transpose the product
@@ -973,7 +978,7 @@ namespace btas {
       //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
 
       normCol(an);
-      auto nrm = norm(A[n] - an);
+      auto nrm = norm(A[n] - an) / num_elements[n];
       if(n == ndim - 2 && symm){
         test += nrm;
       }
