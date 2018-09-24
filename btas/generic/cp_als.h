@@ -964,6 +964,9 @@ namespace btas {
           matlab = false;
         }
       }
+      if(!fast_pI || ! matlab){
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI), 0.0, an);
+      }
 #else
       matlab = false;
       if(!fast_pI || !matlab){
