@@ -1175,6 +1175,7 @@ namespace btas {
         // Inverse the Singular values with threshold 1e-13 = 0
         double lr_thresh = 1e-13;
         Tensor s_inv(Range{Range1{R}, Range1{R}});
+        s_inv.fill(0.0);
         for (auto i = 0; i < R; ++i) {
           if (s(i) > lr_thresh)
             s_inv(i, i) = 1 / s(i);
