@@ -670,15 +670,15 @@ namespace btas {
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
+      btas::varray<int> num_elements(ndim);
+      int j = 0;
+      for(auto &i: A){
+        num_elements[j] = sqrt(i.size());
+        ++j;
+      }
       while (count <= max_als && test > tcutALS) {
         count++;
         test = 0.0;
-        btas::varray<int> num_elements(ndim);
-        int j = 0;
-        for(auto &i: A){
-          num_elements[j] = sqrt(i.size());
-          ++j;
-        }
         for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
           if (dir)
             direct(i, rank, test, symm, fast_pI, num_elements);
