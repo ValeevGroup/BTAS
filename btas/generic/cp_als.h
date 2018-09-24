@@ -73,13 +73,14 @@ namespace btas {
     /// Constructor of object CP_ALS
     /// \param[in] tensor The tensor object to be decomposed
 
-    CP_ALS(Tensor &tensor) : tensor_ref(tensor), ndim(tensor_ref.rank()), size(tensor_ref.size()), num_ALS(0) {
+    CP_ALS(Tensor &tensor, bool use_Matlab = true) : tensor_ref(tensor), ndim(tensor_ref.rank()), size(tensor_ref.size()), num_ALS(0) {
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
       BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_ALS requires LAPACKE or mkl_lapack");
 #endif
 #ifdef _HAS_INTEL_MKL
 #include <mkl_trans.h>
 #endif
+      matlab = use_Matlab;
     }
 
     ~CP_ALS() = default;
