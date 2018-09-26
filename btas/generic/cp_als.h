@@ -671,11 +671,8 @@ namespace btas {
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
       btas::varray<int> num_elements(ndim);
-      int j = 0;
-      for(auto &i: A){
-        num_elements[j] = sqrt(i.size());
-        ++j;
-      }
+      for(int j = 0; j < ndim; ++j)
+        num_elements[j] = sqrt(A[j].size());
       while (count <= max_als && test > tcutALS) {
         count++;
         test = 0.0;
