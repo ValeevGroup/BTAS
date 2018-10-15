@@ -73,13 +73,14 @@ namespace btas {
     /// Constructor of object CP_RALS
     /// \param[in] tensor The tensor object to be decomposed
 
-    CP_RALS(Tensor &tensor) : tensor_ref(tensor), ndim(tensor_ref.rank()), size(tensor_ref.size()) {
+    CP_RALS(Tensor &tensor, bool use_Matlab = true) : tensor_ref(tensor), ndim(tensor_ref.rank()), size(tensor_ref.size()) {
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
       BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_ALS requires LAPACKE or mkl_lapack");
 #endif
 #ifdef _HAS_INTEL_MKL
 #include <mkl_trans.h>
 #endif
+      matlab = use_Matlab;
     }
 
     ~CP_RALS() = default;
@@ -107,16 +108,18 @@ namespace btas {
     /// \param[in] SVD_rank if \c
     /// SVD_initial_guess is true specify the rank of the initial guess such that
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false.
 
     double compute_rank(int rank, bool direct = true, bool calculate_epsilon = false, int step = 1, int max_als = 1e5,
-                        double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0, bool symm = false) {
+                        double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0, bool fast_pI = false, bool symm = false) {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       if (SVD_initial_guess && SVD_rank > rank) BTAS_EXCEPTION("Initial guess is larger than the desired CP rank");
       double epsilon = -1.0;
-      build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, symm);
+      build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, fast_pI, symm);
+      std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
       return epsilon;
     }
 
@@ -143,15 +146,16 @@ namespace btas {
     /// \param[in] SVD_rank if \c
     /// SVD_initial_guess is true specify the rank of the initial guess such that
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// \returns 2-norm error
     /// between exact and approximate tensor, \f$ \epsilon \f$
 
     double compute_error(double tcutCP = 1e-2, bool direct = true, int step = 1, int max_rank = 1e5,
-                         double max_als = 1e5, double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0, bool symm = false) {
+                         double max_als = 1e5, double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0, bool fast_pI = false, bool symm = false) {
       int rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
       double epsilon = tcutCP + 1;
       while (epsilon > tcutCP && rank < max_rank) {
-        build(rank, direct, max_als, true, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, symm);
+        build(rank, direct, max_als, true, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, fast_pI, symm);
         rank++;
       }
       return epsilon;
@@ -182,12 +186,13 @@ namespace btas {
     /// approximated with left singular values?
     /// \param[in] SVD_rank if \c SVD_initial_guess is true, specify the rank of the initial guess such that
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// \returns 2-norm error
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
     /// \f$ \epsilon \f$
     double compute_geometric(int desired_rank, int geometric_step = 2, bool direct = true, int max_als = 1e5,
                              bool calculate_epsilon = false, double tcutALS = 0.1, bool SVD_initial_guess = false,
-                             int SVD_rank = 0, bool symm = false) {
+                             int SVD_rank = 0, bool fast_pI = false, bool symm = false) {
       if (geometric_step <= 0) {
         BTAS_EXCEPTION("The step size must be larger than 0");
       }
@@ -198,7 +203,7 @@ namespace btas {
       int rank = (SVD_initial_guess) ? SVD_rank : 1;
 
       while (rank <= desired_rank && rank < max_als) {
-        build(rank, direct, max_als, calculate_epsilon, geometric_step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, symm);
+        build(rank, direct, max_als, calculate_epsilon, geometric_step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, fast_pI, symm);
         if (geometric_step <= 1)
           rank++;
         else
@@ -249,13 +254,14 @@ namespace btas {
     /// matrices be approximated with left singular values?
     /// \param[in] SVD_rank if
     /// \c SVD_initial_guess is true specify the rank of the initial guess such
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// \returns 2-norm error
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
     /// \f$ \epsilon \f$
     double compress_compute_tucker(double tcutSVD, bool opt_rank = true, double tcutCP = 1e-2, int rank = 0,
                                    bool direct = true, bool calculate_epsilon = true, int step = 1, int max_rank = 1e5,
                                    double max_als = 1e5, double tcutALS = 0.1, bool SVD_initial_guess = false,
-                                   int SVD_rank = 0) {
+                                   int SVD_rank = 0, bool fast_pI = false) {
       // Tensor compression
       std::vector<Tensor> transforms;
       tucker_compression(tensor_ref, tcutSVD, transforms);
@@ -264,9 +270,9 @@ namespace btas {
 
       // CP decomposition
       if (opt_rank)
-        epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS, SVD_initial_guess, SVD_rank);
+        epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS, SVD_initial_guess, SVD_rank, fast_pI);
       else
-        epsilon = compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS, SVD_initial_guess, SVD_rank);
+        epsilon = compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS, SVD_initial_guess, SVD_rank, fast_pI);
 
       // scale factor matrices
       for (int i = 0; i < ndim; i++) {
@@ -324,22 +330,23 @@ namespace btas {
     /// factor matrices be approximated with left singular values?
     /// \param[in]
     /// SVD_rank if \c SVD_initial_guess is true specify the rank of the initial
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// \returns
     /// 2-norm error between exact and approximate tensor, -1.0 if
     /// calculate_epsilon = false, \f$ \epsilon \f$
     double compress_compute_rand(int desired_compression_rank, int oversampl = 10, int powerit = 2,
                                  bool opt_rank = true, double tcutCP = 1e-2, int rank = 0, bool direct = true,
                                  bool calculate_epsilon = false, int step = 1, int max_rank = 1e5, double max_als = 1e5,
-                                 double tcutALS = .1, bool SVD_initial_guess = false, int SVD_rank = 0) {
+                                 double tcutALS = .1, bool SVD_initial_guess = false, int SVD_rank = 0, bool fast_pI = false) {
       std::vector<Tensor> transforms;
       randomized_decomposition(tensor_ref, transforms, desired_compression_rank, oversampl, powerit);
       size = tensor_ref.size();
       double epsilon = -1.0;
 
       if (opt_rank)
-        epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS, SVD_initial_guess, SVD_rank);
+        epsilon = compute_error(tcutCP, direct, step, max_rank, max_als, tcutALS, SVD_initial_guess, SVD_rank, fast_pI);
       else
-        epsilon = compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS, SVD_initial_guess, SVD_rank);
+        epsilon = compute_rank(rank, direct, calculate_epsilon, step, max_als, tcutALS, SVD_initial_guess, SVD_rank, fast_pI);
 
       // scale factor matrices
       for (int i = 0; i < ndim; i++) {
@@ -413,27 +420,14 @@ namespace btas {
       return hold;
     }
 
-    void testing_function(int num_of_tests, int mode_to_test, int rank){
-      for(int i = 0; i < ndim; i++){
-        A.push_back(Tensor(tensor_ref.extent(i), rank));
-        for(auto iter = A[i].begin(); iter != A[i].end(); ++iter){
-          *(iter) = rand();
-        }
-      }
-      A.push_back(Tensor(rank));
-
-      for(int i = 0; i < num_of_tests; i++){
-        double test = 0;
-        direct(mode_to_test, rank, test);
-      }
-
-    }
 
    private:
     std::vector<Tensor> A;  // The vector of factor matrices
     Tensor &tensor_ref;     // The reference tensor being decomposed
     const int ndim;         // Number of modes in the reference tensor
     int size;               // Number of elements in the reference tensor
+    int num_ALS;            // Total number of ALS iterations required to compute the CP decomposition
+    bool matlab = true;
 
     /// creates factor matricies starting with R=1 and moves to R = \c rank
     /// incrementing column dimension, R, by step
@@ -455,10 +449,11 @@ namespace btas {
     /// error between the exact and approximated reference tensor
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
 
     void build(int rank, bool direct, int max_als, bool calculate_epsilon, int step, double tcutALS, double &epsilon,
-               bool SVD_initial_guess, int SVD_rank, bool symm) {
+               bool SVD_initial_guess, int SVD_rank, bool & fast_pI, bool symm) {
     // If its the first time into build and SVD_initial_guess
     // build and optimize the initial guess based on the left
     // singular vectors of the reference tensor.
@@ -506,34 +501,39 @@ namespace btas {
           A[i] = lambda;
         }
 
+        //srand(3);
+        std::mt19937 generator(3);
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd){
           int R = tensor_ref.extent(i);
+          int num_elements = (SVD_rank - R) * R;
           auto lower_bound = {0, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
+          std::normal_distribution<double> distribution(num_elements, num_elements/4);
           for(auto iter = view.begin(); iter != view.end(); ++iter){
-            *(iter) = rand() % 500;
+            //*(iter) = rand() % num_elements;
+            *(iter) = distribution(generator);
           }
         }
 
         // Normalize the columns of the factor matrices and
         // set the values al lambda, the weigt of each order 1 tensor
         Tensor lambda(Range{Range1{SVD_rank}});
-        auto lambda_ptr = lambda.data();
-        for(auto &i: A){
-          for(int j = 0; j < SVD_rank; j++){
-            *(lambda_ptr + j) = normCol(i,j);
-          }
-        }
         A.push_back(lambda);
+        for(auto i = 0; i < ndim; ++i){
+//          for(int j = 0; j < SVD_rank; j++){
+//            *(lambda_ptr + j) = normCol(i,j);
+//          }
+          normCol(A[i]);
+        }
 
         // Optimize this initial guess.
-        ALS(SVD_rank, direct, max_als, calculate_epsilon, tcutALS, epsilon, symm);
+        ALS(SVD_rank, direct, max_als, calculate_epsilon, tcutALS, epsilon, fast_pI, symm);
       }
-#else  //
+#else  // _HAS_INTEL_MKL
       if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
-#endif
+#endif // _HAS_INTEL_MKL
       // This loop keeps track of column dimension
       for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
         // This loop walks through the factor matrices
@@ -544,9 +544,9 @@ namespace btas {
           if (i == 0) {
             Tensor a(Range{tensor_ref.range(j), Range1{i + 1}});
             a.fill(rand());
-            normCol(a, i);
             A.push_back(a);
-            if (j + 1 == ndim) {
+            normCol(j);
+            if (j  == ndim) {
               Tensor lam(Range{Range1{i + 1}});
               A.push_back(lam);
             }
@@ -589,7 +589,7 @@ namespace btas {
           }
         }
         // compute the ALS of factor matrices with rank = i + 1.
-        ALS(i + 1, direct, max_als, calculate_epsilon, tcutALS, epsilon, symm);
+        ALS(i + 1, direct, max_als, calculate_epsilon, tcutALS, epsilon, fast_pI, symm);
       }
     }
 
@@ -607,9 +607,10 @@ namespace btas {
     /// single rank converged. Default = 0.1.
     /// \param[in, out] epsilon The 2-norm
     /// error between the exact and approximated reference tensor
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
 
-    void ALS(int rank, bool dir, int max_als, bool calculate_epsilon, double tcutALS, double &epsilon, bool symm) {
+    void ALS(int rank, bool dir, int max_als, bool calculate_epsilon, double tcutALS, double &epsilon, bool & fast_pI, bool symm) {
       auto count = 0;
       double test = tcutALS + 1.0;
 
@@ -623,6 +624,10 @@ namespace btas {
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
+      std::cout << "count\ttest" << std::endl;
+      btas::varray<int> num_elements(ndim);
+      for(int j = 0; j < ndim; ++j)
+        num_elements[j] = sqrt(A[j].size());
       while (count <= max_als && test > tcutALS) {
         count++;
         test = 0.0;
@@ -630,9 +635,9 @@ namespace btas {
 
         for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
           if (dir)
-            direct(i, rank, test, symm, lambda[i]);
+            direct(i, rank, test, symm, fast_pI, num_elements, lambda[i]);
           else
-            update_w_KRP(i, rank, test, symm, lambda[i]);
+            update_w_KRP(i, rank, test, symm, fast_pI, num_elements, lambda[i]);
 
           test += s;
           s /= norm(A[i]);
@@ -641,13 +646,14 @@ namespace btas {
         if(symm){
           A[ndim - 1] = A[ndim - 2];
         }
+        std::cout << count << "\t" << test << std::endl;
       }
 
       // Checks loss function if required
       if (calculate_epsilon) {
         epsilon = norm(reconstruct() - tensor_ref);
       }
-      //num_ALS += count;
+      num_ALS += count;
     }
 
     /// Calculates an optimized CP factor matrix using Khatri-Rao product
@@ -659,7 +665,8 @@ namespace btas {
     /// \param[in out] test The difference between previous and current
     /// iteration factor matrix
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
-    void update_w_KRP(int n, int rank, double &test, bool symm, double lambda) {
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    void update_w_KRP(int n, int rank, double &test, bool symm, bool & fast_pI, varray<int> & num_elements, double lambda) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -708,12 +715,13 @@ namespace btas {
       }
       // contract the product from above with the psuedoinverse of the Hadamard
       // produce an optimize factor matrix
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, lambda), 0.0, an);
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
 
       // compute the difference between this new factor matrix and the previous
       // iteration
-      for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
-      auto nrm = norm(A[n] - an);
+      //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
+      normCol(an);
+      auto nrm = norm(A[n] - an) / num_elements[n];
       if(n == ndim - 2 && symm){
         test += nrm;
       }
@@ -755,9 +763,10 @@ namespace btas {
     /// \param[in] rank The current rank, column dimension of the factor matrices
     /// \param[in out] test The difference between previous and current iteration
     /// factor matrix
-    void direct(int n, int rank, double &test, bool symm,  double lambda) {
-      //auto t1 = std::chrono::high_resolution_clock::now();
-      //auto t2 = std::chrono::high_resolution_clock::now();
+    /// \param[in] symm does the reference tensor have symmetry in the last two modes
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+
+    void direct(int n, int rank, double &test, bool symm, bool & fast_pI, varray<int> & num_elements, double lambda) {
       //std::chrono::duration<double> time = t2 - t1;
 
       // Determine if n is the last mode, if it is first contract with first mode
@@ -768,7 +777,6 @@ namespace btas {
       int contract_dim = last_dim ? 0 : ndim - 1;
       int offset_dim = tensor_ref.extent(n);
       int pseudo_rank = rank;
-      //double first_gemm = 0, second_gemm = 0, third_gemm = 0, final_gemm = 0;  // These are for timings
 
       // Store the dimensions which are available to hadamard contract
       std::vector<int> dimensions;
@@ -786,12 +794,12 @@ namespace btas {
                           Range1{last_dim ? tensor_ref.extent(contract_dim) : size / tensor_ref.extent(contract_dim)},
                           Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
 
-      //t1 = std::chrono::high_resolution_clock::now();
+      //auto t1 = std::chrono::high_resolution_clock::now();
       // contract tensor ref and the first factor matrix
       gemm((last_dim ? CblasTrans : CblasNoTrans), CblasNoTrans, 1.0, tensor_ref, A[contract_dim], 0.0, temp);
-      //t2 = std::chrono::high_resolution_clock::now();
-      //time = t2 - t1;
-      //first_gemm = time.count();
+      //auto t2 = std::chrono::high_resolution_clock::now();
+      //std::chrono::duration<double> time = t2 - t1;
+      //gemm_first += time.count();
 
       // Resize tensor_ref
       tensor_ref.resize(R);
@@ -813,7 +821,7 @@ namespace btas {
         temp.resize(Range{Range1{LH_size / dimensions[contract_dim]}, Range1{dimensions[contract_dim]},
                           Range1{pseudo_rank}});
         Tensor contract_tensor(Range{Range1{temp.extent(0)}, Range1{temp.extent(2)}});
-
+        contract_tensor.fill(0.0);
         // If the middle dimension is the mode not being contracted, I will move
         // it to the right hand side temp((size of tensor_ref/product of
         // dimension contracted, rank * mode n dimension)
@@ -840,7 +848,7 @@ namespace btas {
           }
           //t2 = std::chrono::high_resolution_clock::now();
           //time = t2 - t1;
-          //second_gemm = time.count();
+          //gemm_second += time.count();
           temp = contract_tensor;
         }
 
@@ -850,9 +858,9 @@ namespace btas {
           //t1 = std::chrono::high_resolution_clock::now();
           int idx1 = temp.extent(0), idx2 = temp.extent(1), offset = offset_dim;
           for(int i = 0; i < idx1; i++){
-            auto * contract_ptr = contract_tensor.data() + i * rank;
+            auto * contract_ptr = contract_tensor.data() + i * pseudo_rank;
             for(int j = 0; j < idx2; j++){
-              const auto * temp_ptr = temp.data() + i * idx2 * offset * rank + j * offset * rank;
+              const auto * temp_ptr = temp.data() + i * idx2 * pseudo_rank + j * pseudo_rank;
 
               const auto * A_ptr = A[(last_dim ? contract_dim + 1: contract_dim)].data() + j * rank;
               for(int k = 0; k < offset; k++){
@@ -864,6 +872,7 @@ namespace btas {
           }
           //t2 = std::chrono::high_resolution_clock::now();
           //time = t2 - t1;
+          //gemm_third += time.count();
           temp = contract_tensor;
         }
 
@@ -880,6 +889,7 @@ namespace btas {
         //t1 = std::chrono::high_resolution_clock::now();
         temp.resize(Range{Range1{dimensions[0]}, Range1{dimensions[n]}, Range1{rank}});
         Tensor contract_tensor(Range{Range1{temp.extent(1)}, Range1{rank}});
+        contract_tensor.fill(0.0);
 
         int idx1 = temp.extent(0), idx2 = temp.extent(1);
         for(int i = 0; i < idx1; i++){
@@ -894,7 +904,7 @@ namespace btas {
         }
         //t2 = std::chrono::high_resolution_clock::now();
         //time = t2 - t1;
-        //third_gemm = time.count();
+        //gemm_fourth += time.count();
         temp = contract_tensor;
       }
 
@@ -905,22 +915,47 @@ namespace btas {
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       //t1 = std::chrono::high_resolution_clock::now();
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, lambda), 0.0, an);
+#ifdef _HAS_INTEL_MKL
+      if(fast_pI && matlab) {
+        btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
+        piv.fill(0);
+
+        auto a = generate_V(n, rank, lambda);
+        int LDB = temp.extent(0);
+        auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, a.data(), rank, piv.data(), temp.data(), rank);
+        if (info == 0) {
+            an = temp;
+        }
+        else{
+          std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
+          matlab = false;
+        }
+      }
+      if(!fast_pI || ! matlab){
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
+      }
+#else
+      matlab = false;
+      if(!fast_pI || !matlab){
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
+      }
+#endif
       //t2 = std::chrono::high_resolution_clock::now();
       //time = t2 - t1;
-      //final_gemm = time.count();
+      //gemm_wPI += time.count();
 
       // compute the difference between this new factor matrix and the previous
       // iteration
-      for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
-      auto nrm = norm(A[n] - an);
+      //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
+
+      normCol(an);
+      auto nrm = norm(A[n] - an) / num_elements[n];
+      //auto nrm = norm(A[n] - an);
       if(n == ndim - 2 && symm){
         test += nrm;
       }
       test += nrm;
       A[n] = an;
-      //printf("%3.8f\t%3.8f\t%3.8f\t%3.8f", first_gemm, second_gemm, third_gemm, final_gemm);
-      //std::cout << std::endl;
     }
 
     /// Generates V by first Multiply A^T.A then Hadamard product V(i,j) *=
@@ -990,15 +1025,26 @@ namespace btas {
     /// \param[in] col Which column of the factor matrix to normalize
     /// \return The norm of the col column of the factor factor matrix
 
-    double normCol(int factor, int col) {
-      const double *AF_ptr = A[factor].data() + col;
-
-      double norm = sqrt(dot(A[factor].extent(0), AF_ptr, A[factor].extent(1), AF_ptr, A[factor].extent(1)));
-
-      scal(A[factor].extent(0), 1 / norm, std::begin(A[factor]) + col, A[factor].extent(1));
-
-      return norm;
+    Tensor normCol(int factor) {
+      if(factor >= ndim) BTAS_EXCEPTION("Factor is out of range");
+      auto rank = A[factor].extent(1);
+      auto size = A[factor].size();
+      Tensor lambda(rank);
+      lambda.fill(0.0);
+      auto A_ptr = A[factor].data();
+      auto lam_ptr = lambda.data();
+      for(int i = 0; i < size; ++i){
+        *(lam_ptr + i % rank) += *(A_ptr + i) * *(A_ptr + i);
+      }
+      for(int i = 0; i < rank; ++i){
+        *(lam_ptr + i) = sqrt(*(lam_ptr + i));
+      }
+      for(int i = 0; i < size; ++i){
+        *(A_ptr + i) /= *(lam_ptr + i % rank);
+      }
+      return lambda;
     }
+
 
     /// \param[in, out] Mat The matrix whose column will be normalized, return
     /// column col normalized matrix.
@@ -1006,14 +1052,22 @@ namespace btas {
     /// normalized.
     /// \return the norm of the col column of the matrix Mat
 
-    double normCol(Tensor &Mat, int col) {
-      const double *Mat_ptr = Mat.data() + col;
-
-      double norm = sqrt(dot(Mat.extent(0), Mat_ptr, Mat.extent(1), Mat_ptr, Mat.extent(1)));
-
-      scal(Mat.extent(0), 1 / norm, std::begin(Mat) + col, Mat.extent(1));
-
-      return norm;
+    void normCol(Tensor &Mat) {
+      if(Mat.rank() > 2) BTAS_EXCEPTION("normCol with rank > 2 not yet supported");
+      auto rank = Mat.extent(1);
+      auto size = Mat.size();
+      A[ndim].fill(0.0);
+      auto Mat_ptr = Mat.data();
+      auto A_ptr = A[ndim].data();
+      for(int i = 0; i < size; ++i){
+        *(A_ptr + i % rank) += *(Mat_ptr + i) * *(Mat_ptr + i);
+      }
+      for(int i = 0; i < rank; ++i){
+        *(A_ptr + i) = sqrt(*(A_ptr + i));
+      }
+      for(int i = 0; i < size; ++i){
+        *(Mat_ptr + i) /= *(A_ptr + i % rank);
+      }
     }
 
     /// \param[in] Mat Calculates the 2-norm of the matrix mat
@@ -1023,34 +1077,59 @@ namespace btas {
 
     /// SVD referencing code from
     /// http://www.netlib.org/lapack/explore-html/de/ddd/lapacke_8h_af31b3cb47f7cc3b9f6541303a2968c9f.html
+    /// Fast pseudo-inverse algorithm described in
+    /// https://arxiv.org/pdf/0804.4809.pdf
 
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] R The current rank, column dimension of the factor matrices
-    /// \return V^{-1} The psuedoinverse of the matrix V.
+    /// \param[in] symm does the reference tensor have symmetry in the last two modes
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \return V^{\dagger} The psuedoinverse of the matrix V.
 
-    Tensor pseudoInverse(int n, int R, double lambda) {
+    Tensor pseudoInverse(int n, int R, bool & fast_pI, double lambda) {
       // CP_ALS method requires the psuedoinverse of matrix V
-      auto a = generate_V(n, R, lambda);
-      Tensor s(Range{Range1{R}});
-      Tensor U(Range{Range1{R}, Range1{R}});
-      Tensor Vt(Range{Range1{R}, Range1{R}});
+#ifdef _HAS_INTEL_MKL
+      if(fast_pI) {
+        auto a = generate_V(n, R,lambda);
+        Tensor temp(R, R), inv(R, R);
+        // V^{\dag} = (A^T A) ^{-1} A^T
+        gemm(CblasTrans, CblasNoTrans, 1.0, a, a, 0.0, temp);
+        fast_pI = Inverse_Matrix(temp);
+        if(fast_pI) {
+          gemm(CblasNoTrans, CblasTrans, 1.0, temp, a, 0.0, inv);
+          return inv;
+        }
+        else{
+          std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
+        }
+        }
+#else
+        fast_pI = false;
+#endif // _HAS_INTEL_MKL
+
+      if(!fast_pI) {
+        auto a = generate_V(n, R, lambda);
+        Tensor s(Range{Range1{R}});
+        Tensor U(Range{Range1{R}, Range1{R}});
+        Tensor Vt(Range{Range1{R}, Range1{R}});
 
 // btas has no generic SVD for MKL LAPACKE
 #ifdef _HAS_INTEL_MKL
-      double worksize;
-      double *work = &worksize;
-      lapack_int lwork = -1;
-      lapack_int info = 0;
+        double worksize;
+        double *work = &worksize;
+        lapack_int lwork = -1;
+        lapack_int info = 0;
 
-      char A = 'A';
+        char A = 'A';
 
-      // Call dgesvd with lwork = -1 to query optimal workspace size:
+        // Call dgesvd with lwork = -1 to query optimal workspace size:
 
-      info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R,
-                                 &worksize, lwork);
-      if (info)
-        ;
-      lwork = (lapack_int)worksize;
+        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R,
+                                   &worksize, lwork);
+        if (info != 0)
+          BTAS_EXCEPTION("SVD pseudo inverse failed");
+
+      lwork = (lapack_int) worksize;
       work = (double *)malloc(sizeof(double) * lwork);
 
       info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R, work,
@@ -1060,28 +1139,33 @@ namespace btas {
 
       free(work);
 #else  // BTAS_HAS_CBLAS
-
-      gesvd('A', 'A', a, s, U, Vt);
+  
+        gesvd('A', 'A', a, s, U, Vt);
 
 #endif
 
-      // Inverse the Singular values with threshold 1e-13 = 0
-      double lr_thresh = 1e-13;
-      Tensor s_inv(Range{Range1{R}, Range1{R}});
-      for (auto i = 0; i < R; ++i) {
-        if (s(i) > lr_thresh)
-          s_inv(i, i) = 1 / s(i);
-        else
-          s_inv(i, i) = s(i);
+        // Inverse the Singular values with threshold 1e-13 = 0
+        double lr_thresh = 1e-13;
+        Tensor s_inv(Range{Range1{R}, Range1{R}});
+        s_inv.fill(0.0);
+        for (auto i = 0; i < R; ++i) {
+          if (s(i) > lr_thresh)
+            s_inv(i, i) = 1 / s(i);
+          else
+            s_inv(i, i) = s(i);
+        }
+        s.resize(Range{Range1{R}, Range1{R}});
+
+        // Compute the matrix A^-1 from the inverted singular values and the U and
+        // V^T provided by the SVD
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, U, s_inv, 0.0, s);
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
+
+        return U;
       }
-      s.resize(Range{Range1{R}, Range1{R}});
-
-      // Compute the matrix A^-1 from the inverted singular values and the U and
-      // V^T provided by the SVD
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, U, s_inv, 0.0, s);
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
-
-      return U;
+      else{
+        BTAS_EXCEPTION("Pseudo inverse failed" );
+      }
     }
 
   };  // class CP_ALS
