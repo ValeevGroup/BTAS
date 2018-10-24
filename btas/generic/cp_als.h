@@ -421,22 +421,6 @@ namespace btas {
       return hold;
     }
 
-    void testing_function(int num_of_tests, int mode_to_test, int rank, bool fast_pI){
-      for(int i = 0; i < ndim; i++){
-        A.push_back(Tensor(tensor_ref.extent(i), rank));
-        for(auto iter = A[i].begin(); iter != A[i].end(); ++iter){
-          *(iter) = rand();
-        }
-      }
-      A.push_back(Tensor(rank));
-
-      for(int i = 0; i < num_of_tests; i++){
-        double test = 0;
-        direct(mode_to_test, rank, test, false, fast_pI);
-      }
-
-    }
-
     /// \breif allows user to provide a set of initial guess
     /// factor matrices for the CP decomposition
     /// \param[in] factors a vector of factor matrices to be
