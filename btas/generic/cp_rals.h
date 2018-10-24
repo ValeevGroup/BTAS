@@ -13,6 +13,7 @@
 #include "randomized.h"
 #include "swap.h"
 #include "tucker.h"
+#include "converge_class.h"
 
 namespace btas {
 
@@ -67,19 +68,22 @@ namespace btas {
                                         // CP factor matrices
     \endcode
   */
-  template <typename Tensor>
+  template <typename Tensor, class conv_class = NORM_CHECK<Tensor>>
   class CP_RALS {
    public:
     /// Constructor of object CP_RALS
     /// \param[in] tensor The tensor object to be decomposed
-
-    CP_RALS(Tensor &tensor, bool use_Matlab = true) : tensor_ref(tensor), ndim(tensor_ref.rank()), size(tensor_ref.size()) {
+    CP_RALS(Tensor &tensor, bool use_Matlab = true,
+            conv_class * conv = new conv_class()) :
+    tensor_ref(tensor), ndim(tensor_ref.rank()),
+    size(tensor_ref.size()), num_ALS(0) {
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
       BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_ALS requires LAPACKE or mkl_lapack");
 #endif
 #ifdef _HAS_INTEL_MKL
 #include <mkl_trans.h>
 #endif
+      converge_test = conv;
       matlab = use_Matlab;
     }
 
@@ -120,6 +124,7 @@ namespace btas {
       double epsilon = -1.0;
       build(rank, direct, max_als, calculate_epsilon, step, tcutALS, epsilon, SVD_initial_guess, SVD_rank, fast_pI, symm);
       std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
+
       return epsilon;
     }
 
@@ -151,7 +156,8 @@ namespace btas {
     /// between exact and approximate tensor, \f$ \epsilon \f$
 
     double compute_error(double tcutCP = 1e-2, bool direct = true, int step = 1, int max_rank = 1e5,
-                         double max_als = 1e5, double tcutALS = 0.1, bool SVD_initial_guess = false, int SVD_rank = 0, bool fast_pI = false, bool symm = false) {
+                         double max_als = 1e5, double tcutALS = 1e-2, bool SVD_initial_guess = false,
+                         int SVD_rank = 0, bool fast_pI = false, bool symm = false) {
       int rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
       double epsilon = tcutCP + 1;
       while (epsilon > tcutCP && rank < max_rank) {
@@ -427,9 +433,15 @@ namespace btas {
     const int ndim;         // Number of modes in the reference tensor
     int size;               // Number of elements in the reference tensor
     int num_ALS;            // Total number of ALS iterations required to compute the CP decomposition
+    conv_class * converge_test;
     bool matlab = true;
 
-    /// creates factor matricies starting with R=1 and moves to R = \c rank
+
+    /// Can create an initial guess by computing the SVD of each mode
+    /// If the rank of the mode is smaller than the CP rank requested
+    /// The rest of the factor matrix is filled with random numbers
+    /// Also build factor matricies starting with R=(1,provided factor rank, SVD_rank)
+    /// and moves to R = \c rank
     /// incrementing column dimension, R, by step
 
     /// \param[in] rank The rank of the CP decomposition.
@@ -615,7 +627,7 @@ namespace btas {
       double test = tcutALS + 1.0;
 
       double s = 0.0;
-      const auto s0 = 70.0;
+      const auto s0 = 1.0;
       const auto alpha = 0.2;
       std::vector<double> lambda(ndim, 1.0);
       if(symm){
@@ -624,20 +636,19 @@ namespace btas {
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
+      converge_test->set_tol(tcutALS);
       std::cout << "count\ttest" << std::endl;
-      btas::varray<int> num_elements(ndim);
-      for(int j = 0; j < ndim; ++j)
-        num_elements[j] = sqrt(A[j].size());
-      while (count <= max_als && test > tcutALS) {
+      //while (count <= max_als && test > tcutALS) {
+      while(count < max_als && !converge_test->is_conv()){
         count++;
         test = 0.0;
         s = 0.0;
 
         for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
           if (dir)
-            direct(i, rank, test, symm, fast_pI, num_elements, lambda[i]);
+            direct(i, rank, symm, fast_pI, lambda[i]);
           else
-            update_w_KRP(i, rank, test, symm, fast_pI, num_elements, lambda[i]);
+            update_w_KRP(i, rank, symm, fast_pI, lambda[i]);
 
           test += s;
           s /= norm(A[i]);
@@ -646,7 +657,8 @@ namespace btas {
         if(symm){
           A[ndim - 1] = A[ndim - 2];
         }
-        std::cout << count << "\t" << test << std::endl;
+        std::cout << count << "\t";
+        converge_test->conv_check(A);
       }
 
       // Checks loss function if required
@@ -662,11 +674,10 @@ namespace btas {
     /// constant
     /// \param[in] rank The current rank, column dimension of the factor
     /// matrices
-    /// \param[in out] test The difference between previous and current
     /// iteration factor matrix
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void update_w_KRP(int n, int rank, double &test, bool symm, bool & fast_pI, varray<int> & num_elements, double lambda) {
+    void update_w_KRP(int n, int rank, bool symm, bool & fast_pI, double lambda) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -721,11 +732,6 @@ namespace btas {
       // iteration
       //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
       normCol(an);
-      auto nrm = norm(A[n] - an) / num_elements[n];
-      if(n == ndim - 2 && symm){
-        test += nrm;
-      }
-      test += nrm;
 
       // Replace the old factor matrix with the new optimized result
       A[n] = an;
@@ -761,12 +767,10 @@ namespace btas {
 
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
-    /// \param[in out] test The difference between previous and current iteration
-    /// factor matrix
     /// \param[in] symm does the reference tensor have symmetry in the last two modes
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
 
-    void direct(int n, int rank, double &test, bool symm, bool & fast_pI, varray<int> & num_elements, double lambda) {
+    void direct(int n, int rank, bool symm, bool & fast_pI, double lambda) {
       //std::chrono::duration<double> time = t2 - t1;
 
       // Determine if n is the last mode, if it is first contract with first mode
@@ -949,12 +953,6 @@ namespace btas {
       //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
 
       normCol(an);
-      auto nrm = norm(A[n] - an) / num_elements[n];
-      //auto nrm = norm(A[n] - an);
-      if(n == ndim - 2 && symm){
-        test += nrm;
-      }
-      test += nrm;
       A[n] = an;
     }
 
@@ -1045,7 +1043,6 @@ namespace btas {
       return lambda;
     }
 
-
     /// \param[in, out] Mat The matrix whose column will be normalized, return
     /// column col normalized matrix.
     /// \param[in] col The column of matrix Mat to be
@@ -1102,7 +1099,7 @@ namespace btas {
         else{
           std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
         }
-        }
+      }
 #else
         fast_pI = false;
 #endif // _HAS_INTEL_MKL
@@ -1129,17 +1126,17 @@ namespace btas {
         if (info != 0)
           BTAS_EXCEPTION("SVD pseudo inverse failed");
 
-      lwork = (lapack_int) worksize;
-      work = (double *)malloc(sizeof(double) * lwork);
+        lwork = (lapack_int) worksize;
+        work = (double *) malloc(sizeof(double) * lwork);
 
-      info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R, work,
-                                 lwork);
-      if (info)
-        ;
+        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R, work,
+                                   lwork);
+        if (info != 0)
+          BTAS_EXCEPTION("SVD pseudo inverse failed");
 
-      free(work);
+        free(work);
 #else  // BTAS_HAS_CBLAS
-  
+
         gesvd('A', 'A', a, s, U, Vt);
 
 #endif
