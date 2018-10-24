@@ -518,6 +518,7 @@ namespace btas {
           // Fill a factor matrix with the singular vectors with the largest corresponding singular
           // values
           lambda = Tensor(R, SVD_rank);
+          lambda.fill(0.0);
           auto lower_bound = {0, ((R > SVD_rank) ? R - SVD_rank : 0)};
           auto upper_bound = {R, R};
           auto view = make_view(S.range().slice(lower_bound, upper_bound), S.storage());
