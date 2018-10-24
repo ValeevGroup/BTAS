@@ -129,8 +129,7 @@ template <typename Tensor> void LU_decomp(Tensor &A) {
   // This means there was a problem with the LU that must be dealt with,
   // The decomposition cannot be continued.
   if (info < 0) {
-    std::cout << "Error with LU decomposition" << std::endl;
-    return;
+    BTAS_EXCEPTION("Error with LU decomposition");
   }
 
   // This means that part of the LU is singular which may cause a problem in

@@ -32,6 +32,9 @@ template <typename Tensor>
 void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
                    bool for_ALS_update = true) {
   // If the mode of interest is the the first mode you are done.
+  if(mode > A.rank()){
+    BTAS_EXCEPTION("Mode of transposition is greater than tensor rank");
+  }
   if (mode == 0)
     return;
 
