@@ -5,32 +5,6 @@
 #include "btas/varray/varray.h"
 
 namespace btas {
-
-//  template <typename tensor>
-//  class CONV_CLASS{
-//  protected:
-//    bool converged_; // Is the conditions of the convergence test satisified
-//    double tol_;     // Tolerance of the convergence test
-//
-//  public:
-//    CONV_CLASS() = default;
-//
-//    CONV_CLASS(double tol): converged_(false), tol_(tol){
-//    }
-//
-//    ~CONV_CLASS() = default;
-//
-//    virtual void conv_check(std::vector<tensor> & btas_factors);
-//
-//    void set_tol(double tol){
-//      tol_ = tol;
-//    }
-//
-//    bool is_conv(){
-//      return converged_;
-//    }
-//  };
-
   template <typename tensor>
   class NORM_CHECK{
 
@@ -44,15 +18,10 @@ namespace btas {
 
     ~NORM_CHECK() = default;
 
-    void set_tol(double tol){
-      tol_ = tol;
-      return;
-    }
-
     /// Function to check convergence of the ALS problem
     /// convergence when \sum_n^{ndim} \|A^{i}_n - A^{i+1}_n\| \leq \epsilon
     /// \param[in] btas_factors Current set of factor matrices
-    void conv_check(const std::vector<tensor> & btas_factors){
+    bool operator () (const std::vector<tensor> & btas_factors){
       auto ndim = btas_factors.size() - 1;
       if (prev.empty()){
         for(int i = 0; i < ndim; ++i){
@@ -75,12 +44,9 @@ namespace btas {
       if(diff < this->tol_){
         this->converged_ = true;
       }
-      return;
-    }
-
-    bool is_conv(){
       return converged_;
     }
+
   private:
     bool converged_;
     double tol_;
