@@ -47,6 +47,21 @@ namespace btas {
       return converged_;
     }
 
+    void operator () (const tensor An, int ndim, int n, double & s){
+      if (prev.size() < ndim){
+        tensor temp(An.range());
+        temp.fill(0.0);
+        prev.push_back(temp);
+      }
+
+      rank_ = An.extent(1);
+      auto elements = An.size();
+      auto change = An - prev[n];
+      s = std::sqrt(btas::dot(change, change));
+      s /= std::sqrt(btas::dot(An, An));
+      prev[n] = An;
+    }
+
   private:
     bool converged_;
     double tol_;
