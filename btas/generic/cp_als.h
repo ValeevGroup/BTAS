@@ -667,14 +667,14 @@ namespace btas {
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
-      converge_test->set_tol(tcutALS);
       std::cout << "count\ttest" << std::endl;
-      //while (count <= max_als && test > tcutALS) {
-      while(count < max_als && !converge_test->is_conv()){
+      bool is_converged = false;
+      bool matlab = fast_pI;
+      while(count < max_als && !is_converged){
         count++;
         for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
           if (dir)
-            direct(i, rank, symm, fast_pI);
+            direct(i, rank, symm, fast_pI, matlab);
           else
             update_w_KRP(i, rank, symm, fast_pI);
         }
