@@ -496,12 +496,13 @@ namespace btas {
           gemm(CblasNoTrans, CblasTrans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
 
           // Find the Singular vectors of the matrix using eigenvalue decomposition
-          auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R, lambda.data());
+          auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'U', R, S.data(), R, lambda.data());
           if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
 
           // Fill a factor matrix with the singular vectors with the largest corresponding singular
           // values
           lambda = Tensor(R, SVD_rank);
+          lambda.fill(0.0);
           auto lower_bound = {0, ((R > SVD_rank) ? R - SVD_rank : 0)};
           auto upper_bound = {R, R};
           auto view = make_view(S.range().slice(lower_bound, upper_bound), S.storage());
