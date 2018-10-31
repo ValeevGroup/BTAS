@@ -642,16 +642,14 @@ namespace btas {
       bool matlab = fast_pI;
       while(count < max_als && !is_converged){
         count++;
-        NORM_CHECK<Tensor> RALS_CHECK(0);
 
         for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
           if (dir)
-            direct(i, rank, symm, fast_pI, matlab, lambda[i]);
+            direct(i, rank, symm, fast_pI, matlab, lambda[i], s);
           else
-            update_w_KRP(i, rank, symm, fast_pI, lambda[i]);
+            update_w_KRP(i, rank, symm, fast_pI, lambda[i], s);
 
-          RALS_CHECK(A[i], ndim, i, s);
-          lambda[i] = (lambda[i] * (s * s) / (s0 * s0) ) * alpha + (1 - alpha) * lambda[i];
+          lambda[i] = (lambda[i] * (s * s) / (s0 * s0)) * alpha + (1 - alpha) * lambda[i];
         }
         if(symm){
           A[ndim - 1] = A[ndim - 2];
@@ -676,7 +674,7 @@ namespace btas {
     /// iteration factor matrix
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void update_w_KRP(int n, int rank, bool symm, bool & fast_pI, double lambda) {
+    void update_w_KRP(int n, int rank, bool symm, bool & fast_pI, double lambda, double & s) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -727,6 +725,13 @@ namespace btas {
       // produce an optimize factor matrix
       gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
 
+      // Compute the value s before normalizing the columns
+      {
+        auto change = A[n] - an;
+        s = std::sqrt(dot(change, change));
+        s /= std::sqrt(dot(an, an));
+      }
+
       // compute the difference between this new factor matrix and the previous
       // iteration
       //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
@@ -769,7 +774,7 @@ namespace btas {
     /// \param[in] symm does the reference tensor have symmetry in the last two modes
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
 
-    void direct(int n, int rank, bool symm, bool & fast_pI, bool & matlab, double lambda) {
+    void direct(int n, int rank, bool symm, bool & fast_pI, bool & matlab, double & lambda, double & s) {
       //std::chrono::duration<double> time = t2 - t1;
 
       // Determine if n is the last mode, if it is first contract with first mode
@@ -947,10 +952,15 @@ namespace btas {
       //time = t2 - t1;
       //gemm_wPI += time.count();
 
-      // compute the difference between this new factor matrix and the previous
-      // iteration
       //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
+      // Compute S before column normalization for RALS
+      {
+        auto change = A[n] - an;
+        s = std::sqrt(dot(change, change));
+        s /= std::sqrt(dot(an, an));
+      }
 
+      // Normalize the columns of the new factor matrix and update
       normCol(an);
       A[n] = an;
     }
