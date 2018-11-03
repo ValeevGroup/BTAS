@@ -14,6 +14,7 @@
 #include "swap.h"
 #include "tucker.h"
 #include "converge_class.h"
+#include "rals_helper.h"
 
 namespace btas {
 
@@ -438,6 +439,7 @@ namespace btas {
     const int ndim;         // Number of modes in the reference tensor
     int size;               // Number of elements in the reference tensor
     int num_ALS;            // Total number of ALS iterations required to compute the CP decomposition
+    RALS_HELPER<Tensor> helper;
 
     /// Can create an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
@@ -534,6 +536,7 @@ namespace btas {
         // set the values al lambda, the weigt of each order 1 tensor
         Tensor lambda(Range{Range1{SVD_rank}});
         A.push_back(lambda);
+        helper = RALS_HELPER<Tensor>(A);
         for(auto i = 0; i < ndim; ++i){
 //          for(int j = 0; j < SVD_rank; j++){
 //            *(lambda_ptr + j) = normCol(i,j);
@@ -542,6 +545,7 @@ namespace btas {
         }
 
         // Optimize this initial guess.
+
         ALS(SVD_rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
       }
 #else  // _HAS_INTEL_MKL
@@ -601,6 +605,7 @@ namespace btas {
             }
           }
         }
+        helper = RALS_HELPER<Tensor>(A);
         // compute the ALS of factor matrices with rank = i + 1.
         ALS(i + 1, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
       }
@@ -650,12 +655,16 @@ namespace btas {
             update_w_KRP(i, rank, symm, fast_pI, lambda[i], s);
 
           lambda[i] = (lambda[i] * (s * s) / (s0 * s0)) * alpha + (1 - alpha) * lambda[i];
+          std::cout << "lambda: " << lambda[i] << std::endl;
         }
         if(symm){
           A[ndim - 1] = A[ndim - 2];
         }
         std::cout << count << "\t";
         is_converged = converge_test(A);
+        for(auto & i: lambda){
+          i = (i < 1e-5 ? 1.0 : i);
+        }
       }
 
       // Checks loss function if required
@@ -726,11 +735,7 @@ namespace btas {
       gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
 
       // Compute the value s before normalizing the columns
-      {
-        auto change = A[n] - an;
-        s = std::sqrt(dot(change, change));
-        s /= std::sqrt(dot(an, an));
-      }
+      s = helper(n, an);
 
       // compute the difference between this new factor matrix and the previous
       // iteration
@@ -954,11 +959,7 @@ namespace btas {
 
       //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
       // Compute S before column normalization for RALS
-      {
-        auto change = A[n] - an;
-        s = std::sqrt(dot(change, change));
-        s /= std::sqrt(dot(an, an));
-      }
+      s = helper(n, an);
 
       // Normalize the columns of the new factor matrix and update
       normCol(an);
