@@ -489,8 +489,10 @@ namespace btas {
         // because we contract X X^T (where X is reference tensor) to make finding
         // singular vectors an eigenvalue problem some factor matrices will not be
         // full rank;
+        A[0] = Tensor(tensor_ref.extent(0), SVD_rank);
+        A[0].fill(0.0);
 
-        for(int i = 0; i < ndim; i++){
+        for(int i = 1; i < ndim; i++){
           int R = tensor_ref.extent(i);
           Tensor S(R,R), lambda(R);
 
