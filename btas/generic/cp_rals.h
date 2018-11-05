@@ -590,10 +590,11 @@ namespace btas {
             {
               auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              // auto rand = rand();
+              std::mt19937 generator(3);
+              auto num_elements= step * row_extent;
+              std::normal_distribution<double> distribution(num_elements, num_elements/4);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
-                *(iter) = rand() % 500;
-                //*(iter) = rand;
+                *(iter) = distribution(generator);
               }
             }
 
