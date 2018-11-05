@@ -540,14 +540,10 @@ namespace btas {
         A.push_back(lambda);
         helper = RALS_HELPER<Tensor>(A);
         for(auto i = 0; i < ndim; ++i){
-//          for(int j = 0; j < SVD_rank; j++){
-//            *(lambda_ptr + j) = normCol(i,j);
-//          }
           normCol(A[i]);
         }
 
         // Optimize this initial guess.
-
         ALS(SVD_rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
       }
 #else  // _HAS_INTEL_MKL
@@ -665,9 +661,6 @@ namespace btas {
         }
         std::cout << count << "\t";
         is_converged = converge_test(A);
-        for(auto & i: lambda){
-          i = (i < 1e-5 ? 1.0 : i);
-        }
       }
 
       // Checks loss function if required

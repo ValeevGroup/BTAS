@@ -533,8 +533,6 @@ namespace btas {
           // values
           lambda = Tensor(R, SVD_rank);
           lambda.fill(0.0);
-          //auto lower_bound = {0, ((R > SVD_rank) ? R - SVD_rank : 0)};
-          //auto upper_bound = {R, R};
           auto lower_bound = {0,0};
           auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
           auto view = make_view(S.range().slice(lower_bound, upper_bound), S.storage());
@@ -567,9 +565,6 @@ namespace btas {
         Tensor lambda(Range{Range1{SVD_rank}});
         A.push_back(lambda);
         for(auto i = 0; i < ndim; ++i){
-//          for(int j = 0; j < SVD_rank; j++){
-//            *(lambda_ptr + j) = normCol(i,j);
-//          }
           normCol(A[i]);
         }
 
