@@ -667,7 +667,6 @@ namespace btas {
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
-      std::cout << "count\ttest" << std::endl;
       bool is_converged = false;
       bool matlab = fast_pI;
       while(count < max_als && !is_converged){
@@ -681,7 +680,6 @@ namespace btas {
         if(symm){
           A[ndim - 1] = A[ndim - 2];
         }
-        std::cout << count << "\t";
         is_converged = converge_test(A);
       }
 

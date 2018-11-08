@@ -645,7 +645,6 @@ namespace btas {
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
-      std::cout << "count\ttest" << std::endl;
       bool is_converged = false;
       bool matlab = fast_pI;
       while(count < max_als && !is_converged){
@@ -658,12 +657,10 @@ namespace btas {
             update_w_KRP(i, rank, symm, fast_pI, lambda[i], s);
 
           lambda[i] = (lambda[i] * (s * s) / (s0 * s0)) * alpha + (1 - alpha) * lambda[i];
-          std::cout << "lambda: " << lambda[i] << std::endl;
         }
         if(symm){
           A[ndim - 1] = A[ndim - 2];
         }
-        std::cout << count << "\t";
         is_converged = converge_test(A);
         if(rankGTdims && count < 12){
           is_converged = false;
