@@ -631,11 +631,17 @@ namespace btas {
 
       double s = 0.0;
       const auto s0 = 1.0;
-      const auto alpha = 0.2;
       std::vector<double> lambda(ndim, 1.0);
+      const auto alpha = 0.8;
       if(symm){
         A[ndim - 1] = A[ndim -2];
       }
+      bool rankGTdims = false;
+      for(int i = 0; i < ndim; ++i){
+        rankGTdims = rank > tensor_ref.extent(i);
+        if(rankGTdims) break;
+      }
+
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
@@ -659,6 +665,9 @@ namespace btas {
         }
         std::cout << count << "\t";
         is_converged = converge_test(A);
+        if(rankGTdims && count < 12){
+          is_converged = false;
+        }
       }
 
       // Checks loss function if required

@@ -16,7 +16,7 @@ namespace btas{
     }
 
     double operator() (int mode, const tensor& An){
-      auto change = prev_[mode] - An;
+      auto change = An - prev_[mode];
       double s = std::sqrt(dot(change, change));
       s /= std::sqrt(dot(An, An));
 
