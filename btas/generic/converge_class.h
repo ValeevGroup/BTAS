@@ -40,8 +40,6 @@ namespace btas {
         prev[r] = btas_factors[r];
       }
 
-      std::cout << diff << std::endl;
-
       if(diff < this->tol_){
         this->converged_ = true;
       }
