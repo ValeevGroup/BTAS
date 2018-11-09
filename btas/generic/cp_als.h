@@ -279,9 +279,10 @@ namespace btas {
 
       // CP decomposition
       if (opt_rank)
-        epsilon = compute_error(tcutCP, converge_test, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, direct);
+        epsilon = compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI,
+                direct);
       else
-        epsilon = compute_rank(rank, nullptr, step, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, calculate_epsilon, direct);
+        epsilon = compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, calculate_epsilon, direct);
 
       // scale factor matrices
       for (int i = 0; i < ndim; i++) {
@@ -356,7 +357,7 @@ namespace btas {
       double epsilon = -1.0;
 
       if (opt_rank)
-        epsilon = compute_error(tcutCP, converge_test, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, direct);
+        epsilon = compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, direct);
       else
         epsilon = compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, calculate_epsilon, direct);
 
