@@ -589,7 +589,7 @@ namespace btas {
             a.fill(rand());
             A.push_back(a);
             normCol(j);
-            if (j  == ndim) {
+            if (j  == ndim - 1) {
               Tensor lam(Range{Range1{i + 1}});
               A.push_back(lam);
             }
