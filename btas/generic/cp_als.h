@@ -506,7 +506,7 @@ namespace btas {
         A = std::vector<Tensor>(ndim);
 
         // Determine which factor matrices one can fill using SVD initial guess
-        for(int i = 0; i < ndim; i++){
+        for(int i = 0; i < ((symm) ? ndim - 1: ndim); i++){
           if(tensor_ref.extent(i) < SVD_rank){
             modes_w_dim_LT_svd.push_back(i);
           }
@@ -519,7 +519,7 @@ namespace btas {
         A[0] = Tensor(tensor_ref.extent(0), SVD_rank);
         A[0].fill(0.0);
 
-        for(int i = 1; i < ndim; i++){
+        for(int i = 1; i < ((symm) ? ndim - 1: ndim); i++){
           int R = tensor_ref.extent(i);
           Tensor S(R,R), lambda(R);
 
@@ -563,7 +563,7 @@ namespace btas {
         // set the values al lambda, the weigt of each order 1 tensor
         Tensor lambda(Range{Range1{SVD_rank}});
         A.push_back(lambda);
-        for(auto i = 0; i < ndim; ++i){
+        for(auto i = 0; i < ((symm) ? ndim - 1: ndim); ++i){
           normCol(A[i]);
         }
 
