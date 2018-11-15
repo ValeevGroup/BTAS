@@ -19,7 +19,7 @@
 namespace btas {
 
   /** \brief Computes the Canonical Product (CP) decomposition of an order-N
-    tensor using alternating least squares (ALS).
+    tensor using a regularized alternating least squares (RALS).
 
     This computes the CP decomposition of btas::Tensor objects with row
     major storage only with fixed (compile-time) and variable (run-time)
@@ -33,31 +33,31 @@ namespace btas {
     matrices
 
     // Operations
-    A.compute_rank(rank)                       // Computes the CP_ALS of tensor to
-                                               // rank.
+    A.compute_rank(rank, converge_test)             // Computes the CP_ALS of tensor to
+                                                    // rank.
 
-    A.compute_error(omega)                     // Computes the CP_ALS of tensor to
-                                               // 2-norm
-                                               // error < omega.
+    A.compute_error(converge_test, omega)           // Computes the CP_ALS of tensor to
+                                                    // 2-norm
+                                                    // error < omega.
 
-    A.compute_geometric(rank, step)            // Computes CP_ALS of tensor to
-                                               // rank with
-                                               // geometric steps of step between
-                                               // guesses.
+    A.compute_geometric(rank, converge_test, step)  // Computes CP_ALS of tensor to
+                                                    // rank with
+                                                    // geometric steps of step between
+                                                    // guesses.
 
-    A.compress_compute_tucker(tcut_SVD)        // Computes Tucker decomposition
-                                               // using
-                                               // truncated SVD method then
-                                               // computes finite
-                                               // error CP decomposition on core
-                                               // tensor.
+    A.compress_compute_tucker(tcut_SVD, converge_test) // Computes Tucker decomposition
+                                                    // using
+                                                    // truncated SVD method then
+                                                    // computes finite
+                                                    // error CP decomposition on core
+                                                    // tensor.
 
-    A.compress_compute_rand(rank)              // Computes random decomposition on
-                                               // Tensor to
-                                               // make core tensor with every mode
-                                               // size rank
-                                               // Then computes CP decomposition
-                                               // of core.
+    A.compress_compute_rand(rank, converge_test)    // Computes random decomposition on
+                                                    // Tensor to
+                                                    // make core tensor with every mode
+                                                    // size rank
+                                                    // Then computes CP decomposition
+                                                    // of core.
 
    //See documentation for full range of options
 
@@ -78,7 +78,7 @@ namespace btas {
     tensor_ref(tensor), ndim(tensor_ref.rank()),
     size(tensor_ref.size()), num_ALS(0) {
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
-      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_ALS requires LAPACKE or mkl_lapack");
+      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_RALS requires LAPACKE or mkl_lapack");
 #endif
 #ifdef _HAS_INTEL_MKL
 #include <mkl_trans.h>
@@ -1175,7 +1175,7 @@ namespace btas {
       }
     }
 
-  };  // class CP_ALS
+  };  // class CP_RALS
 
 }  // namespace btas
 
