@@ -667,9 +667,6 @@ namespace btas {
           A[ndim - 1] = A[ndim - 2];
         }
         is_converged = converge_test(A);
-        if(rankGTdims && count < 12){
-          is_converged = false;
-        }
       }
 
       // Checks loss function if required
