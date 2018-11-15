@@ -536,10 +536,11 @@ namespace btas {
         // set the values al lambda, the weigt of each order 1 tensor
         Tensor lambda(Range{Range1{SVD_rank}});
         A.push_back(lambda);
-        helper = RALS_HELPER<Tensor>(A);
         for(auto i = 0; i < ndim; ++i){
           normCol(A[i]);
         }
+
+        helper = RALS_HELPER<Tensor>(A);
 
         // Optimize this initial guess.
         ALS(SVD_rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
@@ -601,6 +602,11 @@ namespace btas {
             }
           }
         }
+        // If column is already normalized will return 1
+        for(auto i = 0; i < ndim; ++i){
+          normCol(i);
+        }
+
         helper = RALS_HELPER<Tensor>(A);
         // compute the ALS of factor matrices with rank = i + 1.
         ALS(i + 1, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
@@ -733,13 +739,13 @@ namespace btas {
       // produce an optimize factor matrix
       gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
 
-      // Compute the value s before normalizing the columns
-      s = helper(n, an);
-
       // compute the difference between this new factor matrix and the previous
       // iteration
       //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
       normCol(an);
+
+      // Compute the value s after normalizing the columns
+      s = helper(n, an);
 
       // Replace the old factor matrix with the new optimized result
       A[n] = an;
@@ -957,11 +963,13 @@ namespace btas {
       //gemm_wPI += time.count();
 
       //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
-      // Compute S before column normalization for RALS
-      s = helper(n, an);
 
       // Normalize the columns of the new factor matrix and update
       normCol(an);
+
+      // Compute S after column normalization for RALS
+      s = helper(n, an);
+
       A[n] = an;
     }
 
