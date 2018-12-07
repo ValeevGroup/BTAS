@@ -55,7 +55,7 @@ TEST_CASE("CP_ALS"){
   for(auto& i: results){
     res >> i;
   }
-  NORM_CHECK<tensor> conv(1e-2);
+  NormCheck<tensor> conv(1e-2);
 
   SECTION("MODE = 3, Finite rank"){
   	{

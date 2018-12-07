@@ -69,23 +69,23 @@ namespace btas {
                                         // CP factor matrices
     \endcode
   */
-  template <typename Tensor, class ConvClass = NORM_CHECK<Tensor>>
-  class CP_RALS {
+  template <typename Tensor, class ConvClass = NormCheck<Tensor>>
+  class CPRALS {
    public:
     /// Constructor of object CP_RALS
     /// \param[in] tensor The tensor object to be decomposed
-    CP_RALS(Tensor &tensor) :
+    CPRALS(Tensor &tensor) :
     tensor_ref(tensor), ndim(tensor_ref.rank()),
     size(tensor_ref.size()), num_ALS(0) {
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
-      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_RALS requires LAPACKE or mkl_lapack");
+      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CPRALS requires LAPACKE or mkl_lapack");
 #endif
 #ifdef _HAS_INTEL_MKL
 #include <mkl_trans.h>
 #endif
     }
 
-    ~CP_RALS() = default;
+    ~CPRALS() = default;
 
     /// Computes decomposition of the order-N tensor \c tensor
     /// with CP rank = \c rank .
@@ -246,7 +246,7 @@ namespace btas {
     /// \param[in]
     /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{exact} -
     /// T_{approx}|| = \epsilon \f$ . Default = true.
-    /// \param[in] step CP_ALS built
+    /// \param[in] step CPRALS built
     /// from r =1 to r = \c rank. r increments by \c step; default = 1.
     /// \param[in]
     /// max_rank The highest rank approximation computed before giving up on
@@ -327,7 +327,7 @@ namespace btas {
     /// \param[in] calculate_epsilon Should the 2-norm error be calculated
     /// \f$ ||T_exact - T_approx|| = \epsilon \f$. Default = true.
     /// \param[in] step
-    /// CP_ALS built from r =1 to r = rank. r increments by step; default = 1.
+    /// CPRALS built from r =1 to r = rank. r increments by step; default = 1.
     /// \param[in] max_rank The highest rank approximation computed before giving
     /// up on CP-ALS. Default = 1e5.
     /// \param[in] max_als If CP decomposition is to
@@ -439,7 +439,7 @@ namespace btas {
     const int ndim;         // Number of modes in the reference tensor
     int size;               // Number of elements in the reference tensor
     int num_ALS;            // Total number of ALS iterations required to compute the CP decomposition
-    RALS_HELPER<Tensor> helper;
+    RALSHelper<Tensor> helper;
 
     /// Can create an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
@@ -540,7 +540,7 @@ namespace btas {
           normCol(A[i]);
         }
 
-        helper = RALS_HELPER<Tensor>(A);
+        helper = RALSHelper<Tensor>(A);
 
         // Optimize this initial guess.
         ALS(SVD_rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
@@ -607,7 +607,7 @@ namespace btas {
           normCol(i);
         }
 
-        helper = RALS_HELPER<Tensor>(A);
+        helper = RALSHelper<Tensor>(A);
         // compute the ALS of factor matrices with rank = i + 1.
         ALS(i + 1, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
       }
@@ -1098,7 +1098,7 @@ namespace btas {
     /// \return V^{\dagger} The psuedoinverse of the matrix V.
 
     Tensor pseudoInverse(int n, int R, bool & fast_pI, double lambda) {
-      // CP_ALS method requires the psuedoinverse of matrix V
+      // CPRALS method requires the psuedoinverse of matrix V
 #ifdef _HAS_INTEL_MKL
       if(fast_pI) {
         auto a = generate_V(n, R,lambda);
@@ -1179,7 +1179,7 @@ namespace btas {
       }
     }
 
-  };  // class CP_RALS
+  };  // class CPRALS
 
 }  // namespace btas
 

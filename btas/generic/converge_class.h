@@ -6,17 +6,17 @@
 
 namespace btas {
   template <typename tensor>
-  class NORM_CHECK{
+  class NormCheck{
 
   public:
     /// constructor for the base convergence test object
     /// \param[in] tol tolerance for ALS convergence
     /// \param[in] rank Rank of the CP problem
     /// \param[in] elements A varray of the number of elements
-    NORM_CHECK(double tol = 1e-3): converged_(false), tol_(tol){
+    NormCheck(double tol = 1e-3): converged_(false), tol_(tol){
     }
 
-    ~NORM_CHECK() = default;
+    ~NormCheck() = default;
 
     /// Function to check convergence of the ALS problem
     /// convergence when \sum_n^{ndim} \|A^{i}_n - A^{i+1}_n\| \leq \epsilon

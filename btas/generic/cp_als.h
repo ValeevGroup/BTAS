@@ -68,23 +68,23 @@ namespace btas {
                                         // CP factor matrices
     \endcode
   */
-  template <typename Tensor, class ConvClass = NORM_CHECK<Tensor>>
-  class CP_ALS {
+  template <typename Tensor, class ConvClass = NormCheck<Tensor>>
+  class CPALS {
    public:
     /// Constructor of object CP_ALS
     /// \param[in] tensor The tensor object to be decomposed
-    CP_ALS(Tensor &tensor) :
+    CPALS(Tensor &tensor) :
     tensor_ref(tensor), ndim(tensor_ref.rank()),
     size(tensor_ref.size()), num_ALS(0) {
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
-      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_ALS requires LAPACKE or mkl_lapack");
+      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CPALS requires LAPACKE or mkl_lapack");
 #endif
 #ifdef _HAS_INTEL_MKL
 #include <mkl_trans.h>
 #endif
     }
 
-    ~CP_ALS() = default;
+    ~CPALS() = default;
 
     /// Computes decomposition of the order-N tensor \c tensor
     /// with CP rank = \c rank .
@@ -246,7 +246,7 @@ namespace btas {
     /// \param[in]
     /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{exact} -
     /// T_{approx}|| = \epsilon \f$ . Default = true.
-    /// \param[in] step CP_ALS built
+    /// \param[in] step CPALS built
     /// from r =1 to r = \c rank. r increments by \c step; default = 1.
     /// \param[in]
     /// max_rank The highest rank approximation computed before giving up on
@@ -328,7 +328,7 @@ namespace btas {
     /// \param[in] calculate_epsilon Should the 2-norm error be calculated
     /// \f$ ||T_exact - T_approx|| = \epsilon \f$. Default = true.
     /// \param[in] step
-    /// CP_ALS built from r =1 to r = rank. r increments by step; default = 1.
+    /// CPALS built from r =1 to r = rank. r increments by step; default = 1.
     /// \param[in] max_rank The highest rank approximation computed before giving
     /// up on CP-ALS. Default = 1e5.
     /// \param[in] max_als If CP decomposition is to
@@ -1092,7 +1092,7 @@ namespace btas {
     /// \return V^{\dagger} The psuedoinverse of the matrix V.
 
     Tensor pseudoInverse(int n, int R, bool & fast_pI) {
-      // CP_ALS method requires the psuedoinverse of matrix V
+      // CPALS method requires the psuedoinverse of matrix V
 #ifdef _HAS_INTEL_MKL
       if(fast_pI) {
         auto a = generate_V(n, R);
@@ -1174,7 +1174,7 @@ namespace btas {
       }
     }
 
-  };  // class CP_ALS
+  };  // class CPALS
 
 }  // namespace btas
 

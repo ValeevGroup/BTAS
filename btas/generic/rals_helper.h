@@ -6,13 +6,13 @@
 #define BTAS_RALS_HELPER_H
 namespace btas{
   template <typename tensor>
-  class RALS_HELPER{
+  class RALSHelper{
   public:
-    RALS_HELPER() = default;
+    RALSHelper() = default;
 
-    ~RALS_HELPER() = default;
+    ~RALSHelper() = default;
 
-    RALS_HELPER(std::vector<tensor> prev): prev_(prev){
+    RALSHelper(std::vector<tensor> prev): prev_(prev){
     }
 
     double operator() (int mode, const tensor& An){
