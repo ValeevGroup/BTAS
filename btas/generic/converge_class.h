@@ -13,7 +13,7 @@ namespace btas {
     /// \param[in] tol tolerance for ALS convergence
     /// \param[in] rank Rank of the CP problem
     /// \param[in] elements A varray of the number of elements
-    NormCheck(double tol = 1e-3): converged_(false), tol_(tol){
+    NormCheck(double tol = 1e-3): tol_(tol){
     }
 
     ~NormCheck() = default;
@@ -41,13 +41,12 @@ namespace btas {
       }
 
       if(diff < this->tol_){
-        this->converged_ = true;
+        return true;
       }
-      return converged_;
+      return false;
     }
 
   private:
-    bool converged_;
     double tol_;
     std::vector<tensor> prev;     // Set of previous factor matrices
     int ndim;                     // Number of factor matrices
