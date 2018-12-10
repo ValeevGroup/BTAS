@@ -218,6 +218,63 @@ namespace btas {
       return epsilon;
     }
 
+    template <typename ErrorCheck>
+    double compute_error(ErrorCheck & check, ConvClass & converge_test, int RankStep = 1, bool symm = false,
+                         int max_als = 20,bool fast_pI = true, bool calculate_epsilon = false, bool direct = true){
+      if (RankStep <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
+      double epsilon = -1.0;
+      int count = 0;
+      bool is_conv = false;
+      while(count < 4 && !is_conv){
+        std::cout << "compute count : " << count << std::endl;
+        if(count == 0) {
+          build(RankStep, converge_test, direct, max_als, calculate_epsilon, 1, epsilon, true, RankStep, fast_pI, symm);
+        }
+        else {
+          int rank = A[0].extent(1), rank_new = RankStep + 0.5 * RankStep * count;
+          for (int i = 0; i < ndim; ++i) {
+            int row_extent = A[0].extent(0);
+            std::cout << "Actaul rank " << rank << std::endl;
+            std::cout << "rank_new : " << rank_new << std::endl;
+            Tensor b(Range{Range1{A[0].range(0)}, Range1{rank_new}});
+
+            {
+              auto lower_old = {0, 0}, upper_old = {row_extent, rank};
+              auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
+              auto A_itr = A[0].begin();
+              for(auto iter = old_view.begin(); iter != old_view.end(); ++iter, ++A_itr){
+                *(iter) = *(A_itr);
+              }
+            }
+
+            {
+              auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
+              auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
+              std::mt19937 generator(3);
+              std::normal_distribution<double> distribution(0, 2);
+              for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
+                *(iter) = distribution(generator);
+              }
+            }
+
+            A.erase(A.begin());
+            A.push_back(b);
+            if (i + 1 == ndim) {
+              b.resize(Range{Range1{rank_new}});
+              for (int k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
+              A.erase(A.begin());
+              A.push_back(b);
+            }
+            normCol(0);
+          }
+          ALS(rank_new, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
+        }
+        //is_conv = check(A);
+        count++;
+      }
+      return epsilon;
+    }
+
 #ifdef _HAS_INTEL_MKL
 
     /// \brief Computes an approximate core tensor using
