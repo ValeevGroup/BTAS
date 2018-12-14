@@ -537,6 +537,7 @@ namespace btas {
     int size;               // Number of elements in the reference tensor
     int num_ALS;            // Total number of ALS iterations required to compute the CP decomposition
     bool factors_set = false;
+    double T = 1.0;
 
     /// Can create an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
@@ -749,6 +750,7 @@ namespace btas {
           A[ndim - 1] = A[ndim - 2];
         }
         is_converged = converge_test(A);
+        T *= 0.6;
       }
 
       // Checks loss function if required
@@ -1035,7 +1037,16 @@ namespace btas {
       //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
 
       normCol(an);
+      {
+        std::random_device rd;
+        std::mt19937 generator(rd());
+        std::normal_distribution<double> dist(0.0, T);
+        for(auto & i: an){
+          i += dist(generator);
+        }
+      }
       A[n] = an;
+      normCol(n);
     }
 
     /// Generates V by first Multiply A^T.A then Hadamard product V(i,j) *=
