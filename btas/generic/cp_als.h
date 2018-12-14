@@ -218,26 +218,36 @@ namespace btas {
       return epsilon;
     }
 
-    template <typename ErrorCheck>
-    double compute_error(ErrorCheck & check, ConvClass & converge_test, int RankStep = 1, bool symm = false,
+#ifdef _HAS_INTEL_MKL
+    double paneled_tucker_build(ConvClass & converge_test, double RankStep = 0.5, int panels = 4, bool symm = false,
                          int max_als = 20,bool fast_pI = true, bool calculate_epsilon = false, bool direct = true){
       if (RankStep <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       double epsilon = -1.0;
       int count = 0;
-      bool is_conv = false;
-      while(count < 4 && !is_conv){
-        std::cout << "compute count : " << count << std::endl;
+      // Find the largest rank this will be the first panel
+      auto max_dim = tensor_ref.extent(0);
+      for(int i = 1; i < ndim; ++i){
+        auto dim = tensor_ref.extent(i);
+        max_dim = ( dim > max_dim ? dim : max_dim);
+      }
+
+      while(count < panels){
+        // Use tucker initial guess (SVD) to compute the first panel
         if(count == 0) {
-          build(RankStep, converge_test, direct, max_als, calculate_epsilon, 1, epsilon, true, RankStep, fast_pI, symm);
+          build(max_dim, converge_test, direct, max_als, calculate_epsilon, 1, epsilon, true, max_dim, fast_pI, symm);
         }
+        // All other panels build the rank buy RankStep variable
         else {
-          int rank = A[0].extent(1), rank_new = RankStep + 0.5 * RankStep * count;
+          // Always deal with the first matrix push new factors to the end of A
+          // Kick out the first factor when it is replaced.
+          // This is the easiest way to resize and preserve the columns
+          // (if this is rebuilt with rank as columns this resize would be easier)
+          int rank = A[0].extent(1), rank_new = rank +  RankStep * max_dim;
           for (int i = 0; i < ndim; ++i) {
             int row_extent = A[0].extent(0);
-            std::cout << "Actaul rank " << rank << std::endl;
-            std::cout << "rank_new : " << rank_new << std::endl;
-            Tensor b(Range{Range1{A[0].range(0)}, Range1{rank_new}});
+            Tensor b(Range{Range1{A[0].extent(0)}, Range1{rank_new}});
 
+            // Move the old factor to the new larger matrix
             {
               auto lower_old = {0, 0}, upper_old = {row_extent, rank};
               auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
@@ -247,6 +257,7 @@ namespace btas {
               }
             }
 
+            // Fill in the new columns of the factor with random numbers
             {
               auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
@@ -259,21 +270,23 @@ namespace btas {
 
             A.erase(A.begin());
             A.push_back(b);
+            // replace the lambda matrix when done with all the factors
             if (i + 1 == ndim) {
               b.resize(Range{Range1{rank_new}});
               for (int k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
               A.erase(A.begin());
               A.push_back(b);
             }
+            // normalize the factor (don't replace the previous lambda matrix)
             normCol(0);
           }
           ALS(rank_new, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
         }
-        //is_conv = check(A);
         count++;
       }
       return epsilon;
     }
+#endif // _HAS_INTEL_MKL
 
 #ifdef _HAS_INTEL_MKL
 
