@@ -29,18 +29,18 @@ namespace btas {
     Synopsis:
     \code
     // Constructors
-    CP_ALS A(tensor)                    // CP_ALS object with empty factor
+    CP_RALS A(tensor)                    // CP_RALS object with empty factor
     matrices
 
     // Operations
-    A.compute_rank(rank, converge_test)             // Computes the CP_ALS of tensor to
+    A.compute_rank(rank, converge_test)             // Computes the CP_RALS of tensor to
                                                     // rank.
 
-    A.compute_error(converge_test, omega)           // Computes the CP_ALS of tensor to
+    A.compute_error(converge_test, omega)           // Computes the CP_RALS of tensor to
                                                     // 2-norm
                                                     // error < omega.
 
-    A.compute_geometric(rank, converge_test, step)  // Computes CP_ALS of tensor to
+    A.compute_geometric(rank, converge_test, step)  // Computes CP_RALS of tensor to
                                                     // rank with
                                                     // geometric steps of step between
                                                     // guesses.
@@ -70,22 +70,22 @@ namespace btas {
     \endcode
   */
   template <typename Tensor, class ConvClass = NormCheck<Tensor>>
-  class CPRALS {
+  class CP_RALS {
    public:
     /// Constructor of object CP_RALS
     /// \param[in] tensor The tensor object to be decomposed
-    CPRALS(Tensor &tensor) :
+    CP_RALS(Tensor &tensor) :
     tensor_ref(tensor), ndim(tensor_ref.rank()),
     size(tensor_ref.size()), num_ALS(0) {
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
-      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CPRALS requires LAPACKE or mkl_lapack");
+      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_RALS requires LAPACKE or mkl_lapack");
 #endif
 #ifdef _HAS_INTEL_MKL
 #include <mkl_trans.h>
 #endif
     }
 
-    ~CPRALS() = default;
+    ~CP_RALS() = default;
 
     /// Computes decomposition of the order-N tensor \c tensor
     /// with CP rank = \c rank .
@@ -246,7 +246,7 @@ namespace btas {
     /// \param[in]
     /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{exact} -
     /// T_{approx}|| = \epsilon \f$ . Default = true.
-    /// \param[in] step CPRALS built
+    /// \param[in] step CP_RALS built
     /// from r =1 to r = \c rank. r increments by \c step; default = 1.
     /// \param[in]
     /// max_rank The highest rank approximation computed before giving up on
@@ -327,7 +327,7 @@ namespace btas {
     /// \param[in] calculate_epsilon Should the 2-norm error be calculated
     /// \f$ ||T_exact - T_approx|| = \epsilon \f$. Default = true.
     /// \param[in] step
-    /// CPRALS built from r =1 to r = rank. r increments by step; default = 1.
+    /// CP_RALS built from r =1 to r = rank. r increments by step; default = 1.
     /// \param[in] max_rank The highest rank approximation computed before giving
     /// up on CP-ALS. Default = 1e5.
     /// \param[in] max_als If CP decomposition is to
@@ -1098,7 +1098,7 @@ namespace btas {
     /// \return V^{\dagger} The psuedoinverse of the matrix V.
 
     Tensor pseudoInverse(int n, int R, bool & fast_pI, double lambda) {
-      // CPRALS method requires the psuedoinverse of matrix V
+      // CP_RALS method requires the psuedoinverse of matrix V
 #ifdef _HAS_INTEL_MKL
       if(fast_pI) {
         auto a = generate_V(n, R,lambda);
@@ -1179,7 +1179,7 @@ namespace btas {
       }
     }
 
-  };  // class CPRALS
+  };  // class CP_RALS
 
 }  // namespace btas
 
