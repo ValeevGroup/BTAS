@@ -129,7 +129,7 @@ template <typename Tensor> void LU_decomp(Tensor &A) {
   // This means there was a problem with the LU that must be dealt with,
   // The decomposition cannot be continued.
   if (info < 0) {
-    BTAS_EXCEPTION("Error with LU decomposition");
+    BTAS_EXCEPTION("LU_decomp: LAPACKE_dgetrf received an invalid input parameter");
   }
 
   // This means that part of the LU is singular which may cause a problem in
