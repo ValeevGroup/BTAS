@@ -8,8 +8,8 @@ if [ "$CXX" = "g++" ]; then
     export CC=/usr/bin/gcc-$GCC_VERSION
     export CXX=/usr/bin/g++-$GCC_VERSION
 else
-    export CC=/usr/bin/clang-$LLVM_VERSION
-    export CXX=/usr/bin/clang++-$LLVM_VERSION
+    export CC=/usr/bin/clang-$CLANG_VERSION
+    export CXX=/usr/bin/clang++-$CLANG_VERSION
 fi
 
 ##########   test with cblas   ##########
