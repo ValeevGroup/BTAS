@@ -112,9 +112,9 @@ add_subdirectory(doc)
 ##########################
 # checking/testing
 ##########################
-enable_testing()
+enable_testing(true)
 if (BTAS_BUILD_UNITTEST)
-  add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
+  add_custom_target(check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
   add_subdirectory(unittest)
 else(BTAS_BUILD_UNITTEST)
   add_custom_target(check COMMAND echo "WARNING: unit testing disabled. To enable, give -DBTAS_BUILD_UNITTEST=TRUE to cmake")
