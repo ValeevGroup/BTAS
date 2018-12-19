@@ -25,7 +25,7 @@ namespace btas {
       if (prev.empty() || prev[0].size() != btas_factors[0].size()){
         prev.clear();
         for(int i = 0; i < ndim; ++i){
-          prev.push_backtensor(btas_factors[i].range()));
+          prev.push_back(tensor(btas_factors[i].range()));
           prev[i].fill(0.0);
         }
       }
