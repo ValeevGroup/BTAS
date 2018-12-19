@@ -4,18 +4,20 @@
 
 #ifndef BTAS_RALS_HELPER_H
 #define BTAS_RALS_HELPER_H
+
 namespace btas{
-  template <typename tensor>
+
+  template <typename Tensor>
   class RALSHelper{
   public:
     RALSHelper() = default;
 
     ~RALSHelper() = default;
 
-    RALSHelper(std::vector<tensor> prev): prev_(prev){
+    RALSHelper(std::vector<Tensor> prev): prev_(prev){
     }
 
-    double operator() (int mode, const tensor& An){
+    double operator() (int mode, const Tensor& An){
       auto change = An - prev_[mode];
       double s = std::sqrt(dot(change, change));
       s /= std::sqrt(dot(An, An));
@@ -25,7 +27,9 @@ namespace btas{
     }
 
   private:
-    std::vector<tensor> prev_;
+    std::vector<Tensor> prev_;
   };
+
 }
+
 #endif //BTAS_RALS_HELPER_H

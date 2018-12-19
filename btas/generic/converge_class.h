@@ -5,15 +5,14 @@
 #include "btas/varray/varray.h"
 
 namespace btas {
-  template <typename tensor>
+
+  template <typename Tensor>
   class NormCheck{
 
   public:
     /// constructor for the base convergence test object
     /// \param[in] tol tolerance for ALS convergence
-    /// \param[in] rank Rank of the CP problem
-    /// \param[in] elements A varray of the number of elements
-    NormCheck(double tol = 1e-3): tol_(tol){
+    explicit NormCheck(double tol = 1e-3): tol_(tol){
     }
 
     ~NormCheck() = default;
@@ -21,12 +20,12 @@ namespace btas {
     /// Function to check convergence of the ALS problem
     /// convergence when \sum_n^{ndim} \|A^{i}_n - A^{i+1}_n\| \leq \epsilon
     /// \param[in] btas_factors Current set of factor matrices
-    bool operator () (const std::vector<tensor> & btas_factors){
+    bool operator () (const std::vector<Tensor> & btas_factors){
       auto ndim = btas_factors.size() - 1;
       if (prev.empty() || prev[0].size() != btas_factors[0].size()){
         prev.clear();
         for(int i = 0; i < ndim; ++i){
-          prev.push_back(tensor(btas_factors[i].range()));
+          prev.push_backtensor(btas_factors[i].range()));
           prev[i].fill(0.0);
         }
       }
@@ -48,7 +47,7 @@ namespace btas {
 
   private:
     double tol_;
-    std::vector<tensor> prev;     // Set of previous factor matrices
+    std::vector<Tensor> prev;     // Set of previous factor matrices
     int ndim;                     // Number of factor matrices
     int rank_;               // Rank of the CP problem
   };
