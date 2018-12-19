@@ -74,22 +74,22 @@ namespace btas {
     \endcode
   */
   template <typename Tensor, class ConvClass = NormCheck<Tensor>>
-  class CPALS {
+  class CP_ALS {
    public:
     /// Constructor of object CP_ALS
     /// \param[in] tensor The tensor object to be decomposed
-    CPALS(Tensor &tensor) :
+    CP_ALS(Tensor &tensor) :
     tensor_ref(tensor), ndim(tensor_ref.rank()),
     size(tensor_ref.size()), num_ALS(0) {
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
-      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CPALS requires LAPACKE or mkl_lapack");
+      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_ALS requires LAPACKE or mkl_lapack");
 #endif
 #ifdef _HAS_INTEL_MKL
 #include <mkl_trans.h>
 #endif
     }
 
-    ~CPALS() = default;
+    ~CP_ALS() = default;
 
     /// Computes decomposition of the order-N tensor \c tensor
     /// with CP rank = \c rank .
