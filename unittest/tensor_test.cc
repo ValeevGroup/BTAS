@@ -6,6 +6,7 @@
 #include "btas/tensorview.h"
 #include "test.h"
 
+#include <ctime>
 #include <algorithm>
 #include <fstream>
 #include <iostream>

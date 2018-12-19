@@ -24,5 +24,5 @@ add_dependencies(${executable} External)
 add_dependencies(check ${executable})
 
 # Add a test
-add_test(${executable} ${CMAKE_BINARY_DIR}/unittest/${executable} -s) 
+add_test(${executable} ${CMAKE_BINARY_DIR}/unittest/${executable} -s)
 set_tests_properties(${executable} PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/unittest" ENVIRONMENT LD_LIBRARY_PATH=$ENV{LIBRARY_PATH})
