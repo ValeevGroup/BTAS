@@ -249,6 +249,7 @@ namespace btas {
     /// \returns 2-norm error
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
     /// \f$ \epsilon \f$
+    double paneled_tucker_build(ConvClass & converge_test, double RankStep = 0.5, int panels = 4, bool symm = false,
                          int max_als = 20,bool fast_pI = true, bool calculate_epsilon = false, bool direct = true){
       if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
       double epsilon = -1.0;
