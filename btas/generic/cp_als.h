@@ -44,6 +44,11 @@ namespace btas {
                                                     // geometric steps of step between
                                                     // guesses.
 
+    A.paneled_tucker_build(converge_test)           // computes CP_ALS of tensor to
+                                                    // rank = 2 * max_dim(tensor)
+                                                    // in 4 panels using a modified
+                                                    // HOSVD initial guess
+
     A.compress_compute_tucker(tcut_SVD, converge_test) // Computes Tucker decomposition
                                                     // using
                                                     // truncated SVD method then
@@ -186,7 +191,7 @@ namespace btas {
     /// \param[in] max_als Max number of iterations allowed to
     /// converge the ALS approximation. default = 1e4
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    /// default = false
+    /// default = true
     /// \param[in] calculate_epsilon Should the
     /// 2-norm error be calculated \f$ ||T_{exact} - T_{approx}|| = \epsilon \f$.
     /// Default = false.
@@ -219,7 +224,31 @@ namespace btas {
     }
 
 #ifdef _HAS_INTEL_MKL
-    double paneled_tucker_build(ConvClass & converge_test, double RankStep = 0.5, int panels = 4, bool symm = false,
+    /// Computes decomposition of the order-N tensor \c tensor
+    /// to \f$ rank = Max_Dim(\c tensor) + \c RankStep * Max_Dim(\c tensor) * \c panels \f$
+    /// Initial guess for factor matrices is the modified HOSVD (tucker initial guess)
+    /// number of ALS minimizations performed is \c panels. To minimize global
+    /// CP problem choose \f$ 0 < \c RankStep \leq ~1.0 \f$
+
+    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in] RankStep how much the rank should grow in each panel
+    /// with respect to the largest dimension of \c tensor. Default = 0.25
+    /// \param[in] panels number of ALS minimizations/steps
+    /// \param[in] symm is \c tensor is symmetric in the last two dimension? default = false
+    /// \param[in] max_als Max number of iterations allowed to
+    /// converge the ALS approximation. default = 20
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// default = true
+    /// \param[in] calculate_epsilon Should the
+    /// 2-norm error be calculated \f$ ||T_{exact} - T_{approx}|| = \epsilon \f$.
+    /// Default = false.
+    /// \param[in] direct Should the CP
+    /// decomposition be computed without calculating the Khatri-Rao product?
+    /// Default = true.
+
+    /// \returns 2-norm error
+    /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
+    /// \f$ \epsilon \f$
                          int max_als = 20,bool fast_pI = true, bool calculate_epsilon = false, bool direct = true){
       if (RankStep <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       double epsilon = -1.0;
@@ -316,7 +345,7 @@ namespace btas {
     /// \param[in]
     /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{exact} -
     /// T_{approx}|| = \epsilon \f$ . Default = true.
-    /// \param[in] step CPALS built
+    /// \param[in] step CP_ALS built
     /// from r =1 to r = \c rank. r increments by \c step; default = 1.
     /// \param[in]
     /// max_rank The highest rank approximation computed before giving up on
@@ -398,7 +427,7 @@ namespace btas {
     /// \param[in] calculate_epsilon Should the 2-norm error be calculated
     /// \f$ ||T_exact - T_approx|| = \epsilon \f$. Default = true.
     /// \param[in] step
-    /// CPALS built from r =1 to r = rank. r increments by step; default = 1.
+    /// CP_ALS built from r =1 to r = rank. r increments by step; default = 1.
     /// \param[in] max_rank The highest rank approximation computed before giving
     /// up on CP-ALS. Default = 1e5.
     /// \param[in] max_als If CP decomposition is to
@@ -1005,6 +1034,8 @@ namespace btas {
       //t1 = std::chrono::high_resolution_clock::now();
 #ifdef _HAS_INTEL_MKL
       if(fast_pI && matlab) {
+        // This method computes the inverse quickly for a square matrix
+        // based on MATLAB's implementation of A / B operator.
         btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
         piv.fill(0);
 
@@ -1015,6 +1046,7 @@ namespace btas {
             an = temp;
         }
         else{
+          // If inverse fails resort to the pseudoinverse
           std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
           matlab = false;
         }
@@ -1173,7 +1205,7 @@ namespace btas {
     /// \return V^{\dagger} The psuedoinverse of the matrix V.
 
     Tensor pseudoInverse(int n, int R, bool & fast_pI) {
-      // CPALS method requires the psuedoinverse of matrix V
+      // CP_ALS method requires the psuedoinverse of matrix V
 #ifdef _HAS_INTEL_MKL
       if(fast_pI) {
         auto a = generate_V(n, R);
@@ -1255,7 +1287,7 @@ namespace btas {
       }
     }
 
-  };  // class CPALS
+  };  // class CP_ALS
 
 }  // namespace btas
 
