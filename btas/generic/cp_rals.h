@@ -172,6 +172,7 @@ namespace btas {
       return epsilon;
     }
 
+    /// Computes decomposition of the order-N tensor \c tensor
     /// with \f$ CP rank \leq \f$ \c desired_rank \n
     /// Initial guess for factor matrices start at rank = 1
     /// and build to rank = \c rank by geometric steps of \c geometric_step, to
@@ -191,7 +192,7 @@ namespace btas {
     /// \param[in] max_als Max number of iterations allowed to
     /// converge the ALS approximation. default = 1e4
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    /// default = false
+    /// default = true
     /// \param[in] calculate_epsilon Should the
     /// 2-norm error be calculated \f$ ||T_{exact} - T_{approx}|| = \epsilon \f$.
     /// Default = false.
@@ -380,9 +381,10 @@ namespace btas {
 
       // CP decomposition
       if (opt_rank)
-        epsilon = compute_error(tcutCP, converge_test, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, direct);
+        epsilon = compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI,
+                direct);
       else
-        epsilon = compute_rank(rank, nullptr, step, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, calculate_epsilon, direct);
+        epsilon = compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, calculate_epsilon, direct);
 
       // scale factor matrices
       for (int i = 0; i < ndim; i++) {
@@ -457,7 +459,7 @@ namespace btas {
       double epsilon = -1.0;
 
       if (opt_rank)
-        epsilon = compute_error(tcutCP, converge_test, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, direct);
+        epsilon = compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, direct);
       else
         epsilon = compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, calculate_epsilon, direct);
 
@@ -622,13 +624,11 @@ namespace btas {
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd){
           int R = tensor_ref.extent(i);
-          int num_elements = (SVD_rank - R) * R;
           auto lower_bound = {0, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
           std::normal_distribution<double> distribution(0, 2.0);
           for(auto iter = view.begin(); iter != view.end(); ++iter){
-            //*(iter) = rand() % num_elements;
             *(iter) = distribution(generator);
           }
         }
@@ -661,7 +661,7 @@ namespace btas {
             a.fill(rand());
             A.push_back(a);
             normCol(j);
-            if (j  == ndim) {
+            if (j  == ndim - 1) {
               Tensor lam(Range{Range1{i + 1}});
               A.push_back(lam);
             }
@@ -742,11 +742,6 @@ namespace btas {
       if(symm){
         A[ndim - 1] = A[ndim -2];
       }
-      bool rankGTdims = false;
-      for(int i = 0; i < ndim; ++i){
-        rankGTdims = rank > tensor_ref.extent(i);
-        if(rankGTdims) break;
-      }
 
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
@@ -755,7 +750,6 @@ namespace btas {
       bool matlab = fast_pI;
       while(count < max_als && !is_converged){
         count++;
-
         for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
           if (dir)
             direct(i, rank, symm, fast_pI, matlab, lambda[i], s);
@@ -1033,6 +1027,8 @@ namespace btas {
       //t1 = std::chrono::high_resolution_clock::now();
 #ifdef _HAS_INTEL_MKL
       if(fast_pI && matlab) {
+        // This method computes the inverse quickly for a square matrix
+        // based on MATLAB's implementation of A / B operator.
         btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
         piv.fill(0);
 
@@ -1043,6 +1039,7 @@ namespace btas {
             an = temp;
         }
         else{
+          // If inverse fails resort to the pseudoinverse
           std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
           matlab = false;
         }
@@ -1060,7 +1057,6 @@ namespace btas {
       //time = t2 - t1;
       //gemm_wPI += time.count();
 
-      //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
 
       // Normalize the columns of the new factor matrix and update
       normCol(an);

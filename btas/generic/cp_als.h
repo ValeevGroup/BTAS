@@ -314,6 +314,7 @@ namespace btas {
         }
         count++;
       }
+      std::cout << "Number of ALS iterations was " << num_ALS << std::endl;
       return epsilon;
     }
 #endif // _HAS_INTEL_MKL
@@ -1065,10 +1066,8 @@ namespace btas {
       //time = t2 - t1;
       //gemm_wPI += time.count();
 
-      // compute the difference between this new factor matrix and the previous
-      // iteration
-      //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
 
+      // Normalize the columns of the new factor matrix and update
       normCol(an);
       {
         std::random_device rd;
