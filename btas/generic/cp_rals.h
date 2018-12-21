@@ -45,6 +45,11 @@ namespace btas {
                                                     // geometric steps of step between
                                                     // guesses.
 
+    A.paneled_tucker_build(converge_test)           // computes CP_ALS of tensor to
+                                                    // rank = 2 * max_dim(tensor)
+                                                    // in 4 panels using a modified
+                                                    // HOSVD initial guess
+
     A.compress_compute_tucker(tcut_SVD, converge_test) // Computes Tucker decomposition
                                                     // using
                                                     // truncated SVD method then
@@ -217,6 +222,102 @@ namespace btas {
       }
       return epsilon;
     }
+
+#ifdef _HAS_INTEL_MKL
+    /// Computes decomposition of the order-N tensor \c tensor
+    /// to \f$ rank = Max_Dim(\c tensor) + \c RankStep * Max_Dim(\c tensor) * \c panels \f$
+    /// Initial guess for factor matrices is the modified HOSVD (tucker initial guess)
+    /// number of ALS minimizations performed is \c panels. To minimize global
+    /// CP problem choose \f$ 0 < \c RankStep \leq ~1.0 \f$
+
+    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in] RankStep how much the rank should grow in each panel
+    /// with respect to the largest dimension of \c tensor. Default = 0.25
+    /// \param[in] panels number of ALS minimizations/steps
+    /// \param[in] symm is \c tensor is symmetric in the last two dimension? default = false
+    /// \param[in] max_als Max number of iterations allowed to
+    /// converge the ALS approximation. default = 20
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// default = true
+    /// \param[in] calculate_epsilon Should the
+    /// 2-norm error be calculated \f$ ||T_{exact} - T_{approx}|| = \epsilon \f$.
+    /// Default = false.
+    /// \param[in] direct Should the CP
+    /// decomposition be computed without calculating the Khatri-Rao product?
+    /// Default = true.
+
+    /// \returns 2-norm error
+    /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
+    /// \f$ \epsilon \f$
+    double paneled_tucker_build(ConvClass & converge_test, double RankStep = 0.5, int panels = 4, bool symm = false,
+                         int max_als = 20,bool fast_pI = true, bool calculate_epsilon = false, bool direct = true){
+      if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
+      double epsilon = -1.0;
+      int count = 0;
+      // Find the largest rank this will be the first panel
+      auto max_dim = tensor_ref.extent(0);
+      for(int i = 1; i < ndim; ++i){
+        auto dim = tensor_ref.extent(i);
+        max_dim = ( dim > max_dim ? dim : max_dim);
+      }
+
+      while(count < panels){
+        // Use tucker initial guess (SVD) to compute the first panel
+        if(count == 0) {
+          build(max_dim, converge_test, direct, max_als, calculate_epsilon, 1, epsilon, true, max_dim, fast_pI, symm);
+        }
+        // All other panels build the rank buy RankStep variable
+        else {
+          // Always deal with the first matrix push new factors to the end of A
+          // Kick out the first factor when it is replaced.
+          // This is the easiest way to resize and preserve the columns
+          // (if this is rebuilt with rank as columns this resize would be easier)
+          int rank = A[0].extent(1), rank_new = rank +  RankStep * max_dim;
+          for (int i = 0; i < ndim; ++i) {
+            int row_extent = A[0].extent(0);
+            Tensor b(Range{Range1{A[0].extent(0)}, Range1{rank_new}});
+
+            // Move the old factor to the new larger matrix
+            {
+              auto lower_old = {0, 0}, upper_old = {row_extent, rank};
+              auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
+              auto A_itr = A[0].begin();
+              for(auto iter = old_view.begin(); iter != old_view.end(); ++iter, ++A_itr){
+                *(iter) = *(A_itr);
+              }
+            }
+
+            // Fill in the new columns of the factor with random numbers
+            {
+              auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
+              auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
+              std::mt19937 generator(3);
+              std::normal_distribution<double> distribution(0, 2);
+              for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
+                *(iter) = distribution(generator);
+              }
+            }
+
+            A.erase(A.begin());
+            A.push_back(b);
+            // replace the lambda matrix when done with all the factors
+            if (i + 1 == ndim) {
+              b.resize(Range{Range1{rank_new}});
+              for (int k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
+              A.erase(A.begin());
+              A.push_back(b);
+            }
+            // normalize the factor (don't replace the previous lambda matrix)
+            normCol(0);
+          }
+          ALS(rank_new, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
+        }
+        count++;
+      }
+      std::cout << "Number of ALS iterations was " << num_ALS << std::endl;
+      return epsilon;
+    }
+#endif // _HAS_INTEL_MKL
 
 #ifdef _HAS_INTEL_MKL
 
