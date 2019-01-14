@@ -55,11 +55,16 @@ private:
 
      pointer begin() { return _M_start; }
      pointer end() { return _M_finish; }
+     const_pointer begin() const { return _M_start; }
+     const_pointer end() const { return _M_finish; }
+
      const_pointer cbegin() const { return const_cast<const_pointer>(_M_start); }
      const_pointer cend() const { return const_cast<const_pointer>(_M_finish); }
 
      pointer rbegin() { return _M_finish-1; }
      pointer rend() { return _M_start-1; }
+     const_pointer rbegin() const { return _M_finish-1; }
+     const_pointer rend() const { return _M_start-1; }
      const_pointer crbegin() const { return const_cast<const_pointer>(_M_finish-1); }
      const_pointer crend() const { return const_cast<const_pointer>(_M_start-1); }
 
