@@ -16,6 +16,7 @@
 #include <btas/generic/gesvd_impl.h>
 #include <btas/generic/cp_als.h>
 #include <btas/generic/cp_rals.h>
+#include <btas/generic/cp_df_als.h>
 
 #ifdef _CONTRACT_OPT_BAGEL
 #include <btas/optimize/contract.h>
