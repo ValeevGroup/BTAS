@@ -773,9 +773,9 @@ namespace btas {
         count++;
         for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
           if (dir)
-            direct(i, rank, symm, fast_pI, matlab);
+            direct(i, rank, symm, fast_pI, matlab, converge_test);
           else
-            update_w_KRP(i, rank, symm, fast_pI);
+            update_w_KRP(i, rank, symm, fast_pI, converge_test);
         }
         if(symm){
           A[ndim - 1] = A[ndim - 2];
@@ -800,7 +800,7 @@ namespace btas {
     /// iteration factor matrix
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void update_w_KRP(int n, int rank, bool symm, bool & fast_pI) {
+    void update_w_KRP(int n, int rank, bool symm, bool & fast_pI, ConvClass & converge_test) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -843,6 +843,9 @@ namespace btas {
       gemm(CblasNoTrans, CblasNoTrans, 1.0, flatten(tensor_ref, n), generate_KRP(n, rank, true), 0.0, temp);
 #endif
 
+      if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+        converge_test.set_MtKRP(temp);
+      }
       // contract the product from above with the psuedoinverse of the Hadamard
       // produce an optimize factor matrix
       gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI), 0.0, an);
@@ -889,7 +892,7 @@ namespace btas {
     /// \param[in] symm does the reference tensor have symmetry in the last two modes
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
 
-    void direct(int n, int rank, bool symm, bool & fast_pI, bool & matlab) {
+    void direct(int n, int rank, bool symm, bool & fast_pI, bool & matlab, ConvClass & converge_test) {
 
       // Determine if n is the last mode, if it is first contract with first mode
       // and transpose the product
@@ -1033,6 +1036,10 @@ namespace btas {
       n = last_dim ? ndim - 1: n;
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
+
+      if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+        converge_test.set_MtKRP(temp);
+      }
       //t1 = std::chrono::high_resolution_clock::now();
 #ifdef _HAS_INTEL_MKL
       if(fast_pI && matlab) {
