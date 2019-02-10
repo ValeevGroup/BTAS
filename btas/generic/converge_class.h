@@ -101,7 +101,7 @@ namespace btas {
       }
 
       double normFactors = norm(btas_factors);
-      double normResidual = sqrt(normT_ * normT_ + normFactors * normFactors - 2 * iprod);
+      double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * iprod));
       double fit = 1 - (normResidual / normT_);
 
       double fitChange = abs(fitOld_ - fit);
