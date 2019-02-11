@@ -754,9 +754,9 @@ namespace btas {
         count++;
         for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
           if (dir)
-            direct(i, rank, symm, fast_pI, matlab, lambda[i], s);
+            direct(i, rank, symm, fast_pI, matlab, lambda[i], s, converge_test);
           else
-            update_w_KRP(i, rank, symm, fast_pI, lambda[i], s);
+            update_w_KRP(i, rank, symm, fast_pI, lambda[i], s, converge_test);
 
           lambda[i] = (lambda[i] * (s * s) / (s0 * s0)) * alpha + (1 - alpha) * lambda[i];
         }
@@ -782,7 +782,7 @@ namespace btas {
     /// iteration factor matrix
     /// \param[in] symm is \c tensor is symmetric in the last two dimension?
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void update_w_KRP(int n, int rank, bool symm, bool & fast_pI, double lambda, double & s) {
+    void update_w_KRP(int n, int rank, bool symm, bool & fast_pI, double lambda, double & s, ConvClass & converge_test) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -828,6 +828,10 @@ namespace btas {
         auto LamA = A[n];
         scal(lambda, LamA);
         temp += LamA;
+      }
+
+      if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+        converge_test.set_MtKRP(temp);
       }
       // contract the product from above with the psuedoinverse of the Hadamard
       // produce an optimize factor matrix
@@ -878,7 +882,7 @@ namespace btas {
     /// \param[in] symm does the reference tensor have symmetry in the last two modes
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
 
-    void direct(int n, int rank, bool symm, bool & fast_pI, bool & matlab, double & lambda, double & s) {
+    void direct(int n, int rank, bool symm, bool & fast_pI, bool & matlab, double & lambda, double & s, ConvClass & converge_test) {
       //std::chrono::duration<double> time = t2 - t1;
 
       // Determine if n is the last mode, if it is first contract with first mode
@@ -1027,6 +1031,11 @@ namespace btas {
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       //t1 = std::chrono::high_resolution_clock::now();
+
+      if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+        converge_test.set_MtKRP(temp);
+      }
+
 #ifdef _HAS_INTEL_MKL
       if(fast_pI && matlab) {
         // This method computes the inverse quickly for a square matrix
