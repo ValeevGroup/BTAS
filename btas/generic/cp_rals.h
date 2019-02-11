@@ -544,6 +544,7 @@ namespace btas {
     int size;               // Number of elements in the reference tensor
     int num_ALS;            // Total number of ALS iterations required to compute the CP decomposition
     RALSHelper<Tensor> helper;
+    double T = 1.0;
 
     /// Can create an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
