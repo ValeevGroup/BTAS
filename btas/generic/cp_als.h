@@ -249,9 +249,10 @@ namespace btas {
     /// \returns 2-norm error
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
     /// \f$ \epsilon \f$
-    double paneled_tucker_build(ConvClass & converge_test, double RankStep = 0.5, int panels = 4, bool symm = false,
+    double paneled_tucker_build(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4, bool symm = false,
                          int max_als = 20,bool fast_pI = true, bool calculate_epsilon = false, bool direct = true){
       if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
+      if(converge_list.size() < panels) BTAS_EXCEPTION("Too few convergence tests.  Must provide a list of panels convergence tests");
       double epsilon = -1.0;
       int count = 0;
       // Find the largest rank this will be the first panel
@@ -262,6 +263,7 @@ namespace btas {
       }
 
       while(count < panels){
+        auto converge_test = converge_list[count];
         // Use tucker initial guess (SVD) to compute the first panel
         if(count == 0) {
           build(max_dim, converge_test, direct, max_als, calculate_epsilon, 1, epsilon, true, max_dim, fast_pI, symm);
