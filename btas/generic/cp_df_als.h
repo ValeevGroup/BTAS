@@ -636,10 +636,19 @@ namespace btas {
       while(count < max_als && !is_converged){
         count++;
         for (auto i = 0; i < ndim; i++) {
-          direct(i, rank, matlab, converge_test);
+          auto tmp = symm_dims[i];
+          if(tmp == i) {
+            direct(i, rank, matlab, converge_test);
+          }
+          else if(tmp < i){
+            //std::cout << "Skiping the " << i << "th dimension" << std::endl;
+            A[i] = A[tmp];
+          }
+          else{
+            BTAS_EXCEPTION("Incorrectly defined symmetry");
+          }
         }
         std::cout << count << "\t";
-
         is_converged = converge_test(A);
         T *= 0.6;
       }
