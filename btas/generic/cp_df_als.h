@@ -243,18 +243,21 @@ namespace btas {
     /// \returns 2-norm error
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
     /// \f$ \epsilon \f$
-    //TODO Fix this method
-    /*double paneled_tucker_build(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4,
+    double paneled_tucker_build(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4,
                          int max_als = 20,bool fast_pI = true, bool calculate_epsilon = false){
       if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
       if(converge_list.size() < panels) BTAS_EXCEPTION("Too few convergence tests.  Must provide a list of panels convergence tests");
       double epsilon = -1.0;
       int count = 0;
       // Find the largest rank this will be the first panel
-      auto max_dim = tensor_ref.extent(0);
-      for(int i = 1; i < ndim; ++i){
-        auto dim = tensor_ref.extent(i);
+      auto max_dim = tensor_ref_left.extent(0);
+      for(int i = 1; i < ndimL; ++i){
+        auto dim = tensor_ref_left.extent(i);
         max_dim = ( dim > max_dim ? dim : max_dim);
+      }
+      for(int i = 0; i < ndimR; ++i){
+        auto dim = tensor_ref_right.extent(i);
+        max_dim = (dim > max_dim ? dim : max_dim);
       }
 
       while(count < panels){
@@ -314,7 +317,7 @@ namespace btas {
       }
       std::cout << "Number of ALS iterations was " << num_ALS << std::endl;
       return epsilon;
-    }*/
+    }
 #endif // _HAS_INTEL_MKL
 
     /// returns the rank \c rank optimized factor matrices
