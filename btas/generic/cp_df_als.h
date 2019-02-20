@@ -789,6 +789,12 @@ namespace btas {
       // resize tensor_ref back to original dimensions
       tensor_ref.resize(R);
 
+      std::vector<int> dims(tensor_ref.rank());
+      for(int i = 1; i < tensor_ref.rank(); ++i){
+        dims[i - 1] = tensor_ref.extent(i);
+      }
+      dims[dims.size() - 1] = rank;
+
       // If hadamard loop has to skip a dimension it is stored here.
       auto pseudo_rank = rank;
       // number of dimensions in tensor_ref
@@ -802,7 +808,7 @@ namespace btas {
       // TODO fix the hadamard contraction loop
       // go through hadamard contract on all dimensions excluding rank (will skip one dimension)
       for(int i = 0; i < ndimCurr - 2; ++i, --contract_dim, --a_dim){
-        auto contract_size = tensor_ref.extent(contract_dim);
+        auto contract_size = dims[contract_dim];
         auto idx1 = LH_size / contract_size;
         contract_tensor.resize(Range{Range1{idx1}, Range1{contract_size}, Range1{pseudo_rank}});
         Tensor temp(Range{Range1{idx1}, Range1{pseudo_rank}});
