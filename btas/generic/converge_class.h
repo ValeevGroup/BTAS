@@ -77,6 +77,7 @@ namespace btas {
     /// convergence when \f$ \|T - \hat{T}^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
     /// \param[in] btas_factors Current set of factor matrices
     bool operator () (const std::vector<Tensor> & btas_factors){
+      if(normT_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
       auto n = btas_factors.size() - 2;
       auto size = btas_factors[n].size();
       auto rank = btas_factors[n].extent(1);
@@ -124,10 +125,14 @@ namespace btas {
       MtKRP_ = MtKRP;
     }
 
+    double get_fit(){
+      return fitOld_;
+    }
+
   private:
     double tol_;
     double fitOld_ = -1.0;
-    double normT_;
+    double normT_ = -1.0;
     int iter_ = 0;
     Tensor MtKRP_;
 
