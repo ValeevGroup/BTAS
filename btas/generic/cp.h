@@ -2864,3 +2864,380 @@ namespace btas{
     }
 
   };
+
+  template <typename Tensor, class ConvClass = NormCheck<Tensor>>
+  class CP_THC_ALS : public CP<Tensor, ConvClass> {
+  public:
+
+    using CP<Tensor,ConvClass>::A;
+    using CP<Tensor,ConvClass>::ndim;
+    using CP<Tensor,ConvClass>::pseudoInverse;
+    using CP<Tensor,ConvClass>::normCol;
+    using CP<Tensor,ConvClass>::generate_KRP;
+    using CP<Tensor,ConvClass>::generate_V;
+    using CP<Tensor,ConvClass>::norm;
+
+    CP_THC_ALS(Tensor & left, Tensor& right) : CP<Tensor, ConvClass>(left.rank() + right.rank()),
+            tensor_ref_left(left),
+            tensor_ref_right(right), ndimL(left.rank()){
+    }
+
+#ifdef _HAS_INTEL_MKL
+    double compute_PALS(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4, bool symm = false,
+                        int max_als = 20,bool fast_pI = true, bool calculate_epsilon = false, bool direct = true) override{
+      return 0;
+    }
+#endif //_HAS_INTEL_MKL
+
+
+  protected:
+    Tensor& tensor_ref_left;
+    Tensor& tensor_ref_right;
+    int ndimL;
+    Tensor non_tensor;  // Stores the L or R Tref contracted with factors and inverse
+
+    void build(int rank, ConvClass &converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
+               bool SVD_initial_guess, int SVD_rank, bool & fast_pI, bool symm) override{
+      // If its the first time into build and SVD_initial_guess
+      // build and optimize the initial guess based on the left
+      // singular vectors of the reference tensor.
+#ifdef _HAS_INTEL_MKL
+      if (A.empty() && SVD_initial_guess) {
+        if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
+
+        std::vector<int> modes_w_dim_LT_svd;
+        A = std::vector<Tensor>(ndim);
+
+        // Determine which factor matrices one can fill using SVD initial guess
+        // start with left then do right
+        auto ndimR = tensor_ref_right.rank();
+        for(int i = 0; i < ndimL; i++){
+          if(tensor_ref_left.extent(i) < SVD_rank){
+            modes_w_dim_LT_svd.push_back(i);
+          }
+        }
+        for(int i = 0; i < ndimR; i++){
+          if(tensor_ref_right.extent(i) < SVD_rank){
+            modes_w_dim_LT_svd.push_back(i + ndimL);
+          }
+        }
+
+        for(int tensor = 0; tensor < 2; ++tensor){
+          auto & tensor_ref = tensor == 0 ? tensor_ref_left : tensor_ref_right;
+          auto ndim_curr = tensor_ref.rank();
+          // Fill all factor matrices with their singular vectors,
+          // because we contract X X^T (where X is reference tensor) to make finding
+          // singular vectors an eigenvalue problem some factor matrices will not be
+          // full rank;
+          for(int i = 0; i < ndim_curr; i++){
+            int R = tensor_ref.extent(i);
+            Tensor S(R,R), lambda(R);
+
+            // Contract refrence tensor to make it square matrix of mode i
+            gemm(CblasNoTrans, CblasTrans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
+
+            // Find the Singular vectors of the matrix using eigenvalue decomposition
+            auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', R, S.data(), R, lambda.data());
+            if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
+
+            // Fill a factor matrix with the singular vectors with the largest corresponding singular
+            // values
+            lambda = Tensor(R, SVD_rank);
+            lambda.fill(0.0);
+            auto lower_bound = {0,0};
+            auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
+            auto view = make_view(S.range().slice(lower_bound, upper_bound), S.storage());
+            auto l_iter = lambda.begin();
+            for(auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter){
+              *(l_iter) = *(iter);
+            }
+
+            A[i + tensor * tensor_ref_left.rank()] = lambda;
+          }
+        }
+
+        //srand(3);
+        std::mt19937 generator(3);
+        // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
+        for(auto& i: modes_w_dim_LT_svd){
+          auto dim = i < ndimL ? i : i - ndimL;
+          auto & tensor_ref = i < ndimL ? tensor_ref_left : tensor_ref_right;
+          int R = tensor_ref.extent(dim);
+          auto lower_bound = {0, R};
+          auto upper_bound = {R, SVD_rank};
+          auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
+          std::normal_distribution<double> distribution(0, 2.0);
+          for(auto iter = view.begin(); iter != view.end(); ++iter){
+            *(iter) = distribution(generator);
+          }
+        }
+
+        // Normalize the columns of the factor matrices and
+        // set the values al lambda, the weigt of each order 1 tensor
+        Tensor lambda(Range{Range1{SVD_rank}});
+        A.push_back(lambda);
+        for(auto i = 0; i < ndim; ++i){
+          this->normCol(A[i]);
+        }
+
+        // Optimize this initial guess.
+        ALS(SVD_rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
+      }
+#else  // _HAS_INTEL_MKL
+      if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
+#endif // _HAS_INTEL_MKL
+      // This loop keeps track of column dimension
+      for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
+        // This loop walks through the factor matrices
+        for (auto j = 0; j < ndim; ++j) {  // select a factor matrix
+          // If no factor matrices exists, make a set of factor matrices
+          // and fill them with random numbers that are column normalized
+          // and create the weighting vector lambda
+          auto & tensor_ref = j < tensor_ref_left.rank() ? tensor_ref_left : tensor_ref_right;
+          if (i == 0) {
+            Tensor a(Range{tensor_ref.range(j), Range1{i + 1}});
+            a.fill(rand());
+            A.push_back(a);
+            this->normCol(j);
+            if (j  == ndim - 1) {
+              Tensor lam(Range{Range1{i + 1}});
+              A.push_back(lam);
+            }
+          }
+
+            // If the factor matrices have memory allocated, rebuild each matrix
+            // with new column dimension col_dimension_old + skip
+            // fill the new columns with random numbers and normalize the columns
+          else {
+            int row_extent = A[0].extent(0), rank_old = A[0].extent(1);
+            Tensor b(Range{A[0].range(0), Range1{i + 1}});
+
+            {
+              auto lower_old = {0, 0}, upper_old = {row_extent, rank_old};
+              auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
+              auto A_itr = A[0].begin();
+              for(auto iter = old_view.begin(); iter != old_view.end(); ++iter, ++A_itr){
+                *(iter) = *(A_itr);
+              }
+            }
+
+            {
+              auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
+              auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
+              std::mt19937 generator(3);
+              std::normal_distribution<double> distribution(0, 2);
+              for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
+                *(iter) = distribution(generator);
+              }
+            }
+
+            A.erase(A.begin());
+            A.push_back(b);
+            if (j + 1 == ndim) {
+              b.resize(Range{Range1{i + 1}});
+              for (int k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
+              A.erase(A.begin());
+              A.push_back(b);
+            }
+          }
+        }
+        // compute the ALS of factor matrices with rank = i + 1.
+        ALS(i + 1, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
+      }
+    }
+
+    /// performs the ALS method to minimize the loss function for a single rank
+    /// \param[in] rank The rank of the CP decomposition.
+    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in] dir The CP decomposition be computed without calculating the
+    /// Khatri-Rao product?
+    /// \param[in] max_als If CP decomposition is to finite
+    /// error, max_als is the highest rank approximation computed before giving up
+    /// on CP-ALS. Default = 1e5.
+    /// \param[in] calculate_epsilon Should the 2-norm
+    /// error be calculated ||T_exact - T_approx|| = epsilon.
+    /// \param[in] tcutALS
+    /// How small difference in factor matrices must be to consider ALS of a
+    /// single rank converged. Default = 0.1.
+    /// \param[in, out] epsilon The 2-norm
+    /// error between the exact and approximated reference tensor
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in] symm is \c tensor is symmetric in the last two dimension?
+
+    void ALS(int rank, ConvClass & converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon, bool & fast_pI, bool symm) {
+
+      auto count = 0;
+      non_tensor = Tensor(1,1);
+      non_tensor.fill(0.0);
+      // Until either the initial guess is converged or it runs out of iterations
+      // update the factor matrices with or without Khatri-Rao product
+      // intermediate
+      bool is_converged = false;
+      bool matlab = fast_pI;
+      std::cout << "count\tfit\tFit Change" << std::endl;
+      while(count < max_als && !is_converged){
+        count++;
+        this->num_ALS++;
+        for (auto i = 0; i < ndim; i++) {
+          direct(i, rank, symm, fast_pI, matlab, converge_test);
+        }
+        detail::get_fit(converge_test, epsilon);
+        std::cout << count << "\t";
+        is_converged = converge_test(A);
+      }
+    }
+
+    // TODO Fix this
+    void direct(int n, int rank, bool symm, bool & fast_pI, bool & matlab, ConvClass & converge_test) {
+
+      // This forms B^X_r which needs to contract with B(n)^X_ab
+      // Also need to check
+      Tensor auxDim_vec(rank);
+      auxDim_vec.fill(0.0);
+      if(n == 0 || n == ndimL){
+        dot_non_tensors(n == ndimL);
+      }
+      else{
+        for(int i = 0; i < A[0].extent(0); ++i){
+          for(int j = 0; j < rank; ++j){
+            auxDim_vec(j) += A[0](i,j) * A[ndimL](i,j);
+          }
+        }
+      }
+
+      // This says if the mode of interest is on the left side
+      bool left = n < ndimL ;
+
+      auto & tensor_ref = left ? tensor_ref_left : tensor_ref_right;
+      bool last_dim = n == (left ? ndimL - 1: ndim - 1);
+      std::vector<int> dimensions;
+
+      int aux_dim = tensor_ref.extent(0);
+      int RHsize = tensor_ref.size() / aux_dim;
+      auto R = tensor_ref.range();
+
+      tensor_ref.resize(Range{Range1{aux_dim}, Range1{RHsize}});
+      Tensor contract_tensor(RHsize, rank);
+
+      // Contract B(n)^X_ab with other reference tensor B^X_r
+      gemm(CblasTrans, CblasNoTrans, 1.0, tensor_ref, non_tensor, 0.0, contract_tensor);
+
+      // resize the reference tensor
+      tensor_ref.resize(R);
+
+      int ndim_curr = tensor_ref.rank();
+      int dim_in_A = left ? ndimL - 1 : ndim - 1;
+      int contract_dim = ndim_curr - 1;
+
+      int contract_size;
+      int LHsize = contract_tensor.size() / rank;
+      int offset_dim = A[n].extent(0);
+      int pseudo_rank = rank;
+      Tensor an(A[n].range());
+
+      while(contract_dim >= 0){
+        contract_size = A[dim_in_A].extent(0);
+        LHsize /= contract_size;
+
+        contract_tensor.resize(Range{Range1{LHsize}, Range1{contract_size}, Range1{pseudo_rank}});
+        Tensor temp(LHsize, pseudo_rank);
+        temp.fill(0.0);
+
+        if(n == dim_in_A){
+          pseudo_rank *= offset_dim;
+          dimensions.pop_back();
+        }
+
+        else if(dim_in_A > n){
+          for(int i = 0; i < LHsize; ++i){
+            for(int j = 0; j < contract_size; ++j){
+              for(int r = 0; r < pseudo_rank; ++r){
+                temp(i,r) += contract_tensor(i,j,r) * A[dim_in_A](j,r);
+              }
+            }
+          }
+          contract_tensor = temp;
+        }
+        else{
+          for(int i = 0; i < LHsize; ++i){
+            for(int j = 0; j < contract_size; ++j){
+              for(int k = 0; k < offset_dim; ++ k){
+                for(int r = 0; r < rank; ++r){
+                  temp(i, k * rank + r) += contract_tensor(i,j,k * rank + r) * A[dim_in_A](j,r);
+                }
+              }
+            }
+          }
+          contract_tensor = temp;
+        }
+        --contract_dim;
+        --dim_in_A;
+      }
+      if(n == 0 || n == ndim - 1){
+        contract_tensor.resize(Range{Range1{rank}});
+        auxDim_vec = contract_tensor;
+        contract_tensor = Tensor(offset_dim, rank);
+        auto & a = A[left ? 0 : ndim - 1];
+        for(int i = 0; i < offset_dim; ++i){
+          for(int r = 0; r < rank; ++r){
+            contract_tensor(i,r) = auxDim_vec(r) *a(i,r);
+          }
+        }
+      }
+      else{
+        contract_tensor.resize(Range{Range1{offset_dim}, Range1{rank}});
+        for(int i = 0; i < offset_dim; ++i){
+          for(int r = 0; r < rank; ++r){
+            contract_tensor(i, r) *= auxDim_vec(r);
+          }
+        }
+      }
+
+      if(n + 1 == ndim) {
+        detail::set_MtKRP(converge_test, contract_tensor);
+      }
+
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, this->pseudoInverse(n, rank, fast_pI), 0.0, an);
+
+      this->normCol(an);
+      A[n] = an;
+    }
+
+
+    void dot_non_tensors(bool left){
+      auto & tensor_ref = left ? tensor_ref_left : tensor_ref_right;
+      int dim_in_A = left ? ndimL - 1 : ndim - 1;
+      int contract_dim = left ? ndimL - 1 : tensor_ref_right.rank() - 1;
+      int contract_size = tensor_ref.extent(contract_dim);
+      int LHsize = tensor_ref.size() / contract_size;
+      int rank = A[0].extent(1);
+
+      auto R = tensor_ref.range();
+      non_tensor = Tensor(LHsize, rank);
+      tensor_ref.resize(Range{Range1{LHsize}, Range1{contract_size}});
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, tensor_ref, A[dim_in_A], 0.0, non_tensor);
+      tensor_ref.resize(R);
+      contract_dim--; dim_in_A--;
+      // This is easy never need to skip a dimension just hadamard contract all
+      // the dimensions but the last one.
+      for(;contract_dim > 0; contract_dim--, dim_in_A--){
+        contract_size = A[dim_in_A].extent(0);
+        LHsize /= contract_size;
+
+        Tensor temp(LHsize, rank);
+        non_tensor.resize(Range{Range1{LHsize}, Range1{contract_size}, Range1{rank}});
+        for(int i = 0; i < LHsize; ++i){
+          for(int j = 0; j < contract_size; ++j){
+            for(int r = 0; r < rank; ++r){
+              temp(i,r) += non_tensor(i,j,r) * A[dim_in_A](j,r);
+            }
+          }
+        }
+        non_tensor = temp;
+      }
+      return;
+    }
+  };
+};// namespace btas
+
+#endif //BTAS_GENERIC_CP_H
