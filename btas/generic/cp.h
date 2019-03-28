@@ -2272,6 +2272,15 @@ namespace btas{
               "Tensor describing symmetries must be equal to number of non-connectin dimensions");
     }
 
+    CP_DF_ALS(Tensor &left, Tensor &right) :
+    CP<Tensor,ConvClass>(left.rank() + right.rank() - 2),
+    tensor_ref_left(left), tensor_ref_right(right),
+    ndimL(left.rank()), ndimR(right.rank()) {
+      for(int i = 0; i < ndim; ++i){
+        symm_dims.push_back(i);
+      }
+    }
+
     CP_DF_ALS() = default;
 
     ~CP_DF_ALS() = default;
