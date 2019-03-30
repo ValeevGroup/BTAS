@@ -3021,6 +3021,7 @@ namespace btas{
     Tensor& tensor_ref_left;
     Tensor& tensor_ref_right;
     int ndimL;
+    std::vector<int> symm_dims;
     Tensor non_tensor;  // Stores the L or R Tref contracted with factors and inverse
 
     void build(int rank, ConvClass &converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
@@ -3206,7 +3207,11 @@ namespace btas{
         count++;
         this->num_ALS++;
         for (auto i = 0; i < ndim; i++) {
-          direct(i, rank, symm, fast_pI, matlab, converge_test);
+          if(symm_dims[i] == i) {
+            direct(i, rank, symm, fast_pI, matlab, converge_test);
+          } else {
+            A[i] = A[symm_dims[i]];
+          }
         }
         detail::get_fit(converge_test, epsilon);
         std::cout << count << "\t";
