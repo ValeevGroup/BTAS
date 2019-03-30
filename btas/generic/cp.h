@@ -2997,6 +2997,16 @@ namespace btas{
     CP_THC_ALS(Tensor & left, Tensor& right) : CP<Tensor, ConvClass>(left.rank() + right.rank()),
             tensor_ref_left(left),
             tensor_ref_right(right), ndimL(left.rank()){
+      for(int i = 0; i < ndim; ++i){
+        symm_dims.push_back(i);
+      }
+    }
+
+    CP_THC_ALS(Tensor & left, Tensor& right, std::vector<int> symm) : CP<Tensor, ConvClass>(left.rank() + right.rank()),
+            tensor_ref_left(left), tensor_ref_right(right), ndimL(left.rank()), symm_dims(symm){
+      if(symm_dims.size() < ndim){
+        BTAS_EXCEPTION("Symmetry must be defined for all dimensions");
+      }
     }
 
 #ifdef _HAS_INTEL_MKL
