@@ -3262,26 +3262,24 @@ namespace btas{
       int contract_dim = ndim_curr - 1;
 
       int contract_size;
-      int LHsize = contract_tensor.size() / rank;
       int offset_dim = A[n].extent(0);
       int pseudo_rank = rank;
       Tensor an(A[n].range());
 
-      while(contract_dim >= 0){
+      while(contract_dim > 0){
         contract_size = A[dim_in_A].extent(0);
-        LHsize /= contract_size;
+        RHsize /= contract_size;
 
-        contract_tensor.resize(Range{Range1{LHsize}, Range1{contract_size}, Range1{pseudo_rank}});
-        Tensor temp(LHsize, pseudo_rank);
+        contract_tensor.resize(Range{Range1{RHsize}, Range1{contract_size}, Range1{pseudo_rank}});
+        Tensor temp(RHsize, pseudo_rank);
         temp.fill(0.0);
 
         if(n == dim_in_A){
           pseudo_rank *= offset_dim;
-          dimensions.pop_back();
         }
 
         else if(dim_in_A > n){
-          for(int i = 0; i < LHsize; ++i){
+          for(int i = 0; i < RHsize; ++i){
             for(int j = 0; j < contract_size; ++j){
               for(int r = 0; r < pseudo_rank; ++r){
                 temp(i,r) += contract_tensor(i,j,r) * A[dim_in_A](j,r);
@@ -3291,7 +3289,7 @@ namespace btas{
           contract_tensor = temp;
         }
         else{
-          for(int i = 0; i < LHsize; ++i){
+          for(int i = 0; i < RHsize; ++i){
             for(int j = 0; j < contract_size; ++j){
               for(int k = 0; k < offset_dim; ++ k){
                 for(int r = 0; r < rank; ++r){
@@ -3305,11 +3303,11 @@ namespace btas{
         --contract_dim;
         --dim_in_A;
       }
-      if(n == 0 || n == ndim - 1){
+      if(n == 0 || n == ndimL){
         contract_tensor.resize(Range{Range1{rank}});
         auxDim_vec = contract_tensor;
         contract_tensor = Tensor(offset_dim, rank);
-        auto & a = A[left ? 0 : ndim - 1];
+        auto & a = A[left ? ndimL : 0];
         for(int i = 0; i < offset_dim; ++i){
           for(int r = 0; r < rank; ++r){
             contract_tensor(i,r) = auxDim_vec(r) *a(i,r);
@@ -3325,11 +3323,15 @@ namespace btas{
         }
       }
 
-      if(n + 1 == ndim) {
-        detail::set_MtKRP(converge_test, contract_tensor);
-      }
+      detail::set_MtKRP(converge_test, contract_tensor);
 
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, this->pseudoInverse(n, rank, fast_pI), 0.0, an);
+      if(n == (left ? 0 : ndimL) ) {
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, this->pseudoInverse(n, rank, fast_pI), 0.0, an);
+      }
+      else{
+        auto G = formG(n, rank);
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, this->pseudoInverse(G), 0.0, an);
+      }
 
       this->normCol(an);
       A[n] = an;
@@ -3368,6 +3370,24 @@ namespace btas{
         non_tensor = temp;
       }
       return;
+    }
+
+    Tensor formG(int n, int rank){
+      Tensor Xcontract(rank, rank);
+      Tensor G(rank,rank);
+      gemm(CblasTrans, CblasNoTrans, 1.0, A[0], A[ndimL], 0.0, G);
+      //gemm(CblasTrans, CblasNoTrans, 1.0, Xcontract, Xcontract, 0.0, G);
+      auto * G_ptr = G.data();
+      for(int i = 0; i < ndim; ++i){
+        if(i == 0 || i == ndimL || i == n)
+          continue;
+        Tensor temp(rank, rank);
+        auto * temp_ptr = temp.data();
+        gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, temp);
+        for(int j = 0; j < rank * rank; j++)
+          *(G_ptr + j) *= *(temp_ptr +j);
+      }
+      return G;
     }
   };
 };// namespace btas
