@@ -39,6 +39,7 @@ namespace btas{
     template<typename T>
     void get_fit(T& t, double & epsilon){
       //epsilon = epsilon;
+      epsilon = -1;
       return;
     }
 
@@ -1147,7 +1148,12 @@ namespace btas{
 
       // Checks loss function if required
       if (calculate_epsilon) {
-        epsilon = this->norm(this->reconstruct() - tensor_ref);
+        if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+          detail::get_fit(converge_test, epsilon);
+          epsilon = 1 - epsilon;
+        } else{
+          epsilon = this->norm(this->reconstruct() - tensor_ref);
+        }
       }
     }
 
@@ -1993,7 +1999,13 @@ namespace btas{
 
       // Checks loss function if required
       if (calculate_epsilon) {
-        epsilon = norm(this->reconstruct() - tensor_ref);
+        if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+          detail::get_fit(converge_test, epsilon);
+          epsilon = 1 - epsilon;
+        } else{
+          epsilon = this->norm(this->reconstruct() - tensor_ref);
+        }
+        std::cout << "epsilon : " << epsilon << std::endl;
       }
     }
 
@@ -2704,15 +2716,16 @@ namespace btas{
           else{
             BTAS_EXCEPTION("Incorrectly defined symmetry");
           }
-          detail::get_fit(converge_test, epsilon);
         }
         is_converged = converge_test(A);
-        std::cout << count << "\t" << epsilon << std::endl;
       }
 
       // Checks loss function if required
       if (calculate_epsilon) {
-        //epsilon = norm(reconstruct() - tensor_ref);
+        if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+          detail::get_fit(converge_test, epsilon);
+          epsilon = 1 - epsilon;
+        }
       }
     }
 
