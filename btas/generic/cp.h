@@ -3121,9 +3121,10 @@ namespace btas{
           // If no factor matrices exists, make a set of factor matrices
           // and fill them with random numbers that are column normalized
           // and create the weighting vector lambda
-          auto & tensor_ref = j < tensor_ref_left.rank() ? tensor_ref_left : tensor_ref_right;
+          auto left = (j < ndimL);
+          auto & tensor_ref = left ? tensor_ref_left : tensor_ref_right;
           if (i == 0) {
-            Tensor a(Range{tensor_ref.range(j), Range1{i + 1}});
+            Tensor a(Range{tensor_ref.range((left ? j : j - ndimL)), Range1{i + 1}});
             a.fill(rand());
             A.push_back(a);
             this->normCol(j);
@@ -3223,7 +3224,6 @@ namespace btas{
     void direct(int n, int rank, bool symm, bool & fast_pI, bool & matlab, ConvClass & converge_test) {
 
       // This forms B^X_r which needs to contract with B(n)^X_ab
-      // Also need to check
       Tensor auxDim_vec(rank);
       auxDim_vec.fill(0.0);
       if(n == 0 || n == ndimL){
@@ -3241,8 +3241,7 @@ namespace btas{
       bool left = n < ndimL ;
 
       auto & tensor_ref = left ? tensor_ref_left : tensor_ref_right;
-      bool last_dim = n == (left ? ndimL - 1: ndim - 1);
-      std::vector<int> dimensions;
+      //bool last_dim = n == (left ? ndimL - 1: ndim - 1);
 
       int aux_dim = tensor_ref.extent(0);
       int RHsize = tensor_ref.size() / aux_dim;
