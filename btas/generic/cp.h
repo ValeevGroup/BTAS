@@ -538,6 +538,69 @@ namespace btas{
       }
     }
 
+    Tensor pseudoInverse(Tensor & a){
+      bool matlab = false;
+      auto R = A[0].extent(1);
+      Tensor s(Range{Range1{R}});
+      Tensor U(Range{Range1{R}, Range1{R}});
+      Tensor Vt(Range{Range1{R}, Range1{R}});
+
+      if(! matlab) {
+
+// btas has no generic SVD for MKL LAPACKE
+//        time1 = std::chrono::high_resolution_clock::now();
+#ifdef _HAS_INTEL_MKL
+        double worksize;
+        double *work = &worksize;
+        lapack_int lwork = -1;
+        lapack_int info = 0;
+
+        char A = 'A';
+
+        // Call dgesvd with lwork = -1 to query optimal workspace size:
+
+        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R,
+                                   &worksize, lwork);
+        if (info != 0)
+        BTAS_EXCEPTION("SVD pseudo inverse failed");
+
+        lwork = (lapack_int) worksize;
+        work = (double *) malloc(sizeof(double) * lwork);
+
+        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R, work,
+                                   lwork);
+        if (info != 0)
+        BTAS_EXCEPTION("SVD pseudo inverse failed");
+
+        free(work);
+#else  // BTAS_HAS_CBLAS
+
+        gesvd('A', 'A', a, s, U, Vt);
+
+#endif
+
+        // Inverse the Singular values with threshold 1e-13 = 0
+        double lr_thresh = 1e-13;
+        Tensor s_inv(Range{Range1{R}, Range1{R}});
+        s_inv.fill(0.0);
+        for (auto i = 0; i < R; ++i) {
+          if (s(i) > lr_thresh)
+            s_inv(i, i) = 1 / s(i);
+          else
+            s_inv(i, i) = s(i);
+        }
+        s.resize(Range{Range1{R}, Range1{R}});
+
+        // Compute the matrix A^-1 from the inverted singular values and the U and
+        // V^T provided by the SVD
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, U, s_inv, 0.0, s);
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
+
+      }
+      return U;
+    }
+  };
+
   /** \brief Computes the Canonical Product (CP) decomposition of an order-N
     tensor using alternating least squares (ALS).
 
