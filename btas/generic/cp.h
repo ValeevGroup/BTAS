@@ -2745,11 +2745,6 @@ namespace btas{
         // How many dimension in this side of the tensor
         auto ndimCurr = tensor_ref.rank();
         auto sizeCurr = tensor_ref.size();
-        std::cout << "tensor_ref: " << std::endl;
-        for(int i = 0; i < ndimCurr; ++i){
-          std::cout << tensor_ref.extent(i) << ",";
-        }
-        std::cout << std::endl;
         // save range for resize at the end.
         auto R = tensor_ref.range();
 
