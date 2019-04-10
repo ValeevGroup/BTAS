@@ -769,6 +769,79 @@ namespace btas{
       return epsilon;
     }
 
+    double compute_PALS_error(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4,
+                        double tcutCP = 0.05, bool symm = false,
+                        int max_als = 20,bool fast_pI = true, bool direct = true){
+      if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
+      if(converge_list.size() < panels) BTAS_EXCEPTION("Too few convergence tests.  Must provide a list of panels convergence tests");
+      double epsilon = 1.0;
+      int count = 0;
+      // Find the largest rank this will be the first panel
+      auto max_dim = tensor_ref.extent(0);
+      for(int i = 1; i < ndim; ++i){
+        auto dim = tensor_ref.extent(i);
+        max_dim = ( dim > max_dim ? dim : max_dim);
+      }
+
+      while(epsilon > tcutCP && count < panels){
+        auto converge_test = converge_list[count];
+        // Use tucker initial guess (SVD) to compute the first panel
+        if(count == 0) {
+          this->build(max_dim, converge_test, direct, max_als, true, 1, epsilon, true, max_dim, fast_pI, symm);
+        }
+          // All other panels build the rank buy RankStep variable
+        else {
+          // Always deal with the first matrix push new factors to the end of A
+          // Kick out the first factor when it is replaced.
+          // This is the easiest way to resize and preserve the columns
+          // (if this is rebuilt with rank as columns this resize would be easier)
+          int rank = A[0].extent(1), rank_new = rank +  RankStep * max_dim;
+          for (int i = 0; i < ndim; ++i) {
+            int row_extent = A[0].extent(0);
+            Tensor b(Range{Range1{A[0].extent(0)}, Range1{rank_new}});
+
+            // Move the old factor to the new larger matrix
+            {
+              auto lower_old = {0, 0}, upper_old = {row_extent, rank};
+              auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
+              auto A_itr = A[0].begin();
+              for(auto iter = old_view.begin(); iter != old_view.end(); ++iter, ++A_itr){
+                *(iter) = *(A_itr);
+              }
+            }
+
+            // Fill in the new columns of the factor with random numbers
+            {
+              auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
+              auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
+              std::mt19937 generator(3);
+              std::normal_distribution<double> distribution(0, 2);
+              for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
+                *(iter) = distribution(generator);
+              }
+            }
+
+            A.erase(A.begin());
+            A.push_back(b);
+            // replace the lambda matrix when done with all the factors
+            if (i + 1 == ndim) {
+              b.resize(Range{Range1{rank_new}});
+              for (int k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
+              A.erase(A.begin());
+              A.push_back(b);
+            }
+            // normalize the factor (don't replace the previous lambda matrix)
+            this->normCol(0);
+          }
+          ALS(rank_new, converge_test, direct, max_als, true, epsilon, fast_pI, symm);
+        }
+        count++;
+        std::cout << "epsilon is " << epsilon << std::endl;
+        //if (count + 1 == panels) max_als = 1000;
+      }
+      std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
+      return epsilon;
+    }
     /// \brief Computes an approximate core tensor using
     /// Tucker decomposition, e.g.
     ///  \f$ T(I_1 \dots I_N) \approx T(R_1 \dots R_N) U^{(1)} (R_1, I_1) \dots U^{(N)} (R_N, I_N) \f$
