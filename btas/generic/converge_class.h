@@ -109,8 +109,12 @@ namespace btas {
       fitOld_ = fit;
       std::cout << fit << "\t" << fitChange << std::endl;
       if(fitChange < tol_) {
-        iter_ = 0;
-        return true;
+        converged_num++;
+        if(converged_num == 2){
+          iter_ = 0;
+          converged_num = 0;
+          return true;
+        }
       }
 
       ++iter_;
@@ -134,6 +138,7 @@ namespace btas {
     double fitOld_ = -1.0;
     double normT_ = -1.0;
     int iter_ = 0;
+    int converged_num = 0;
     Tensor MtKRP_;
 
     double norm(const std::vector<Tensor> & btas_factors){
