@@ -3673,7 +3673,6 @@ namespace btas{
           }
         }
         detail::get_fit(converge_test, epsilon);
-        std::cout << count << "\t";
         is_converged = converge_test(A);
       }
     }
