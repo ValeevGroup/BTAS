@@ -1714,7 +1714,7 @@ namespace btas{
     /// \f$ \epsilon \f$
     double compress_compute_tucker(double tcutSVD, ConvClass & converge_test, bool opt_rank = true, double tcutCP = 1e-2, int rank = 0,
                                    bool direct = true, bool calculate_epsilon = true, int step = 1, int max_rank = 1e4,
-                                   double max_als = 1e4, double ALStol = 0.1, bool SVD_initial_guess = false,
+                                   double max_als = 1e4, bool SVD_initial_guess = false,
                                    int SVD_rank = 0, bool fast_pI = false) {
       // Tensor compression
       std::vector<Tensor> transforms;
