@@ -15,6 +15,7 @@
 
 #include <btas/btas.h>
 #include <btas/error.h>
+#include <btas/generic/default_random_seed.h>
 #include "core_contract.h"
 #include "flatten.h"
 #include "khatri_rao_product.h"
@@ -724,7 +725,7 @@ namespace btas{
             {
               auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(3);
+              std::mt19937 generator(random_seed_accessor());
               std::normal_distribution<double> distribution(0, 2);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
@@ -797,7 +798,7 @@ namespace btas{
             {
               auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(3);
+              std::mt19937 generator(random_seed_accessor());
               std::normal_distribution<double> distribution(0, 2);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
@@ -1062,7 +1063,7 @@ namespace btas{
         }
 
         //srand(3);
-        std::mt19937 generator(3);
+        std::mt19937 generator(random_seed_accessor());
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd){
           int R = tensor_ref.extent(i);
@@ -1128,7 +1129,7 @@ namespace btas{
             {
               auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(3);
+              std::mt19937 generator(random_seed_accessor());
               std::normal_distribution<double> distribution(0, 2);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
@@ -1646,7 +1647,7 @@ namespace btas{
             {
               auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(3);
+              std::mt19937 generator(random_seed_accessor());
               std::normal_distribution<double> distribution(0, 2);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
@@ -1908,7 +1909,7 @@ namespace btas{
         }
 
         //srand(3);
-        std::mt19937 generator(3);
+        std::mt19937 generator(random_seed_accessor());
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd){
           int R = tensor_ref.extent(i);
@@ -1974,7 +1975,7 @@ namespace btas{
             {
               auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(3);
+              std::mt19937 generator(random_seed_accessor());
               std::normal_distribution<double> distribution(0, 2);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
@@ -2519,7 +2520,7 @@ namespace btas{
             {
               auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(3);
+              std::mt19937 generator(random_seed_accessor());
               std::normal_distribution<double> distribution(0, 2);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
@@ -2650,7 +2651,7 @@ namespace btas{
           }
 
           //srand(3);
-          std::mt19937 generator(3);
+          std::mt19937 generator(random_seed_accessor());
           // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
           for(auto& i: modes_w_dim_LT_svd){
             int R = tensor_ref.extent(i);
@@ -2722,7 +2723,7 @@ namespace btas{
               {
                 auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
                 auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-                std::mt19937 generator(3);
+                std::mt19937 generator(random_seed_accessor());
                 std::normal_distribution<double> distribution(0, 2);
                 for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                   *(iter) = distribution(generator);
@@ -3136,7 +3137,7 @@ namespace btas{
         }
 
         //srand(3);
-        std::mt19937 generator(3);
+        std::mt19937 generator(random_seed_accessor());
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd){
           auto dim = i < ndimL ? i : i - ndimL;
@@ -3204,7 +3205,7 @@ namespace btas{
             {
               auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(3);
+              std::mt19937 generator(random_seed_accessor());
               std::normal_distribution<double> distribution(0, 2);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
@@ -3546,7 +3547,7 @@ namespace btas{
         }
 
         //srand(3);
-        std::mt19937 generator(3);
+        std::mt19937 generator(random_seed_accessor());
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd){
           auto dim = i < ndimL ? i : i - ndimL +1;
@@ -3614,7 +3615,7 @@ namespace btas{
             {
               auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(3);
+              std::mt19937 generator(random_seed_accessor());
               std::normal_distribution<double> distribution(0, 2);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
