@@ -214,6 +214,18 @@ namespace btas{
       detail::get_fit(converge_test, epsilon);
       return epsilon;
     }
+    double compute_rank_random(int rank, ConvClass &converge_test, int step = 1, bool symm = false, int max_als = 1e4,
+                               bool fast_pI = true, bool calculate_epsilon = false, bool direct = true) {
+      if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
+      double epsilon = -1.0;
+      build_random(rank, converge_test, direct, max_als, calculate_epsilon, step, epsilon,
+            fast_pI, symm);
+      std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
+
+      detail::get_fit(converge_test, epsilon);
+
+      return epsilon;
+    }
 
 #ifdef _HAS_INTEL_MKL
     virtual double compute_PALS(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4, bool symm = false,
@@ -312,6 +324,9 @@ namespace btas{
 
     virtual void build(int rank, ConvClass &converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
                   bool SVD_initial_guess, int SVD_rank, bool & fast_pI, bool symm) = 0;
+
+    virtual void build_random(int rank, ConvClass &converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
+                              bool & fast_pI, bool symm) = 0;
 
     /// Generates V by first Multiply A^T.A then Hadamard product V(i,j) *=
     /// A^T.A(i,j);
@@ -1154,6 +1169,24 @@ namespace btas{
       }
     }
 
+    void build_random(int rank, ConvClass & converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
+                      bool & fast_pI, bool symm) override{
+      for(int i = 0; i < this->ndim; ++i){
+        Tensor a(tensor_ref.extent(i), rank);
+        std::mt19937 generator(random_seed_accessor());
+        std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
+        for(auto iter = a.begin(); iter != a.end(); ++iter){
+          *(iter) = distribution(generator);
+        }
+        this->A.push_back(a);
+        this->normCol(i);
+      }
+      Tensor lambda(rank);
+      lambda.fill(0.0);
+      this->A.push_back(lambda);
+
+      ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
+    }
     /// performs the ALS method to minimize the loss function for a single rank
     /// \param[in] rank The rank of the CP decomposition.
     /// \param[in] converge_test Test to see if ALS is converged
@@ -2003,6 +2036,25 @@ namespace btas{
       }
     }
 
+    void build_random(int rank, ConvClass & converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
+                      bool & fast_pI, bool symm) override{
+      for(int i = 0; i < this->ndim; ++i){
+        Tensor a(tensor_ref.extent(i), rank);
+        std::mt19937 generator(random_seed_accessor());
+        std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
+        for(auto iter = a.begin(); iter != a.end(); ++iter){
+          *(iter) = distribution(generator);
+        }
+        this->A.push_back(a);
+        this->normCol(i);
+      }
+      Tensor lambda(rank);
+      lambda.fill(0.0);
+      this->A.push_back(lambda);
+
+      ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
+    }
+
     /// performs the ALS method to minimize the loss function for a single rank
     /// \param[in] rank The rank of the CP decomposition.
     /// \param[in] converge_test Test to see if ALS is converged
@@ -2749,6 +2801,41 @@ namespace btas{
       }
     }
 
+    void build_random(int rank, ConvClass & converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
+                      bool & fast_pI, bool symm) override{
+
+      for(int i = 1; i < ndimL; ++i){
+        auto & tensor_ref = tensor_ref_left;
+
+        Tensor a(tensor_ref.extent(i), rank);
+        std::mt19937 generator(random_seed_accessor());
+        std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
+        for(auto iter = a.begin(); iter != a.end(); ++iter){
+          *(iter) = distribution(generator);
+        }
+        this->A.push_back(a);
+        this->normCol(i);
+      }
+      for(int i = 1; i < ndimR; ++i){
+        auto & tensor_ref = tensor_ref_right;
+
+        Tensor a(tensor_ref.extent(i), rank);
+        std::mt19937 generator(random_seed_accessor());
+        std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
+        for(auto iter = a.begin(); iter != a.end(); ++iter){
+          *(iter) = distribution(generator);
+        }
+        this->A.push_back(a);
+        this->normCol(i);
+      }
+
+      Tensor lambda(rank);
+      lambda.fill(0.0);
+      this->A.push_back(lambda);
+
+      ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
+    }
+
     void ALS(int rank, ConvClass & converge_test, int max_als, bool calculate_epsilon, double &epsilon, bool & fast_pI) {
       auto count = 0;
       // Until either the initial guess is converged or it runs out of iterations
@@ -3227,6 +3314,11 @@ namespace btas{
       }
     }
 
+    void build_random(int rank, ConvClass & converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
+                      bool & fast_pI, bool symm) override{
+      return;
+    }
+
     /// performs the ALS method to minimize the loss function for a single rank
     /// \param[in] rank The rank of the CP decomposition.
     /// \param[in] converge_test Test to see if ALS is converged
@@ -3637,6 +3729,10 @@ namespace btas{
       }
     }
 
+    void build_random(int rank, ConvClass & converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
+                      bool & fast_pI, bool symm) override{
+      return;
+    }
     /// performs the ALS method to minimize the loss function for a single rank
     /// \param[in] rank The rank of the CP decomposition.
     /// \param[in] converge_test Test to see if ALS is converged
