@@ -2833,7 +2833,7 @@ namespace btas{
       lambda.fill(0.0);
       this->A.push_back(lambda);
 
-      ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
+      ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
     }
 
     void ALS(int rank, ConvClass & converge_test, int max_als, bool calculate_epsilon, double &epsilon, bool & fast_pI) {
