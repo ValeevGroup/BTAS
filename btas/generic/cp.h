@@ -2742,10 +2742,10 @@ namespace btas{
             if (i == 0) {
               Tensor a;
               if(j < ndimL - 1){
-                a = Tensor(Range{Range1{tensor_ref_left.range(j+1)}, Range1{i + 1}});
+                a = Tensor(Range{tensor_ref_left.range(j+1), Range1{i + 1}});
               }
               else{
-                a = Tensor(Range{Range1{tensor_ref_right.range(j - ndimL + 2)}, Range1{i + 1}});
+                a = Tensor(Range{tensor_ref_right.range(j - ndimL + 2), Range1{i + 1}});
               }
               a.fill(rand());
               A.push_back(a);
