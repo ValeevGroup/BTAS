@@ -708,7 +708,7 @@ namespace btas{
               auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
-              std::normal_distribution<double> distribution(0, 2);
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
               }
@@ -781,7 +781,7 @@ namespace btas{
               auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
-              std::normal_distribution<double> distribution(0, 2);
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
               }
@@ -1047,12 +1047,12 @@ namespace btas{
         //srand(3);
         std::mt19937 generator(random_seed_accessor());
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
+        std::uniform_real_distribution<> distribution(-1.0, 1.0);
         for(auto& i: modes_w_dim_LT_svd){
           int R = tensor_ref.extent(i);
           auto lower_bound = {0, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
-          std::normal_distribution<double> distribution(0, 2.0);
           for(auto iter = view.begin(); iter != view.end(); ++iter){
             *(iter) = distribution(generator);
           }
@@ -1112,7 +1112,7 @@ namespace btas{
               auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
-              std::normal_distribution<double> distribution(0, 2);
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
               }
@@ -1138,10 +1138,11 @@ namespace btas{
 
     void build_random(int rank, ConvClass & converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
                       bool & fast_pI, bool symm) override{
+      std::mt19937 generator(random_seed_accessor());
+      //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
+      std::uniform_real_distribution<> distribution(-1.0, 1.0);
       for(int i = 0; i < this->ndim; ++i){
         Tensor a(tensor_ref.extent(i), rank);
-        std::mt19937 generator(random_seed_accessor());
-        std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
         for(auto iter = a.begin(); iter != a.end(); ++iter){
           *(iter) = distribution(generator);
         }
@@ -1648,7 +1649,7 @@ namespace btas{
               auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
-              std::normal_distribution<double> distribution(0, 2);
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
               }
@@ -1910,13 +1911,13 @@ namespace btas{
 
         //srand(3);
         std::mt19937 generator(random_seed_accessor());
+        std::uniform_real_distribution<> distribution(-1.0, 1.0);
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd){
           int R = tensor_ref.extent(i);
           auto lower_bound = {0, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
-          std::normal_distribution<double> distribution(0, 2.0);
           for(auto iter = view.begin(); iter != view.end(); ++iter){
             *(iter) = distribution(generator);
           }
@@ -1976,7 +1977,7 @@ namespace btas{
               auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
-              std::normal_distribution<double> distribution(0, 2);
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
               }
@@ -2005,10 +2006,11 @@ namespace btas{
 
     void build_random(int rank, ConvClass & converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
                       bool & fast_pI, bool symm) override{
+      std::mt19937 generator(random_seed_accessor());
+      std::uniform_real_distribution<> distribution(-1.0, 1.0);
       for(int i = 0; i < this->ndim; ++i){
         Tensor a(tensor_ref.extent(i), rank);
-        std::mt19937 generator(random_seed_accessor());
-        std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
+        //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
         for(auto iter = a.begin(); iter != a.end(); ++iter){
           *(iter) = distribution(generator);
         }
@@ -2540,7 +2542,7 @@ namespace btas{
               auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
-              std::normal_distribution<double> distribution(0, 2);
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
               }
@@ -2671,13 +2673,13 @@ namespace btas{
 
           //srand(3);
           std::mt19937 generator(random_seed_accessor());
+          std::uniform_real_distribution<> distribution(-1.0, 1.0);
           // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
           for(auto& i: modes_w_dim_LT_svd){
             int R = tensor_ref.extent(i);
             auto lower_bound = {0, R};
             auto upper_bound = {R, SVD_rank};
             auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
-            std::normal_distribution<double> distribution(0, 2.0);
             for(auto iter = view.begin(); iter != view.end(); ++iter){
               *(iter) = distribution(generator);
             }
@@ -2743,7 +2745,7 @@ namespace btas{
                 auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
                 auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
                 std::mt19937 generator(random_seed_accessor());
-                std::normal_distribution<double> distribution(0, 2);
+                std::uniform_real_distribution<> distribution(-1.0, 1.0);
                 for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                   *(iter) = distribution(generator);
                 }
@@ -2771,12 +2773,12 @@ namespace btas{
     void build_random(int rank, ConvClass & converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
                       bool & fast_pI, bool symm) override{
 
+      std::mt19937 generator(random_seed_accessor());
+      std::uniform_real_distribution<> distribution(-1.0, 1.0);
       for(int i = 1; i < ndimL; ++i){
         auto & tensor_ref = tensor_ref_left;
-
         Tensor a(tensor_ref.extent(i), rank);
-        std::mt19937 generator(random_seed_accessor());
-        std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
+        //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
         for(auto iter = a.begin(); iter != a.end(); ++iter){
           *(iter) = distribution(generator);
         }
@@ -2787,8 +2789,7 @@ namespace btas{
         auto & tensor_ref = tensor_ref_right;
 
         Tensor a(tensor_ref.extent(i), rank);
-        std::mt19937 generator(random_seed_accessor());
-        std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
+        //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
         for(auto iter = a.begin(); iter != a.end(); ++iter){
           *(iter) = distribution(generator);
         }
@@ -3200,7 +3201,7 @@ namespace btas{
           auto lower_bound = {0, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
-          std::normal_distribution<double> distribution(0, 2.0);
+          std::uniform_real_distribution<> distribution(-1.0, 1.0);
           for(auto iter = view.begin(); iter != view.end(); ++iter){
             *(iter) = distribution(generator);
           }
@@ -3260,7 +3261,7 @@ namespace btas{
               auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
-              std::normal_distribution<double> distribution(0, 2);
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
               }
@@ -3607,6 +3608,7 @@ namespace btas{
 
         //srand(3);
         std::mt19937 generator(random_seed_accessor());
+        std::uniform_real_distribution<> distribution(-1.0, 1.0);
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd){
           auto dim = i < ndimL ? i : i - ndimL +1;
@@ -3615,7 +3617,6 @@ namespace btas{
           auto lower_bound = {0, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
-          std::normal_distribution<double> distribution(0, 2.0);
           for(auto iter = view.begin(); iter != view.end(); ++iter){
             *(iter) = distribution(generator);
           }
@@ -3675,7 +3676,7 @@ namespace btas{
               auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
-              std::normal_distribution<double> distribution(0, 2);
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
               }
