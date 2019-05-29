@@ -2893,6 +2893,7 @@ namespace btas{
           contract_tensor.resize(Range{Range1{idx1},Range1{contract_size},Range1{rank}});
           // After hadamard product middle dimension is gone
           Tensor temp(idx1, rank);
+          temp.fill(0.0);
 
           for(int j = 0; j < idx1; ++j){
             //auto * temp_ptr = temp.data() + j * rank;
