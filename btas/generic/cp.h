@@ -638,6 +638,73 @@ namespace btas{
 
 #ifdef _HAS_INTEL_MKL
 
+    // TODO finish this function
+    double compute_random_PALS(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4, bool symm = false,
+                               int max_als = 20, bool fast_pI = true, bool calculate_epsilon = false, bool direct = true){
+      if (RankStep < 0.0) BTAS_EXCEPTION("Panel sizes must be greater than 0");
+      double epsilon = -1.0;
+      int count = 0;
+      auto max_dim = tensor_ref.extent(0);
+      for(int i = 1; i < this->ndim; ++i){
+        auto curr_size = tensor_ref.extent(i);
+        if(curr_size > max_dim){
+          max_dim = curr_size;
+        }
+      }
+      for(int i = 0; i < panels; ++i){
+        if (i == 0){
+          build_random(max_dim, converge_list[0], direct, max_als, calculate_epsilon, 1, epsilon, fast_pI, symm);
+        }
+        else{
+          auto converge_test = converge_list[i];
+          // Always deal with the first matrix push new factors to the end of A
+          // Kick out the first factor when it is replaced.
+          // This is the easiest way to resize and preserve the columns
+          // (if this is rebuilt with rank as columns this resize would be easier)
+          int rank = A[0].extent(1), rank_new = rank +  RankStep * max_dim;
+          for (int i = 0; i < ndim; ++i) {
+            int row_extent = A[0].extent(0);
+            Tensor b(Range{Range1{A[0].extent(0)}, Range1{rank_new}});
+
+            // Move the old factor to the new larger matrix
+            {
+              auto lower_old = {0, 0}, upper_old = {row_extent, rank};
+              auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
+              auto A_itr = A[0].begin();
+              for(auto iter = old_view.begin(); iter != old_view.end(); ++iter, ++A_itr){
+                *(iter) = *(A_itr);
+              }
+            }
+
+            // Fill in the new columns of the factor with random numbers
+            {
+              auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
+              auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
+              std::mt19937 generator(random_seed_accessor());
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
+              for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
+                *(iter) = distribution(generator);
+              }
+            }
+
+            A.erase(A.begin());
+            A.push_back(b);
+            // replace the lambda matrix when done with all the factors
+            if (i + 1 == ndim) {
+              b.resize(Range{Range1{rank_new}});
+              for (int k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
+              A.erase(A.begin());
+              A.push_back(b);
+            }
+            // normalize the factor (don't replace the previous lambda matrix)
+            this->normCol(0);
+          }
+          ALS(rank_new, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
+        }
+        count++;
+      }
+    }
+
     /// Computes decomposition of the order-N tensor \c tensor
     /// to \f$ rank = Max_Dim(\c tensor) + \c RankStep * Max_Dim(\c tensor) * \c panels \f$
     /// Initial guess for factor matrices is the modified HOSVD (tucker initial guess)
