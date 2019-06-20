@@ -1129,7 +1129,7 @@ namespace btas{
         // set the values al lambda, the weigt of each order 1 tensor
         Tensor lambda(Range{Range1{SVD_rank}});
         A.push_back(lambda);
-        for(auto i = 0; i < ((symm) ? ndim - 1: ndim); ++i){
+        for(auto i = 1; i < ((symm) ? ndim - 1: ndim); ++i){
           this->normCol(A[i]);
         }
 
