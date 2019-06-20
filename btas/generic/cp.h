@@ -2,8 +2,6 @@
 // Created by Karl Pierce on 2/25/19.
 //
 
-// TODO reimplement calculate epsilon using FitCheck (Or the same trick)
-// Always save a copy of MtKRP to CP
 
 #ifndef BTAS_GENERIC_CP_H
 #define BTAS_GENERIC_CP_H
