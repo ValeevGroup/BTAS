@@ -400,7 +400,11 @@ namespace btas{
         *(A_ptr + i) = sqrt(*(A_ptr + i));
       }
       for(int i = 0; i < size; ++i){
-        *(Mat_ptr + i) /= *(A_ptr + i % rank);
+        if(*(A_ptr + i % rank) > 1e-12)
+          *(Mat_ptr + i) /= *(A_ptr + i % rank);
+        else
+          *(Mat_ptr +i ) = 0;
+
       }
     }
 
