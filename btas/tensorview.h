@@ -125,6 +125,12 @@ namespace btas {
       /// type of an element
       typedef _T value_type;
 
+      /// type of a pointer to an element
+      typedef value_type* pointer;
+
+      /// type of a pointer to a const element
+      typedef const value_type* const_pointer;
+
       /// type of an lvalue reference to an element
       typedef value_type& reference;
 
