@@ -5,7 +5,7 @@
 #ifndef BTAS_GENERIC_DEFAULT_RANDOM_SEED_H
 #define BTAS_GENERIC_DEFAULT_RANDOM_SEED_H
 namespace btas{
-  static unsigned int& random_seed_accessor(){
+  static inline unsigned int& random_seed_accessor(){
     static unsigned int value = 3;
     return value;
   }
