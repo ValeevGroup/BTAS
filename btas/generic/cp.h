@@ -119,8 +119,7 @@ namespace btas{
     /// Create a generic CP object that stores the factor matrices,
     /// the number of iterations and the number of dimensions of the original
     /// tensor
-    /// \param[in] ndim number of dimensions that the reference tensor being
-    /// decomposed has
+    /// \param[in] ndim number of modes in the reference tensor.
     CP(int dims) : num_ALS(0) {
 #if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
       BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP decompositions requires LAPACKE or mkl_lapack");
