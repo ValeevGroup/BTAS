@@ -4,6 +4,9 @@
 
 #ifndef BTAS_GENERIC_RECONSTRUCT_H
 #define BTAS_GENERIC_RECONSTRUCT_H
+
+#include <btas/generic/scal_impl.h>
+
 namespace btas {
   template <typename Tensor>
   Tensor reconstruct(std::vector<Tensor> & A, std::vector<int> dims_order) {
