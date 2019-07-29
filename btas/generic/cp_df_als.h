@@ -486,8 +486,6 @@ namespace btas{
         if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
           detail::get_fit(converge_test, epsilon);
           epsilon = 1 - epsilon;
-        }else{
-          epsilon = this->norm(this->reconstruct() - tensor_ref);
         }
       }
     }
