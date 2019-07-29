@@ -6,8 +6,23 @@
 #define BTAS_GENERIC_COUPLED_CP_ALS_H
 
 #include <btas/btas.h>
-#include <btas/generic/converge_class.h>
-#include <btas/generic/cp.h>
+#include <btas/error.h>
+
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <vector>
+
+#include <btas/generic/default_random_seed.h>
+#include "core_contract.h"
+#include "flatten.h"
+#include "khatri_rao_product.h"
+#include "randomized.h"
+#include "swap.h"
+#include "tucker.h"
+#include "converge_class.h"
+#include "rals_helper.h"
+#include "reconstruct.h"
 
 namespace btas{
 

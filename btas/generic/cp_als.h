@@ -5,8 +5,29 @@
 #ifndef BTAS_GENERIC_CP_ALS_H
 #define BTAS_GENERIC_CP_ALS_H
 
+//#include "cp.h"
 #include <btas/btas.h>
-#include <btas/generic/converge_class.h>
+#include <btas/error.h>
+
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <vector>
+
+#include <btas/generic/default_random_seed.h>
+#include "core_contract.h"
+#include "flatten.h"
+#include "khatri_rao_product.h"
+#include "randomized.h"
+#include "swap.h"
+#include "tucker.h"
+#include "converge_class.h"
+#include "rals_helper.h"
+#include "reconstruct.h"
+
+#ifdef _HAS_INTEL_MKL
+#include <mkl_trans.h>
+#endif
 
 namespace btas{
   /** \brief Computes the Canonical Product (CP) decomposition of an order-N
@@ -69,8 +90,9 @@ namespace btas{
                                         // CP factor matrices
     \endcode
   */
-  template <typename Tensor, class ConvClass = NormCheck<Tensor>>
-  class CP_ALS : public CP<Tensor, ConvClass>{
+  template <typename Tensor, class ConvClass = NormCheck <Tensor> >
+  class CP_ALS : public CP<Tensor, ConvClass>
+          {
   public:
     using CP<Tensor,ConvClass>::A;
     using CP<Tensor,ConvClass>::ndim;

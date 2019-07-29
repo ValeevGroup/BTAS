@@ -5,9 +5,27 @@
 #ifndef BTAS_GENERIC_CP_RALS_H
 #define BTAS_GENERIC_CP_RALS_H
 
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <vector>
+
 #include <btas/btas.h>
-#include <btas/generic/converge_class.h>
-#include <btas/generic/cp.h>
+#include <btas/error.h>
+#include <btas/generic/default_random_seed.h>
+#include "core_contract.h"
+#include "flatten.h"
+#include "khatri_rao_product.h"
+#include "randomized.h"
+#include "swap.h"
+#include "tucker.h"
+#include "converge_class.h"
+#include "rals_helper.h"
+#include "reconstruct.h"
+
+#ifdef _HAS_INTEL_MKL
+#include <mkl_trans.h>
+#endif
 
 namespace btas{
   /** \brief Computes the Canonical Product (CP) decomposition of an order-N
@@ -66,9 +84,10 @@ namespace btas{
                                       // CP factor matrices
   \endcode
 */
-  template <typename Tensor, class ConvClass = NormCheck<Tensor>>
-  class CP_RALS : public CP<Tensor, ConvClass>{
-
+  template <typename Tensor, class ConvClass = NormCheck <Tensor> >
+  class CP_RALS : public CP<Tensor, ConvClass>
+        {
+public:
     using CP<Tensor,ConvClass>::A;
     using CP<Tensor,ConvClass>::ndim;
     using CP<Tensor,ConvClass>::pseudoInverse;
@@ -77,7 +96,6 @@ namespace btas{
     using CP<Tensor,ConvClass>::generate_V;
     using CP<Tensor,ConvClass>::norm;
 
-  public:
     /// Constructor of object CP_RALS
     /// \param[in] tensor The tensor object to be decomposed
     CP_RALS(Tensor &tensor) : CP<Tensor, ConvClass>(tensor.rank()),
