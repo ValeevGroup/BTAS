@@ -290,7 +290,7 @@ namespace btas{
     virtual void build(int rank, ConvClass &converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
                   bool SVD_initial_guess, int SVD_rank, bool & fast_pI, bool symm) = 0;
 
-    virtual void build_random(int rank, ConvClass &converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
+    virtual void build_random(int rank, ConvClass &converge_test, bool direct, int max_als, bool calculate_epsilon, double &epsilon,
                               bool & fast_pI, bool symm) = 0;
 
     /// Generates V by first Multiply A^T.A then Hadamard product V(i,j) *=
