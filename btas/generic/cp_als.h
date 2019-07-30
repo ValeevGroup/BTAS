@@ -673,7 +673,9 @@ namespace btas{
     /// \param[in] rank The current rank, column dimension of the factor
     /// matrices
     /// iteration factor matrix
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in, out] matlab If \c fast_pI = true then try to solve VA = B instead of taking pseudoinverse
+    /// in the same manner that matlab would compute the inverse.
+    /// \param[in] converge_test test to see if the ALS is converged
     void update_w_KRP(int n, int rank, bool & fast_pI, ConvClass & converge_test) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
@@ -744,11 +746,16 @@ namespace btas{
     // T(I1, I2, I3, I4)
     // T(I1, I2, I3, I4) * A(I4, R) = T'(I1, I2, I3, R)
     // T'(I1, I2, I3, R) (*) A(I3, R) = T'(I1, I2, R) (contract along I3, Hadamard along R)
-    // T'(I1, I2, R) (*) A(I1, R) = T'(I2, R) = A(I2, R)
+    // T'(I1, I2, R) (*) A(I1, R) = T'(I2, R) = A(I2, R) * V(R, R)
 
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// return if computing the fast_pI was successful.
+    /// \param[in, out] matlab If \c fast_pI = true then try to solve VA = B instead of taking pseudoinverse
+    /// in the same manner that matlab would compute the inverse.
+    /// return if computing the inverse in this was was successful
+    /// \param[in] converge_test test to see if the ALS is converged
 
     void direct(int n, int rank, bool & fast_pI, bool & matlab, ConvClass & converge_test) {
 
