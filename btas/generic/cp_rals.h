@@ -61,7 +61,7 @@ namespace btas{
                                                     // geometric steps of step between
                                                     // guesses.
 
-    A.paneled_tucker_build(converge_test)           // computes CP_RALS of tensor to
+    A.compute_PALS(converge_test)           // computes CP_RALS of tensor to
                                                     // rank = 3 * max_dim(tensor)
                                                     // in 4 panels using a modified
                                                     // HOSVD initial guess
@@ -101,6 +101,7 @@ public:
     using CP<Tensor,ConvClass>::generate_KRP;
     using CP<Tensor,ConvClass>::generate_V;
     using CP<Tensor,ConvClass>::norm;
+    using CP<Tensor,ConvClass>::symmetries;
 
     /// Create a CP ALS object, child class of the CP object
     /// that stores the reference tensor.
@@ -123,12 +124,13 @@ public:
     /// \param[in] tensor the reference tensor to be decomposed.
     /// \param[in] symms the symmetries of the reference tensor.
     CP_RALS(Tensor& tensor, std::vector<int> & symms) : CP<Tensor, ConvClass>(tensor.rank()),
-    tensor_ref(tensor), size(tensor.size()),symmetries(symms){
-            if (symmetries.size() > ndim) BTAS_EXCEPTION("Too many symmetries provided")
-            for(int i = 0; i < ndim; ++i){
-              if(symmetries[i] > i)
-              BTAS_EXCEPTION("Symmetries should always refer to factors at earlier positions");
-            }
+    tensor_ref(tensor), size(tensor.size()){
+      symmetries = symms;
+      if (symmetries.size() > ndim) BTAS_EXCEPTION("Too many symmetries provided")
+      for(int i = 0; i < ndim; ++i){
+        if(symmetries[i] > i)
+        BTAS_EXCEPTION("Symmetries should always refer to factors at earlier positions");
+      }
 
     }
 
