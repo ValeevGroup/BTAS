@@ -43,23 +43,23 @@ namespace btas{
                                         // matrices and symmetries
 
     // Operations
-    A.compute_rank(rank, converge_test)             // Computes the CP_RALS of tensor to
+    A.compute_rank(rank, converge_test)             // Computes the CP_ALS of $T$ tensor to
                                                     // rank, rank build and HOSVD options
 
-    A.compute_rank_random(rank, converge_test)      // Computes the CP_RALS of tensor to
+    A.compute_rank_random(rank, converge_test)      // Computes the CP_ALS of $T$ tensor to
                                                     // rank. Factor matrices built at rank
                                                     // with random numbers
 
-    A.compute_error(converge_test, omega)           // Computes the CP_RALS of tensor to
+    A.compute_error(converge_test, omega)           // Computes the CP_ALS of $T$ tensor to
                                                     // 2-norm
                                                     // error < omega.
 
-    A.compute_geometric(rank, converge_test, step)  // Computes CP_RALS of tensor to
+    A.compute_geometric(rank, converge_test, step)  // Computes CP_ALS of $T$ tensor to
                                                     // rank with
                                                     // geometric steps of step between
                                                     // guesses.
 
-    A.paneled_tucker_build(converge_test)           // computes CP_RALS of tensor to
+    A.compute_PALS(converge_test)                   // computes CP_ALS of $T$ tensor to
                                                     // rank = 3 * max_dim(tensor)
                                                     // in 4 panels using a modified
                                                     // HOSVD initial guess
@@ -86,12 +86,14 @@ namespace btas{
     using CP<Tensor,ConvClass>::generate_KRP;
     using CP<Tensor,ConvClass>::generate_V;
     using CP<Tensor,ConvClass>::norm;
+    using CP<Tensor,ConvClass>::symmetries;
 
 
     /// Create a CP DF ALS object, child class of the CP object
-    /// that stores the reference tensor.
+    /// that stores the reference tensors.
     /// Reference tensor has no symmetries.
-    /// \param[in] tensor the reference tensor to be decomposed.
+    /// \param[in] left the reference tensor, $B$ to be decomposed.
+    /// \param[in] right the reference tensor, $Z$ to be decomposed.
     CP_DF_ALS(Tensor &left, Tensor &right) :
             CP<Tensor,ConvClass>(left.rank() + right.rank() - 2),
             tensor_ref_left(left), tensor_ref_right(right),
@@ -102,20 +104,21 @@ namespace btas{
     }
 
     /// Create a CP ALS object, child class of the CP object
-    /// that stores the reference tensor.
+    /// that stores the reference tensors.
     /// Reference tensor has symmetries.
     /// Symmetries should be set such that the higher modes index
     /// are set equal to lower mode indices (a 4th order tensor,
     /// where the second & third modes are equal would have a
     /// symmetries of {0,1,1,3}
-    /// \param[in] tensor the reference tensor to be decomposed.
+    /// \param[in] left the reference tensor, $B$ to be decomposed.
+    /// \param[in] right the reference tensor, $Z$ to be decomposed.
     /// \param[in] symms the symmetries of the reference tensor.
-    CP_DF_ALS(Tensor &left, Tensor &right, std::vector<int> &symm) :
+    CP_DF_ALS(Tensor &left, Tensor &right, std::vector<int> & symms) :
             CP<Tensor,ConvClass>(left.rank() + right.rank() - 2),
             tensor_ref_left(left), tensor_ref_right(right),
-            ndimL(left.rank()), ndimR(right.rank()),
-            symmetries(symm)
+            ndimL(left.rank()), ndimR(right.rank())
     {
+      symmetries = symms;
       for(int i = 0; i < ndim; ++i){
         if(symmetries[i] > i)
         BTAS_EXCEPTION("Symmetries should always refer to factors at earlier positions");
@@ -228,10 +231,10 @@ namespace btas{
 #endif // _HAS_INTEL_MKL
 
   protected:
-    Tensor &tensor_ref_left;
-    Tensor &tensor_ref_right;
-    int ndimL;
-    int ndimR;
+    Tensor &tensor_ref_left;        // Left connected tensor
+    Tensor &tensor_ref_right;       // Right connected tensor
+    int ndimL;                      // Number of dimensions in left tensor
+    int ndimR;                      // number of dims in the right tensor
 
     /// Creates an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
@@ -559,15 +562,15 @@ namespace btas{
 
     /// Computes an optimized factor matrix holding all others constant.
     /// No Khatri-Rao product computed, immediate contraction
-    // Does this by first contracting a factor matrix with the refrence tensor
-    // Then computes hadamard/contraction products along all other modes except n.
+    /// Does this by first contracting a factor matrix with the refrence tensor
+    /// Then computes hadamard/contraction products along all other modes except n.
 
-    // Want A(I2, R)
-    // T(I1, I2, I3, I4) = B(X, I1, I2) Z(X, I3, I4)
-    // B(X, I1, I2) (Z(X, I3, I4) * A(I4, R)) = B(X, I1, I2) Z'(X, I3, R)
-    // B(X, I1, I2) (Z'(X, I3, R) (*) A(I3, R)) = B(X, I1, I2) Z'(X, R) (contract along I3, Hadamard along R)
-    // B(X, I1, I2) * Z'(X, R) = B'(I1, I2, R)
-    // B'(I1, I2, R) (*) A(I1, R) = B'(I2, R) = A(I2, R) * V(R, R)
+    /// Want A(I2, R)
+    /// T(I1, I2, I3, I4) = B(X, I1, I2) Z(X, I3, I4)
+    /// B(X, I1, I2) (Z(X, I3, I4) * A(I4, R)) = B(X, I1, I2) Z'(X, I3, R)
+    /// B(X, I1, I2) (Z'(X, I3, R) (*) A(I3, R)) = B(X, I1, I2) Z'(X, R) (contract along I3, Hadamard along R)
+    /// B(X, I1, I2) * Z'(X, R) = B'(I1, I2, R)
+    /// B'(I1, I2, R) (*) A(I1, R) = B'(I2, R) = A(I2, R) * V(R, R)
 
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
