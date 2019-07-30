@@ -498,6 +498,8 @@ public:
           A[i] = A[tmp];
         }
 
+        helper = RALSHelper<Tensor>(A);
+
         // Optimize this initial guess.
         ALS(SVD_rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
@@ -522,6 +524,7 @@ public:
               Tensor lam(Range{Range1{i + 1}});
               A.push_back(lam);
             }
+            helper = RALSHelper<Tensor>(A);
           }
 
             // If the factor matrices have memory allocated, rebuild each matrix
@@ -563,7 +566,9 @@ public:
         // compute the ALS of factor matrices with rank = i + 1.
         ALS(i + 1, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
+      auto factors_set = false;
       if(factors_set && ! opt_in_for_loop){
+        helper = RALSHelper<Tensor>(A);
         ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
     }
@@ -611,6 +616,7 @@ public:
       lambda.fill(0.0);
       this->A.push_back(lambda);
 
+      helper = RALSHelper<Tensor>(A);
       ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
     }
 
