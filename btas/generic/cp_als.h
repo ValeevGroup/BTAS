@@ -62,7 +62,7 @@ namespace btas{
                                                     // geometric steps of step between
                                                     // guesses.
 
-    A.paneled_tucker_build(converge_test)           // computes CP_ALS of tensor to
+    A.compute_PALS(converge_test)                   // computes CP_ALS of tensor to
                                                     // rank = 3 * max_dim(tensor)
                                                     // in 4 panels using a modified
                                                     // HOSVD initial guess
