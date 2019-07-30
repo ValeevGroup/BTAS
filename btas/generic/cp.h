@@ -406,7 +406,7 @@ namespace btas{
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     virtual void build(int rank, ConvClass &converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
                   bool SVD_initial_guess, int SVD_rank, bool & fast_pI) = 0;
-
+    
     /// Virtual function. Solver classes should implement a build function to generate factor matrices then compute the CP decomposition
     /// Create a rank \c rank initial guess using
     /// random numbers from a uniform distribution
