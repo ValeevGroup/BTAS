@@ -120,7 +120,8 @@ namespace btas{
     /// \param[in] tensor the reference tensor to be decomposed.
     /// \param[in] symms the symmetries of the reference tensor.
     CP_ALS(Tensor& tensor, std::vector<int> & symms) : CP<Tensor, ConvClass>(tensor.rank()),
-            tensor_ref(tensor), size(tensor.size()),symmetries(symms){
+            tensor_ref(tensor), size(tensor.size()){
+      symmetries = symms;
       if (symmetries.size() > ndim) BTAS_EXCEPTION("Too many symmetries provided")
       for(int i = 0; i < ndim; ++i){
         if(symmetries[i] > i)
@@ -488,6 +489,7 @@ namespace btas{
         for(auto i = 1; i < ndim; ++i){
           // normalize the columns of matrices that were set
           // i.e. not symmetric to another mode.
+          auto tmp = symmetries[i];
           if(tmp == i)
             this->normCol(A[i]);
           // Then make sure the summetric modes are set here
