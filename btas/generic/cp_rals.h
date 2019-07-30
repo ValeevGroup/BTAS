@@ -425,7 +425,7 @@ public:
 
         // Determine which factor matrices one can fill using SVD initial guess
         // Don't do the modes that are symmetric to other modes
-        for(int i = 0; i < ndim; i++){
+        for(int i = 1; i < ndim; i++){
           auto tmp = symmetries[i];
           if(tmp != i) continue;
           if(tensor_ref.extent(i) < SVD_rank){
