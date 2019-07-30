@@ -41,7 +41,9 @@ namespace btas{
     \code
     // Constructors
     CP_ALS A(tensor)                    // CP_ALS object with empty factor
-    matrices
+                                        // matrices and no symmetries
+    CP_ALS A(tensor, symms)             // CP_ALS object with empty factor
+                                        // matrices and symmetries
 
     // Operations
     A.compute_rank(rank, converge_test)             // Computes the CP_ALS of tensor to
@@ -421,7 +423,8 @@ namespace btas{
         // Determine which factor matrices one can fill using SVD initial guess
         // Don't do the modes that are symmetric to other modes
         for(int i = 0; i < ndim; i++){
-          if(symmetries[i] != i) continue;
+          auto tmp = symmetries[i];
+          if(tmp != i) continue;
           if(tensor_ref.extent(i) < SVD_rank){
             modes_w_dim_LT_svd.push_back(i);
           }
@@ -437,7 +440,8 @@ namespace btas{
         for(int i = 1; i < ndim; i++){
           // If a mode is symmetric to another mode skip this whole process
           // Will set the modes equal at the end
-          if(symmetries[i] != i) continue;
+          auto tmp = symmetries[i];
+          if(tmp != i) continue;
           int R = tensor_ref.extent(i);
           Tensor S(R,R), lambda(R);
 
@@ -484,10 +488,10 @@ namespace btas{
         for(auto i = 1; i < ndim; ++i){
           // normalize the columns of matrices that were set
           // i.e. not symmetric to another mode.
-          if(symmetries[i] == i)
+          if(tmp == i)
             this->normCol(A[i]);
           // Then make sure the summetric modes are set here
-          A[i] = A[symmetries[i]];
+          A[i] = A[tmp];
         }
 
         // Optimize this initial guess.
@@ -587,8 +591,9 @@ namespace btas{
       for(int i = 0; i < this->ndim; ++i){
         // If this mode is symmetric to a previous mode, set it equal to
         // previous mode, else make a random matrix.
-        if(symmetries[i] != i){
-          A.push_back(A[symmetries[i]]);
+        auto tmp = symmetries[i];
+        if(tmp != i){
+          A.push_back(A[tmp]);
         } else{
           Tensor a(tensor_ref.extent(i), rank);
           for(auto iter = a.begin(); iter != a.end(); ++iter){
@@ -636,8 +641,9 @@ namespace btas{
         count++;
         this->num_ALS++;
         for (auto i = 0; i < ndim; i++) {
-          if(symmetries[i] != i){
-            A[i] = A[symmetries[i]];
+          auto tmp = symmetries[i];
+          if(tmp != i){
+            A[i] = A[tmp];
           } else if (dir) {
             direct(i, rank, fast_pI, matlab, converge_test);
           } else {
