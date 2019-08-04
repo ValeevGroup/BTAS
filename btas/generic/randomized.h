@@ -4,11 +4,14 @@
 #include "core_contract.h"
 #include <btas/btas.h>
 #include <btas/error.h>
+#include <btas/tensor.h>
 
 #include <random>
 #include <stdlib.h>
+#include <vector>
 
 #ifdef _HAS_INTEL_MKL
+#include <mkl.h>
 
 namespace btas {
 
