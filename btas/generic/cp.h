@@ -69,6 +69,12 @@ namespace btas{
       epsilon = t.get_fit();
       return;
     }
+
+    template<typename Tensor>
+    void get_fit(CoupledFitCheck<Tensor> & t, double & epsilon){
+      epsilon = t.get_fit();
+      return;
+    }
   }//namespace detail
 
   /** \brief Base class to compute the Canonical Product (CP) decomposition of an order-N
