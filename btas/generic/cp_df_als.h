@@ -481,13 +481,12 @@ namespace btas{
       std::uniform_real_distribution<> distribution(-1.0, 1.0);
       for(int i = 1; i < ndimL; ++i){
         auto & tensor_ref = tensor_ref_left;
-        Tensor a(tensor_ref.extent(i), rank);
+        Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
         //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
         for(auto iter = a.begin(); iter != a.end(); ++iter){
           *(iter) = distribution(generator);
         }
-        this->A.push_back(a);
-        this->normCol(i);
+        A.push_back(a);
       }
       for(int i = 1; i < ndimR; ++i){
         auto & tensor_ref = tensor_ref_right;
@@ -498,12 +497,14 @@ namespace btas{
           *(iter) = distribution(generator);
         }
         this->A.push_back(a);
-        this->normCol(i);
       }
 
       Tensor lambda(rank);
       lambda.fill(0.0);
       this->A.push_back(lambda);
+      for(auto i = 0; i < ndim; ++i){
+        normCol(i);
+      }
 
       ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
     }
