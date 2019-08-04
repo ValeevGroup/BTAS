@@ -542,7 +542,6 @@ namespace btas{
             direct(i, rank, matlab, converge_test);
           }
           else if(tmp < i){
-            //std::cout << "Skiping the " << i << "th dimension" << std::endl;
             A[i] = A[tmp];
           }
           else{
@@ -798,18 +797,6 @@ namespace btas{
       }
       if(! matlab){
         bool fast = false;
-        if(ndim == 6) {
-          std::cout << "contract_tensor : " << std::endl;
-          for (int i = 0; i < contract_tensor.rank(); ++i) std::cout << contract_tensor.extent(i) << ",";
-          std::cout << std::endl;
-          auto temp = pseudoInverse(n, rank, fast);
-          std::cout << "pseudoInverse : " << std::endl;
-          for (int i = 0; i < temp.rank(); ++i) std::cout << temp.extent(i) << ",";
-          std::cout << std::endl;
-          std::cout << "an : " << std::endl;
-          for (int i = 0; i < an.rank(); ++i) std::cout << an.extent(i) << ",";
-          std::cout << std::endl;
-        }
         gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(n, rank, fast), 0.0, an);
       }
 #else
