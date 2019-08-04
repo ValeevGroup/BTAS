@@ -697,9 +697,9 @@ namespace btas{
       // go through hadamard contract on all dimensions excluding rank (will skip one dimension)
       for(int i = 0; i < ndimCurr - 2; ++i, --contract_dim, --a_dim){
         auto contract_size = dims[contract_dim];
-        auto idx1 = LH_size / contract_size;
-        contract_tensor.resize(Range{Range1{idx1}, Range1{contract_size}, Range1{pseudo_rank}});
-        Tensor temp(Range{Range1{idx1}, Range1{pseudo_rank}});
+        LH_size /= contract_size;
+        contract_tensor.resize(Range{Range1{LH_size}, Range1{contract_size}, Range1{pseudo_rank}});
+        Tensor temp(Range{Range1{LH_size}, Range1{pseudo_rank}});
 
         temp.fill(0.0);
 
@@ -714,7 +714,7 @@ namespace btas{
           // If the code hasn't hit the mode of interest yet, it will contract
           // over the middle dimension and sum over the rank.
         else if (contract_dim > nInTensor){
-          for(int j = 0; j < idx1; ++j){
+          for(int j = 0; j < LH_size; ++j){
             //auto * temp_ptr = temp.data() + j * pseudo_rank;
             for(int k = 0; k < contract_size; ++k){
               //const auto * contract_ptr = contract_tensor.data() + j * contract_size * pseudo_rank + k * pseudo_rank;
@@ -730,7 +730,7 @@ namespace btas{
           // If the code has passed the mode of interest, it will contract over
           // the middle dimension and sum over rank * mode n dimension
         else{
-          for(int j = 0; j < idx1; ++j){
+          for(int j = 0; j < LH_size; ++j){
             //auto * temp_ptr = temp.data() + j * pseudo_rank;
             for(int k = 0; k < contract_size; ++k){
               //const auto * contract_ptr = contract_tensor.data() + j * contract_size * pseudo_rank + k * pseudo_rank;
@@ -738,7 +738,7 @@ namespace btas{
               for(int l = 0; l < offset; ++l){
                 for(int r = 0; r < rank; ++r){
                   //*(temp_ptr + l * rank + r) += *(contract_ptr + l * rank + r) * *(A_ptr + r);
-                  temp(j, l*rank + r) += contract_tensor(j,k,l*rank+r) * A[a_dim](k,l*rank+r);
+                  temp(j, l*rank + r) += contract_tensor(j,k,l*rank+r) * A[a_dim](k,r);
                 }
               }
             }
@@ -756,6 +756,7 @@ namespace btas{
       if(nInTensor != 0){
         auto contract_size = contract_tensor.extent(0);
         Tensor temp(Range{Range1{offset}, Range1{rank}});
+        contract_tensor.resize(Range{Range1{contract_size}, Range1{offset}, Range1{rank}});
         temp.fill(0.0);
 
         for(int i = 0; i < contract_size; i++){
