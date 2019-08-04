@@ -526,7 +526,6 @@ public:
               Tensor lam(Range{Range1{i + 1}});
               A.push_back(lam);
             }
-            helper = RALSHelper<Tensor>(A);
           }
 
             // If the factor matrices have memory allocated, rebuild each matrix
@@ -566,6 +565,7 @@ public:
           }
         }
         // compute the ALS of factor matrices with rank = i + 1.
+        helper = RALSHelper<Tensor>(A);
         ALS(i + 1, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
       auto factors_set = false;
