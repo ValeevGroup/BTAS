@@ -3,6 +3,7 @@
 
 #include "swap.h"
 #include <btas/btas.h>
+#include <btas/range.h>
 
 namespace btas {
 
@@ -20,6 +21,7 @@ namespace btas {
 template <typename Tensor>
 void core_contract(Tensor &A, const Tensor &Q, int mode, bool transpose = true) {
 
+  using btas::Range;
   auto ndim = A.rank();
 
   // Reorder A so contraction of nth mode will be in the front
