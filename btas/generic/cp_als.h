@@ -7,6 +7,7 @@
 
 #include <btas/btas.h>
 #include <btas/error.h>
+#include <btas/generic/cp.h>
 
 #include <algorithm>
 #include <cstdlib>

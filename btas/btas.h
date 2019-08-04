@@ -7,7 +7,10 @@
 #define BTAS_SIGNAL_MISSING_PREREQUISITES
 #include <btas/features.h>
 
-#include <btas/generic/cp.h>
+#include <btas/generic/cp_als.h>
+#include <btas/generic/cp_rals.h>
+#include <btas/generic/cp_df_als.h>
+#include <btas/generic/coupled_cp_als.h>
 #include <btas/generic/dot_impl.h>
 #include <btas/generic/scal_impl.h>
 #include <btas/generic/axpy_impl.h>

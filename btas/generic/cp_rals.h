@@ -12,6 +12,7 @@
 
 #include <btas/btas.h>
 #include <btas/error.h>
+#include <btas/generic/cp.h>
 #include <btas/generic/default_random_seed.h>
 #include "core_contract.h"
 #include "flatten.h"
