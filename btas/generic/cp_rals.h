@@ -289,10 +289,10 @@ public:
 
       // CP decomposition
       if (opt_rank)
-        epsilon = this->compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI,
-                                direct);
+        epsilon = this->compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, max_als, fast_pI, direct);
       else
-        epsilon = this->compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, calculate_epsilon, direct);
+        epsilon = this->compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, max_als, fast_pI, calculate_epsilon, direct);
+
 
       // scale factor matrices
       for (int i = 0; i < ndim; i++) {
@@ -366,10 +366,11 @@ public:
       size = tensor_ref.size();
       double epsilon = -1.0;
 
+      // CP decomposition
       if (opt_rank)
-        epsilon = this->compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, direct);
+        epsilon = this->compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, max_als, fast_pI, direct);
       else
-        epsilon = this->compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, calculate_epsilon, direct);
+        epsilon = this->compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, max_als, fast_pI, calculate_epsilon, direct);
 
       // scale factor matrices
       for (int i = 0; i < ndim; i++) {
