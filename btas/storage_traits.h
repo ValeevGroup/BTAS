@@ -48,6 +48,8 @@ namespace btas {
   template <typename _T>
   struct storage_traits<std::valarray<_T>> {
       typedef _T value_type;
+      typedef _T* pointer;
+      typedef typename std::add_const<pointer>::type const_pointer;
       typedef _T& reference;
       typedef const _T& const_reference;
       typedef size_t size_type;
@@ -60,6 +62,8 @@ namespace btas {
   template <typename _Storage>
   struct storage_traits {
       typedef typename _Storage::value_type value_type;
+      typedef typename _Storage::pointer pointer;
+      typedef typename _Storage::const_pointer const_pointer;
       typedef typename _Storage::reference reference;
       typedef typename _Storage::const_reference const_reference;
       typedef typename _Storage::size_type size_type;

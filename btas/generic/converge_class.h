@@ -5,7 +5,14 @@
 #include "btas/varray/varray.h"
 
 namespace btas {
-
+  /**
+    \brief Default class to deciding when the ALS problem is converged
+    Instead of using the change in the loss function
+    \f$ \Delta \| \mathcal{T} - \mathcal{\hat{T}} \| \leq \epsilon \f$
+    where \f$ \mathcal{\hat{T}} = \sum_{r=1}^R a_1 \circ a_2 \circ \dots \circ a_N \f$
+    check the difference in the sum of average elements in factor matrices
+    \f$ \sum_n^{ndim} \frac{\|A^{i}_n - A^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
+  **/
   template <typename Tensor>
   class NormCheck{
 
@@ -18,7 +25,7 @@ namespace btas {
     ~NormCheck() = default;
 
     /// Function to check convergence of the ALS problem
-    /// convergence when \sum_n^{ndim} \|A^{i}_n - A^{i+1}_n\| \leq \epsilon
+    /// convergence when \f$ \sum_n^{ndim} \frac{\|A^{i}_n - A^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
     /// \param[in] btas_factors Current set of factor matrices
     bool operator () (const std::vector<Tensor> & btas_factors){
       auto ndim = btas_factors.size() - 1;

@@ -50,7 +50,13 @@ namespace btas {
       /// type of an element
       typedef _T value_type;
 
-      /// type of an lvalue reference to an element
+      /// element pointer
+      typedef typename storage_traits<storage_type>::pointer pointer;
+
+      /// constant element pointer
+      typedef typename storage_traits<storage_type>::const_pointer const_pointer;
+
+     /// type of an lvalue reference to an element
       typedef value_type& reference;
 
       /// type of a const lvalue reference to an element
@@ -283,14 +289,6 @@ namespace btas {
       range() const
       {
         return range_;
-      }
-
-      /// \param d dimension
-      /// \return subrange for dimension \d
-      const Range1d<typename index_type::value_type>
-      range(size_t d) const
-      {
-        return range_.range(d);
       }
 
       /// \return range's extent object
@@ -617,7 +615,7 @@ namespace btas {
 
       /// \return bare const pointer to the first element of data_
       /// this enables to call BLAS functions
-      const value_type*
+      const_pointer
       data () const
       {
         using std::data;
@@ -626,7 +624,7 @@ namespace btas {
 
       /// \return bare pointer to the first element of data_
       /// this enables to call BLAS functions
-      value_type*
+      pointer
       data()
       {
         using std::data;
