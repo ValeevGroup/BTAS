@@ -518,7 +518,7 @@ public:
           // and fill them with random numbers that are column normalized
           // and create the weighting vector lambda
           if (i == 0) {
-            Tensor a(Range{tensor_ref.range(j), Range1{i + 1}});
+            Tensor a(Range{tensor_ref.range().range(j), Range1{i + 1}});
             a.fill(rand());
             A.push_back(a);
             this->normCol(j);
@@ -533,7 +533,7 @@ public:
             // fill the new columns with random numbers and normalize the columns
           else {
             int row_extent = A[0].extent(0), rank_old = A[0].extent(1);
-            Tensor b(Range{A[0].range(0), Range1{i + 1}});
+            Tensor b(Range{A[0].range().range(0), Range1{i + 1}});
 
             {
               auto lower_old = {0, 0}, upper_old = {row_extent, rank_old};
