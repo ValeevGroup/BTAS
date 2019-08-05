@@ -9,10 +9,15 @@
 #include <iomanip>
 #include <iostream>
 
-int main(int argc, char *argv[]) {
+TEST_CASE("CP")
+{
   typedef btas::Tensor<double> tensor;
   using conv_class = btas::FitCheck<tensor>;
   using conv_class_coupled = btas::CoupledFitCheck<tensor>;
+  using btas::CP_ALS;
+  using btas::CP_RALS;
+  using btas::CP_DF_ALS;
+  using btas::COUPLED_CP_ALS;
 
   double epsilon = fmax(1e-10, std::numeric_limits<double>::epsilon());
   // TEST_CASE("CP_ALS"){
@@ -21,7 +26,6 @@ int main(int argc, char *argv[]) {
   in3.open("./mat3D.txt");
   if (!in3.is_open()) {
     std::cout << "File isn't open" << std::endl;
-    return 1;
   }
   for (auto &i : D3) {
     in3 >> i;
@@ -33,7 +37,6 @@ int main(int argc, char *argv[]) {
   in4.open("./mat4D.txt");
   if (!in4.is_open()) {
     std::cout << "File isn't open" << std::endl;
-    return 1;
   }
   for (auto &i : D4) {
     in4 >> i;
@@ -45,7 +48,6 @@ int main(int argc, char *argv[]) {
   in5.open("./mat5D.txt");
   if (!in5.is_open()) {
     std::cout << "File isn't open" << std::endl;
-    return 1;
   }
   for (auto &i : D5) {
     in5 >> i;
@@ -61,6 +63,7 @@ int main(int argc, char *argv[]) {
   for (auto &i : results) {
     res >> i;
   }
+
   tensor D33(D3.extent(1), D3.extent(2), D3.extent(1), D3.extent(2));
   tensor D44(D4.extent(1), D4.extent(2), D4.extent(3), D4.extent(1), D4.extent(2), D4.extent(3));
   tensor D55(D5.extent(1), D5.extent(2), D5.extent(3), D5.extent(4), D5.extent(1), D5.extent(2), D5.extent(3), D5.extent(4));
@@ -80,21 +83,18 @@ int main(int argc, char *argv[]) {
   conv_class conv(1e-3);
 
   // ALS tests
-  TEST_CASE("CP-ALS")
   {
     SECTION("ALS MODE = 3, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
       double diff =
               A1.compute_rank(5, conv, 1, false, 0, 100, true, false, true);
-      std::cout << std::setprecision(16) << diff << std::endl;
       CHECK((diff - results(0,0)) <= epsilon);
     }
     SECTION("ALS MODE = 3, Finite error"){
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
-      std::cout << std::setprecision(16) << diff << std::endl;
       CHECK((diff - results(1,0)) <= epsilon);
     }
 #ifdef _HAS_INTEL_MKL
@@ -105,7 +105,6 @@ int main(int argc, char *argv[]) {
       double diff =
               A1.compress_compute_tucker(0.1, conv, false, 1e-2, 5, true, false);
       CHECK((diff - results(2,0)) <= epsilon);
-      std::cout << std::setprecision(16) << diff << std::endl;
     }
     SECTION("ALS MODE = 3, Random + CP"){
       auto d = D3;
@@ -114,7 +113,6 @@ int main(int argc, char *argv[]) {
       double diff =
               A1.compress_compute_rand(2, conv, 0, 2, false, 1e-2, 5);
       CHECK((diff - results(3,0)) <= epsilon);
-      std::cout << std::setprecision(16) << diff << std::endl;
     }
 #endif
 
@@ -124,14 +122,12 @@ int main(int argc, char *argv[]) {
       double diff =
               A1.compute_rank(5, conv);
       CHECK((diff - results(4,0)) <= epsilon);
-      std::cout << std::setprecision(16) << diff << std::endl;
     }
     SECTION("ALS MODE = 4, Finite error"){
       CP_ALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
       CHECK((diff - results(5,0)) <= epsilon);
-      std::cout << std::setprecision(16) << diff << std::endl;
     }
 #ifdef _HAS_INTEL_MKL
     SECTION("ALS MODE = 4, Tucker + CP"){
@@ -140,14 +136,12 @@ int main(int argc, char *argv[]) {
       conv.set_norm(norm4);
       double diff = A1.compress_compute_tucker(0.1, conv, false, 1e-2, 5);
       CHECK((diff - results(6,0)) <= epsilon);
-      std::cout << std::setprecision(16) << diff << std::endl;
     }
     SECTION("ALS MODE = 4, Random + CP"){
       auto d = D4;
       CP_ALS<tensor, conv_class> A1(d);
       conv.set_norm(norm4);
       double diff = A1.compress_compute_rand(3, conv, 0, 2, true, 1e-2, 0, true, false, 1, 20, 100);
-      std::cout << std::setprecision(16) << diff << std::endl;
       CHECK((diff - results(7,0)) <= epsilon);
     }
 #endif
@@ -157,14 +151,12 @@ int main(int argc, char *argv[]) {
       conv.set_norm(norm5);
       double diff = A1.compute_rank(5, conv);
       CHECK((diff - results(8,0)) <= epsilon);
-      std::cout << std::setprecision(16) << diff << std::endl;
     }
      SECTION("ALS MODE = 5, Finite error"){
       CP_ALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
       double diff = A1.compute_error(conv, 1e-2, 1, 20);
       CHECK((diff - results(9,0)) <= epsilon);
-      std::cout << std::setprecision(16) << diff << std::endl;
     }
 #ifdef _HAS_INTEL_MKL
     SECTION("ALS MODE = 5, Tucker + CP"){
@@ -173,7 +165,6 @@ int main(int argc, char *argv[]) {
       conv.set_norm(norm5);
       double diff = A1.compress_compute_tucker(0.1, conv, false, 1e-2, 5, true, false);
       CHECK((diff - results(10,0)) <= epsilon);
-      std::cout << std::setprecision(16) << diff << std::endl;
     }
     SECTION("ALS MODE = 5, Random + CP"){
       auto d = D5;
@@ -181,27 +172,23 @@ int main(int argc, char *argv[]) {
       conv.set_norm(norm5);
       double diff = A1.compress_compute_rand(1, conv, 0, 2, false, 1e-2, 5);
       CHECK((diff - results(11,0)) <= epsilon);
-      std::cout << std::setprecision(16) << diff << std::endl;
     }
 #endif
   }
   //std::cout << "done with ALS" << std::endl;
   // RALS tests
-  TEST_CASE("CP-RALS")
   {
     SECTION("RALS MODE = 3, Finite rank"){
       CP_RALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
       double diff =
               A1.compute_rank(5, conv, 1, false, 0, 100, true, false, true);
-      std::cout << std::setprecision(16) << diff << std::endl;
       CHECK((diff - results(12,0)) <= epsilon);
     }
     SECTION("RALS MODE = 3, Finite error"){
       CP_RALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
-      std::cout << std::setprecision(16) << diff << std::endl;
       CHECK((diff - results(13,0)) <= epsilon);
     }
 #ifdef _HAS_INTEL_MKL
@@ -212,7 +199,6 @@ int main(int argc, char *argv[]) {
       double diff =
               A1.compress_compute_tucker(0.1, conv, false, 1e-2, 5, true, false);
       CHECK((diff - results(14,0)) <= epsilon);
-      std::cout << std::setprecision(16) << diff << std::endl;
     }
     SECTION("RALS MODE = 3, Random + CP"){
       auto d = D3;
@@ -285,7 +271,6 @@ int main(int argc, char *argv[]) {
   }
   //std::cout << "done with RALS" << std::endl;
   // CP-DF-ALS tests
-  TEST_CASE("CP-DF-ALS")
   {
     SECTION("DF-ALS MODE = 3, Finite rank"){
       CP_DF_ALS<tensor, conv_class> A1(D3, D3);
@@ -326,45 +311,44 @@ int main(int argc, char *argv[]) {
   }
   //std::cout << "done with DF ALS" << std::endl;
   // coupled ALS test
-  TEST_CASE("COUPLED-CP-ALS")
   {
     SECTION("COUPLED-ALS MODE = 3, Finite rank"){
-      CoupledFitCheck<tensor> conv_coupled(3, 1e-3);
+      conv_class_coupled conv_coupled(3, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D3, D3);
       conv_coupled.set_norm(norm3, norm3);
       double diff = A1.compute_rank(5, conv_coupled);
       CHECK((diff - results(30,0)) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 3, Finite error"){
-      CoupledFitCheck<tensor> conv_coupled(3, 1e-3);
+      conv_class_coupled conv_coupled(3, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D3, D3);
       conv_coupled.set_norm(norm3, norm3);
       double diff = A1.compute_error(conv_coupled, 1e-2, 1, 20);
       CHECK((diff - results(31,0)) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 4, Finite rank"){
-      CoupledFitCheck<tensor> conv_coupled(4, 1e-3);
+      conv_class_coupled conv_coupled(4, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D4, D4);
       conv_coupled.set_norm(norm4, norm4);
       double diff = A1.compute_rank(5,conv_coupled);
       CHECK((diff - results(32,0)) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 4, Finite error"){
-      CoupledFitCheck<tensor> conv_coupled(4, 1e-3);
+      conv_class_coupled conv_coupled(4, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D4, D4);
       conv_coupled.set_norm(norm4, norm4);
       double diff = A1.compute_error(conv_coupled, 1e-2, 1, 20);
       CHECK((diff - results(33,0)) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 5, Finite rank"){
-      CoupledFitCheck<tensor> conv_coupled(5, 1e-3);
+      conv_class_coupled conv_coupled(5, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D5, D5);
       conv_coupled.set_norm(norm5, norm5);
       double diff = A1.compute_rank(5,conv_coupled);
       CHECK((diff - results(34,0)) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 5, Finite error"){
-      CoupledFitCheck<tensor> conv_coupled(5, 1e-3);
+      conv_class_coupled conv_coupled(5, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D5, D5);
       conv_coupled.set_norm(norm5, norm5);
       double diff = A1.compute_error(conv_coupled, 1e-2, 1, 20);
