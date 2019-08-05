@@ -107,7 +107,7 @@ namespace btas {
 
       double fitChange = abs(fitOld_ - fit);
       fitOld_ = fit;
-      std::cout << fit << "\t" << fitChange << std::endl;
+      //std::cout << fit << "\t" << fitChange << std::endl;
       if(fitChange < tol_) {
         converged_num++;
         if(converged_num == 2){

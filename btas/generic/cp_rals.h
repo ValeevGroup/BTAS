@@ -225,7 +225,7 @@ public:
         }
         count++;
       }
-      std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
+      //std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
       return epsilon;
     }
 

@@ -226,7 +226,7 @@ namespace btas{
         count++;
         //if (count + 1 == panels) max_als = 1000;
       }
-      std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
+      //std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
       return epsilon;
     }
 #endif // _HAS_INTEL_MKL
@@ -538,7 +538,7 @@ namespace btas{
       Tensor MtKRP(A[ndim - 1].extent(0), rank);
       leftTimesRight = Tensor(1);
       leftTimesRight.fill(0.0);
-      std::cout << "count\tfit\tchange" << std::endl;
+      //std::cout << "count\tfit\tchange" << std::endl;
       while(count < max_als && !is_converged){
         count++;
         this->num_ALS++;
