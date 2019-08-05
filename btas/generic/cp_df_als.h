@@ -236,6 +236,9 @@ namespace btas{
     Tensor &tensor_ref_right;       // Right connected tensor
     int ndimL;                      // Number of dimensions in left tensor
     int ndimR;                      // number of dims in the right tensor
+    bool lastLeft = false;
+    Tensor leftTimesRight;
+    std::vector<int> dims;
 
     /// Creates an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
@@ -533,6 +536,8 @@ namespace btas{
       bool is_converged = false;
       bool matlab = fast_pI;
       Tensor MtKRP(A[ndim - 1].extent(0), rank);
+      leftTimesRight = Tensor(1);
+      leftTimesRight.fill(0.0);
       std::cout << "count\tfit\tchange" << std::endl;
       while(count < max_als && !is_converged){
         count++;
@@ -585,108 +590,113 @@ namespace btas{
 
       // Determine if n is in the left or the right tensor
       bool leftTensor = n < (ndimL - 1);
-
-      // form the intermediate tensor K
-      Tensor K(tensor_ref_left.extent(0), rank);
-      // works for leftTensor=true
-      //
-      {
-        // want the tensor without n if n is in the left tensor take the right one and vice versa
-        auto & tensor_ref = leftTensor ? tensor_ref_right : tensor_ref_left;
-
-        // How many dimension in this side of the tensor
-        auto ndimCurr = tensor_ref.rank();
-        auto sizeCurr = tensor_ref.size();
-        // save range for resize at the end.
-        auto R = tensor_ref.range();
-
-        // Start by contracting with the last dimension of tensor without n
-        // This is important for picking the correct factor matrix
-        // not for picking from tensor_ref
-        int contract_dim_inter = leftTensor ? ndim - 1 : ndimL - 2;
-
-        // This is for size of the dimension being contracted
-        // picked from tensor_ref
-        auto contract_size = tensor_ref.extent(ndimCurr -1);
-
-        // Make the intermediate that will be contracted then hadamard contracted
-        // Also resize the tensor for gemm contraction
-        Tensor contract_tensor(sizeCurr / contract_size, rank);
-        tensor_ref.resize(Range{Range1{sizeCurr / contract_size}, Range1{contract_size}});
-
-        // Contract out the last dimension
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, tensor_ref, A[contract_dim_inter], 0.0, contract_tensor);
-        // Resize tensor_ref back to original size
-        tensor_ref.resize(R);
-
-        // This is the size of the LH dimension of contract_tensor
-        sizeCurr /= tensor_ref.extent(ndimCurr - 1);
-        // for A now choose the next factor matrix
-        --contract_dim_inter;
-
-        // Now want to hadamard contract all the dimension that aren't the connecting dimension
-        for(int i = 0; i < ndimCurr - 2; ++i, --contract_dim_inter){
-          // The contract_size now starts at the second last dimension
-          contract_size = tensor_ref.extent(ndimCurr - 2 - i);
-          // Store the LH most dimension size in idx1
-          auto idx1 = sizeCurr / contract_size;
-          contract_tensor.resize(Range{Range1{idx1},Range1{contract_size},Range1{rank}});
-          // After hadamard product middle dimension is gone
-          Tensor temp(idx1, rank);
-          temp.fill(0.0);
-
-          for(int j = 0; j < idx1; ++j){
-            //auto * temp_ptr = temp.data() + j * rank;
-            for(int k = 0; k < contract_size; ++k){
-              //const auto * contract_ptr = contract_tensor.data() + j * contract_size * rank + k * rank;
-              //const auto * A_ptr = A[contract_dim_inter].data() + k * rank;
-              for(int r = 0; r < rank; ++r){
-                //*(temp_ptr + r) += *(contract_ptr + r) * *(A_ptr + r);
-                temp(j,r) += contract_tensor(j,k,r) * A[contract_dim_inter](k,r);
-              }
-            }
-          }
-          // After hadamard contract reset contract_tensor with new product
-          contract_tensor = temp;
-          // Remove the contracted dimension from the current size.
-          sizeCurr = idx1;
-        }
-
-        // set the hadamard contracted tensor to the intermediate K
-        K = contract_tensor;
-      }
-
-      // contract K with the other side tensor
-      // Tensor_ref now can be the side that contains n
-      Tensor & tensor_ref = leftTensor ? tensor_ref_left : tensor_ref_right;
-      // Modifying the dimension of tensor_ref so store the range here to resize
-      // after contraction.
-      Range R = tensor_ref.range();
-      // make the new factor matrix for after process
       Tensor an(A[n].range());
 
-      // LH side of tensor after contracting (doesn't include rank or connecting dimension)
-      auto LH_size = tensor_ref.size() / tensor_ref.extent(0);
-      // Temp holds the intermediate after contracting out the connecting dimension
-      // It will be set up to enter hadamard product loop
-      Tensor contract_tensor = Tensor(LH_size, rank);
-      // resize tensor_ref to remove connecting dimension
-      tensor_ref.resize(Range{Range1{tensor_ref.extent(0)},Range1{LH_size}});
+      if (lastLeft != leftTensor){
+        dims = std::vector<int>(leftTensor ? tensor_ref_left.rank() : tensor_ref_right.rank());
+        Tensor K(tensor_ref_right.extent(0), rank);
+        K.fill(0.0);
+        {
+          lastLeft = leftTensor;
+          // want the tensor without n if n is in the left tensor take the right one and vice versa
+          auto &tensor_ref = leftTensor ? tensor_ref_right : tensor_ref_left;
 
-      gemm(CblasTrans, CblasNoTrans, 1.0, tensor_ref, K, 0.0, contract_tensor);
-      // resize tensor_ref back to original dimensions
-      tensor_ref.resize(R);
+          // How many dimension in this side of the tensor
+          auto ndimCurr = tensor_ref.rank();
+          auto sizeCurr = tensor_ref.size();
+          // save range for resize at the end.
+          auto R = tensor_ref.range();
 
-      std::vector<int> dims(tensor_ref.rank());
-      for(int i = 1; i < tensor_ref.rank(); ++i){
-        dims[i - 1] = tensor_ref.extent(i);
+          // Start by contracting with the last dimension of tensor without n
+          // This is important for picking the correct factor matrix
+          // not for picking from tensor_ref
+          int contract_dim_inter = leftTensor ? ndim - 1 : ndimL - 2;
+
+          // This is for size of the dimension being contracted
+          // picked from tensor_ref
+          auto contract_size = tensor_ref.extent(ndimCurr - 1);
+
+          // Make the intermediate that will be contracted then hadamard contracted
+          // Also resize the tensor for gemm contraction
+          Tensor contract_tensor(sizeCurr / contract_size, rank);
+          tensor_ref.resize(Range{Range1{sizeCurr / contract_size}, Range1{contract_size}});
+
+          // Contract out the last dimension
+          gemm(CblasNoTrans, CblasNoTrans, 1.0, tensor_ref, A[contract_dim_inter], 0.0, contract_tensor);
+          // Resize tensor_ref back to original size
+          tensor_ref.resize(R);
+
+          // This is the size of the LH dimension of contract_tensor
+          sizeCurr /= tensor_ref.extent(ndimCurr - 1);
+          // for A now choose the next factor matrix
+          --contract_dim_inter;
+
+          // Now want to hadamard contract all the dimension that aren't the connecting dimension
+          for (int i = 0; i < ndimCurr - 2; ++i, --contract_dim_inter) {
+            // The contract_size now starts at the second last dimension
+            contract_size = tensor_ref.extent(ndimCurr - 2 - i);
+            // Store the LH most dimension size in idx1
+            auto idx1 = sizeCurr / contract_size;
+            contract_tensor.resize(Range{Range1{idx1}, Range1{contract_size}, Range1{rank}});
+            // After hadamard product middle dimension is gone
+            Tensor temp(idx1, rank);
+            temp.fill(0.0);
+
+            for (int j = 0; j < idx1; ++j) {
+              //auto * temp_ptr = temp.data() + j * rank;
+              for (int k = 0; k < contract_size; ++k) {
+                //const auto * contract_ptr = contract_tensor.data() + j * contract_size * rank + k * rank;
+                //const auto * A_ptr = A[contract_dim_inter].data() + k * rank;
+                for (int r = 0; r < rank; ++r) {
+                  //*(temp_ptr + r) += *(contract_ptr + r) * *(A_ptr + r);
+                  temp(j, r) += contract_tensor(j, k, r) * A[contract_dim_inter](k, r);
+                }
+              }
+            }
+            // After hadamard contract reset contract_tensor with new product
+            contract_tensor = temp;
+            // Remove the contracted dimension from the current size.
+            sizeCurr = idx1;
+          }
+
+          // set the hadamard contracted tensor to the intermediate K
+          K = contract_tensor;
+        }
+        {
+          // contract K with the other side tensor
+          // Tensor_ref now can be the side that contains n
+          Tensor & tensor_ref = leftTensor ? tensor_ref_left : tensor_ref_right;
+          // Modifying the dimension of tensor_ref so store the range here to resize
+          // after contraction.
+          Range R = tensor_ref.range();
+          // make the new factor matrix for after process
+
+          // LH side of tensor after contracting (doesn't include rank or connecting dimension)
+          auto LH_size = tensor_ref.size() / tensor_ref.extent(0);
+          // Temp holds the intermediate after contracting out the connecting dimension
+          // It will be set up to enter hadamard product loop
+          leftTimesRight = Tensor(LH_size, rank);
+          // resize tensor_ref to remove connecting dimension
+          tensor_ref.resize(Range{Range1{tensor_ref.extent(0)},Range1{LH_size}});
+
+          gemm(CblasTrans, CblasNoTrans, 1.0, tensor_ref, K, 0.0, leftTimesRight);
+          // resize tensor_ref back to original dimensions
+          tensor_ref.resize(R);
+
+          //std::vector<int> dims(tensor_ref.rank());
+          for(int i = 1; i < tensor_ref.rank(); ++i){
+            dims[i - 1] = tensor_ref.extent(i);
+          }
+          dims[dims.size() - 1] = rank;
+        }
       }
-      dims[dims.size() - 1] = rank;
 
+      Tensor contract_tensor = leftTimesRight;
+      auto LH_size = contract_tensor.size() / rank;
       // If hadamard loop has to skip a dimension it is stored here.
       auto pseudo_rank = rank;
       // number of dimensions in tensor_ref
-      auto ndimCurr = tensor_ref.rank();
+      auto ndimCurr = leftTensor ? tensor_ref_left.rank() : tensor_ref_right.rank();
       // the dimension that is being hadamard contracted out.
       auto contract_dim = ndimCurr - 2;
       auto nInTensor = leftTensor ? n : n - ndimL + 1;
