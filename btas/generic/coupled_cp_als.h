@@ -281,7 +281,7 @@ namespace btas{
           auto left = (j < ndimL);
           auto & tensor_ref = left ? tensor_ref_left : tensor_ref_right;
           if (i == 0) {
-            Tensor a(Range{tensor_ref.range((left ? j : j - ndimL + 1)), Range1{i + 1}});
+            Tensor a(Range{tensor_ref.range().range((left ? j : j - ndimL + 1)), Range1{i + 1}});
             a.fill(rand());
             A.push_back(a);
             this->normCol(j);
@@ -296,7 +296,7 @@ namespace btas{
             // fill the new columns with random numbers and normalize the columns
           else {
             int row_extent = A[0].extent(0), rank_old = A[0].extent(1);
-            Tensor b(Range{A[0].range(0), Range1{i + 1}});
+            Tensor b(Range{A[0].range().range(0), Range1{i + 1}});
 
             {
               auto lower_old = {0, 0}, upper_old = {row_extent, rank_old};
