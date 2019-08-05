@@ -273,7 +273,7 @@ namespace btas{
     /// default = false
     /// \returns 2-norm error, \f$ \epsilon \f$,
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
-    //  ConvClass != FitCheck.
+    ///  ConvClass != FitCheck.
     double compress_compute_tucker(double tcutSVD, ConvClass & converge_test, bool opt_rank = true, double tcutCP = 1e-2, int rank = 0,
                                    bool direct = true, bool calculate_epsilon = true, int step = 1, int max_rank = 1e4,
                                    double max_als = 1e4, bool SVD_initial_guess = false,
@@ -352,7 +352,7 @@ namespace btas{
     /// default = false
     /// \returns 2-norm error, \f$ \epsilon \f$,
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
-    //  ConvClass != FitCheck.
+    ///  ConvClass != FitCheck.
     double compress_compute_rand(int desired_compression_rank, ConvClass & converge_test, int oversampl = 10, int powerit = 2,
                                  bool opt_rank = true, double tcutCP = 1e-2, int rank = 0, bool direct = true,
                                  bool calculate_epsilon = false, int step = 1, int max_rank = 1e5, double max_als = 1e5,
