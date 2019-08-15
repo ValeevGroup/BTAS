@@ -595,7 +595,6 @@ namespace btas{
       if (lastLeft != leftTensor){
         dims = std::vector<int>(leftTensor ? tensor_ref_left.rank() : tensor_ref_right.rank());
         Tensor K(tensor_ref_right.extent(0), rank);
-        K.fill(0.0);
         {
           lastLeft = leftTensor;
           // want the tensor without n if n is in the left tensor take the right one and vice versa
@@ -643,13 +642,13 @@ namespace btas{
             temp.fill(0.0);
 
             for (int j = 0; j < idx1; ++j) {
-              //auto * temp_ptr = temp.data() + j * rank;
+              auto * temp_ptr = temp.data() + j * rank;
               for (int k = 0; k < contract_size; ++k) {
-                //const auto * contract_ptr = contract_tensor.data() + j * contract_size * rank + k * rank;
-                //const auto * A_ptr = A[contract_dim_inter].data() + k * rank;
+                const auto * contract_ptr = contract_tensor.data() + j * contract_size * rank + k * rank;
+                const auto * A_ptr = A[contract_dim_inter].data() + k * rank;
                 for (int r = 0; r < rank; ++r) {
-                  //*(temp_ptr + r) += *(contract_ptr + r) * *(A_ptr + r);
-                  temp(j, r) += contract_tensor(j, k, r) * A[contract_dim_inter](k, r);
+                  *(temp_ptr + r) += *(contract_ptr + r) * *(A_ptr + r);
+                  //temp(j, r) += contract_tensor(j, k, r) * A[contract_dim_inter](k, r);
                 }
               }
             }
@@ -710,6 +709,7 @@ namespace btas{
         LH_size /= contract_size;
         contract_tensor.resize(Range{Range1{LH_size}, Range1{contract_size}, Range1{pseudo_rank}});
         Tensor temp(Range{Range1{LH_size}, Range1{pseudo_rank}});
+        auto & a = A[a_dim];
 
         temp.fill(0.0);
 
@@ -725,13 +725,12 @@ namespace btas{
           // over the middle dimension and sum over the rank.
         else if (contract_dim > nInTensor){
           for(int j = 0; j < LH_size; ++j){
-            //auto * temp_ptr = temp.data() + j * pseudo_rank;
+            auto * temp_ptr = temp.data() + j * pseudo_rank;
             for(int k = 0; k < contract_size; ++k){
-              //const auto * contract_ptr = contract_tensor.data() + j * contract_size * pseudo_rank + k * pseudo_rank;
-              //const auto * A_ptr = A[a_dim].data() + k * rank;
-              for(int r = 0; r < rank; ++r){
-                //*(temp_ptr + r) += *(contract_ptr + r) + *(A_ptr + r);
-                temp(j,r) += contract_tensor(j,k,r) * A[a_dim](k,r);
+              const auto * contract_ptr = contract_tensor.data() + j * contract_size * pseudo_rank + k * pseudo_rank;
+              const auto * A_ptr = a.data() + k * pseudo_rank;
+              for(int r = 0; r < pseudo_rank; ++r){
+                *(temp_ptr + r) += *(contract_ptr + r) * *(A_ptr + r);
               }
             }
           }
@@ -768,19 +767,18 @@ namespace btas{
         Tensor temp(Range{Range1{offset}, Range1{rank}});
         contract_tensor.resize(Range{Range1{contract_size}, Range1{offset}, Range1{rank}});
         temp.fill(0.0);
+        auto & a = A[a_dim];
 
         for(int i = 0; i < contract_size; i++){
-          //const auto * A_ptr = A[a_dim].data() + i * rank;
+          const auto * A_ptr = a.data() + i * rank;
           for(int j = 0; j < offset; j++){
-            //const auto * contract_ptr = contract_tensor.data() + i * offset * rank + j * rank;
-            //auto * temp_ptr = temp.data() + j * rank;
+            const auto * contract_ptr = contract_tensor.data() + i * offset * rank + j * rank;
+            auto * temp_ptr = temp.data() + j * rank;
             for(int r = 0; r < rank; r++){
-              //*(temp_ptr + r) += *(A_ptr + r) * *(contract_ptr + r);
-              temp(j,r) += contract_tensor(i,j,r) * A[a_dim](i,r);
+              *(temp_ptr + r) += *(A_ptr + r) * *(contract_ptr + r);
             }
           }
         }
-
         contract_tensor = temp;
       }
 
