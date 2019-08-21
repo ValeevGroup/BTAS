@@ -812,7 +812,7 @@ namespace btas{
 #else
       matlab = false;
       if( !matlab){
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(n, rank, fast), 0.0, an);
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(n, rank, false), 0.0, an);
       }
 #endif
       //t2 = std::chrono::high_resolution_clock::now();
