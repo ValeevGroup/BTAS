@@ -739,15 +739,16 @@ namespace btas{
           // If the code has passed the mode of interest, it will contract over
           // the middle dimension and sum over rank * mode n dimension
         else{
-          for(int j = 0; j < LH_size; ++j){
-            //auto * temp_ptr = temp.data() + j * pseudo_rank;
-            for(int k = 0; k < contract_size; ++k){
-              //const auto * contract_ptr = contract_tensor.data() + j * contract_size * pseudo_rank + k * pseudo_rank;
-              //const auto * A_ptr = A[a_dim].data() + k * rank;
-              for(int l = 0; l < offset; ++l){
-                for(int r = 0; r < rank; ++r){
-                  //*(temp_ptr + l * rank + r) += *(contract_ptr + l * rank + r) * *(A_ptr + r);
-                  temp(j, l*rank + r) += contract_tensor(j,k,l*rank+r) * A[a_dim](k,r);
+          for(int j = 0; j < LH_size; ++j) {
+            auto *temp_ptr = temp.data() + j * pseudo_rank;
+            for (int k = 0; k < contract_size; ++k) {
+              const auto *A_ptr = a.data() + k * rank;
+              for (int l = 0; l < offset; ++l) {
+                const auto *contract_ptr = contract_tensor.data() + j * contract_size * pseudo_rank
+                                           + k * pseudo_rank + l * rank;
+                for (int r = 0; r < rank; ++r) {
+                  *(temp_ptr + l * rank + r) += *(contract_ptr + r) * *(A_ptr + r);
+                  //temp(j, l*rank + r) += contract_tensor(j,k,l*rank+r) * A[a_dim](k,r);
                 }
               }
             }
