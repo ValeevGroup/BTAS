@@ -160,7 +160,7 @@ public:
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
     double compute_PALS(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4,
-                                int max_als = 20,bool fast_pI = true, bool calculate_epsilon = false, bool direct = true) override{
+                                int max_als = 20,bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) override{
       if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
       double epsilon = -1.0;
       int count = 0;

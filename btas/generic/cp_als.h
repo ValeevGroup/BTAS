@@ -157,7 +157,7 @@ namespace btas{
     /// false && ConvClass != FitCheck.
 
     double compute_PALS(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4,
-                         int max_als = 20,bool fast_pI = true, bool calculate_epsilon = false, bool direct = true) override{
+                         int max_als = 20,bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) override{
       if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
       if(converge_list.size() < panels) BTAS_EXCEPTION("Too few convergence tests.  Must provide a list of panels convergence tests");
       double epsilon = -1.0;
