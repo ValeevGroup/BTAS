@@ -1,21 +1,27 @@
 language: cpp
+dist: xenial
+cache: ccache
+cache:
+  directories:
+    - /home/travis/_install
 os:
   - linux
+
+env:
+  global:
+    - BUILD_PREFIX=/home/travis/_build
+    - INSTALL_PREFIX=/home/travis/_install
 
 addons:
   apt:
     sources: &base_sources
       - ubuntu-toolchain-r-test
-      - boost-latest
-      - kubuntu-backports
-    sources: &clang_sources
-      - llvm-toolchain-trusty-5.0
-      - llvm-toolchain-trusty-6.0
-      - llvm-toolchain-trusty-7
-      - llvm-toolchain-trusty
+    sources: &clang7_sources
+      - llvm-toolchain-xenial-7
+    sources: &clang8_sources
+      - llvm-toolchain-xenial-8
     packages: &base_packages
-      - libboost1.55
-      - libboost1.55-dev
+      - libboost-all-dev
       - libblas-dev
       - liblapack-dev
       - liblapacke-dev
@@ -45,15 +51,6 @@ matrix:
             - *base_packages
             - g++-5
     - compiler: gcc
-      env: GCC_VERSION=6 BUILD_TYPE=Release
-      addons:
-        apt:
-          sources:
-            - *base_sources
-          packages:
-            - *base_packages
-            - g++-6
-    - compiler: gcc
       env: GCC_VERSION=6 BUILD_TYPE=Debug
       addons:
         apt:
@@ -63,7 +60,16 @@ matrix:
             - *base_packages
             - g++-6
     - compiler: gcc
-      env: GCC_VERSION=7 BUILD_TYPE=Release
+      env: GCC_VERSION=6 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-6
+    - compiler: gcc
+      env: GCC_VERSION=7 BUILD_TYPE=Debug
       addons:
         apt:
           sources:
@@ -72,7 +78,7 @@ matrix:
             - *base_packages
             - g++-7
     - compiler: gcc
-      env: GCC_VERSION=7 BUILD_TYPE=Debug
+      env: GCC_VERSION=7 BUILD_TYPE=Release
       addons:
         apt:
           sources:
@@ -86,22 +92,75 @@ matrix:
         apt:
           sources:
             - *base_sources
-            - *clang_sources
+            - *clang7_sources
           packages:
             - *base_packages
             - g++-8
             - clang-7
+            - libc++-7-dev
+            - libc++abi-7-dev
     - compiler: clang
       env: CLANG_VERSION=7 GCC_VERSION=8 BUILD_TYPE=Release
       addons:
         apt:
           sources:
             - *base_sources
-            - *clang_sources
+            - *clang7_sources
           packages:
             - *base_packages
             - g++-8
             - clang-7
+            - libc++-7-dev
+            - libc++abi-7-dev
+    - compiler: clang
+      env: CLANG_VERSION=8 GCC_VERSION=8 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - *base_sources
+            - *clang8_sources
+          packages:
+            - *base_packages
+            - g++-8
+            - clang-8
+            - libc++-8-dev
+            - libc++abi-8-dev
+    - compiler: clang
+      env: CLANG_VERSION=8 GCC_VERSION=8 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+            - *clang8_sources
+          packages:
+            - *base_packages
+            - g++-8
+            - clang-8
+            - libc++-8-dev
+            - libc++abi-8-dev
+      - compiler: gcc
+        env: GCC_VERSION=8 BUILD_TYPE=Debug
+        addons:
+          apt:
+            sources:
+              - *base_sources
+            packages:
+              - *base_packages
+              - g++-8
+      - compiler: gcc
+        env: GCC_VERSION=8 BUILD_TYPE=Release
+        addons:
+          apt:
+            sources:
+              - *base_sources
+            packages:
+              - *base_packages
+              - g++-8
+
+before_install:
+  - env
+  - mkdir -p ${BUILD_PREFIX} && mkdir -p ${INSTALL_PREFIX}
+
 before_install:
   - ./bin/travisci_before_$TRAVIS_OS_NAME.sh
 script:

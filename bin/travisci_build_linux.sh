@@ -12,6 +12,8 @@ else
     export CXX=/usr/bin/clang++-$CLANG_VERSION
 fi
 
+cd ${BUILD_PREFIX}
+
 ##########   test with cblas   ##########
 mkdir build_cblas
 cd build_cblas
