@@ -160,7 +160,6 @@ matrix:
 before_install:
   - env
   - mkdir -p ${BUILD_PREFIX} && mkdir -p ${INSTALL_PREFIX}
-  - ./bin/travisci_before_$TRAVIS_OS_NAME.sh
 script:
   - ./bin/travisci_build_$TRAVIS_OS_NAME.sh
 after_failure:
