@@ -3,10 +3,11 @@
 
 #ifdef _HAS_INTEL_MKL
 
-#include <btas/btas.h>
+#include <vector>
+
 #include <mkl_trans.h>
 
-#include <vector>
+#include <btas/error.h>
 
 //***IMPORTANT***//
 // do not use swap to first then use swap to back

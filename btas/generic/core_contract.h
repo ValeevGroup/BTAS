@@ -1,8 +1,7 @@
 #ifndef BTAS_CORE_CONTRACT_H
 #define BTAS_CORE_CONTRACT_H
 
-#include "swap.h"
-#include <btas/btas.h>
+#include <btas/generic/swap.h>
 #include <btas/range.h>
 
 namespace btas {

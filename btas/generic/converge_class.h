@@ -1,8 +1,10 @@
 #ifndef BTAS_GENERIC_CONV_BASE_CLASS
 #define BTAS_GENERIC_CONV_BASE_CLASS
-#include <btas/generic/dot_impl.h>
+
 #include <vector>
-#include "btas/varray/varray.h"
+
+#include <btas/generic/dot_impl.h>
+#include <btas/varray/varray.h>
 
 namespace btas {
   /**
@@ -318,4 +320,4 @@ namespace btas {
     }
   };
 } //namespace btas
-#endif
+#endif  // BTAS_GENERIC_CONV_BASE_CLASS

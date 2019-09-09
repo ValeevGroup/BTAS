@@ -1,8 +1,6 @@
 #ifndef BTAS_KRP_H
 #define BTAS_KRP_H
 
-#include <btas/btas.h>
-
 namespace btas {
 
 /// The khatri-rao product is an outer product of column vectors of \param A

@@ -5,7 +5,7 @@
 #ifndef BTAS_RALS_HELPER_H
 #define BTAS_RALS_HELPER_H
 
-#include "dot_impl.h"
+#include <btas/generic/dot_impl.h>
 namespace btas{
 /**
     \brief A helper function for the RALS solver

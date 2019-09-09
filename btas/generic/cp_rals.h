@@ -10,19 +10,17 @@
 #include <iostream>
 #include <vector>
 
-#include <btas/btas.h>
-#include <btas/error.h>
 #include <btas/generic/cp.h>
 #include <btas/generic/default_random_seed.h>
-#include "core_contract.h"
-#include "flatten.h"
-#include "khatri_rao_product.h"
-#include "randomized.h"
-#include "swap.h"
-#include "tucker.h"
-#include "converge_class.h"
-#include "rals_helper.h"
-#include "reconstruct.h"
+#include <btas/generic/core_contract.h>
+#include <btas/generic/flatten.h>
+#include <btas/generic/khatri_rao_product.h>
+#include <btas/generic/randomized.h>
+#include <btas/generic/swap.h>
+#include <btas/generic/tucker.h>
+#include <btas/generic/converge_class.h>
+#include <btas/generic/rals_helper.h>
+#include <btas/generic/reconstruct.h>
 
 #ifdef _HAS_INTEL_MKL
 #include <mkl_trans.h>

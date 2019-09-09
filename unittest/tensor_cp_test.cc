@@ -1,7 +1,7 @@
 #ifdef BTAS_HAS_CBLAS
-#include "btas/btas.h"
-#include "btas/generic/converge_class.h"
-#include "test.h"
+#include <btas/btas.h>
+#include <btas/generic/converge_class.h>
+#include "../unittest/test.h"
 
 #include <fstream>
 #include <iomanip>
