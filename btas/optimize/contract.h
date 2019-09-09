@@ -186,6 +186,54 @@ void contract_332(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index
 
 
 template<
+    typename _T,
+    class _TensorA, class _TensorB, class _TensorC,
+    typename _UA, typename _UB, typename _UC,
+    class = typename std::enable_if<
+        is_tensor<_TensorA>::value &
+            is_tensor<_TensorB>::value &
+            is_tensor<_TensorC>::value &
+            (_TensorA::range_type::order == CblasColMajor) & //checking if A, B, and C are all Colomn major
+            (_TensorB::range_type::order == CblasColMajor) & //checking if A, B, and C are all Colomn major
+            (_TensorC::range_type::order == CblasColMajor) & //checking if A, B, and C are all Colomn major
+            std::is_same<typename std::remove_cv<typename _TensorA::value_type>::type, typename std::remove_cv<typename _TensorB::value_type>::type>::value &
+            std::is_same<typename std::remove_cv<typename _TensorA::value_type>::type, typename std::remove_cv<typename _TensorC::value_type>::type>::value &
+            (std::is_same<typename std::remove_cv<typename _TensorA::value_type>::type, double>::value
+                or std::is_same<typename std::remove_cv<typename _TensorA::value_type>::type, std::complex<double>>::value)
+    >::type
+>
+void contract(
+    const _T& alpha,
+    const _TensorA& A, const btas::DEFAULT::index<_UA>& aA,
+    const _TensorB& B, const btas::DEFAULT::index<_UB>& aB,
+    const _T& beta,
+    _TensorC& C, const btas::DEFAULT::index<_UC>& aC,
+    const bool conjgA = false,
+    const bool conjgB = false) {
+
+  assert(A.rank() == aA.size());
+  assert(B.rank() == aB.size());
+  assert(C.rank() == aC.size());
+
+  if (A.rank() == 2 && B.rank() == 1 && C.rank() == 1) {
+    contract_211(alpha, A, aA, B, aB, beta, C, aC, conjgA, conjgB);
+  } else if (A.rank() == 1 && B.rank() == 2 && C.rank() == 1) {
+    contract_211(alpha, B, aB, A, aA, beta, C, aC, conjgB, conjgA);
+  } else if (A.rank() == 2 && B.rank() == 2 && C.rank() == 2) {
+    contract_222(alpha, A, aA, B, aB, beta, C, aC, conjgA, conjgB);
+  } else if (A.rank() == 3 && B.rank() == 2 && C.rank() == 3) {
+    contract_323(alpha, A, aA, B, aB, beta, C, aC, conjgA, conjgB);
+  } else if (A.rank() == 2 && B.rank() == 3 && C.rank() == 3) {
+    contract_323(alpha, B, aB, A, aA, beta, C, aC, conjgB, conjgA);
+  } else if (A.rank() == 3 && B.rank() == 3 && C.rank() == 2) {
+    contract_332(alpha, A, aA, B, aB, beta, C, aC, conjgA, conjgB);
+  } else {
+    std::stringstream ss; ss << "not yet implemented: rank(A): " << A.rank() << " rank(B): " << B.rank() << " rank(C): " << C.rank();
+    throw std::logic_error(ss.str());
+  }
+}
+
+template<
   typename _T,
   class _TensorA, class _TensorB, class _TensorC,
   typename _UA, typename _UB, typename _UC,
@@ -210,27 +258,9 @@ void contract(
         _TensorC& C, std::initializer_list<_UC> aC,
   const bool conjgA = false,
   const bool conjgB = false) {
-
-  assert(A.rank() == aA.size());
-  assert(B.rank() == aB.size());
-  assert(C.rank() == aC.size());
-
-  if (A.rank() == 2 && B.rank() == 1 && C.rank() == 1) {
-    contract_211(alpha, A, btas::DEFAULT::index<_UA>(aA), B, btas::DEFAULT::index<_UB>(aB), beta, C, btas::DEFAULT::index<_UC>(aC), conjgA, conjgB);
-  } else if (A.rank() == 1 && B.rank() == 2 && C.rank() == 1) {
-    contract_211(alpha, B, btas::DEFAULT::index<_UA>(aB), A, btas::DEFAULT::index<_UB>(aA), beta, C, btas::DEFAULT::index<_UC>(aC), conjgB, conjgA);
-  } else if (A.rank() == 2 && B.rank() == 2 && C.rank() == 2) {
-    contract_222(alpha, A, btas::DEFAULT::index<_UA>(aA), B, btas::DEFAULT::index<_UB>(aB), beta, C, btas::DEFAULT::index<_UC>(aC), conjgA, conjgB);
-  } else if (A.rank() == 3 && B.rank() == 2 && C.rank() == 3) {
-    contract_323(alpha, A, btas::DEFAULT::index<_UA>(aA), B, btas::DEFAULT::index<_UB>(aB), beta, C, btas::DEFAULT::index<_UC>(aC), conjgA, conjgB);
-  } else if (A.rank() == 2 && B.rank() == 3 && C.rank() == 3) {
-    contract_323(alpha, B, btas::DEFAULT::index<_UA>(aB), A, btas::DEFAULT::index<_UB>(aA), beta, C, btas::DEFAULT::index<_UC>(aC), conjgB, conjgA);
-  } else if (A.rank() == 3 && B.rank() == 3 && C.rank() == 2) {
-    contract_332(alpha, A, btas::DEFAULT::index<_UA>(aA), B, btas::DEFAULT::index<_UB>(aB), beta, C, btas::DEFAULT::index<_UC>(aC), conjgA, conjgB);
-  } else {
-    std::stringstream ss; ss << "not yet implemented: rank(A): " << A.rank() << " rank(B): " << B.rank() << " rank(C): " << C.rank();
-    throw std::logic_error(ss.str());
-  }
+  return contract(alpha, A, btas::DEFAULT::index<_UA>{aA},
+                         B, btas::DEFAULT::index<_UB>{aB},
+                   beta, C, btas::DEFAULT::index<_UC>{aC}, conjgA, conjgB);
 }
 
 } //namespace btas

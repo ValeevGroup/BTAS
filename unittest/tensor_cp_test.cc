@@ -1,6 +1,4 @@
-//#ifdef BTAS_HAS_CBLAS
-//#include "test.h"
-
+#ifdef BTAS_HAS_CBLAS
 #include "btas/btas.h"
 #include "btas/generic/converge_class.h"
 #include "test.h"
@@ -8,6 +6,10 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+
+#include <libgen.h>
+
+const std::string __dirname = dirname(strdup(__FILE__));
 
 TEST_CASE("CP")
 {
@@ -22,11 +24,8 @@ TEST_CASE("CP")
   double epsilon = fmax(1e-10, std::numeric_limits<double>::epsilon());
   // TEST_CASE("CP_ALS"){
   tensor D3(5, 2, 9);
-  std::ifstream in3;
-  in3.open("./mat3D.txt");
-  if (!in3.is_open()) {
-    std::cout << "Mat3D file isn't open" << std::endl;
-  }
+  std::ifstream in3(__dirname + "/mat3D.txt");
+  CHECK(in3.is_open());
   for (auto &i : D3) {
     in3 >> i;
   }
@@ -34,10 +33,8 @@ TEST_CASE("CP")
 
   tensor D4(6, 3, 3, 7);
   std::ifstream in4;
-  in4.open("./mat4D.txt");
-  if (!in4.is_open()) {
-    std::cout << "mat4D file isn't open" << std::endl;
-  }
+  in4.open(__dirname + "/mat4D.txt");
+  CHECK(in4.is_open());
   for (auto &i : D4) {
     in4 >> i;
   }
@@ -45,21 +42,16 @@ TEST_CASE("CP")
 
   tensor D5(2, 6, 1, 9, 3);
   std::ifstream in5;
-  in5.open("./mat5D.txt");
-  if (!in5.is_open()) {
-    std::cout << "mat5D file isn't open" << std::endl;
-  }
+  in5.open(__dirname + "/mat5D.txt");
+  CHECK(in5.is_open());
   for (auto &i : D5) {
     in5 >> i;
   }
   in5.close();
 
   tensor results(36, 1);
-  std::ifstream res("./cp_test_results.txt", std::ifstream::in);
-  if (!res.is_open()) {
-    std::cout << "Results are not open " << std::endl;
-    // return;
-  }
+  std::ifstream res(__dirname + "/cp_test_results.txt");
+  CHECK(res.is_open());
   for (auto &i : results) {
     res >> i;
   }
@@ -175,7 +167,6 @@ TEST_CASE("CP")
     }
 #endif
   }
-  //std::cout << "done with ALS" << std::endl;
   // RALS tests
   {
     SECTION("RALS MODE = 3, Finite rank"){
@@ -269,7 +260,6 @@ TEST_CASE("CP")
     }
 #endif
   }
-  //std::cout << "done with RALS" << std::endl;
   // CP-DF-ALS tests
   {
     SECTION("DF-ALS MODE = 3, Finite rank"){
@@ -309,7 +299,6 @@ TEST_CASE("CP")
       CHECK((diff - results(29,0)) <= epsilon);
     }
   }
-  //std::cout << "done with DF ALS" << std::endl;
   // coupled ALS test
   {
     SECTION("COUPLED-ALS MODE = 3, Finite rank"){
@@ -355,6 +344,5 @@ TEST_CASE("CP")
       CHECK((diff - results(35,0)) <= epsilon);
     }
   }
-  //std::cout << "done with coupled ALS" << std::endl;
 }
-//#endif //BTAS_HAS_CBLAS
+#endif //BTAS_HAS_CBLAS
