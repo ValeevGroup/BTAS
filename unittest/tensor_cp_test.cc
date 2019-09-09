@@ -25,7 +25,7 @@ TEST_CASE("CP")
   std::ifstream in3;
   in3.open("./mat3D.txt");
   if (!in3.is_open()) {
-    std::cout << "File isn't open" << std::endl;
+    std::cout << "Mat3D file isn't open" << std::endl;
   }
   for (auto &i : D3) {
     in3 >> i;
@@ -36,7 +36,7 @@ TEST_CASE("CP")
   std::ifstream in4;
   in4.open("./mat4D.txt");
   if (!in4.is_open()) {
-    std::cout << "File isn't open" << std::endl;
+    std::cout << "mat4D file isn't open" << std::endl;
   }
   for (auto &i : D4) {
     in4 >> i;
@@ -47,7 +47,7 @@ TEST_CASE("CP")
   std::ifstream in5;
   in5.open("./mat5D.txt");
   if (!in5.is_open()) {
-    std::cout << "File isn't open" << std::endl;
+    std::cout << "mat5D file isn't open" << std::endl;
   }
   for (auto &i : D5) {
     in5 >> i;
@@ -88,7 +88,7 @@ TEST_CASE("CP")
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
       double diff =
-              A1.compute_rank(5, conv, 1, false, 0, 100, true, false, true);
+              A1.compute_rank(5, conv, 1, false, 0, 100, false, false, true);
       CHECK((diff - results(0,0)) <= epsilon);
     }
     SECTION("ALS MODE = 3, Finite error"){
@@ -182,7 +182,7 @@ TEST_CASE("CP")
       CP_RALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
       double diff =
-              A1.compute_rank(5, conv, 1, false, 0, 100, true, false, true);
+              A1.compute_rank(5, conv, 1, false, 0, 100, false, false, true);
       CHECK((diff - results(12,0)) <= epsilon);
     }
     SECTION("RALS MODE = 3, Finite error"){
