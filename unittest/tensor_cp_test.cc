@@ -80,7 +80,7 @@ TEST_CASE("CP")
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
       double diff =
-              A1.compute_rank(5, conv, 1, false, 0, 100, true, false, true);
+              A1.compute_rank(5, conv, 1, false, 0, 100, false, false, true);
       CHECK((diff - results(0,0)) <= epsilon);
     }
     SECTION("ALS MODE = 3, Finite error"){
@@ -147,7 +147,7 @@ TEST_CASE("CP")
      SECTION("ALS MODE = 5, Finite error"){
       CP_ALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
-      double diff = A1.compute_error(conv, 1e-2, 1, 20);
+      double diff = A1.compute_error(conv, 1e-2, 10, 200);
       CHECK((diff - results(9,0)) <= epsilon);
     }
 #ifdef _HAS_INTEL_MKL
@@ -173,7 +173,7 @@ TEST_CASE("CP")
       CP_RALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
       double diff =
-              A1.compute_rank(5, conv, 1, false, 0, 100, true, false, true);
+              A1.compute_rank(5, conv, 1, false, 0, 100, false, false, true);
       CHECK((diff - results(12,0)) <= epsilon);
     }
     SECTION("RALS MODE = 3, Finite error"){
