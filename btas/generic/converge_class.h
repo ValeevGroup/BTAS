@@ -113,6 +113,8 @@ namespace btas {
         if(converged_num == 2){
           iter_ = 0;
           converged_num = 0;
+          final_fit_ = fitOld_;
+          fitOld_ = -1.0;
           return true;
         }
       }
@@ -130,13 +132,14 @@ namespace btas {
     }
 
     double get_fit(){
-      return fitOld_;
+      return final_fit_;
     }
 
   private:
     double tol_;
     double fitOld_ = -1.0;
     double normT_ = -1.0;
+    double final_fit_ = 0.0;
     int iter_ = 0;
     int converged_num = 0;
     Tensor MtKRP_;
@@ -260,6 +263,8 @@ namespace btas {
       fitOld_ = fit;
       if(fitChange < tol_) {
         iter_ = 0;
+        final_fit_ = fitOld_;
+        fitOld_ = -1.0;
         return true;
       }
 
@@ -281,12 +286,13 @@ namespace btas {
     }
 
     double get_fit(){
-      return fitOld_;
+      return final_fit_;
     }
 
   private:
     double tol_;
     double fitOld_ = -1.0;
+    double final_fit_ = 0.0;
     double normTL_ = -1.0, normTR_ = -1.0;
     int iter_ = 0;
     Tensor MtKRPL_, MtKRPR_;
