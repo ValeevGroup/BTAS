@@ -147,7 +147,7 @@ TEST_CASE("CP")
      SECTION("ALS MODE = 5, Finite error"){
       CP_ALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
-      double diff = A1.compute_error(conv, 1e-2, 1, 20);
+      double diff = A1.compute_error(conv, 1e-2, 10, 200);
       CHECK((diff - results(9,0)) <= epsilon);
     }
 #ifdef _HAS_INTEL_MKL
