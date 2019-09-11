@@ -1,40 +1,55 @@
+//
+// Created by Karl Pierce on 7/24/19.
+//
+
 #ifndef BTAS_GENERIC_CP_RALS_H
 #define BTAS_GENERIC_CP_RALS_H
 
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <vector>
 
-#include <btas/btas.h>
-#include <btas/error.h>
-#include "core_contract.h"
-#include "flatten.h"
-#include "khatri_rao_product.h"
-#include "randomized.h"
-#include "swap.h"
-#include "tucker.h"
-#include "converge_class.h"
-#include "rals_helper.h"
+#include <btas/generic/cp.h>
+#include <btas/generic/default_random_seed.h>
+#include <btas/generic/core_contract.h>
+#include <btas/generic/flatten.h>
+#include <btas/generic/khatri_rao_product.h>
+#include <btas/generic/randomized.h>
+#include <btas/generic/swap.h>
+#include <btas/generic/tucker.h>
+#include <btas/generic/converge_class.h>
+#include <btas/generic/rals_helper.h>
+#include <btas/generic/reconstruct.h>
 
-namespace btas {
+#ifdef _HAS_INTEL_MKL
+#include <mkl_trans.h>
+#endif
 
+namespace btas{
   /** \brief Computes the Canonical Product (CP) decomposition of an order-N
-    tensor using a regularized alternating least squares (RALS).
+    tensor using regularized alternating least squares (RALS).
 
     This computes the CP decomposition of btas::Tensor objects with row
     major storage only with fixed (compile-time) and variable (run-time)
     ranks. Also provides Tucker and randomized Tucker-like compressions coupled
-    with CP-ALS decomposition. Does not support strided ranges.
+    with CP-RALS decomposition. Does not support strided ranges.
 
     Synopsis:
     \code
     // Constructors
-    CP_RALS A(tensor)                    // CP_RALS object with empty factor
-    matrices
+    CP_RALS A(tensor)                   // CP_ALS object with empty factor
+                                        // matrices and no symmetries
+    CP_RALS A(tensor, symms)            // CP_ALS object with empty factor
+                                        // matrices and symmetries
 
     // Operations
     A.compute_rank(rank, converge_test)             // Computes the CP_RALS of tensor to
-                                                    // rank.
+                                                    // rank, rank build and HOSVD options
+
+    A.compute_rank_random(rank, converge_test)      // Computes the CP_RALS of tensor to
+                                                    // rank. Factor matrices built at rank
+                                                    // with random numbers
 
     A.compute_error(converge_test, omega)           // Computes the CP_RALS of tensor to
                                                     // 2-norm
@@ -44,6 +59,11 @@ namespace btas {
                                                     // rank with
                                                     // geometric steps of step between
                                                     // guesses.
+
+    A.compute_PALS(converge_test)           // computes CP_RALS of tensor to
+                                                    // rank = 3 * max_dim(tensor)
+                                                    // in 4 panels using a modified
+                                                    // HOSVD initial guess
 
     A.compress_compute_tucker(tcut_SVD, converge_test) // Computes Tucker decomposition
                                                     // using
@@ -69,40 +89,62 @@ namespace btas {
                                         // CP factor matrices
     \endcode
   */
-  template <typename Tensor, class ConvClass = NormCheck<Tensor>>
-  class CP_RALS {
-   public:
-    /// Constructor of object CP_RALS
-    /// \param[in] tensor The tensor object to be decomposed
-    CP_RALS(Tensor &tensor) :
-    tensor_ref(tensor), ndim(tensor_ref.rank()),
-    size(tensor_ref.size()), num_ALS(0) {
-#if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
-      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP_RALS requires LAPACKE or mkl_lapack");
-#endif
-#ifdef _HAS_INTEL_MKL
-#include <mkl_trans.h>
-#endif
+  template <typename Tensor, class ConvClass = NormCheck <Tensor> >
+  class CP_RALS : public CP<Tensor, ConvClass>
+        {
+public:
+    using CP<Tensor,ConvClass>::A;
+    using CP<Tensor,ConvClass>::ndim;
+    using CP<Tensor,ConvClass>::pseudoInverse;
+    using CP<Tensor,ConvClass>::normCol;
+    using CP<Tensor,ConvClass>::generate_KRP;
+    using CP<Tensor,ConvClass>::generate_V;
+    using CP<Tensor,ConvClass>::norm;
+    using CP<Tensor,ConvClass>::symmetries;
+
+    /// Create a CP ALS object, child class of the CP object
+    /// that stores the reference tensor.
+    /// Reference tensor has no symmetries.
+    /// \param[in] tensor the reference tensor to be decomposed.
+    CP_RALS(Tensor& tensor): CP<Tensor,ConvClass>(tensor.rank()), tensor_ref(tensor),
+            size(tensor.size()){
+      for(int i = 0; i < ndim; ++i){
+        symmetries.push_back(i);
+      }
+    }
+
+    /// Create a CP ALS object, child class of the CP object
+    /// that stores the reference tensor.
+    /// Reference tensor has symmetries.
+    /// Symmetries should be set such that the higher modes index
+    /// are set equal to lower mode indices (a 4th order tensor,
+    /// where the second & third modes are equal would have a
+    /// symmetries of {0,1,1,3}
+    /// \param[in] tensor the reference tensor to be decomposed.
+    /// \param[in] symms the symmetries of the reference tensor.
+    CP_RALS(Tensor& tensor, std::vector<int> & symms) : CP<Tensor, ConvClass>(tensor.rank()),
+    tensor_ref(tensor), size(tensor.size()){
+      symmetries = symms;
+      if (symmetries.size() > ndim) BTAS_EXCEPTION("Too many symmetries provided")
+      for(int i = 0; i < ndim; ++i){
+        if(symmetries[i] > i)
+        BTAS_EXCEPTION("Symmetries should always refer to factors at earlier positions");
+      }
+
     }
 
     ~CP_RALS() = default;
 
-    /// Computes decomposition of the order-N tensor \c tensor
-    /// with CP rank = \c rank .
-    /// Initial guess for factor matrices start at rank = 1
-    /// and build to rank = \c rank by increments of \c step, to minimize
-    /// error.
+#ifdef _HAS_INTEL_MKL
 
-    /// \param[in] rank The rank of the CP decomposition.
+    /// \breif Computes decomposition of the order-N tensor \c tensor
+    /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
+    /// Initial guess for factor matrices start at rank = max_dim(reference_tensor)
+    /// and builds rank \c panel times by \c RankStep * max_dim(reference_tensor) increments
+
     /// \param[in] converge_test Test to see if ALS is converged
-    /// \param[in] step CP_ALS built
-    /// from r =1 to r = \c rank. r increments by \c step; default = 1.
-    /// \param[in] SVD_initial_guess Should the initial factor matrices be
-    /// approximated with left singular values? default = false
-    /// \param[in] SVD_rank if \c
-    /// SVD_initial_guess is true specify the rank of the initial guess such that
-    /// SVD_rank <= rank. default = 0
-    /// \param[in] symm is \c tensor is symmetric in the last two dimension? default = false
+    /// \param[in] RankStep CP_ALS increment of the panel
+    /// \param[in] panels number of times the rank will be built
     /// \param[in]
     /// max_als Max number of iterations allowed to converge the ALS approximation default = 1e4
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
@@ -114,111 +156,77 @@ namespace btas {
     /// calculating the Khatri-Rao product? Default = true.
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
-    /// false.
-
-    double compute_rank(int rank, ConvClass & converge_test, int step = 1,
-                        bool SVD_initial_guess = false, int SVD_rank = 0, bool symm = false, int max_als = 1e4,
-                        bool fast_pI = true, bool calculate_epsilon = false, bool direct = true){
-      if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
-      if (SVD_initial_guess && SVD_rank > rank) BTAS_EXCEPTION("Initial guess is larger than the desired CP rank");
+    /// false && ConvClass != FitCheck.
+    double compute_PALS(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4,
+                                int max_als = 20,bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) override{
+      if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
       double epsilon = -1.0;
-      build(rank, converge_test, direct, max_als, calculate_epsilon, step, epsilon, SVD_initial_guess, SVD_rank, fast_pI, symm);
-      std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
+      int count = 0;
+      // Find the largest rank this will be the first panel
+      auto max_dim = tensor_ref.extent(0);
+      for(int i = 1; i < ndim; ++i){
+        auto dim = tensor_ref.extent(i);
+        max_dim = ( dim > max_dim ? dim : max_dim);
+      }
 
+      while(count < panels){
+        auto converge_test = converge_list[count];
+        // Use tucker initial guess (SVD) to compute the first panel
+        if(count == 0) {
+          build(max_dim, converge_test, direct, max_als, calculate_epsilon, 1, epsilon, true, max_dim, fast_pI);
+        }
+          // All other panels build the rank buy RankStep variable
+        else {
+          // Always deal with the first matrix push new factors to the end of A
+          // Kick out the first factor when it is replaced.
+          // This is the easiest way to resize and preserve the columns
+          // (if this is rebuilt with rank as columns this resize would be easier)
+          int rank = A[0].extent(1), rank_new = rank +  RankStep * max_dim;
+          for (int i = 0; i < ndim; ++i) {
+            int row_extent = A[0].extent(0);
+            Tensor b(Range{Range1{A[0].extent(0)}, Range1{rank_new}});
+
+            // Move the old factor to the new larger matrix
+            {
+              auto lower_old = {0, 0}, upper_old = {row_extent, rank};
+              auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
+              auto A_itr = A[0].begin();
+              for(auto iter = old_view.begin(); iter != old_view.end(); ++iter, ++A_itr){
+                *(iter) = *(A_itr);
+              }
+            }
+
+            // Fill in the new columns of the factor with random numbers
+            {
+              auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
+              auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
+              std::mt19937 generator(random_seed_accessor());
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
+              for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
+                *(iter) = distribution(generator);
+              }
+            }
+
+            A.erase(A.begin());
+            A.push_back(b);
+            // replace the lambda matrix when done with all the factors
+            if (i + 1 == ndim) {
+              b.resize(Range{Range1{rank_new}});
+              for (int k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
+              A.erase(A.begin());
+              A.push_back(b);
+            }
+            // normalize the factor (don't replace the previous lambda matrix)
+            normCol(0);
+          }
+          ALS(rank_new, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
+        }
+        count++;
+      }
+      //std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
       return epsilon;
     }
 
-    /// Computes the decomposition of the order-N tensor \c tensor
-    /// to \f$ rank \leq \f$ \c max_als such that
-    /// \f[ || T_{exact} - T_{approx}||_F = \epsilon \leq tcutCP \f]
-    /// with rank incrementing by \c step.
-
-    /// \param[in] converge_test Test to see if ALS is converged
-    /// \param[in] tcutCP How small \f$\epsilon\f$ must be to consider the CP
-    /// decomposition converged. Default = 1e-2.
-    /// \param[in] step CP_ALS built from r =1 to r = \c rank. r
-    /// increments by \c step; default = 1.
-    /// \param[in] max_rank The highest rank
-    /// approximation computed before giving up on CP-ALS. Default = 1e5.
-    /// \param[in] SVD_initial_guess Should the initial factor matrices be
-    /// approximated with left singular values? default = false
-    /// \param[in] SVD_rank if \c
-    /// SVD_initial_guess is true specify the rank of the initial guess such that
-    /// SVD_rank <= rank. default = true
-    /// \param[in] symm is \c tensor is symmetric in the last two dimension? default = false
-    /// \param[in] max_als Max number of iterations allowed to converge the ALS
-    /// approximation default = 1e4
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    /// default = true
-    /// \param[in] direct Should the
-    /// CP decomposition be computed without calculating the
-    /// Khatri-Rao product? Default = true.
-    /// \returns 2-norm error
-    /// between exact and approximate tensor, \f$ \epsilon \f$
-    double  compute_error(ConvClass & converge_test, double tcutCP = 1e-2, int step = 1,
-                          int max_rank = 1e5, bool SVD_initial_guess = false, int SVD_rank = 0,
-                          bool symm = false, double max_als = 1e4, bool fast_pI = true, bool direct = true){
-      int rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
-      double epsilon = tcutCP + 1;
-      while (epsilon > tcutCP && rank < max_rank) {
-        build(rank, converge_test, direct, max_als, true, step, epsilon, SVD_initial_guess, SVD_rank, fast_pI, symm);
-        rank++;
-      }
-      return epsilon;
-    }
-
-    /// with \f$ CP rank \leq \f$ \c desired_rank \n
-    /// Initial guess for factor matrices start at rank = 1
-    /// and build to rank = \c rank by geometric steps of \c geometric_step, to
-    /// minimize error.
-
-    /// \param[in] desired_rank Rank of CP decomposition, r, will build by
-    /// geometric step until \f$ r \leq \f$ \c desired_rank.
-    /// \param[in] converge_test Test to see if ALS is converged
-    /// \param[in] geometric_step CP_ALS built from r =1 to r = \c rank. r increments by r *=
-    /// \c geometric_step; default = 2.
-    /// \param[in] SVD_initial_guess Should the initial factor matrices be
-    /// approximated with left singular values? default = false
-    /// \param[in] SVD_rank if \c
-    /// SVD_initial_guess is true specify the rank of the initial guess such that
-    /// SVD_rank <= rank. default = true
-    /// \param[in] symm is \c tensor is symmetric in the last two dimension? default = false
-    /// \param[in] max_als Max number of iterations allowed to
-    /// converge the ALS approximation. default = 1e4
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    /// default = false
-    /// \param[in] calculate_epsilon Should the
-    /// 2-norm error be calculated \f$ ||T_{exact} - T_{approx}|| = \epsilon \f$.
-    /// Default = false.
-    /// \param[in] direct Should the CP
-    /// decomposition be computed without calculating the Khatri-Rao product?
-    /// Default = true.
-    /// \returns 2-norm error
-    /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
-    /// \f$ \epsilon \f$
-    double compute_geometric(int desired_rank, ConvClass & converge_test, int geometric_step = 2,
-                             bool SVD_initial_guess = false, int SVD_rank = 0, bool symm = false, int max_als = 1e4,
-                             bool fast_pI = true, bool calculate_epsilon = false, bool direct = true) {
-      if (geometric_step <= 0) {
-        BTAS_EXCEPTION("The step size must be larger than 0");
-      }
-      if (SVD_initial_guess && SVD_rank > desired_rank) {
-        BTAS_EXCEPTION("Initial guess is larger than desired CP rank");
-      }
-      double epsilon = -1.0;
-      int rank = (SVD_initial_guess) ? SVD_rank : 1;
-
-      while (rank <= desired_rank && rank < max_als) {
-        build(rank, converge_test, direct, max_als, calculate_epsilon, geometric_step, epsilon, SVD_initial_guess, SVD_rank, fast_pI, symm);
-        if (geometric_step <= 1)
-          rank++;
-        else
-          rank *= geometric_step;
-      }
-      return epsilon;
-    }
-
-#ifdef _HAS_INTEL_MKL
 
     /// \brief Computes an approximate core tensor using
     /// Tucker decomposition, e.g.
@@ -246,7 +254,7 @@ namespace btas {
     /// \param[in]
     /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{exact} -
     /// T_{approx}|| = \epsilon \f$ . Default = true.
-    /// \param[in] step CP_RALS built
+    /// \param[in] step CP_ALS built
     /// from r =1 to r = \c rank. r increments by \c step; default = 1.
     /// \param[in]
     /// max_rank The highest rank approximation computed before giving up on
@@ -264,12 +272,12 @@ namespace btas {
     /// SVD_rank <= rank. default = true
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// default = false
-    /// \returns 2-norm error
-    /// between exact and approximate tensor, -1.0 if calculate_epsilon = false,
-    /// \f$ \epsilon \f$
+    /// \returns 2-norm error, \f$ \epsilon \f$,
+    /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
+    //  ConvClass != FitCheck.
     double compress_compute_tucker(double tcutSVD, ConvClass & converge_test, bool opt_rank = true, double tcutCP = 1e-2, int rank = 0,
                                    bool direct = true, bool calculate_epsilon = true, int step = 1, int max_rank = 1e4,
-                                   double max_als = 1e4, double ALStol = 0.1, bool SVD_initial_guess = false,
+                                   double max_als = 1e4, bool SVD_initial_guess = false,
                                    int SVD_rank = 0, bool fast_pI = false) {
       // Tensor compression
       std::vector<Tensor> transforms;
@@ -279,9 +287,10 @@ namespace btas {
 
       // CP decomposition
       if (opt_rank)
-        epsilon = compute_error(tcutCP, converge_test, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, direct);
+        epsilon = this->compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, max_als, fast_pI, direct);
       else
-        epsilon = compute_rank(rank, nullptr, step, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, calculate_epsilon, direct);
+        epsilon = this->compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, max_als, fast_pI, calculate_epsilon, direct);
+
 
       // scale factor matrices
       for (int i = 0; i < ndim; i++) {
@@ -327,7 +336,7 @@ namespace btas {
     /// \param[in] calculate_epsilon Should the 2-norm error be calculated
     /// \f$ ||T_exact - T_approx|| = \epsilon \f$. Default = true.
     /// \param[in] step
-    /// CP_RALS built from r =1 to r = rank. r increments by step; default = 1.
+    /// CP_ALS built from r =1 to r = rank. r increments by step; default = 1.
     /// \param[in] max_rank The highest rank approximation computed before giving
     /// up on CP-ALS. Default = 1e5.
     /// \param[in] max_als If CP decomposition is to
@@ -343,9 +352,9 @@ namespace btas {
     /// SVD_rank <= rank. default = true
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// default = false
-    /// \returns
-    /// 2-norm error between exact and approximate tensor, -1.0 if
-    /// calculate_epsilon = false, \f$ \epsilon \f$
+    /// \returns 2-norm error, \f$ \epsilon \f$,
+    /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
+    //  ConvClass != FitCheck.
     double compress_compute_rand(int desired_compression_rank, ConvClass & converge_test, int oversampl = 10, int powerit = 2,
                                  bool opt_rank = true, double tcutCP = 1e-2, int rank = 0, bool direct = true,
                                  bool calculate_epsilon = false, int step = 1, int max_rank = 1e5, double max_als = 1e5,
@@ -355,10 +364,11 @@ namespace btas {
       size = tensor_ref.size();
       double epsilon = -1.0;
 
+      // CP decomposition
       if (opt_rank)
-        epsilon = compute_error(tcutCP, converge_test, step, max_rank, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, direct);
+        epsilon = this->compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, max_als, fast_pI, direct);
       else
-        epsilon = compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, false, max_als, fast_pI, calculate_epsilon, direct);
+        epsilon = this->compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, max_als, fast_pI, calculate_epsilon, direct);
 
       // scale factor matrices
       for (int i = 0; i < ndim; i++) {
@@ -372,89 +382,25 @@ namespace btas {
 
 #endif  //_HAS_INTEL_MKL
 
-    /// returns the rank \c rank optimized factor matrices
-    /// \return Factor matrices stored in a vector. For example, a order-3
-    /// tensor has factor matrices in positions [0]-[2]. In [3] there is scaling
-    /// factor vector of size \c rank
-    /// \throw  Exception if the CP decomposition is
-    /// not yet computed.
+  protected:
+    int size;                   // number of elements in tensor_ref
+    Tensor & tensor_ref;        // Tensor to be decomposed
+    RALSHelper<Tensor> helper;  // Helper object to compute regularized steps
 
-    std::vector<Tensor> get_factor_matrices() {
-      if (!A.empty())
-        return A;
-      else
-        BTAS_EXCEPTION("Attempting to return a NULL object. Compute CP decomposition first.");
-    }
-
-    /// Function that uses the factor matrices from the CP
-    /// decomposition and reconstructs the
-    /// approximated tensor
-    /// \returns The tensor approxmimated from the factor
-    /// matrices of the CP decomposition.
-    /// \throws Exception if the CP decomposition is
-    /// not yet computed.
-    Tensor reconstruct() {
-      if(A.empty())
-        BTAS_EXCEPTION("Factor matrices have not been computed. You must first calculate CP decomposition.");
-
-      // Find the dimensions of the reconstructed tensor
-      std::vector<size_t> dimensions;
-      for (int i = 0; i < ndim; i++) {
-        dimensions.push_back(A[i].extent(0));
-      }
-
-      // Scale the first factor matrix, this choice is arbitrary
-      auto rank = A[0].extent(1);
-      for (int i = 0; i < rank; i++) {
-        scal(A[0].extent(0), A[ndim](i), std::begin(A[0]) + i, rank);
-      }
-
-      // Make the Khatri-Rao product of all the factor matrices execpt the last dimension
-      Tensor KRP = A[0];
-      Tensor hold = A[0];
-      for (int i = 1; i < A.size() - 2; i++) {
-        khatri_rao_product(KRP, A[i], hold);
-        KRP = hold;
-      }
-
-      // contract the rank dimension of the Khatri-Rao product with the rank dimension of
-      // the last factor matrix. hold is now the reconstructed tensor
-      hold = Tensor(KRP.extent(0), A[ndim - 1].extent(0));
-      gemm(CblasNoTrans, CblasTrans, 1.0, KRP, A[ndim - 1], 0.0, hold);
-
-      // resize the reconstructed tensor to the correct dimensions
-      hold.resize(dimensions);
-
-      // remove the scaling applied to the first factor matrix
-      for (int i = 0; i < rank; i++) {
-        scal(A[0].extent(0), 1/A[ndim](i), std::begin(A[0]) + i, rank);
-      }
-      return hold;
-    }
-
-
-   private:
-    std::vector<Tensor> A;  // The vector of factor matrices
-    Tensor &tensor_ref;     // The reference tensor being decomposed
-    const int ndim;         // Number of modes in the reference tensor
-    int size;               // Number of elements in the reference tensor
-    int num_ALS;            // Total number of ALS iterations required to compute the CP decomposition
-    RALSHelper<Tensor> helper;
-
-    /// Can create an initial guess by computing the SVD of each mode
+    /// Creates an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
     /// The rest of the factor matrix is filled with random numbers
-    /// Also build factor matricies starting with R=(1,provided factor rank, SVD_rank)
+    /// Builds factor matricies starting with R=(1 or SVD_rank)
     /// and moves to R = \c rank
-    /// incrementing column dimension, R, by step
+    /// incrementing column dimension, R, by \c step
 
     /// \param[in] rank The rank of the CP decomposition.
-    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in] converge_test Test to see if ALS is converged.
     /// \param[in] direct The CP decomposition be computed without calculating the
     /// Khatri-Rao product?
     /// \param[in] max_als If CP decomposition is to finite
     /// error, max_als is the highest rank approximation computed before giving up
-    /// on CP-ALS. Default = 1e5.
+    /// on CP-ALS.
     /// \param[in] calculate_epsilon Should the 2-norm
     /// error be calculated \f$ ||T_{\rm exact} - T_{\rm approx}|| = \epsilon \f$ .
     /// \param[in] step
@@ -464,13 +410,12 @@ namespace btas {
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    /// \param[in] symm is \c tensor is symmetric in the last two dimension?
 
     void build(int rank, ConvClass & converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
-               bool SVD_initial_guess, int SVD_rank, bool & fast_pI, bool symm) {
-    // If its the first time into build and SVD_initial_guess
-    // build and optimize the initial guess based on the left
-    // singular vectors of the reference tensor.
+               bool SVD_initial_guess, int SVD_rank, bool & fast_pI) override {
+      // If its the first time into build and SVD_initial_guess
+      // build and optimize the initial guess based on the left
+      // singular vectors of the reference tensor.
 #ifdef _HAS_INTEL_MKL
       if (A.empty() && SVD_initial_guess) {
         if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
@@ -479,7 +424,10 @@ namespace btas {
         A = std::vector<Tensor>(ndim);
 
         // Determine which factor matrices one can fill using SVD initial guess
-        for(int i = 0; i < ndim; i++){
+        // Don't do the modes that are symmetric to other modes
+        for(int i = 1; i < ndim; i++){
+          auto tmp = symmetries[i];
+          if(tmp != i) continue;
           if(tensor_ref.extent(i) < SVD_rank){
             modes_w_dim_LT_svd.push_back(i);
           }
@@ -489,8 +437,14 @@ namespace btas {
         // because we contract X X^T (where X is reference tensor) to make finding
         // singular vectors an eigenvalue problem some factor matrices will not be
         // full rank;
+        A[0] = Tensor(tensor_ref.extent(0), SVD_rank);
+        A[0].fill(0.0);
 
-        for(int i = 0; i < ndim; i++){
+        for(int i = 1; i < ndim; i++){
+          // If a mode is symmetric to another mode skip this whole process
+          // Will set the modes equal at the end
+          auto tmp = symmetries[i];
+          if(tmp != i) continue;
           int R = tensor_ref.extent(i);
           Tensor S(R,R), lambda(R);
 
@@ -517,17 +471,15 @@ namespace btas {
         }
 
         //srand(3);
-        std::mt19937 generator(3);
+        std::mt19937 generator(random_seed_accessor());
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
+        std::uniform_real_distribution<> distribution(-1.0, 1.0);
         for(auto& i: modes_w_dim_LT_svd){
           int R = tensor_ref.extent(i);
-          int num_elements = (SVD_rank - R) * R;
           auto lower_bound = {0, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
-          std::normal_distribution<double> distribution(0, 2.0);
           for(auto iter = view.begin(); iter != view.end(); ++iter){
-            //*(iter) = rand() % num_elements;
             *(iter) = distribution(generator);
           }
         }
@@ -536,20 +488,28 @@ namespace btas {
         // set the values al lambda, the weigt of each order 1 tensor
         Tensor lambda(Range{Range1{SVD_rank}});
         A.push_back(lambda);
-        for(auto i = 0; i < ndim; ++i){
-          normCol(A[i]);
+        for(auto i = 1; i < ndim; ++i){
+          // normalize the columns of matrices that were set
+          // i.e. not symmetric to another mode.
+          auto tmp = symmetries[i];
+          if(tmp == i)
+            this->normCol(A[i]);
+          // Then make sure the summetric modes are set here
+          A[i] = A[tmp];
         }
 
         helper = RALSHelper<Tensor>(A);
 
         // Optimize this initial guess.
-        ALS(SVD_rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
+        ALS(SVD_rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
 #else  // _HAS_INTEL_MKL
       if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
 #endif // _HAS_INTEL_MKL
       // This loop keeps track of column dimension
+      bool opt_in_for_loop = false;
       for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
+        opt_in_for_loop = true;
         // This loop walks through the factor matrices
         for (auto j = 0; j < ndim; ++j) {  // select a factor matrix
           // If no factor matrices exists, make a set of factor matrices
@@ -559,16 +519,16 @@ namespace btas {
             Tensor a(Range{tensor_ref.range().range(j), Range1{i + 1}});
             a.fill(rand());
             A.push_back(a);
-            normCol(j);
-            if (j  == ndim) {
+            this->normCol(j);
+            if (j  == ndim - 1) {
               Tensor lam(Range{Range1{i + 1}});
               A.push_back(lam);
             }
           }
 
-          // If the factor matrices have memory allocated, rebuild each matrix
-          // with new column dimension col_dimension_old + skip
-          // fill the new columns with random numbers and normalize the columns
+            // If the factor matrices have memory allocated, rebuild each matrix
+            // with new column dimension col_dimension_old + skip
+            // fill the new columns with random numbers and normalize the columns
           else {
             int row_extent = A[0].extent(0), rank_old = A[0].extent(1);
             Tensor b(Range{A[0].range().range(0), Range1{i + 1}});
@@ -585,8 +545,8 @@ namespace btas {
             {
               auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(3);
-              std::normal_distribution<double> distribution(0, 2);
+              std::mt19937 generator(random_seed_accessor());
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
               }
@@ -602,18 +562,65 @@ namespace btas {
             }
           }
         }
-        // If column is already normalized will return 1
-        for(auto i = 0; i < ndim; ++i){
-          normCol(i);
-        }
-
-        helper = RALSHelper<Tensor>(A);
         // compute the ALS of factor matrices with rank = i + 1.
-        ALS(i + 1, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI, symm);
+        helper = RALSHelper<Tensor>(A);
+        ALS(i + 1, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
+      }
+      auto factors_set = false;
+      if(factors_set && ! opt_in_for_loop){
+        helper = RALSHelper<Tensor>(A);
+        ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
     }
 
-    /// performs the ALS method to minimize the loss function for a single rank
+    /// Create a rank \c rank initial guess using
+    /// random numbers from a uniform distribution
+
+    /// \param[in] rank The rank of the CP decomposition.
+    /// \param[in] converge_test Test to see if ALS is converged.
+    /// \param[in] direct The CP decomposition be computed without calculating the
+    /// Khatri-Rao product?
+    /// \param[in] max_als If CP decomposition is to finite
+    /// error, max_als is the highest rank approximation computed before giving up
+    /// on CP-ALS.
+    /// \param[in] calculate_epsilon Should the 2-norm
+    /// error be calculated \f$ ||T_{\rm exact} - T_{\rm approx}|| = \epsilon \f$ .
+    /// \param[in] step
+    /// CP_ALS built from r =1 to r = rank. r increments by step.
+    /// \param[in, out] epsilon The 2-norm
+    /// error between the exact and approximated reference tensor
+    /// \param[in] SVD_initial_guess build inital guess from left singular vectors
+    /// \param[in] SVD_rank rank of the initial guess using left singular vector
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    void build_random(int rank, ConvClass & converge_test, bool direct, int max_als, bool calculate_epsilon, double &epsilon,
+                      bool & fast_pI) override{
+      std::mt19937 generator(random_seed_accessor());
+      //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
+      std::uniform_real_distribution<> distribution(-1.0, 1.0);
+      for(int i = 0; i < this->ndim; ++i){
+        // If this mode is symmetric to a previous mode, set it equal to
+        // previous mode, else make a random matrix.
+        auto tmp = symmetries[i];
+        if(tmp != i){
+          A.push_back(A[tmp]);
+        } else{
+          Tensor a(tensor_ref.extent(i), rank);
+          for(auto iter = a.begin(); iter != a.end(); ++iter){
+            *(iter) = distribution(generator);
+          }
+          this->A.push_back(a);
+          this->normCol(i);
+        }
+      }
+      Tensor lambda(rank);
+      lambda.fill(0.0);
+      this->A.push_back(lambda);
+
+      helper = RALSHelper<Tensor>(A);
+      ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
+    }
+
+    /// performs the RALS method to minimize the loss function for a single rank
     /// \param[in] rank The rank of the CP decomposition.
     /// \param[in] converge_test Test to see if ALS is converged
     /// \param[in] dir The CP decomposition be computed without calculating the
@@ -629,23 +636,14 @@ namespace btas {
     /// \param[in, out] epsilon The 2-norm
     /// error between the exact and approximated reference tensor
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    /// \param[in] symm is \c tensor is symmetric in the last two dimension?
 
-    void ALS(int rank, ConvClass & converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon, bool & fast_pI, bool symm) {
+    void ALS(int rank, ConvClass & converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon, bool & fast_pI) {
       auto count = 0;
 
       double s = 0.0;
       const auto s0 = 1.0;
       std::vector<double> lambda(ndim, 1.0);
       const auto alpha = 0.8;
-      if(symm){
-        A[ndim - 1] = A[ndim -2];
-      }
-      bool rankGTdims = false;
-      for(int i = 0; i < ndim; ++i){
-        rankGTdims = rank > tensor_ref.extent(i);
-        if(rankGTdims) break;
-      }
 
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
@@ -654,26 +652,33 @@ namespace btas {
       bool matlab = fast_pI;
       while(count < max_als && !is_converged){
         count++;
-
-        for (auto i = 0; i < ((symm) ? ndim - 1: ndim); i++) {
-          if (dir)
-            direct(i, rank, symm, fast_pI, matlab, lambda[i], s);
-          else
-            update_w_KRP(i, rank, symm, fast_pI, lambda[i], s);
-
-          lambda[i] = (lambda[i] * (s * s) / (s0 * s0)) * alpha + (1 - alpha) * lambda[i];
-        }
-        if(symm){
-          A[ndim - 1] = A[ndim - 2];
+        this->num_ALS++;
+        for (auto i = 0; i < ndim; i++) {
+          auto tmp = symmetries[i];
+          if (tmp != i){
+            A[i] = A[tmp];
+            lambda[i] = lambda[tmp];
+          } else {
+            if (dir) {
+              direct(i, rank, fast_pI, matlab, lambda[i], s, converge_test);
+            } else {
+              update_w_KRP(i, rank, fast_pI, lambda[i], s, converge_test);
+            }
+            lambda[i] = (lambda[i] * (s * s) / (s0 * s0)) * alpha + (1 - alpha) * lambda[i];
+          }
         }
         is_converged = converge_test(A);
       }
 
       // Checks loss function if required
       if (calculate_epsilon) {
-        epsilon = norm(reconstruct() - tensor_ref);
+        if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+          detail::get_fit(converge_test, epsilon);
+          epsilon = 1 - epsilon;
+        } else{
+          epsilon = this->norm(this->reconstruct() - tensor_ref);
+        }
       }
-      num_ALS += count;
     }
 
     /// Calculates an optimized CP factor matrix using Khatri-Rao product
@@ -683,9 +688,11 @@ namespace btas {
     /// \param[in] rank The current rank, column dimension of the factor
     /// matrices
     /// iteration factor matrix
-    /// \param[in] symm is \c tensor is symmetric in the last two dimension?
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void update_w_KRP(int n, int rank, bool symm, bool & fast_pI, double lambda, double & s) {
+    /// \param[in] lambda regularization parameter
+    /// \param[in, out] s regularization step size, returns updated stepsize based on ALS iteration
+    /// \param[in] converge_test test to see if the ALS is converged
+    void update_w_KRP(int n, int rank, bool & fast_pI, double lambda, double & s, ConvClass & converge_test) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -732,6 +739,10 @@ namespace btas {
         scal(lambda, LamA);
         temp += LamA;
       }
+
+      if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+        converge_test.set_MtKRP(temp);
+      }
       // contract the product from above with the psuedoinverse of the Hadamard
       // produce an optimize factor matrix
       gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
@@ -748,23 +759,6 @@ namespace btas {
       A[n] = an;
     }
 
-    // For debug purposes
-    void print(Tensor & A){
-      if(A.rank() == 2){
-        for(int i = 0; i < A.extent(0); i++){
-          for(int j = 0; j < A.extent(1); j++) {
-            std::cout << A(i,j) << " ";
-          }
-          std::cout << std::endl;
-        }
-
-      }
-      else
-        for(auto& i: A)
-          std::cout << i << std::endl;
-    }
-
-
     /// Computes an optimized factor matrix holding all others constant.
     /// No Khatri-Rao product computed, immediate contraction
     // Does this by first contracting a factor matrix with the refrence tensor
@@ -774,15 +768,19 @@ namespace btas {
     // T(I1, I2, I3, I4)
     // T(I1, I2, I3, I4) * A(I4, R) = T'(I1, I2, I3, R)
     // T'(I1, I2, I3, R) (*) A(I3, R) = T'(I1, I2, R) (contract along I3, Hadamard along R)
-    // T'(I1, I2, R) (*) A(I1, R) = T'(I2, R) = A(I2, R)
+    // T'(I1, I2, R) (*) A(I1, R) = T'(I2, R) = A(I2, R) * V(R, R)
 
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
-    /// \param[in] symm does the reference tensor have symmetry in the last two modes
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-
-    void direct(int n, int rank, bool symm, bool & fast_pI, bool & matlab, double & lambda, double & s) {
-      //std::chrono::duration<double> time = t2 - t1;
+    /// return if computing the fast_pI was successful.
+    /// \param[in, out] matlab If \c fast_pI = true then try to solve VA = B instead of taking pseudoinverse
+    /// in the same manner that matlab would compute the inverse.
+    /// return if computing the inverse in this was was successful
+    /// \param[in] lambda regularization parameter
+    /// \param[in, out] s regularization step size, returns updated stepsize based on ALS iteration
+    /// \param[in] converge_test test to see if the ALS is converged
+    void direct(int n, int rank, bool & fast_pI, bool & matlab, double lambda, double & s, ConvClass & converge_test) {
 
       // Determine if n is the last mode, if it is first contract with first mode
       // and transpose the product
@@ -806,15 +804,11 @@ namespace btas {
       // Resize the tensor which will store the product of tensor_ref and the first factor matrix
       Tensor temp = Tensor(size / tensor_ref.extent(contract_dim), rank);
       tensor_ref.resize(Range{
-                          Range1{last_dim ? tensor_ref.extent(contract_dim) : size / tensor_ref.extent(contract_dim)},
-                          Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
+              Range1{last_dim ? tensor_ref.extent(contract_dim) : size / tensor_ref.extent(contract_dim)},
+              Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
 
-      //auto t1 = std::chrono::high_resolution_clock::now();
       // contract tensor ref and the first factor matrix
       gemm((last_dim ? CblasTrans : CblasNoTrans), CblasNoTrans, 1.0, tensor_ref, A[contract_dim], 0.0, temp);
-      //auto t2 = std::chrono::high_resolution_clock::now();
-      //std::chrono::duration<double> time = t2 - t1;
-      //gemm_first += time.count();
 
       // Resize tensor_ref
       tensor_ref.resize(R);
@@ -847,7 +841,6 @@ namespace btas {
           // If the code hasn't hit the mode of interest yet, it will contract
           // over the middle dimension and sum over the rank.
         else if (contract_dim > n) {
-          //t1 = std::chrono::high_resolution_clock::now();
           auto idx1 = temp.extent(0);
           auto idx2 = temp.extent(1);
           for(int i = 0; i < idx1; i++){
@@ -861,16 +854,12 @@ namespace btas {
               }
             }
           }
-          //t2 = std::chrono::high_resolution_clock::now();
-          //time = t2 - t1;
-          //gemm_second += time.count();
           temp = contract_tensor;
         }
 
           // If the code has passed the mode of interest, it will contract over
           // the middle dimension and sum over rank * mode n dimension
         else {
-          //t1 = std::chrono::high_resolution_clock::now();
           int idx1 = temp.extent(0), idx2 = temp.extent(1), offset = offset_dim;
           for(int i = 0; i < idx1; i++){
             auto * contract_ptr = contract_tensor.data() + i * pseudo_rank;
@@ -885,9 +874,6 @@ namespace btas {
               }
             }
           }
-          //t2 = std::chrono::high_resolution_clock::now();
-          //time = t2 - t1;
-          //gemm_third += time.count();
           temp = contract_tensor;
         }
 
@@ -901,7 +887,6 @@ namespace btas {
       // out the 0th mode here, the above algorithm can't perform this
       // contraction because the mode of interest is coupled with the rank
       if (n != 0) {
-        //t1 = std::chrono::high_resolution_clock::now();
         temp.resize(Range{Range1{dimensions[0]}, Range1{dimensions[n]}, Range1{rank}});
         Tensor contract_tensor(Range{Range1{temp.extent(1)}, Range1{rank}});
         contract_tensor.fill(0.0);
@@ -917,9 +902,6 @@ namespace btas {
             }
           }
         }
-        //t2 = std::chrono::high_resolution_clock::now();
-        //time = t2 - t1;
-        //gemm_fourth += time.count();
         temp = contract_tensor;
       }
 
@@ -929,9 +911,15 @@ namespace btas {
       temp += LamA;
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
-      //t1 = std::chrono::high_resolution_clock::now();
+
+      if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+        converge_test.set_MtKRP(temp);
+      }
+
 #ifdef _HAS_INTEL_MKL
       if(fast_pI && matlab) {
+        // This method computes the inverse quickly for a square matrix
+        // based on MATLAB's implementation of A / B operator.
         btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
         piv.fill(0);
 
@@ -939,9 +927,10 @@ namespace btas {
         int LDB = temp.extent(0);
         auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, a.data(), rank, piv.data(), temp.data(), rank);
         if (info == 0) {
-            an = temp;
+          an = temp;
         }
         else{
+          // If inverse fails resort to the pseudoinverse
           std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
           matlab = false;
         }
@@ -955,11 +944,7 @@ namespace btas {
         gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
       }
 #endif
-      //t2 = std::chrono::high_resolution_clock::now();
-      //time = t2 - t1;
-      //gemm_wPI += time.count();
 
-      //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
 
       // Normalize the columns of the new factor matrix and update
       normCol(an);
@@ -970,217 +955,8 @@ namespace btas {
       A[n] = an;
     }
 
-    /// Generates V by first Multiply A^T.A then Hadamard product V(i,j) *=
-    /// A^T.A(i,j);
-    /// \param[in] n The mode being optimized, all other modes held constant
-    /// \param[in] rank The current rank, column dimension of the factor matrices
+  };
 
-    Tensor generate_V(int n, int rank, double lambda) {
-      Tensor V(rank, rank);
-      V.fill(1.0);
-      auto * V_ptr = V.data();
-      for (auto i = 0; i < ndim; ++i) {
-        if (i != n) {
-          Tensor lhs_prod(rank, rank);
-          gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
-          const auto * lhs_ptr = lhs_prod.data();
-          for(int j = 0; j < rank*rank; j++)
-            *(V_ptr + j) *= *(lhs_ptr +j);
-        }
-      }
+} // namespace btas
 
-      for(auto j = 0; j < rank; ++j){
-        V(j,j) += lambda;
-      }
-      return V;
-    }
-
-    // Keep track of the Left hand Khatri-Rao product of matrices and
-    // Continues to multiply be right hand products, skipping
-    // the matrix at index n.
-    /// \param[in] n The mode being optimized, all other modes held constant
-    /// \param[in] rank The current rank, column dimension of the factor matrices
-    /// \param[in] forward Should the Khatri-Rao product move through the factor
-    /// matrices in the forward (0 to ndim) or backward (ndim to 0) direction
-
-    Tensor generate_KRP(int n, int rank, bool forward) {
-      Tensor temp(Range{Range1{A.at(n).extent(0)}, Range1{rank}});
-      Tensor left_side_product(Range{Range1{rank}, Range1{rank}});
-
-      if (forward) {
-        for (auto i = 0; i < ndim; ++i) {
-          if ((i == 0 && n != 0) || (i == 1 && n == 0)) {
-            left_side_product = A.at(i);
-          } else if (i != n) {
-            khatri_rao_product(left_side_product, A[i], temp);
-            left_side_product = temp;
-          }
-        }
-      }
-
-      else {
-        for (auto i = ndim - 1; i > -1; --i) {
-          if ((i == ndim - 1 && n != ndim - 1) || (i == ndim - 2 && n == ndim - 1)) {
-            left_side_product = A.at(i);
-          }
-
-          else if (i != n) {
-            khatri_rao_product<Tensor>(left_side_product, A[i], temp);
-            left_side_product = temp;
-          }
-        }
-      }
-      return left_side_product;
-    }
-
-    /// \param[in] factor Which factor matrix to normalize
-    /// \param[in] col Which column of the factor matrix to normalize
-    /// \return The norm of the col column of the factor factor matrix
-
-    Tensor normCol(int factor) {
-      if(factor >= ndim) BTAS_EXCEPTION("Factor is out of range");
-      auto rank = A[factor].extent(1);
-      auto size = A[factor].size();
-      Tensor lambda(rank);
-      lambda.fill(0.0);
-      auto A_ptr = A[factor].data();
-      auto lam_ptr = lambda.data();
-      for(int i = 0; i < size; ++i){
-        *(lam_ptr + i % rank) += *(A_ptr + i) * *(A_ptr + i);
-      }
-      for(int i = 0; i < rank; ++i){
-        *(lam_ptr + i) = sqrt(*(lam_ptr + i));
-      }
-      for(int i = 0; i < size; ++i){
-        *(A_ptr + i) /= *(lam_ptr + i % rank);
-      }
-      return lambda;
-    }
-
-    /// \param[in, out] Mat The matrix whose column will be normalized, return
-    /// column col normalized matrix.
-    /// \param[in] col The column of matrix Mat to be
-    /// normalized.
-    /// \return the norm of the col column of the matrix Mat
-
-    void normCol(Tensor &Mat) {
-      if(Mat.rank() > 2) BTAS_EXCEPTION("normCol with rank > 2 not yet supported");
-      auto rank = Mat.extent(1);
-      auto size = Mat.size();
-      A[ndim].fill(0.0);
-      auto Mat_ptr = Mat.data();
-      auto A_ptr = A[ndim].data();
-      for(int i = 0; i < size; ++i){
-        *(A_ptr + i % rank) += *(Mat_ptr + i) * *(Mat_ptr + i);
-      }
-      for(int i = 0; i < rank; ++i){
-        *(A_ptr + i) = sqrt(*(A_ptr + i));
-      }
-      for(int i = 0; i < size; ++i){
-        *(Mat_ptr + i) /= *(A_ptr + i % rank);
-      }
-    }
-
-    /// \param[in] Mat Calculates the 2-norm of the matrix mat
-    /// \return the 2-norm.
-
-    double norm(const Tensor &Mat) { return sqrt(dot(Mat, Mat)); }
-
-    /// SVD referencing code from
-    /// http://www.netlib.org/lapack/explore-html/de/ddd/lapacke_8h_af31b3cb47f7cc3b9f6541303a2968c9f.html
-    /// Fast pseudo-inverse algorithm described in
-    /// https://arxiv.org/pdf/0804.4809.pdf
-
-    /// \param[in] n The mode being optimized, all other modes held constant
-    /// \param[in] R The current rank, column dimension of the factor matrices
-    /// \param[in] symm does the reference tensor have symmetry in the last two modes
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    /// \return V^{\dagger} The psuedoinverse of the matrix V.
-
-    Tensor pseudoInverse(int n, int R, bool & fast_pI, double lambda) {
-      // CP_RALS method requires the psuedoinverse of matrix V
-#ifdef _HAS_INTEL_MKL
-      if(fast_pI) {
-        auto a = generate_V(n, R,lambda);
-        Tensor temp(R, R), inv(R, R);
-        // V^{\dag} = (A^T A) ^{-1} A^T
-        gemm(CblasTrans, CblasNoTrans, 1.0, a, a, 0.0, temp);
-        fast_pI = Inverse_Matrix(temp);
-        if(fast_pI) {
-          gemm(CblasNoTrans, CblasTrans, 1.0, temp, a, 0.0, inv);
-          return inv;
-        }
-        else{
-          std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
-        }
-      }
-#else
-        fast_pI = false;
-#endif // _HAS_INTEL_MKL
-
-      if(!fast_pI) {
-        auto a = generate_V(n, R, lambda);
-        Tensor s(Range{Range1{R}});
-        Tensor U(Range{Range1{R}, Range1{R}});
-        Tensor Vt(Range{Range1{R}, Range1{R}});
-
-// btas has no generic SVD for MKL LAPACKE
-#ifdef _HAS_INTEL_MKL
-        double worksize;
-        double *work = &worksize;
-        lapack_int lwork = -1;
-        lapack_int info = 0;
-
-        char A = 'A';
-
-        // Call dgesvd with lwork = -1 to query optimal workspace size:
-
-        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R,
-                                   &worksize, lwork);
-        if (info != 0)
-          BTAS_EXCEPTION("SVD pseudo inverse failed");
-
-        lwork = (lapack_int) worksize;
-        work = (double *) malloc(sizeof(double) * lwork);
-
-        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R, work,
-                                   lwork);
-        if (info != 0)
-          BTAS_EXCEPTION("SVD pseudo inverse failed");
-
-        free(work);
-#else  // BTAS_HAS_CBLAS
-
-        gesvd('A', 'A', a, s, U, Vt);
-
-#endif
-
-        // Inverse the Singular values with threshold 1e-13 = 0
-        double lr_thresh = 1e-13;
-        Tensor s_inv(Range{Range1{R}, Range1{R}});
-        s_inv.fill(0.0);
-        for (auto i = 0; i < R; ++i) {
-          if (s(i) > lr_thresh)
-            s_inv(i, i) = 1 / s(i);
-          else
-            s_inv(i, i) = s(i);
-        }
-        s.resize(Range{Range1{R}, Range1{R}});
-
-        // Compute the matrix A^-1 from the inverted singular values and the U and
-        // V^T provided by the SVD
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, U, s_inv, 0.0, s);
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
-
-        return U;
-      }
-      else{
-        BTAS_EXCEPTION("Pseudo inverse failed" );
-      }
-    }
-
-  };  // class CP_RALS
-
-}  // namespace btas
-
-#endif  // BTAS_GENERIC_CP_RALS_H
+#endif //BTAS_GENERIC_CP_RALS_H

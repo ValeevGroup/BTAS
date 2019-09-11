@@ -18,7 +18,7 @@
 
 #ifndef BTAS_HAS_BOOST_ITERATOR
 #error \
-    "BTAS is cannot be used without Boost.Iterator; add Boost dir to the include path"
+    "BTAS cannot be used without Boost.Iterator; add Boost dir to the include path"
 #else
 #include <boost/iterator/transform_iterator.hpp>
 #endif

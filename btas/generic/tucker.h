@@ -3,9 +3,8 @@
 
 #ifdef _HAS_INTEL_MKL
 
-#include "core_contract.h"
-#include "flatten.h"
-#include <btas/btas.h>
+#include <btas/generic/core_contract.h>
+#include <btas/generic/flatten.h>
 
 #include <cstdlib>
 
