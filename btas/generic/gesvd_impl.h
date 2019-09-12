@@ -96,7 +96,7 @@ template<> struct gesvd_impl<true>
    {
       unsigned long Ksize = (Msize < Nsize) ? Msize : Nsize;
       float* superb = new float[Ksize-1];
-      LAPACKE_cgesvd(order, jobu, jobvt, Msize, Nsize, itrA, LDA, itrS, itrU, LDU, itrVt, LDVt, superb);
+      LAPACKE_cgesvd(order, jobu, jobvt, Msize, Nsize, to_lapack_cptr(itrA), LDA, itrS, to_lapack_cptr(itrU), LDU, to_lapack_cptr(itrVt), LDVt, superb);
       delete [] superb;
    }
 
@@ -116,7 +116,7 @@ template<> struct gesvd_impl<true>
    {
       unsigned long Ksize = (Msize < Nsize) ? Msize : Nsize;
       double* superb = new double[Ksize-1];
-      LAPACKE_zgesvd(order, jobu, jobvt, Msize, Nsize, itrA, LDA, itrS, itrU, LDU, itrVt, LDVt, superb);
+      LAPACKE_zgesvd(order, jobu, jobvt, Msize, Nsize, to_lapack_zptr(itrA), LDA, itrS, to_lapack_zptr(itrU), LDU, to_lapack_zptr(itrVt), LDVt, superb);
       delete [] superb;
    }
 

@@ -6,8 +6,6 @@
 //
 
 #include <complex>
-#define lapack_complex_float  std::complex<float>
-#define lapack_complex_double std::complex<double>
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,6 +58,64 @@ enum CBLAS_SIDE { CblasLeft, CblasRight };
 #endif // __cplusplus
 
 namespace btas {
+
+  template <typename T>
+  T to_lapack_val(T val) {
+    return val;
+  }
+  template <typename T>
+  T from_lapack_val(T val) {
+    return val;
+  }
+
+#ifndef lapack_complex_float
+# define lapack_complex_float  std::complex<float>
+#else
+  static_assert(sizeof(std::complex<float>)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and std::complex<float> do not match");
+#endif
+#ifndef lapack_complex_double
+# define lapack_complex_double std::complex<double>
+#else
+  static_assert(sizeof(std::complex<double>)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and std::complex<double> do not match");
+#endif
+
+  inline lapack_complex_float to_lapack_val(std::complex<float> val) {
+    return *reinterpret_cast<lapack_complex_float*>(&val);
+  }
+  inline std::complex<float> from_lapack_val(lapack_complex_float val) {
+    return *reinterpret_cast<std::complex<float>*>(&val);
+  }
+  template <typename T>
+  const lapack_complex_float*
+  to_lapack_cptr(const T* ptr) {
+    static_assert(sizeof(T)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and T given to btas::to_lapack_cptr do not match");
+    return reinterpret_cast<const lapack_complex_float*>(ptr);
+  }
+  template <typename T>
+  typename std::enable_if<!std::is_const<T>::value, lapack_complex_float*>::type
+  to_lapack_cptr(T* ptr) {
+    static_assert(sizeof(T)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and T given to btas::to_lapack_cptr do not match");
+    return reinterpret_cast<lapack_complex_float*>(ptr);
+  }
+
+  inline lapack_complex_double to_lapack_val(std::complex<double> val) {
+    return *reinterpret_cast<lapack_complex_double*>(&val);
+  }
+  inline std::complex<double> from_lapack_val(lapack_complex_double val) {
+    return *reinterpret_cast<std::complex<double>*>(&val);
+  }
+  template <typename T>
+  const lapack_complex_double*
+  to_lapack_zptr(const T* ptr) {
+    static_assert(sizeof(T)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and T given to btas::to_lapack_zptr do not match");
+    return reinterpret_cast<const lapack_complex_double*>(ptr);
+  }
+  template <typename T>
+  typename std::enable_if<!std::is_const<T>::value, lapack_complex_double*>::type
+  to_lapack_zptr(T* ptr) {
+    static_assert(sizeof(T)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and T given to btas::to_lapack_zptr do not match");
+    return reinterpret_cast<lapack_complex_double*>(ptr);
+  }
 
 //
 //  Other aliases for convenience

@@ -108,8 +108,8 @@ template<> struct ger_impl<true>
       const unsigned long& LDA)
    {
       // FIXME: implement cgerc and cgeru separately.
-      const std::complex<float> alphac(std::move(alpha));
-      cblas_cgeru(order, Msize, Nsize, &alphac, itrX, incX, itrY, incY, itrA, LDA);
+      const lapack_complex_float alphac = to_lapack_val(std::move(alpha));
+      cblas_cgeru(order, Msize, Nsize, &alphac, to_lapack_cptr(itrX), incX, to_lapack_cptr(itrY), incY, to_lapack_cptr(itrA), LDA);
    }
 
    template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<double>>::value>::type>
@@ -126,8 +126,8 @@ template<> struct ger_impl<true>
       const unsigned long& LDA)
    {
       // FIXME: implement zgerc and zgeru separately.
-      const std::complex<double> alphac(std::move(alpha));
-      cblas_zgeru(order, Msize, Nsize, &alphac, itrX, incX, itrY, incY, itrA, LDA);
+      const lapack_complex_double alphac = to_lapack_val(std::move(alpha));
+      cblas_zgeru(order, Msize, Nsize, &alphac, to_lapack_zptr(itrX), incX, to_lapack_zptr(itrY), incY, to_lapack_zptr(itrA), LDA);
    }
 
 #endif // BTAS_HAS_CBLAS

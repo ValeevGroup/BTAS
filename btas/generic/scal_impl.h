@@ -58,8 +58,8 @@ template<> struct scal_impl<true>
       const _T& alpha,
             std::complex<float>* itrX, const typename std::iterator_traits<std::complex<float>*>::difference_type& incX)
    {
-      const std::complex<float> alphac(std::move(alpha));
-      cblas_cscal(Nsize, &alphac, itrX, incX);
+      const lapack_complex_double alphac(std::move(alpha));
+      cblas_cscal(Nsize, &alphac, to_lapack_cptr(itrX), incX);
    }
 
    template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<double>>::value>::type>
@@ -68,8 +68,8 @@ template<> struct scal_impl<true>
       const _T& alpha,
             std::complex<double>* itrX, const typename std::iterator_traits<std::complex<double>*>::difference_type& incX)
    {
-      const std::complex<double> alphac(std::move(alpha));
-      cblas_zscal(Nsize, &alphac, itrX, incX);
+      const lapack_complex_double alphac(std::move(alpha));
+      cblas_zscal(Nsize, &alphac, to_lapack_zptr(itrX), incX);
    }
 #endif
 };

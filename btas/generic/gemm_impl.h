@@ -287,12 +287,12 @@ template<> struct gemm_impl<true>
             std::complex<float>* itrC,
       const unsigned long& LDC)
    {
-      const std::complex<float> alphac(std::move(alpha));
-      const std::complex<float> betac (std::move(beta));
+      const lapack_complex_float alphac = to_lapack_val(std::move(alpha));
+      const lapack_complex_float betac  = to_lapack_val(std::move(beta));
 #ifdef _HAS_INTEL_MKL
-      cblas_cgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
+      cblas_cgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_cptr(itrA), LDA, to_lapack_cptr(itrB), LDB, &betac, to_lapack_cptr(itrC), LDC);
 #else
-      cblas_cgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
+      cblas_cgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_cptr(itrA), LDA, to_lapack_cptr(itrB), LDB, &betac, to_lapack_cptr(itrC), LDC);
 #endif
    }
 
@@ -313,12 +313,12 @@ template<> struct gemm_impl<true>
             std::complex<double>* itrC,
       const unsigned long& LDC)
    {
-      const std::complex<double> alphac(std::move(alpha));
-      const std::complex<double> betac (std::move(beta));
+      const lapack_complex_double alphac = to_lapack_val(std::move(alpha));
+      const lapack_complex_double betac  = to_lapack_val(std::move(beta));
 #ifdef _HAS_INTEL_MKL
-      cblas_zgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
+      cblas_zgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_zptr(itrA), LDA, to_lapack_zptr(itrB), LDB, &betac, to_lapack_zptr(itrC), LDC);
 #else
-      cblas_zgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, itrA, LDA, itrB, LDB, &betac, itrC, LDC);
+      cblas_zgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_zptr(itrA), LDA, to_lapack_zptr(itrB), LDB, &betac, to_lapack_zptr(itrC), LDC);
 #endif
    }
 

@@ -121,7 +121,7 @@ struct dotc_impl<double>
 template<>
 struct dotc_impl<std::complex<float>>
 {
-   typedef std::complex<float> return_type;
+   typedef lapack_complex_float return_type;
 
    static return_type call (
       const unsigned long& Nsize,
@@ -130,7 +130,7 @@ struct dotc_impl<std::complex<float>>
    {
       return_type val;
 #ifdef BTAS_HAS_CBLAS
-      cblas_cdotc_sub(Nsize, itrX, incX, itrY, incY, &val);
+      cblas_cdotc_sub(Nsize, to_lapack_cptr(itrX), incX, to_lapack_cptr(itrY), incY, &val);
 #else
       val = std::conj(*itrX) * (*itrY);
       itrX += incX;
@@ -147,7 +147,7 @@ struct dotc_impl<std::complex<float>>
 template<>
 struct dotu_impl<std::complex<float>>
 {
-   typedef std::complex<float> return_type;
+   typedef lapack_complex_float return_type;
 
    static return_type call (
       const unsigned long& Nsize,
@@ -156,7 +156,7 @@ struct dotu_impl<std::complex<float>>
    {
       return_type val;
 #ifdef BTAS_HAS_CBLAS
-      cblas_cdotu_sub(Nsize, itrX, incX, itrY, incY, &val);
+      cblas_cdotu_sub(Nsize, to_lapack_cptr(itrX), incX, to_lapack_cptr(itrY), incY, &val);
 #else
       val = (*itrX) * (*itrY);
       itrX += incX;
@@ -173,7 +173,7 @@ struct dotu_impl<std::complex<float>>
 template<>
 struct dotc_impl<std::complex<double>>
 {
-   typedef std::complex<double> return_type;
+   typedef lapack_complex_double return_type;
 
    static return_type call (
       const unsigned long& Nsize,
@@ -182,7 +182,7 @@ struct dotc_impl<std::complex<double>>
    {
       return_type val;
 #ifdef BTAS_HAS_CBLAS
-      cblas_zdotc_sub(Nsize, itrX, incX, itrY, incY, &val);
+      cblas_zdotc_sub(Nsize, to_lapack_zptr(itrX), incX, to_lapack_zptr(itrY), incY, &val);
 #else
       val = std::conj(*itrX) * (*itrY);
       itrX += incX;
@@ -199,7 +199,7 @@ struct dotc_impl<std::complex<double>>
 template<>
 struct dotu_impl<std::complex<double>>
 {
-   typedef std::complex<double> return_type;
+   typedef lapack_complex_double return_type;
 
    static return_type call (
       const unsigned long& Nsize,
@@ -208,7 +208,7 @@ struct dotu_impl<std::complex<double>>
    {
       return_type val;
 #ifdef BTAS_HAS_CBLAS
-      cblas_zdotu_sub(Nsize, itrX, incX, itrY, incY, &val);
+      cblas_zdotu_sub(Nsize, to_lapack_zptr(itrX), incX, to_lapack_zptr(itrY), incY, &val);
 #else
       val = (*itrX) * (*itrY);
       itrX += incX;
@@ -239,7 +239,7 @@ dotc (
    static_assert(std::is_same<typename __traits_X::iterator_category, std::random_access_iterator_tag>::value, "iterator X must be a random access iterator");
    static_assert(std::is_same<typename __traits_Y::iterator_category, std::random_access_iterator_tag>::value, "iterator Y must be a random access iterator");
 
-   return dotc_impl<typename __traits_X::value_type>::call(Nsize, itrX, incX, itrY, incY);
+   return from_lapack_val(dotc_impl<typename __traits_X::value_type>::call(Nsize, itrX, incX, itrY, incY));
 }
 
 /// Generic implementation of BLAS DOT in terms of C++ iterator
@@ -257,7 +257,7 @@ dotu (
    static_assert(std::is_same<typename __traits_X::iterator_category, std::random_access_iterator_tag>::value, "iterator X must be a random access iterator");
    static_assert(std::is_same<typename __traits_Y::iterator_category, std::random_access_iterator_tag>::value, "iterator Y must be a random access iterator");
 
-   return dotu_impl<typename __traits_X::value_type>::call(Nsize, itrX, incX, itrY, incY);
+   return from_lapack_val(dotu_impl<typename __traits_X::value_type>::call(Nsize, itrX, incX, itrY, incY));
 }
 
 /// Generic implementation of BLAS DOT in terms of C++ iterator

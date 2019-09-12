@@ -185,9 +185,9 @@ template<> struct gemv_impl<true>
             std::complex<float>* itrY,
       const typename std::iterator_traits<std::complex<float>*>::difference_type& incY)
    {
-      const std::complex<float> alphac(std::move(alpha));
-      const std::complex<float> betac (std::move(beta));
-      cblas_cgemv(order, transA, Msize, Nsize, &alphac, itrA, LDA, itrX, incX, &betac, itrY, incY);
+      const lapack_complex_float alphac = to_lapack_val(std::move(alpha));
+      const lapack_complex_float betac  = to_lapack_val(std::move(beta));
+      cblas_cgemv(order, transA, Msize, Nsize, &alphac, to_lapack_cptr(itrA), LDA, to_lapack_cptr(itrX), incX, &betac, to_lapack_cptr(itrY), incY);
    }
 
    template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<double>>::value>::type>
@@ -205,9 +205,9 @@ template<> struct gemv_impl<true>
             std::complex<double>* itrY,
       const typename std::iterator_traits<std::complex<double>*>::difference_type& incY)
    {
-      const std::complex<double> alphac(std::move(alpha));
-      const std::complex<double> betac (std::move(beta));
-      cblas_zgemv(order, transA, Msize, Nsize, &alphac, itrA, LDA, itrX, incX, &betac, itrY, incY);
+      const lapack_complex_double alphac = to_lapack_val(std::move(alpha));
+      const lapack_complex_double betac  = to_lapack_val(std::move(beta));
+      cblas_zgemv(order, transA, Msize, Nsize, &alphac, to_lapack_zptr(itrA), LDA, to_lapack_zptr(itrX), incX, &betac, to_lapack_zptr(itrY), incY);
    }
 
 #endif // BTAS_HAS_CBLAS
