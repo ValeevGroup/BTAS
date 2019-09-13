@@ -64,7 +64,7 @@ template<> struct axpy_impl<true>
             std::complex<float>* itrY, const typename std::iterator_traits<std::complex<float>*>::difference_type& incY)
    {
       const lapack_complex_float alphac(std::move(alpha));
-      cblas_caxpy(Nsize, &alphac, to_lapack_cptr(itrX), incX, to_lapack_cptr(itrY), incY);
+      cblas_caxpy(Nsize, to_lapack_cptr(&alphac), to_lapack_cptr(itrX), incX, to_lapack_cptr(itrY), incY);
    }
 
    template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<double>>::value>::type>
@@ -75,7 +75,7 @@ template<> struct axpy_impl<true>
             std::complex<double>* itrY, const typename std::iterator_traits<std::complex<double>*>::difference_type& incY)
    {
       const lapack_complex_double alphac(std::move(alpha));
-      cblas_zaxpy(Nsize, &alphac, to_lapack_zptr(itrX), incX, to_lapack_zptr(itrY), incY);
+      cblas_zaxpy(Nsize, to_lapack_zptr(&alphac), to_lapack_zptr(itrX), incX, to_lapack_zptr(itrY), incY);
    }
 #endif
 };

@@ -57,6 +57,39 @@ enum CBLAS_SIDE { CblasLeft, CblasRight };
 }
 #endif // __cplusplus
 
+// some BLAS libraries define their own types for complex data
+#ifndef HAVE_INTEL_MKL
+#ifndef lapack_complex_float
+# define lapack_complex_float  std::complex<float>
+#else
+static_assert(sizeof(std::complex<float>)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and std::complex<float> do not match");
+#endif
+#ifndef lapack_complex_double
+# define lapack_complex_double std::complex<double>
+#else
+static_assert(sizeof(std::complex<double>)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and std::complex<double> do not match");
+#endif
+#else
+// if calling direct need to cast to the MKL complex types
+# ifdef MKL_DIRECT_CALL
+#  include <mkl_types.h>
+#  ifndef lapack_complex_float
+#   define lapack_complex_float MKL_Complex8
+#  endif
+#  ifndef lapack_complex_double
+#   define lapack_complex_double MKL_Complex16
+#  endif
+// else can call via F77 prototypes which don't need type conversion
+# else
+#  ifndef lapack_complex_float
+#   define lapack_complex_float  std::complex<float>
+#  endif
+#  ifndef lapack_complex_double
+#   define lapack_complex_double std::complex<double>
+#  endif
+# endif
+#endif
+
 namespace btas {
 
   template <typename T>
@@ -67,17 +100,6 @@ namespace btas {
   T from_lapack_val(T val) {
     return val;
   }
-
-#ifndef lapack_complex_float
-# define lapack_complex_float  std::complex<float>
-#else
-  static_assert(sizeof(std::complex<float>)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and std::complex<float> do not match");
-#endif
-#ifndef lapack_complex_double
-# define lapack_complex_double std::complex<double>
-#else
-  static_assert(sizeof(std::complex<double>)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and std::complex<double> do not match");
-#endif
 
   inline lapack_complex_float to_lapack_val(std::complex<float> val) {
     return *reinterpret_cast<lapack_complex_float*>(&val);
