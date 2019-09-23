@@ -133,7 +133,7 @@ matrix:
     - compiler: clang
       env: CLANG_VERSION=8 GCC_VERSION=8 BUILD_TYPE=Debug
       addons:
-        apt:
+        apt: 
           sources:
             - *base_sources
             - *clang8_sources
