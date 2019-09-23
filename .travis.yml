@@ -159,7 +159,7 @@ matrix:
 before_install:
   - sudo add-apt-repository ppa:mhier/libboost-latest -y
   - sudo apt-get update -q
-  - sudo apt-get install libboost1.70-dev -y
+  - sudo apt-get install libboost1.70 libboost1.70-dev -y
   - env
   - mkdir -p ${BUILD_PREFIX} && mkdir -p ${INSTALL_PREFIX}
 script:
