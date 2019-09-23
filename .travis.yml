@@ -7,7 +7,7 @@ cache:
 os:
   - linux
 
-env:apt
+env:
   global:
     - BUILD_PREFIX=/home/travis/_build
     - INSTALL_PREFIX=/home/travis/_install
