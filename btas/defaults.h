@@ -11,7 +11,7 @@
 #include <btas/features.h>
 
 #ifdef BTAS_HAS_BOOST_CONTAINER
-#include <boost/container/small_vector.hpp>
+#include <boost/container/container_fwd.hpp>
 #else
 #include <btas/varray/varray.h>
 #endif

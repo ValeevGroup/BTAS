@@ -21,20 +21,19 @@ namespace btas {
   /// It maps the index to its ordinal value. It also knows whether
   /// the map is contiguous (i.e. whether adjacent indices have adjacent ordinal
   /// values).
-  template <CBLAS_ORDER _Order = CblasRowMajor,
-            typename _Index = btas::DEFAULT::index_type,
-            class = typename std::enable_if<btas::is_index<_Index>::value>
-           >
+  template <CBLAS_ORDER _Order,
+            typename _Index>
   class BoxOrdinal {
     public:
+      static_assert(btas::is_index<_Index>::value, "BoxOrdinal<_Index> instantiated but _Index does not meet the TWG.Index concept");
+
       typedef _Index index_type;
       const static CBLAS_ORDER order = _Order;
       typedef int64_t value_type;
       typedef typename btas::replace_value_type<_Index,value_type>::type stride_type;    ///< stride type
 
       template <CBLAS_ORDER _O,
-                typename _I,
-                class _X
+                typename _I
                >
       friend class BoxOrdinal;
 
@@ -298,7 +297,7 @@ namespace btas {
   /// \return A reference to the output stream
   template <CBLAS_ORDER _Order,
             typename _Index>
-  inline std::ostream& operator<<(std::ostream& os, const BoxOrdinal<_Order,_Index>& ord) {
+  std::ostream& operator<<(std::ostream& os, const BoxOrdinal<_Order,_Index>& ord) {
     array_adaptor<typename BoxOrdinal<_Order,_Index>::stride_type>::print(ord.stride(), os);
     return os;
   }

@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <btas/features.h>
+#include <btas/btas_fwd.h>
 
 #ifndef BTAS_HAS_BOOST_ITERATOR
 #error \
@@ -681,16 +682,16 @@ namespace btas {
 
     /// RangeNd extends BaseRangeNd to compute ordinals, as specified by \c _Ordinal .
     /// It conforms to the \ref sec_TWG_Range_Concept_Range_Box "TWG.BoxRange" concept.
-    template <CBLAS_ORDER _Order = CblasRowMajor,
-              typename _Index = btas::DEFAULT::index_type,
-              typename _Ordinal = btas::BoxOrdinal<_Order,_Index>,
-              class = typename std::enable_if<btas::is_index<_Index>::value>
+    template <CBLAS_ORDER _Order,
+              typename _Index,
+              typename _Ordinal
              >
-    class RangeNd : public BaseRangeNd< RangeNd<_Order,_Index> > {
+    class RangeNd : public BaseRangeNd< RangeNd<_Order,_Index, _Ordinal>> {
     private:
       struct Enabler {};
 
     public:
+      static_assert(btas::is_index<_Index>::value, "RangeNd<_Index> instantiated with an _Index tyope that does not meet the TWG.Index concept");
       typedef RangeNd this_type;
       typedef _Index index_type; ///< index type
       const static CBLAS_ORDER order = _Order;
@@ -709,8 +710,7 @@ namespace btas {
       friend class BaseRangeNd< RangeNd<_Order, _Index, _Ordinal> >;
       template <CBLAS_ORDER _O,
                 typename _I,
-                typename _Ord,
-                typename X>
+                typename _Ord>
       friend class RangeNd;
 
       typedef typename base_type::extent_type extent_type;
@@ -1089,9 +1089,8 @@ namespace btas {
     /// \return A reference to the output stream
     template <CBLAS_ORDER _Order,
               typename _Index,
-              typename _Ordinal,
-              typename _X>
-    inline std::ostream& operator<<(std::ostream& os, const RangeNd<_Order,_Index, _Ordinal, _X>& r) {
+              typename _Ordinal>
+    std::ostream& operator<<(std::ostream& os, const RangeNd<_Order,_Index, _Ordinal>& r) {
       os << "[";
       array_adaptor<_Index>::print(r.lobound(), os);
       os << ",";
