@@ -23,6 +23,14 @@ extern "C" {
 #else  // _HAS_INTEL_MKL
 
 #include <cblas.h>
+// see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
+#include <complex>
+#ifndef lapack_complex_float
+# define lapack_complex_float std::complex<float>
+#endif
+#ifndef lapack_complex_double
+# define lapack_complex_double std::complex<double>
+#endif
 #include <lapacke.h>
 
 #endif  // _HAS_INTEL_MKL
@@ -30,6 +38,14 @@ extern "C" {
 #else  // _CBLAS_HEADER
 
 #include _CBLAS_HEADER
+// see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
+#include <complex>
+#ifndef lapack_complex_float
+# define lapack_complex_float std::complex<float>
+#endif
+#ifndef lapack_complex_double
+# define lapack_complex_double std::complex<double>
+#endif
 #include _LAPACKE_HEADER
 
 #endif  // _CBLAS_HEADER
