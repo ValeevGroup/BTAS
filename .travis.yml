@@ -7,7 +7,7 @@ cache:
 os:
   - linux
 
-env:
+env:apt
   global:
     - BUILD_PREFIX=/home/travis/_build
     - INSTALL_PREFIX=/home/travis/_install
@@ -21,7 +21,6 @@ addons:
     sources: &clang8_sources
       - llvm-toolchain-xenial-8
     packages: &base_packages
-      - libboost-all-dev
       - libblas-dev
       - liblapack-dev
       - liblapacke-dev
@@ -158,6 +157,9 @@ matrix:
             - libc++abi-8-dev
 
 before_install:
+  - sudo add-apt-repository ppa:mhier/libboost-latest -y
+  - sudo apt-get update -q
+  - sudo apt-get install libboost1.70-dev -y
   - env
   - mkdir -p ${BUILD_PREFIX} && mkdir -p ${INSTALL_PREFIX}
 script:
