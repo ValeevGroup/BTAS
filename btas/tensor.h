@@ -7,8 +7,7 @@
 #include <type_traits>
 #include <vector>
 
-#include <btas/types.h>
-#include <btas/defaults.h>
+#include <btas/btas_fwd.h>
 #include <btas/tensor_traits.h>
 #include <btas/tensorview.h>
 #include <btas/type_traits.h>
@@ -27,13 +26,13 @@ namespace btas {
       @tparam _Storage Storage type, models \ref labelTWGStorage "TWG.Storage" concept
   */
   template<typename _T,
-           class _Range = btas::DEFAULT::range,
-           class _Storage = btas::DEFAULT::storage<_T>,
-           class = typename std::enable_if<std::is_same<_T, typename _Storage::value_type>::value>::type
+           class _Range,
+           class _Storage
           >
   class Tensor {
 
     public:
+      static_assert(std::is_same<_T, typename _Storage::value_type>::value, "Tensor<_T,_Range,_Storage> instantiated but _T != _Storage::value_type");
 
       /// type of underlying data storage
       typedef _Storage storage_type;
@@ -693,8 +692,11 @@ namespace btas {
   /// \param os The output stream that will be used to print \c t
   /// \param t The Tensor to be printed
   /// \return A reference to the output stream
-  template <class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
-  std::ostream& operator<<(std::ostream& os, const _Tensor& t) {
+  template<typename _T,
+          class _Range,
+          class _Storage
+  >
+  std::ostream& operator<<(std::ostream& os, const Tensor<_T, _Range, _Storage>& t) {
     os << "Tensor:\n  Range: " << t.range() << std::endl;
     return os;
   }
