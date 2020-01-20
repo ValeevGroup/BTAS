@@ -20,7 +20,7 @@
 
 namespace btas {
 
-  // \internal btas::TensorView has a policy that configures whether to  to support constexpr mutability (as part of the type), or trackable at runtime.
+  // \internal btas::TensorView has a policy that configures whether to support constexpr mutability (as part of the type), or trackable at runtime.
   // Such design allows to reduce code bloat due to the need to instantiate the code using views for const and non-const type variants; it also
   // makes it easier to use view by avoiding the need for metaprogramming when dealing with views with constexpr mutability. The
   // runtime tracking of mutability incurs extra storage overhead (TensorView will have an extra bool member) and extra performance overhead due to
