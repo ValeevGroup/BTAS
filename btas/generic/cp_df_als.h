@@ -132,7 +132,7 @@ namespace btas{
     ~CP_DF_ALS() = default;
 
 #ifdef _HAS_INTEL_MKL
-    /// \breif Computes decomposition of the order-N tensor \c tensor
+    /// \brief Computes decomposition of the order-N tensor \c tensor
     /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
     /// Initial guess for factor matrices start at rank = max_dim(reference_tensor)
     /// and builds rank \c panel times by \c RankStep * max_dim(reference_tensor) increments

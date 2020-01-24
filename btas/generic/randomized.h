@@ -53,7 +53,6 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
 /// Default = suggested = 10. \param[in] powerit Number of power iterations, as
 /// specified in the literature, to scale the spectrum of each mode. Default =
 /// suggested = 2.
-
 template <typename Tensor>
 void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
                               int des_rank, int oversampl = 10,
@@ -113,7 +112,6 @@ void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
 /// Computes L of the LU decomposition of tensor \c A
 /// \param[in, out] A In: A reference matrix to be LU decomposed.  Out:
 /// The L of an LU decomposition of \c A.
-
 template <typename Tensor> void LU_decomp(Tensor &A) {
 
   btas::Tensor<int> piv(std::min(A.extent(0), A.extent(1)));
@@ -184,7 +182,7 @@ template <typename Tensor> void LU_decomp(Tensor &A) {
   gemm(CblasNoTrans, CblasNoTrans, 1.0, P, L, 0.0, A);
 }
 
-// Computes the QR decomposition of matrix \c A
+/// Computes the QR decomposition of matrix \c A
 /// \param[in, out] A In: A Reference matrix to be QR decomposed.  Out:
 /// The Q of a QR decomposition of \c A.
 
