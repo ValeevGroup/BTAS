@@ -19,7 +19,8 @@ addons:
     sources: &clang8_sources
       - llvm-toolchain-bionic-8
     packages: &base_packages
-      - libboost-all-dev
+      - libboost-dev
+      - libboost-serialization-dev
       - cmake
       - cmake-data
     packages: &netlib_packages
