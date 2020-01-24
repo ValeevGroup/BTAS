@@ -34,9 +34,9 @@ INCLUDE(CheckLibraryList)
 # SET(_verbose TRUE)
 
 # Intel Compiler Suite
-SET(INTEL_COMPILER_DIR CACHE STRING
+SET(INTEL_COMPILER_DIR "/opt/intel" CACHE STRING
   "Root directory of the Intel Compiler Suite (contains ipp, mkl, etc.)")
-SET(INTEL_MKL_DIR CACHE STRING
+SET(INTEL_MKL_DIR "${INTEL_COMPILER_DIR}/mkl" CACHE STRING
   "Root directory of the Intel MKL (standalone)")
 SET(INTEL_MKL_SEQUENTIAL OFF CACHE BOOL
   "Force using the sequential (non threaded) libraries")
@@ -49,11 +49,11 @@ IF (APPLE)
   SET(mkl64s "_lp64")
 ELSE (APPLE)
   IF ("${SIZE_OF_VOIDP}" EQUAL 8)
-    SET(mklvers "em64t")
+    SET(mklvers "intel64")
     SET(iccvers "intel64")
     SET(mkl64s "_lp64")
   ELSE ("${SIZE_OF_VOIDP}" EQUAL 8)
-    SET(mklvers "32")
+    SET(mklvers "ia32")
     SET(iccvers "ia32")
     SET(mkl64s)
   ENDIF ("${SIZE_OF_VOIDP}" EQUAL 8)
