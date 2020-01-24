@@ -19,9 +19,11 @@ cat > $setup << END
 #!/bin/sh
 curl -sSL "http://apt.llvm.org/llvm-snapshot.gpg.key" | apt-key add -
 echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main" | tee -a /etc/apt/sources.list > /dev/null
+wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB | sudo apt-key add -
+echo "deb https://apt.repos.intel.com/mkl all main" | tee -a /etc/apt/sources.list.d/intel-mkl.list > /dev/null
 apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
 apt-get -yq update >> ~/apt-get-update.log
-apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 libboost-all-dev libblas-dev liblapack-dev liblapacke-dev clang-7 clang-8 clang-9 cmake cmake-data
+apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 libboost-all-dev libblas-dev liblapack-dev liblapacke-dev intel-mkl-2019.4-070 clang-7 clang-8 clang-9 cmake cmake-data
 mkdir -p ${TRAVIS_BUILD_TOPDIR}
 cd ${TRAVIS_BUILD_TOPDIR}
 git clone https://github.com/BTAS/BTAS.git ${TRAVIS_BUILD_TOPDIR}/BTAS/BTAS
