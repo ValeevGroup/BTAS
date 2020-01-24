@@ -14,8 +14,6 @@ env:
 
 addons:
   apt:
-    sources: &base_sources
-      - ubuntu-toolchain-r-test
     sources: &clang7_sources
       - llvm-toolchain-bionic-7
     sources: &clang8_sources
@@ -35,8 +33,6 @@ matrix:
       env: GCC_VERSION=5 BUILD_TYPE=Debug
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-5
@@ -44,8 +40,6 @@ matrix:
       env: GCC_VERSION=5 BUILD_TYPE=Release
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-5
@@ -53,8 +47,6 @@ matrix:
       env: GCC_VERSION=6 BUILD_TYPE=Debug
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-6
@@ -62,8 +54,6 @@ matrix:
       env: GCC_VERSION=6 BUILD_TYPE=Release
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-6
@@ -71,8 +61,6 @@ matrix:
       env: GCC_VERSION=7 BUILD_TYPE=Debug
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-7
@@ -80,8 +68,6 @@ matrix:
       env: GCC_VERSION=7 BUILD_TYPE=Release
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-7
@@ -89,8 +75,6 @@ matrix:
       env: GCC_VERSION=8 BUILD_TYPE=Debug
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-8
@@ -103,6 +87,26 @@ matrix:
           packages:
             - *base_packages
             - g++-8
+    - compiler: gcc
+      env: GCC_VERSION=9 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+          packages:
+            - *base_packages
+            - g++-9
+            - gfortran-9
+    - compiler: gcc
+      env: GCC_VERSION=9 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+          packages:
+            - *base_packages
+            - g++-9
+            - gfortran-9
     - compiler: clang
       env: CLANG_VERSION=7 GCC_VERSION=8 BUILD_TYPE=Debug
       addons:
@@ -155,6 +159,34 @@ matrix:
             - clang-8
             - libc++-8-dev
             - libc++abi-8-dev
+    - compiler: clang
+      env: CLANG_VERSION=9 GCC_VERSION=8 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - *base_packages
+            - g++-8
+            - gfortran-8
+            - clang-9
+            - libc++-9-dev
+            - libc++abi-9-dev
+    - compiler: clang
+      env: CLANG_VERSION=9 GCC_VERSION=8 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - *base_packages
+            - g++-8
+            - gfortran-8
+            - clang-9
+            - libc++-9-dev
+            - libc++abi-9-dev
 
 before_install:
   - env
