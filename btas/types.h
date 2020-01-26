@@ -12,43 +12,43 @@ extern "C" {
 #endif // __cplusplus
 
 #ifdef BTAS_HAS_CBLAS
+# define LAPACKE_ENABLED
+# if not defined(_CBLAS_HEADER) && not defined(_LAPACKE_HEADER)
 
-#if not defined(_CBLAS_HEADER) && not defined(_LAPACKE_HEADER)
+#   ifdef _HAS_INTEL_MKL
 
-#ifdef _HAS_INTEL_MKL
+#     include <mkl_cblas.h>
+#     include <mkl_lapacke.h>
 
-#include <mkl_cblas.h>
-#include <mkl_lapacke.h>
+#   else  // _HAS_INTEL_MKL
 
-#else  // _HAS_INTEL_MKL
+#     include <cblas.h>
+      // see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
+#     include <complex>
+#     ifndef lapack_complex_float
+#       define lapack_complex_float std::complex<float>
+#     endif // lapack_complex_float
+#     ifndef lapack_complex_double
+#       define lapack_complex_double std::complex<double>
+#     endif // lapack_complex_double
+#     include <lapacke.h>
 
-#include <cblas.h>
-// see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
-#include <complex>
-#ifndef lapack_complex_float
-# define lapack_complex_float std::complex<float>
-#endif
-#ifndef lapack_complex_double
-# define lapack_complex_double std::complex<double>
-#endif
-#include <lapacke.h>
+#   endif  // _HAS_INTEL_MKL
 
-#endif  // _HAS_INTEL_MKL
+# else  // _CBLAS_HEADER
 
-#else  // _CBLAS_HEADER
+#   include _CBLAS_HEADER
+    // see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
+#   include <complex>
+#   ifndef lapack_complex_float
+#     define lapack_complex_float std::complex<float>
+#   endif // lapack_complex_float
+#   ifndef lapack_complex_double
+#     define lapack_complex_double std::complex<double>
+#   endif // lapack_complex_double
+#   include _LAPACKE_HEADER
 
-#include _CBLAS_HEADER
-// see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
-#include <complex>
-#ifndef lapack_complex_float
-# define lapack_complex_float std::complex<float>
-#endif
-#ifndef lapack_complex_double
-# define lapack_complex_double std::complex<double>
-#endif
-#include _LAPACKE_HEADER
-
-#endif  // _CBLAS_HEADER
+# endif  // _CBLAS_HEADER
 
 #else  // BTAS_HAS_CBLAS
 
