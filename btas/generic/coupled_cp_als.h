@@ -23,6 +23,7 @@
 #include <btas/generic/converge_class.h>
 #include <btas/generic/rals_helper.h>
 #include <btas/generic/reconstruct.h>
+#include <btas/generic/linear_algebra.h>
 
 namespace btas{
 
@@ -78,7 +79,6 @@ namespace btas{
   public:
     using CP<Tensor,ConvClass>::A;
     using CP<Tensor,ConvClass>::ndim;
-    using CP<Tensor,ConvClass>::pseudoInverse;
     using CP<Tensor,ConvClass>::normCol;
     using CP<Tensor,ConvClass>::generate_KRP;
     using CP<Tensor,ConvClass>::generate_V;
@@ -183,7 +183,6 @@ namespace btas{
       // If its the first time into build and SVD_initial_guess
       // build and optimize the initial guess based on the left
       // singular vectors of the reference tensor.
-#ifdef _HAS_INTEL_MKL
       if (A.empty() && SVD_initial_guess) {
         if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
 
@@ -220,8 +219,7 @@ namespace btas{
             gemm(CblasNoTrans, CblasTrans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
 
             // Find the Singular vectors of the matrix using eigenvalue decomposition
-            auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', R, S.data(), R, lambda.data());
-            if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
+            eigenvalue_decomp(S, lambda);
 
             // Fill a factor matrix with the singular vectors with the largest corresponding singular
             // values
@@ -267,9 +265,6 @@ namespace btas{
         // Optimize this initial guess.
         ALS(SVD_rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
-#else  // _HAS_INTEL_MKL
-      if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
-#endif // _HAS_INTEL_MKL
       // This loop keeps track of column dimension
       for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
         // This loop walks through the factor matrices
@@ -480,7 +475,7 @@ namespace btas{
         }
         // Finally Form the product of K * J^\dagger
         Tensor a0(coupled_dim, rank);
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, K, pseudoInverse(J1), 0.0, a0);
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, K, pseudoInverse(J1, rank), 0.0, a0);
         this->normCol(a0);
         A[0] = a0;
       }
@@ -556,7 +551,7 @@ namespace btas{
         else if(n == this->ndim - 1)
           detail::set_MtKRPR(converge_test, contract_tensor);
         Tensor an(skip_dim, rank);
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(G), 0.0, an);
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(G, rank), 0.0, an);
         this->normCol(an);
         A[n] = an;
       }
