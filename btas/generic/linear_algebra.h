@@ -138,7 +138,7 @@ namespace btas{
   bool Inverse_Matrix(Tensor & A){
 
 #ifndef LAPACKE_ENABLED
-    BTAS_EXCEPTION("Using this function requires LAPACKE");
+    BTAS_EXCEPTION("Using LU matrix inversion requires LAPACKE");
 #endif // LAPACKE_ENABLED
 
     if(A.rank() > 2){
