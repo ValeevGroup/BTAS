@@ -162,6 +162,103 @@ namespace btas{
     }
     return true;
   }
+
+/// Computes the eigenvalue decomposition of a matrix \c A and
+/// \param[in, out] A In: A reference matrix to be decomposed. Out:
+/// The eigenvectors of the matrix \c A.
+/// \param[in, out] lambda In: An empty vector with length greater than
+/// or equal to the largest mode of \c A. Out: The eigenvalues of the
+///  matrix \c A
+  template <typename Tensor>
+  void eigenvalue_decomp(Tensor & A, Tensor & lambda){
+#ifndef LAPACKE_ENABLED
+    BTAS_EXCEPTION("Using eigenvalue decomposition requires LAPACKE");
+#endif // LAPACKE_ENABLED
+    if(A.rank() > 2){
+      BTAS_EXCEPTION("Tensor rank > 2. Tensor A must be a matrix.");
+    }
+    auto lambda_length = lambda.size();
+    auto largest_mode_A = (A.extent(0) > A.extent(1) ? A.extent(0) : A.extent(1));
+    if(lambda_length < largest_mode_A){
+      BTAS_EXCEPTION("Volume of lambda must be greater than or equal to the largest mode of A");
+    }
+
+    auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', largest_mode_A,
+            A.data(), largest_mode_A, lambda.data());
+    if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
+  }
+
+/// SVD referencing code from
+/// http://www.netlib.org/lapack/explore-html/de/ddd/lapacke_8h_af31b3cb47f7cc3b9f6541303a2968c9f.html
+/// Fast pseudo-inverse algorithm described in
+/// https://arxiv.org/pdf/0804.4809.pdf
+
+/// \param[in] a matrix to be inverted.
+/// \return a^{\dagger} The pseudoinverse of the matrix a.
+template <typename Tensor>
+Tensor pseudoInverse(Tensor & a, int R) {
+#ifndef LAPACKE_ENABLED
+    BTAS_EXCEPTION("Computing the pseudoinverses requires LAPACKE");
+#endif // LAPACKE_ENABLED
+  bool Cholesky = true;
+  bool fast = false;
+  Tensor s(Range{Range1{R}});
+  Tensor U(Range{Range1{R}, Range1{R}});
+  Tensor Vt(Range{Range1{R}, Range1{R}});
+
+  if(Cholesky){
+    Cholesky = false;
+  }
+  if(fast){
+
+  }
+  if (!Cholesky && !fast) {
+    double worksize;
+    double *work = &worksize;
+    lapack_int lwork = -1;
+    lapack_int info = 0;
+
+    char A = 'A';
+
+    // Call dgesvd with lwork = -1 to query optimal workspace size:
+
+    info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R,
+                               &worksize, lwork);
+    if (info != 0)
+    BTAS_EXCEPTION("SVD pseudo inverse failed");
+
+    lwork = (lapack_int) worksize;
+    work = (double *) malloc(sizeof(double) * lwork);
+
+    info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R, work,
+                               lwork);
+    if (info != 0)
+    BTAS_EXCEPTION("SVD pseudo inverse failed");
+
+    free(work);
+
+    //gesvd('A', 'A', a, s, U, Vt);
+
+    // Inverse the Singular values with threshold 1e-13 = 0
+    double lr_thresh = 1e-13;
+    Tensor s_inv(Range{Range1{R}, Range1{R}});
+    s_inv.fill(0.0);
+    for (auto i = 0; i < R; ++i) {
+      if (s(i) > lr_thresh)
+        s_inv(i, i) = 1 / s(i);
+      else
+        s_inv(i, i) = s(i);
+    }
+    s.resize(Range{Range1{R}, Range1{R}});
+
+    // Compute the matrix A^-1 from the inverted singular values and the U and
+    // V^T provided by the SVD
+    gemm(CblasNoTrans, CblasNoTrans, 1.0, U, s_inv, 0.0, s);
+    gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
+
+  }
+  return U;
 }
 
+} // namespace btas
 #endif //BTAS_LINEAR_ALGEBRA_H
