@@ -6,6 +6,8 @@
 #define BTAS_LINEAR_ALGEBRA_H
 #include <btas/error.h>
 
+#ifdef BTAS_HAS_CBLAS
+
 namespace btas{
   /// Computes L of the LU decomposition of tensor \c A
 /// \param[in, out] A In: A reference matrix to be LU decomposed.  Out:
@@ -261,4 +263,5 @@ Tensor pseudoInverse(Tensor & a, int R) {
 }
 
 } // namespace btas
+#endif // BTAS_HAS_CBLAS
 #endif //BTAS_LINEAR_ALGEBRA_H
