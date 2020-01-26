@@ -50,7 +50,6 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
 /// Default = suggested = 10. \param[in] powerit Number of power iterations, as
 /// specified in the literature, to scale the spectrum of each mode. Default =
 /// suggested = 2.
-
 template <typename Tensor>
 void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
                               int des_rank, int oversampl = 10,

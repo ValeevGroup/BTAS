@@ -562,17 +562,17 @@ namespace btas{
 
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] R The current rank, column dimension of the factor matrices
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in,out] fast_pI If true, try to compute the pseudo inverse via fast Cholesky decomposition, else use SVD;
+    ///                on return reports whether the fast route was used.
     /// \param[in] lambda Regularization parameter lambda is added to the diagonal of V
-    /// \return V^{\dagger} The psuedoinverse of the matrix V.
-
+    /// \return The pseudoinverse of the matrix V.
     Tensor pseudoInverse(int n, int R, bool & fast_pI, double lambda = 0.0) {
-      // CP_ALS method requires the psuedoinverse of matrix V
+      // CP_ALS method requires the pseudoinverse of matrix V
 #ifdef _HAS_INTEL_MKL
       if(fast_pI) {
         auto a = this->generate_V(n, R, lambda);
         Tensor temp(R, R), inv(R, R);
-        // V^{\dag} = (A^T A) ^{-1} A^T
+        // compute V^{\dag} = (A^T A) ^{-1} A^T
         gemm(CblasTrans, CblasNoTrans, 1.0, a, a, 0.0, temp);
         fast_pI = Inverse_Matrix(temp);
         if(fast_pI) {
@@ -655,7 +655,7 @@ namespace btas{
     /// https://arxiv.org/pdf/0804.4809.pdf
 
     /// \param[in] a matrix to be inverted.
-    /// \return a^{\dagger} The psuedoinverse of the matrix a.
+    /// \return a^{\dagger} The pseudoinverse of the matrix a.
     Tensor pseudoInverse(Tensor & a){
       bool matlab = false;
       auto R = A[0].extent(1);

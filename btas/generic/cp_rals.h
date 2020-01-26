@@ -137,7 +137,7 @@ public:
 
 #ifdef _HAS_INTEL_MKL
 
-    /// \breif Computes decomposition of the order-N tensor \c tensor
+    /// \brief Computes decomposition of the order-N tensor \c tensor
     /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
     /// Initial guess for factor matrices start at rank = max_dim(reference_tensor)
     /// and builds rank \c panel times by \c RankStep * max_dim(reference_tensor) increments
@@ -743,7 +743,7 @@ public:
       if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
         converge_test.set_MtKRP(temp);
       }
-      // contract the product from above with the psuedoinverse of the Hadamard
+      // contract the product from above with the pseudoinverse of the Hadamard
       // produce an optimize factor matrix
       gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
 
