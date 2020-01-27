@@ -190,6 +190,34 @@ namespace btas{
     if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
   }
 
+  /// Solving Ax = B using a Cholesky decomposition
+  /// \param[in] A The right-hand side of the linear equation
+  /// to be inverted using Cholesky
+  /// \param[in, out] B In: The left-hand side of the linear equation
+  /// out: The solution x = A^{-1}B
+template <typename Tensor>
+bool cholesky_inverse(Tensor & A, Tensor & B){
+#ifndef LAPACKE_ENABLED
+  BTAS_EXCEPTION("Cholesky inverse function requires LAPACKE")
+#endif
+    // This method computes the inverse quickly for a square matrix
+    // based on MATLAB's implementation of A / B operator.
+    auto rank = B.extent(1);
+    int LDB = B.extent(0);
+
+    btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
+    piv.fill(0);
+    auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, A.data(), rank, piv.data(), B.data(), rank);
+    if (info == 0) {
+      return true;
+    }
+    else{
+      // If inverse fails resort to the pseudoinverse
+      std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
+      return false;
+    }
+}
+
 /// SVD referencing code from
 /// http://www.netlib.org/lapack/explore-html/de/ddd/lapacke_8h_af31b3cb47f7cc3b9f6541303a2968c9f.html
 /// Fast pseudo-inverse algorithm described in
