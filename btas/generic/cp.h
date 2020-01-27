@@ -302,7 +302,6 @@ namespace btas{
       return epsilon;
     }
 
-#ifdef _HAS_INTEL_MKL
     /// virtual function implemented in solver
     /// Computes decomposition of the order-N tensor \c tensor
     /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
@@ -326,7 +325,6 @@ namespace btas{
     /// false && ConvClass != FitCheck.
     virtual double compute_PALS(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4,
                          int max_als = 20,bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) = 0;
-#endif // _HAS_INTEL_MKL
 
     /// returns the rank \c rank optimized factor matrices
     /// \return Factor matrices stored in a vector. For example, a order-3
