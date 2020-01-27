@@ -64,13 +64,6 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     core_contract(A, lambda, i);
   }
 }
-
-/// calculates the 2-norm of a matrix Mat
-/// \param[in] Mat The matrix who's 2-norm is caclulated
-
-template <typename Tensor> double norm(const Tensor &Mat) {
-  return sqrt(dot(Mat, Mat));
-}
 } // namespace btas
 #endif //_HAS_INTEL_MKL
 #endif // BTAS_TUCKER_DECOMP_H
