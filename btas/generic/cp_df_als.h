@@ -131,7 +131,6 @@ namespace btas{
 
     ~CP_DF_ALS() = default;
 
-#ifdef _HAS_INTEL_MKL
     /// \brief Computes decomposition of the order-N tensor \c tensor
     /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
     /// Initial guess for factor matrices start at rank = max_dim(reference_tensor)
@@ -223,12 +222,9 @@ namespace btas{
           ALS(rank_new, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
         }
         count++;
-        //if (count + 1 == panels) max_als = 1000;
       }
-      //std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
       return epsilon;
     }
-#endif // _HAS_INTEL_MKL
 
   protected:
     Tensor &tensor_ref_left;        // Left connected tensor
