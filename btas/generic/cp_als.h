@@ -633,7 +633,7 @@ namespace btas{
           } else if (dir) {
             direct(i, rank, fast_pI, matlab, converge_test);
           } else {
-            update_w_KRP(i, rank, fast_pI, converge_test);
+            update_w_KRP(i, rank, fast_pI, matlab, converge_test);
           }
         }
         //std::cout << count << "\t";
@@ -662,7 +662,8 @@ namespace btas{
     /// \param[in, out] matlab If \c fast_pI = true then try to solve VA = B instead of taking pseudoinverse
     /// in the same manner that matlab would compute the inverse.
     /// \param[in] converge_test test to see if the ALS is converged
-    void update_w_KRP(int n, int rank, bool & fast_pI, ConvClass & converge_test) {
+    void update_w_KRP(int n, int rank, bool & fast_pI,
+            bool & matlab, ConvClass & converge_test) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -699,23 +700,25 @@ namespace btas{
       swap_to_first(tensor_ref, n, true);
 
 #else  // BTAS_HAS_CBLAS
-
       // without MKL program cannot perform the swapping algorithm, must compute
       // flattened intermediate
       gemm(CblasNoTrans, CblasNoTrans, 1.0, flatten(tensor_ref, n), this->generate_KRP(n, rank, true), 0.0, temp);
 #endif
 
       detail::set_MtKRP(converge_test, temp);
-//      if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
-//        converge_test.set_MtKRP(temp);
-//      }
+
       // contract the product from above with the pseudoinverse of the Hadamard
       // produce an optimize factor matrix
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, this->pseudoInverse(n, rank, fast_pI), 0.0, an);
+      auto pInv = this->psuedoinverse_helper(n, fast_pI, matlab, temp);
+      if(!matlab) {
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp,
+             pInv, 0.0, an);
+      } else{
+        an = pInv;
+      }
 
       // compute the difference between this new factor matrix and the previous
       // iteration
-      //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
       this->normCol(an);
 
       // Replace the old factor matrix with the new optimized result
