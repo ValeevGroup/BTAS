@@ -267,7 +267,6 @@ namespace btas{
         // If its the first time into build and SVD_initial_guess
         // build and optimize the initial guess based on the left
         // singular vectors of the reference tensor.
-#ifdef _HAS_INTEL_MKL
         if (A.empty() && SVD_initial_guess) {
           if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
 
@@ -336,8 +335,7 @@ namespace btas{
             gemm(CblasNoTrans, CblasTrans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
 
             // Find the Singular vectors of the matrix using eigenvalue decomposition
-            auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', R, S.data(), R, lambda.data());
-            if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
+            eigenvalue_decomp(S, lambda);
 
             // Fill a factor matrix with the singular vectors with the largest corresponding singular
             // values
@@ -379,9 +377,6 @@ namespace btas{
           // Optimize this initial guess.
           ALS(SVD_rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
         }
-#else  // _HAS_INTEL_MKL
-        if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
-#endif // _HAS_INTEL_MKL
         // This loop keeps track of column dimension
         bool opt_in_for_loop = false;
         for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
