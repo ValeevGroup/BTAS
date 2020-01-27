@@ -607,8 +607,29 @@ namespace btas{
         BTAS_EXCEPTION("Pseudo inverse failed" );
       }
     }
-  };
 
+    /// Trying to solve Ax = B
+    /// First try Cholesky to solve this problem directly
+    /// second tryfast pseudo-inverse algorithm described in
+    /// https://arxiv.org/pdf/0804.4809.pdf
+    /// If all else fails use SVD
+    Tensor psuedoinverse_helper(int mode_of_A, bool & fast_pI,
+                                bool & cholesky, Tensor B = Tensor(),
+                                double lambda = 0.0){
+      if(cholesky && B.empty()){
+        BTAS_EXCEPTION("To compute the Cholesky, one must provide a LHS tensor (Ax = B)");
+      }
+
+      auto rank = A[0].extent(1);
+      auto a = this->generate_V(mode_of_A, rank, lambda);
+
+      if(cholesky) {
+        cholesky = cholesky_inverse(a, B);
+        return B;
+      }
+      return pseudoInverse_impl(a, fast_pI);
+    }
+  };
 };// namespace btas
 
 #endif //BTAS_GENERIC_CP_H
