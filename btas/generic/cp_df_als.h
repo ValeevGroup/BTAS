@@ -475,7 +475,6 @@ namespace btas{
       for(int i = 1; i < ndimL; ++i){
         auto & tensor_ref = tensor_ref_left;
         Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
-        //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
         for(auto iter = a.begin(); iter != a.end(); ++iter){
           *(iter) = distribution(generator);
         }
@@ -485,7 +484,6 @@ namespace btas{
         auto & tensor_ref = tensor_ref_right;
 
         Tensor a(tensor_ref.extent(i), rank);
-        //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
         for(auto iter = a.begin(); iter != a.end(); ++iter){
           *(iter) = distribution(generator);
         }
@@ -692,7 +690,6 @@ namespace btas{
       auto a_dim = leftTensor ? contract_dim : ndim - 1;
       auto offset = 0;
 
-      // TODO fix the hadamard contraction loop
       // go through hadamard contract on all dimensions excluding rank (will skip one dimension)
       for(int i = 0; i < ndimCurr - 2; ++i, --contract_dim, --a_dim){
         auto contract_size = dims[contract_dim];
