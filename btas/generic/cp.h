@@ -626,9 +626,12 @@ namespace btas{
 
       if(cholesky) {
         cholesky = cholesky_inverse(a, B);
-        return B;
+        return;
       }
-      return pseudoInverse_impl(a, fast_pI);
+      auto pInv = pseudoInverse_impl(a, fast_pI);
+      Tensor an(B.extent(0), rank);
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, B, pInv, 0.0, an);
+      B = an;
     }
   };
 };// namespace btas
