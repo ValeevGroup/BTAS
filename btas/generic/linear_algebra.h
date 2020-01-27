@@ -180,13 +180,13 @@ namespace btas{
       BTAS_EXCEPTION("Tensor rank > 2. Tensor A must be a matrix.");
     }
     auto lambda_length = lambda.size();
-    auto largest_mode_A = (A.extent(0) > A.extent(1) ? A.extent(0) : A.extent(1));
-    if(lambda_length < largest_mode_A){
+    auto smallest_mode_A = (A.extent(0) < A.extent(1) ? A.extent(0) : A.extent(1));
+    if(lambda_length < smallest_mode_A){
       BTAS_EXCEPTION("Volume of lambda must be greater than or equal to the largest mode of A");
     }
 
-    auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', largest_mode_A,
-            A.data(), largest_mode_A, lambda.data());
+    auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', smallest_mode_A,
+            A.data(), smallest_mode_A, lambda.data());
     if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
   }
 
