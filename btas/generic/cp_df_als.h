@@ -533,7 +533,7 @@ namespace btas{
         for (auto i = 0; i < ndim; i++) {
           auto tmp = symmetries[i];
           if(tmp == i) {
-            direct(i, rank, matlab, converge_test);
+            direct(i, rank, fast_pI, matlab, converge_test);
           }
           else if(tmp < i){
             A[i] = A[tmp];
@@ -574,7 +574,7 @@ namespace btas{
     /// in the same manner that matlab would compute the inverse.
     /// return if computing the inverse in this was was successful
     /// \param[in] converge_test test to see if the ALS is converged
-    void direct(int n, int rank, bool & matlab, ConvClass & converge_test) {
+    void direct(int n, int rank, bool & fast_pI, bool & matlab, ConvClass & converge_test) {
 
       // Determine if n is in the left or the right tensor
       bool leftTensor = n < (ndimL - 1);
@@ -774,43 +774,16 @@ namespace btas{
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       //t1 = std::chrono::high_resolution_clock::now();
-#ifdef _HAS_INTEL_MKL
-      if(matlab) {
-        // This method computes the inverse quickly for a square matrix
-        // based on MATLAB's implementation of A / B operator.
-        btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
-        piv.fill(0);
 
-        auto a = generate_V(n, rank);
-        int LDB = contract_tensor.extent(0);
-        auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, a.data(), rank, piv.data(), contract_tensor.data(), rank);
-        if (info == 0) {
-          an = contract_tensor;
-        }
-        else{
-          // If inverse fails resort to the pseudoinverse
-          std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
-          matlab = false;
-        }
-      }
-      if(! matlab){
-        bool fast = false;
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(n, rank, fast), 0.0, an);
-      }
-#else
-      matlab = false;
-      if( !matlab){
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(n, rank, matlab), 0.0, an);
-      }
-#endif
+      this->psuedoinverse_helper(n, fast_pI, matlab, contract_tensor);
       //t2 = std::chrono::high_resolution_clock::now();
       //time = t2 - t1;
       //gemm_wPI += time.count();
 
 
       // Normalize the columns of the new factor matrix and update
-      normCol(an);
-      A[n] = an;
+      normCol(contract_tensor);
+      A[n] = contract_tensor;
     }
 
   };
