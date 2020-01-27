@@ -120,8 +120,6 @@ namespace btas{
 
     ~CP_ALS() = default;
 
-#ifdef _HAS_INTEL_MKL
-
     /// \brief Computes decomposition of the order-N tensor \c tensor
     /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
     /// Initial guess for factor matrices start at rank = max_dim(reference_tensor)
@@ -210,10 +208,10 @@ namespace btas{
         }
         count++;
       }
-      //std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
       return epsilon;
     }
 
+#ifdef _HAS_INTEL_MKL
     /// \brief Computes an approximate core tensor using
     /// Tucker decomposition, e.g.
     ///  \f$ T(I_1 \dots I_N) \approx T(R_1 \dots R_N) U^{(1)} (R_1, I_1) \dots U^{(N)} (R_N, I_N) \f$
