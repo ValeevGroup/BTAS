@@ -705,20 +705,14 @@ namespace btas{
 
       // contract the product from above with the pseudoinverse of the Hadamard
       // produce an optimize factor matrix
-      auto pInv = this->psuedoinverse_helper(n, fast_pI, matlab, temp);
-      if(!matlab) {
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp,
-             pInv, 0.0, an);
-      } else{
-        an = pInv;
-      }
+      this->psuedoinverse_helper(n, fast_pI, matlab, temp);
 
       // compute the difference between this new factor matrix and the previous
       // iteration
-      this->normCol(an);
+      this->normCol(temp);
 
       // Replace the old factor matrix with the new optimized result
-      A[n] = an;
+      A[n] = temp;
     }
 
 
@@ -871,16 +865,12 @@ namespace btas{
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       detail::set_MtKRP(converge_test, temp);
-      auto pInv = this->psuedoinverse_helper(n, fast_pI, matlab, temp);
-      if(!matlab) {
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pInv, 0.0, an);
-      } else{
-        an = pInv;
-      }
+      // Temp is then rewritten with unnormalized new A[n] matrix
+      this->psuedoinverse_helper(n, fast_pI, matlab, temp);
 
       // Normalize the columns of the new factor matrix and update
-      this->normCol(an);
-      A[n] = an;
+      this->normCol(temp);
+      A[n] = temp;
     }
 
   };
