@@ -569,58 +569,16 @@ namespace btas{
     /// \return The pseudoinverse of the matrix V.
     Tensor pseudoInverse(int n, int R, bool & fast_pI, double lambda = 0.0) {
       // CP_ALS method requires the pseudoinverse of matrix V
-#ifdef _HAS_INTEL_MKL
-      if(fast_pI) {
-        auto a = this->generate_V(n, R, lambda);
-        Tensor temp(R, R), inv(R, R);
-        // compute V^{\dag} = (A^T A) ^{-1} A^T
-        gemm(CblasTrans, CblasNoTrans, 1.0, a, a, 0.0, temp);
-        fast_pI = Inverse_Matrix(temp);
-        if(fast_pI) {
-          gemm(CblasNoTrans, CblasTrans, 1.0, temp, a, 0.0, inv);
-          return inv;
-        }
-        else{
-          std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
-        }
-      }
-#else
-      fast_pI = false;
-#endif // _HAS_INTEL_MKL
+      auto a = this->generate_V(n, R, lambda);
 
       if(!fast_pI) {
-        auto a = this->generate_V(n, R, lambda);
         Tensor s(Range{Range1{R}});
         Tensor U(Range{Range1{R}, Range1{R}});
         Tensor Vt(Range{Range1{R}, Range1{R}});
 
 // btas has no generic SVD for MKL LAPACKE
 //        time1 = std::chrono::high_resolution_clock::now();
-#ifdef _HAS_INTEL_MKL
-        double worksize;
-        double *work = &worksize;
-        lapack_int lwork = -1;
-        lapack_int info = 0;
-
-        char A = 'A';
-
-        // Call dgesvd with lwork = -1 to query optimal workspace size:
-
-        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R,
-                                   &worksize, lwork);
-        if (info != 0)
-          BTAS_EXCEPTION("SVD pseudo inverse failed");
-
-        lwork = (lapack_int) worksize;
-        work = (double *) malloc(sizeof(double) * lwork);
-
-        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R, work,
-                                   lwork);
-        if (info != 0)
-          BTAS_EXCEPTION("SVD pseudo inverse failed");
-
-        free(work);
-#else  // BTAS_HAS_CBLAS
+#ifdef LAPACKE_ENABLED
 
         gesvd('A', 'A', a, s, U, Vt);
 
