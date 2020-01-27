@@ -4,6 +4,7 @@
 #include <btas/generic/core_contract.h>
 #include <btas/error.h>
 #include <btas/tensor.h>
+#include <btas/generic/linear_algebra.h>
 
 #include <random>
 #include <stdlib.h>
