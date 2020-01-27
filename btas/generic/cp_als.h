@@ -874,36 +874,13 @@ namespace btas{
       n = last_dim ? ndim - 1: n;
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
-
       detail::set_MtKRP(converge_test, temp);
-#ifdef _HAS_INTEL_MKL
-      if(fast_pI && matlab) {
-        // This method computes the inverse quickly for a square matrix
-        // based on MATLAB's implementation of A / B operator.
-        btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
-        piv.fill(0);
-
-        auto a = this->generate_V(n, rank);
-        int LDB = temp.extent(0);
-        auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, a.data(), rank, piv.data(), temp.data(), rank);
-        if (info == 0) {
-            an = temp;
-        }
-        else{
-          // If inverse fails resort to the pseudoinverse
-          std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
-          matlab = false;
-        }
+      auto pInv = this->psuedoinverse_helper(n, fast_pI, matlab, temp);
+      if(!matlab) {
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pInv, 0.0, an);
+      } else{
+        an = pInv;
       }
-      if(!fast_pI || ! matlab){
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, this->pseudoInverse(n, rank, fast_pI), 0.0, an);
-      }
-#else
-      matlab = false;
-      if(!fast_pI || !matlab){
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, this->pseudoInverse(n, rank, fast_pI), 0.0, an);
-      }
-#endif
 
       // Normalize the columns of the new factor matrix and update
       this->normCol(an);
