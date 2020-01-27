@@ -21,8 +21,8 @@ namespace btas {
 template <typename Tensor>
 void tucker_compression(Tensor &A, double epsilon_svd,
                         std::vector<Tensor> &transforms) {
-  double norm2 = norm(A);
-  norm2 *= norm2;
+  double norm2 = dot(A,A);
+  //norm2 *= norm2;
   auto ndim = A.rank();
 
   for (int i = 0; i < ndim; i++) {
