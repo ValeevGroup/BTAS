@@ -21,6 +21,7 @@
 #include <btas/generic/converge_class.h>
 #include <btas/generic/rals_helper.h>
 #include <btas/generic/reconstruct.h>
+#include <btas/generic/linear_algebra.h>
 
 #ifdef _HAS_INTEL_MKL
 #include <mkl_trans.h>
