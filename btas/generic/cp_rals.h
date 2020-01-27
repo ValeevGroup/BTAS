@@ -657,7 +657,7 @@ public:
             if (dir) {
               direct(i, rank, fast_pI, matlab, lambda[i], s, converge_test);
             } else {
-              update_w_KRP(i, rank, fast_pI, lambda[i], s, converge_test);
+              update_w_KRP(i, rank, fast_pI, matlab, lambda[i], s, converge_test);
             }
             lambda[i] = (lambda[i] * (s * s) / (s0 * s0)) * alpha + (1 - alpha) * lambda[i];
           }
@@ -687,7 +687,8 @@ public:
     /// \param[in] lambda regularization parameter
     /// \param[in, out] s regularization step size, returns updated stepsize based on ALS iteration
     /// \param[in] converge_test test to see if the ALS is converged
-    void update_w_KRP(int n, int rank, bool & fast_pI, double lambda, double & s, ConvClass & converge_test) {
+    void update_w_KRP(int n, int rank, bool & fast_pI, bool & matlab,
+            double lambda, double & s, ConvClass & converge_test) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -740,18 +741,17 @@ public:
       }
       // contract the product from above with the pseudoinverse of the Hadamard
       // produce an optimize factor matrix
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
+      this->psuedoinverse_helper(n, fast_pI, matlab, temp, lambda);
 
       // compute the difference between this new factor matrix and the previous
       // iteration
-      //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
-      normCol(an);
+      normCol(temp);
 
       // Compute the value s after normalizing the columns
-      s = helper(n, an);
+      s = helper(n, temp);
 
       // Replace the old factor matrix with the new optimized result
-      A[n] = an;
+      A[n] = temp;
     }
 
     /// Computes an optimized factor matrix holding all others constant.
@@ -910,44 +910,16 @@ public:
       if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
         converge_test.set_MtKRP(temp);
       }
-
-#ifdef _HAS_INTEL_MKL
-      if(fast_pI && matlab) {
-        // This method computes the inverse quickly for a square matrix
-        // based on MATLAB's implementation of A / B operator.
-        btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
-        piv.fill(0);
-
-        auto a = generate_V(n, rank, lambda);
-        int LDB = temp.extent(0);
-        auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, a.data(), rank, piv.data(), temp.data(), rank);
-        if (info == 0) {
-          an = temp;
-        }
-        else{
-          // If inverse fails resort to the pseudoinverse
-          std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
-          matlab = false;
-        }
-      }
-      if(!fast_pI || ! matlab){
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
-      }
-#else
-      matlab = false;
-      if(!fast_pI || !matlab){
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, pseudoInverse(n, rank, fast_pI, lambda), 0.0, an);
-      }
-#endif
-
+      
+      this->psuedoinverse_helper(n, fast_pI, matlab, temp, lambda);
 
       // Normalize the columns of the new factor matrix and update
-      normCol(an);
+      normCol(temp);
 
       // Compute S after column normalization for RALS
-      s = helper(n, an);
+      s = helper(n, temp);
 
-      A[n] = an;
+      A[n] = temp;
     }
 
   };
