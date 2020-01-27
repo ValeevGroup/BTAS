@@ -226,69 +226,55 @@ bool cholesky_inverse(Tensor & A, Tensor & B){
 /// \param[in] a matrix to be inverted.
 /// \return a^{\dagger} The pseudoinverse of the matrix a.
 template <typename Tensor>
-Tensor pseudoInverse(Tensor & a, int R) {
+Tensor pseudoInverse_impl(Tensor & a, bool & fast_pI) {
 #ifndef LAPACKE_ENABLED
     BTAS_EXCEPTION("Computing the pseudoinverses requires LAPACKE");
 #endif // LAPACKE_ENABLED
-  bool Cholesky = true;
-  bool fast = false;
-  Tensor s(Range{Range1{R}});
-  Tensor U(Range{Range1{R}, Range1{R}});
-  Tensor Vt(Range{Range1{R}, Range1{R}});
 
-  if(Cholesky){
-    Cholesky = false;
-  }
-  if(fast){
+    if (a.rank() > 2) {
+      BTAS_EXCEPTION("PseudoInverse can only be computed on a matrix");
+    }
 
-  }
-  if (!Cholesky && !fast) {
-    double worksize;
-    double *work = &worksize;
-    lapack_int lwork = -1;
-    lapack_int info = 0;
+    auto row = a.extent(0), col = a.extent(1);
+    auto rank = (row < col ? row : col);
 
-    char A = 'A';
+    if (fast_pI) {
+      Tensor temp(col, col), inv(col, row);
+      // compute V^{\dag} = (A^T A) ^{-1} A^T
+      gemm(CblasTrans, CblasNoTrans, 1.0, a, a, 0.0, temp);
+      fast_pI = Inverse_Matrix(temp);
+      if (fast_pI) {
+        gemm(CblasNoTrans, CblasTrans, 1.0, temp, a, 0.0, inv);
+        return inv;
+      } else {
+        std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
+      }
+    }
+    Tensor s(Range{Range1{rank}});
+    Tensor U(Range{Range1{row}, Range1{row}});
+    Tensor Vt(Range{Range1{col}, Range1{col}});
 
-    // Call dgesvd with lwork = -1 to query optimal workspace size:
-
-    info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R,
-                               &worksize, lwork);
-    if (info != 0)
-    BTAS_EXCEPTION("SVD pseudo inverse failed");
-
-    lwork = (lapack_int) worksize;
-    work = (double *) malloc(sizeof(double) * lwork);
-
-    info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R, work,
-                               lwork);
-    if (info != 0)
-    BTAS_EXCEPTION("SVD pseudo inverse failed");
-
-    free(work);
-
-    //gesvd('A', 'A', a, s, U, Vt);
+    gesvd('A', 'A', a, s, U, Vt);
 
     // Inverse the Singular values with threshold 1e-13 = 0
     double lr_thresh = 1e-13;
-    Tensor s_inv(Range{Range1{R}, Range1{R}});
+    Tensor s_inv(Range{Range1{row}, Range1{col}});
     s_inv.fill(0.0);
-    for (auto i = 0; i < R; ++i) {
+    for (auto i = 0; i < rank; ++i) {
       if (s(i) > lr_thresh)
         s_inv(i, i) = 1 / s(i);
       else
         s_inv(i, i) = s(i);
     }
-    s.resize(Range{Range1{R}, Range1{R}});
+    s.resize(Range{Range1{row}, Range1{col}});
 
     // Compute the matrix A^-1 from the inverted singular values and the U and
     // V^T provided by the SVD
     gemm(CblasNoTrans, CblasNoTrans, 1.0, U, s_inv, 0.0, s);
     gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
 
+    return U;
   }
-  return U;
-}
 
 } // namespace btas
 #endif // BTAS_HAS_CBLAS
