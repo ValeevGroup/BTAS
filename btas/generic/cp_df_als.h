@@ -81,7 +81,6 @@ namespace btas{
 
     using CP<Tensor,ConvClass>::A;
     using CP<Tensor,ConvClass>::ndim;
-    using CP<Tensor,ConvClass>::pseudoInverse;
     using CP<Tensor,ConvClass>::normCol;
     using CP<Tensor,ConvClass>::generate_KRP;
     using CP<Tensor,ConvClass>::generate_V;

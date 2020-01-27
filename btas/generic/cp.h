@@ -565,46 +565,6 @@ namespace btas{
     ///                on return reports whether the fast route was used.
     /// \param[in] lambda Regularization parameter lambda is added to the diagonal of V
     /// \return The pseudoinverse of the matrix V.
-    Tensor pseudoInverse(int n, int R, bool & fast_pI, double lambda = 0.0) {
-      // CP_ALS method requires the pseudoinverse of matrix V
-      auto a = this->generate_V(n, R, lambda);
-
-      if(!fast_pI) {
-        Tensor s(Range{Range1{R}});
-        Tensor U(Range{Range1{R}, Range1{R}});
-        Tensor Vt(Range{Range1{R}, Range1{R}});
-
-// btas has no generic SVD for MKL LAPACKE
-//        time1 = std::chrono::high_resolution_clock::now();
-#ifdef LAPACKE_ENABLED
-
-        gesvd('A', 'A', a, s, U, Vt);
-
-#endif
-
-        // Inverse the Singular values with threshold 1e-13 = 0
-        double lr_thresh = 1e-13;
-        Tensor s_inv(Range{Range1{R}, Range1{R}});
-        s_inv.fill(0.0);
-        for (auto i = 0; i < R; ++i) {
-          if (s(i) > lr_thresh)
-            s_inv(i, i) = 1 / s(i);
-          else
-            s_inv(i, i) = s(i);
-        }
-        s.resize(Range{Range1{R}, Range1{R}});
-
-        // Compute the matrix A^-1 from the inverted singular values and the U and
-        // V^T provided by the SVD
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, U, s_inv, 0.0, s);
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
-
-        return U;
-      }
-      else{
-        BTAS_EXCEPTION("Pseudo inverse failed" );
-      }
-    }
 
     /// Trying to solve Ax = B
     /// First try Cholesky to solve this problem directly
@@ -626,7 +586,7 @@ namespace btas{
         cholesky = cholesky_inverse(a, B);
         return;
       }
-      auto pInv = pseudoInverse_impl(a, fast_pI);
+      auto pInv = pseudoInverse(a, fast_pI);
       Tensor an(B.extent(0), rank);
       gemm(CblasNoTrans, CblasNoTrans, 1.0, B, pInv, 0.0, an);
       B = an;

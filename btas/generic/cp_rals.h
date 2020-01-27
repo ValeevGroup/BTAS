@@ -95,7 +95,6 @@ namespace btas{
 public:
     using CP<Tensor,ConvClass>::A;
     using CP<Tensor,ConvClass>::ndim;
-    using CP<Tensor,ConvClass>::pseudoInverse;
     using CP<Tensor,ConvClass>::normCol;
     using CP<Tensor,ConvClass>::generate_KRP;
     using CP<Tensor,ConvClass>::generate_V;
@@ -910,7 +909,7 @@ public:
       if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
         converge_test.set_MtKRP(temp);
       }
-      
+
       this->psuedoinverse_helper(n, fast_pI, matlab, temp, lambda);
 
       // Normalize the columns of the new factor matrix and update

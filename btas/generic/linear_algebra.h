@@ -226,7 +226,7 @@ bool cholesky_inverse(Tensor & A, Tensor & B){
 /// \param[in] a matrix to be inverted.
 /// \return a^{\dagger} The pseudoinverse of the matrix a.
 template <typename Tensor>
-Tensor pseudoInverse_impl(Tensor & a, bool & fast_pI) {
+Tensor pseudoInverse(Tensor & a, bool & fast_pI) {
 #ifndef LAPACKE_ENABLED
     BTAS_EXCEPTION("Computing the pseudoinverses requires LAPACKE");
 #endif // LAPACKE_ENABLED

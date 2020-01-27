@@ -475,7 +475,7 @@ namespace btas{
         }
         // Finally Form the product of K * J^\dagger
         Tensor a0(coupled_dim, rank);
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, K, pseudoInverse(J1, rank), 0.0, a0);
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, K, pseudoInverse(J1, fast_pI), 0.0, a0);
         this->normCol(a0);
         A[0] = a0;
       }
@@ -551,7 +551,7 @@ namespace btas{
         else if(n == this->ndim - 1)
           detail::set_MtKRPR(converge_test, contract_tensor);
         Tensor an(skip_dim, rank);
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(G, rank), 0.0, an);
+        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(G, fast_pI), 0.0, an);
         this->normCol(an);
         A[n] = an;
       }
