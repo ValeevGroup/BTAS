@@ -17,7 +17,7 @@ cd ${BUILD_PREFIX}
 ##########   test with blas+lapack   ##########
 mkdir build_cblas
 cd build_cblas
-cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_ASSERT_THROWS=ON
+cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_ASSERT_THROWS=ON -DBTAS_BUILD_UNITTEST=ON
 make VERBOSE=1
 make check VERBOSE=1
 cd ..
@@ -25,7 +25,7 @@ cd ..
 ########## test without blas+lapack   ##########
 mkdir build
 cd build
-cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_ASSERT_THROWS=ON -DBTAS_USE_CBLAS_LAPACKE=OFF
+cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_ASSERT_THROWS=ON  -DBTAS_BUILD_UNITTEST=ON -DBTAS_USE_CBLAS_LAPACKE=OFF
 make VERBOSE=1
 make check VERBOSE=1
 cd ..
