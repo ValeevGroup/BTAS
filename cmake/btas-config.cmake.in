@@ -2,8 +2,8 @@
 # This will define the following CMake cache variables
 #
 #    BTAS_FOUND           - true if BTAS library were found
-#    BTAS_VERSION         - the libint2 version
-#    BTAS_EXT_VERSION     - the libint2 version including the (optional) buildid, such as beta.3
+#    BTAS_VERSION         - the BTAS version
+#    BTAS_EXT_VERSION     - the BTAS version including the (optional) buildid, such as beta.3
 #
 # and the following imported targets
 #
