@@ -3,8 +3,11 @@
 cmake_minimum_required (VERSION 3.1.0)
 project (BTAS)
 
+# extra cmake files are shipped with BTAS
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
+
 include(FeatureSummary)
-include(cmake/modules/RedefaultableOption.cmake)
+include(RedefaultableOption)
 
 # Configure options
 redefaultable_option(BTAS_BUILD_UNITTEST "Whether to build unit tests" OFF)
@@ -24,9 +27,6 @@ set(BTAS_MICRO_VERSION 0)
 set(BTAS_PRERELEASE alpha)
 set(BTAS_VERSION "${BTAS_MAJOR_VERSION}.${BTAS_MINOR_VERSION}.${BTAS_MICRO_VERSION}-${BTAS_PRERELEASE}")
 set(TARGET_ARCH "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
-
-# extra cmake files are shipped with BTAS
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
 
 include(CMakePushCheckState)
 include(GNUInstallDirs)
