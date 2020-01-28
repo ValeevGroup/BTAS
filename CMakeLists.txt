@@ -18,6 +18,8 @@ redefaultable_option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw; enabl
 add_feature_info(ASSERT_THROWS BTAS_ASSERT_THROWS "BTAS_ASSERT(x) will throw if x is false, and not be affected by NDEBUG")
 redefaultable_option(BTAS_USE_CBLAS_LAPACKE "Whether to use BLAS+LAPACK via CBLAS+LAPACKE" ON)
 add_feature_info(USE_CBLAS_LAPACKE BTAS_USE_CBLAS_LAPACKE "Will use BLAS and LAPACK linear algebra libraries via their CBLAS and LAPACKE interfaces")
+redefaultable_option(BTAS_ENABLE_MKL "Whether to look for Intel MKL" ON)
+add_feature_info(ENABLE_MKL BTAS_ENABLE_MKL "Will look for Intel MKL library")
 
 set(TARGET_MAX_INDEX_RANK 6 CACHE STRING "Determines the rank for which the default BTAS index type will use stack (default: 6); this requires Boost.Container")
 add_feature_info("TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK}" TRUE "default BTAS index type will use stack for rank<=${TARGET_MAX_INDEX_RANK}")
