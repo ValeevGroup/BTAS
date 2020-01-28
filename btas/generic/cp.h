@@ -419,8 +419,6 @@ namespace btas{
     /// on CP-ALS.
     /// \param[in] calculate_epsilon Should the 2-norm
     /// error be calculated \f$ ||T_{\rm exact} - T_{\rm approx}|| = \epsilon \f$ .
-    /// \param[in] step
-    /// CP_ALS built from r =1 to r = rank. r increments by step.
     /// \param[in, out] epsilon The 2-norm
     /// error between the exact and approximated reference tensor
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
@@ -455,9 +453,9 @@ namespace btas{
       return V;
     }
 
-    // Keep track of the Left hand Khatri-Rao product of matrices and
-    // Continues to multiply be right hand products, skipping
-    // the matrix at index n.
+    /// Keep track of the Left hand Khatri-Rao product of matrices and
+    /// Continues to multiply be right hand products, skipping
+    /// the matrix at index n.
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
     /// \param[in] forward Should the Khatri-Rao product move through the factor
