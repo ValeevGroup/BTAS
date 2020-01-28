@@ -40,7 +40,14 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     gemm(CblasNoTrans, CblasTrans, 1.0, flat, flat, 0.0, S);
 
     // Calculate SVD of smaller object.
-    eigenvalue_decomp(S, lambda);
+#ifdef BTAS_HAS_LAPACKE
+    auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R,
+                              lambda.data());
+    if (info)
+    BTAS_EXCEPTION("Error in computing the tucker SVD");
+#else
+    BTAS_EXCEPTION("Tucker decomposition requires LAPACKE");
+#endif
 
     // Find the truncation rank based on the threshold.
     int rank = 0;
