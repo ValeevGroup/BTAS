@@ -12,12 +12,12 @@ set(btas_test_src_files
 )
 add_executable(${executable} EXCLUDE_FROM_ALL ${btas_test_src_files})
 # Add include directories and compiler flags for ta_test
-include_directories(
+target_include_directories(${executable} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${Boost_INCLUDE_DIRS})
-target_link_libraries(${executable} ${Boost_LIBRARIES} ${LAPACKE_LIBRARIES} ${CBLAS_LIBRARIES})
-append_flags(CMAKE_EXE_LINKER_FLAGS "${BLAS_LINKER_FLAGS}")
+)
+target_link_libraries(${executable} BTAS)
+#append_flags(CMAKE_EXE_LINKER_FLAGS "${BLAS_LINKER_FLAGS}")
 
 # Add targets
 add_dependencies(${executable} External)
