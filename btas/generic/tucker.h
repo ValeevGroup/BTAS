@@ -50,7 +50,8 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     }
 
     // Truncate the column space of the unitary factor matrix.
-    lambda = Tensor(R, R - rank);
+    auto kept_evecs = R - rank;
+    lambda = Tensor(R, kept_evecs);
     auto lower_bound = {0, rank};
     auto upper_bound = {R, R};
     auto view =
@@ -71,14 +72,16 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     for(int j = 0; j < ndim; ++j){
       if(j == i){
         final_modes.push_back(ndim);
-        final_dims.push_back(rank);
+        final_dims.push_back(kept_evecs);
       } else{
         final_modes.push_back(j);
         final_dims.push_back(A.extent(j));
       }
     }
-    Tensor final(final_dims);
-    btas::contract(1.0, A, A_modes, lambda, {i, ndim}, 0.0, final, final_dims);
+    btas::Range final_range(final_dims);
+    Tensor final(final_range);
+    btas::contract(1.0, A, A_modes, lambda, contract_modes, 0.0, final, final_modes);
+    A = final;
 #endif //BTAS_HAS_INTEL_MKL
   }
 }
