@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 3.1.0)
 project (BTAS)
 
 include(FeatureSummary)
-include(RedefaultableOption)
+include(cmake/modules/RedefaultableOption.cmake)
 
 # Configure options
 redefaultable_option(BTAS_BUILD_UNITTEST "Whether to build unit tests" OFF)
