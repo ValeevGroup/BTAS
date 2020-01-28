@@ -17,7 +17,7 @@ namespace btas{
 
 #ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Using this function requires LAPACKE");
-#endif // BTAS_HAS_LAPACKE
+#else //BTAS_HAS_LAPACKE
 
     if(A.rank() > 2){
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
@@ -89,6 +89,7 @@ namespace btas{
 
     // contracting the pivoting matrix with L to put in correct order
     gemm(CblasNoTrans, CblasNoTrans, 1.0, P, L, 0.0, A);
+#endif // BTAS_HAS_LAPACKE
   }
 
 /// Computes the QR decomposition of matrix \c A
@@ -99,7 +100,7 @@ namespace btas{
 
 #ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Using this function requires LAPACKE");
-#endif // BTAS_HAS_LAPACKE
+#else //BTAS_HAS_LAPACKE
 
     if(A.rank() > 2){
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
@@ -129,6 +130,7 @@ namespace btas{
     } else {
       return false;
     }
+#endif // BTAS_HAS_LAPACKE
   }
 
 /// Computes the inverse of a matrix \c A using a pivoted LU decomposition
@@ -139,7 +141,7 @@ namespace btas{
 
 #ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Using LU matrix inversion requires LAPACKE");
-#endif // BTAS_HAS_LAPACKE
+#else //BTAS_HAS_LAPACKE
 
     if(A.rank() > 2){
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
@@ -163,6 +165,7 @@ namespace btas{
       return false;
     }
     return true;
+#endif // BTAS_HAS_LAPACKE
   }
 
 /// Computes the eigenvalue decomposition of a matrix \c A and
@@ -175,7 +178,7 @@ namespace btas{
   void eigenvalue_decomp(Tensor & A, Tensor & lambda){
 #ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Using eigenvalue decomposition requires LAPACKE");
-#endif // BTAS_HAS_LAPACKE
+#else //BTAS_HAS_LAPACKE
     if(A.rank() > 2){
       BTAS_EXCEPTION("Tensor rank > 2. Tensor A must be a matrix.");
     }
@@ -188,6 +191,7 @@ namespace btas{
     auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', smallest_mode_A,
             A.data(), smallest_mode_A, lambda.data());
     if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
+#endif // BTAS_HAS_LAPACKE
   }
 
   /// Solving Ax = B using a Cholesky decomposition
@@ -198,8 +202,8 @@ namespace btas{
 template <typename Tensor>
 bool cholesky_inverse(Tensor & A, Tensor & B){
 #ifndef BTAS_HAS_LAPACKE
-  BTAS_EXCEPTION("Cholesky inverse function requires LAPACKE")
-#endif
+  BTAS_EXCEPTION("Cholesky inverse function requires LAPACKE");
+#else //BTAS_HAS_LAPACKE
     // This method computes the inverse quickly for a square matrix
     // based on MATLAB's implementation of A / B operator.
     auto rank = B.extent(1);
@@ -216,6 +220,7 @@ bool cholesky_inverse(Tensor & A, Tensor & B){
       std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
       return false;
     }
+#endif //BTAS_HAS_LAPACKE
 }
 
 /// SVD referencing code from
@@ -229,7 +234,7 @@ template <typename Tensor>
 Tensor pseudoInverse(Tensor & a, bool & fast_pI) {
 #ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Computing the pseudoinverses requires LAPACKE");
-#endif // BTAS_HAS_LAPACKE
+#else //BTAS_HAS_LAPACKE
 
     if (a.rank() > 2) {
       BTAS_EXCEPTION("PseudoInverse can only be computed on a matrix");
@@ -274,6 +279,7 @@ Tensor pseudoInverse(Tensor & a, bool & fast_pI) {
     gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
 
     return U;
+#endif // BTAS_HAS_LAPACKE
   }
 
 } // namespace btas
