@@ -23,10 +23,6 @@
 #include <btas/generic/reconstruct.h>
 #include <btas/generic/linear_algebra.h>
 
-#ifdef BTAS_HAS_INTEL_MKL
-#include <mkl_trans.h>
-#endif
-
 namespace btas{
   namespace detail{
 

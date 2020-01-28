@@ -134,8 +134,6 @@ public:
 
     ~CP_RALS() = default;
 
-#ifdef BTAS_HAS_INTEL_MKL
-
     /// \brief Computes decomposition of the order-N tensor \c tensor
     /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
     /// Initial guess for factor matrices start at rank = max_dim(reference_tensor)
@@ -236,7 +234,6 @@ public:
     /// computed to either finite error or finite rank. Default settings
     /// calculate to finite error. Factor matrices from get_factor_matrices() are
     /// scaled by the Tucker transformations.
-    /// \note This requires Intel MKL.
 
     /// \param[in] tcutSVD Truncation threshold for SVD of each mode in Tucker
     /// decomposition.
@@ -311,7 +308,6 @@ public:
     /// either finite error or finite rank.
     /// Default settings calculate to finite error.
     /// Factor matrices are scaled by randomized transformation.
-    /// \note This requires Intel MKL.
 
     /// \param[in] desired_compression_rank The new dimension of each mode after
     /// randomized compression.
@@ -378,8 +374,6 @@ public:
 
       return epsilon;
     }
-
-#endif  //BTAS_HAS_INTEL_MKL
 
   protected:
     int size;                   // number of elements in tensor_ref
