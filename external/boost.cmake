@@ -9,7 +9,7 @@ if (NOT TARGET Boost::boost)
   # Boost::boost is defined since 3.5
   cmake_minimum_required(VERSION 3.5.0)
   # try config first
-  set(Boost_BTAS_DEPS_LIBRARIES boost serialization)
+  set(Boost_BTAS_DEPS_LIBRARIES serialization)
   find_package(Boost CONFIG COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
   if (NOT TARGET Boost::boost)
     find_package(Boost REQUIRED COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
