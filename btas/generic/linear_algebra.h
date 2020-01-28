@@ -95,6 +95,7 @@ namespace btas{
 /// Computes the QR decomposition of matrix \c A
 /// \param[in, out] A In: A Reference matrix to be QR decomposed.  Out:
 /// The Q of a QR decomposition of \c A.
+/// \return bool true if QR was successful false if failed.
 
   template <typename Tensor> bool QR_decomp(Tensor &A) {
 
@@ -136,6 +137,7 @@ namespace btas{
 /// Computes the inverse of a matrix \c A using a pivoted LU decomposition
 /// \param[in, out] A In: A reference matrix to be inverted. Out:
 /// The inverse of A, computed using LU decomposition.
+/// \return bool true if inversion was successful false if failed
   template <typename Tensor>
   bool Inverse_Matrix(Tensor & A){
 
@@ -195,10 +197,13 @@ namespace btas{
   }
 
   /// Solving Ax = B using a Cholesky decomposition
-  /// \param[in] A The right-hand side of the linear equation
-  /// to be inverted using Cholesky
+  /// \param[in, out] A In: The right-hand side of the linear equation
+  /// to be inverted using Cholesky. Out:
+  /// the factors L and U from the factorization A = P*L*U;
+  /// the unit diagonal elements of L are not stored.
   /// \param[in, out] B In: The left-hand side of the linear equation
   /// out: The solution x = A^{-1}B
+  /// \return bool true if inversion was successful false if failed.
 template <typename Tensor>
 bool cholesky_inverse(Tensor & A, Tensor & B){
 #ifndef BTAS_HAS_LAPACKE
@@ -228,28 +233,28 @@ bool cholesky_inverse(Tensor & A, Tensor & B){
 /// Fast pseudo-inverse algorithm described in
 /// https://arxiv.org/pdf/0804.4809.pdf
 
-/// \param[in] a matrix to be inverted.
-/// \return a^{\dagger} The pseudoinverse of the matrix a.
+/// \param[in] A In: A reference to the matrix to be inverted.
+/// \return \f$ A^{\dagger} \f$ The pseudoinverse of the matrix A.
 template <typename Tensor>
-Tensor pseudoInverse(Tensor & a, bool & fast_pI) {
+Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
 #ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Computing the pseudoinverses requires LAPACKE");
 #else //BTAS_HAS_LAPACKE
 
-    if (a.rank() > 2) {
+    if (A.rank() > 2) {
       BTAS_EXCEPTION("PseudoInverse can only be computed on a matrix");
     }
 
-    auto row = a.extent(0), col = a.extent(1);
+    auto row = A.extent(0), col = A.extent(1);
     auto rank = (row < col ? row : col);
 
     if (fast_pI) {
       Tensor temp(col, col), inv(col, row);
       // compute V^{\dag} = (A^T A) ^{-1} A^T
-      gemm(CblasTrans, CblasNoTrans, 1.0, a, a, 0.0, temp);
+      gemm(CblasTrans, CblasNoTrans, 1.0, A, A, 0.0, temp);
       fast_pI = Inverse_Matrix(temp);
       if (fast_pI) {
-        gemm(CblasNoTrans, CblasTrans, 1.0, temp, a, 0.0, inv);
+        gemm(CblasNoTrans, CblasTrans, 1.0, temp, A, 0.0, inv);
         return inv;
       } else {
         std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
@@ -259,7 +264,7 @@ Tensor pseudoInverse(Tensor & a, bool & fast_pI) {
     Tensor U(Range{Range1{row}, Range1{row}});
     Tensor Vt(Range{Range1{col}, Range1{col}});
 
-    gesvd('A', 'A', a, s, U, Vt);
+    gesvd('A', 'A', A, s, U, Vt);
 
     // Inverse the Singular values with threshold 1e-13 = 0
     double lr_thresh = 1e-13;
