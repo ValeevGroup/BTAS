@@ -1,0 +1,53 @@
+# - CMAKE Config file for the BTAS package
+# This will define the following CMake cache variables
+#
+#    BTAS_FOUND           - true if BTAS library were found
+#    BTAS_VERSION         - the libint2 version
+#    BTAS_EXT_VERSION     - the libint2 version including the (optional) buildid, such as beta.3
+#
+# and the following imported targets
+#
+#     BTAS::BTAS          - the BTAS library
+#
+
+# Set package version
+set(BTAS_VERSION "@BTAS_VERSION@")
+set(BTAS_EXT_VERSION "@BTAS_EXT_VERSION@")
+
+@PACKAGE_INIT@
+
+if(NOT TARGET Boost::boost)
+  set(Boost_USE_CONFIG @Boost_USE_CONFIG@)
+  set(Boost_BTAS_DEPS_LIBRARIES @Boost_BTAS_DEPS_LIBRARIES@)
+  if (Boost_USE_CONFIG)
+    set(Boost_CONFIG @Boost_CONFIG@)
+    if (NOT Boost_CONFIG OR NOT EXISTS ${Boost_CONFIG})
+      message(FATAL_ERROR "Expected Boost config file at ${Boost_CONFIG}; directory moved since BTAS configuration?")
+    endif()
+    get_filename_component(Boost_DIR ${Boost_CONFIG} DIRECTORY)
+    find_package(Boost CONFIG QUIET REQUIRED COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES} PATHS ${Boost_DIR} NO_DEFAULT_PATH)
+  else (Boost_USE_CONFIG)
+    set(BOOST_INCLUDEDIR @Boost_INCLUDE_DIR@)
+    set(BOOST_LIBRARYDIR @Boost_LIBRARY_DIR_RELEASE@)
+    if (NOT BOOST_LIBRARYDIR OR NOT EXISTS ${BOOST_LIBRARYDIR})
+      set(BOOST_LIBRARYDIR @Boost_LIBRARY_DIR_DEBUG@)
+    endif()
+    set(Boost_NO_SYSTEM_PATHS OFF)
+    if (BOOST_LIBRARYDIR AND BOOST_INCLUDEDIR)
+      if (EXISTS ${BOOST_LIBRARYDIR} AND EXISTS ${BOOST_INCLUDEDIR})
+        set(Boost_NO_SYSTEM_PATHS ON)
+      endif()
+    endif()
+    find_package(Boost QUIET REQUIRED COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
+  endif (Boost_USE_CONFIG)
+endif()
+
+# Include library IMPORT targets
+if(NOT TARGET BTAS::BTAS)
+  include("${CMAKE_CURRENT_LIST_DIR}/btas-targets.cmake")
+  if(NOT TARGET BTAS::BTAS)
+    message(FATAL_ERROR "expected BTAS::BTAS among imported BTAS targets")
+  endif()
+endif()
+
+set(BTAS_FOUND TRUE)
