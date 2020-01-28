@@ -555,24 +555,26 @@ namespace btas{
     /// Fast pseudo-inverse algorithm described in
     /// https://arxiv.org/pdf/0804.4809.pdf
 
-    /// \param[in] n The mode being optimized, all other modes held constant
-    /// \param[in] R The current rank, column dimension of the factor matrices
-    /// \param[in,out] fast_pI If true, try to compute the pseudo inverse via fast Cholesky decomposition, else use SVD;
-    ///                on return reports whether the fast route was used.
-    /// \param[in] lambda Regularization parameter lambda is added to the diagonal of V
-    /// \return The pseudoinverse of the matrix V.
-
     /// Trying to solve Ax = B
     /// First try Cholesky to solve this problem directly
     /// second tryfast pseudo-inverse algorithm described in
     /// https://arxiv.org/pdf/0804.4809.pdf
     /// If all else fails use SVD
-    // TODO write docs here
+
+    /// \param[in] mode_of_A The mode being optimized used to compute hadamard LHS (V) of ALS problem (Vx = B)
+    /// \param[in,out] fast_pI If true, try to compute the pseudo inverse via fast LU decomposition, else use SVD;
+    ///                on return reports whether the fast route was used.
+    /// \param[in, out] cholesky If true, try to solve the linear equation Vx = B (the ALS problem)
+    ///                using a Cholesky decomposition (lapacke subroutine) on return reports if
+    ///                inversion was successful.
+    /// \param[in, out] B In: The RHS of the ALS problem ( Vx = B ). Out: The solved linear equation
+    ///                     \f$ V^{-1} B \f$
+    /// \param[in] lambda Regularization parameter lambda is added to the diagonal of V
     void psuedoinverse_helper(int mode_of_A, bool & fast_pI,
-                                bool & cholesky, Tensor & B = Tensor(),
+                                bool & cholesky, Tensor & B,
                                 double lambda = 0.0){
-      if(cholesky && B.empty()){
-        BTAS_EXCEPTION("To compute the Cholesky, one must provide a LHS tensor (Ax = B)");
+      if(B.empty()){
+        BTAS_EXCEPTION("pseudoinverse helper solves Ax = B.  B cannot be an empty tensor");
       }
 
       auto rank = A[0].extent(1);
