@@ -12,10 +12,6 @@
 #include <iostream>
 #include <vector>
 
-#ifdef BTAS_HAS_INTEL_MKL
-#include <mkl_trans.h>
-#endif
-
 namespace btas{
   /** \brief Computes the Canonical Product (CP) decomposition of an order-N
     tensor using alternating least squares (ALS).
@@ -211,7 +207,6 @@ namespace btas{
       return epsilon;
     }
 
-#ifdef BTAS_HAS_INTEL_MKL
     /// \brief Computes an approximate core tensor using
     /// Tucker decomposition, e.g.
     ///  \f$ T(I_1 \dots I_N) \approx T(R_1 \dots R_N) U^{(1)} (R_1, I_1) \dots U^{(N)} (R_N, I_N) \f$
@@ -221,7 +216,6 @@ namespace btas{
     /// computed to either finite error or finite rank. Default settings
     /// calculate to finite error. Factor matrices from get_factor_matrices() are
     /// scaled by the Tucker transformations.
-    /// \note This requires Intel MKL.
 
     /// \param[in] tcutSVD Truncation threshold for SVD of each mode in Tucker
     /// decomposition.
@@ -295,7 +289,6 @@ namespace btas{
     /// either finite error or finite rank.
     /// Default settings calculate to finite error.
     /// Factor matrices are scaled by randomized transformation.
-    /// \note This requires Intel MKL.
 
     /// \param[in] desired_compression_rank The new dimension of each mode after
     /// randomized compression.
@@ -361,8 +354,6 @@ namespace btas{
 
       return epsilon;
     }
-
-#endif  //BTAS_HAS_INTEL_MKL
 
 
   protected:
