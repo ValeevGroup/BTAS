@@ -11,46 +11,53 @@
 extern "C" {
 #endif // __cplusplus
 
-#ifdef BTAS_HAS_CBLAS
-# define LAPACKE_ENABLED
-# if not defined(_CBLAS_HEADER) && not defined(_LAPACKE_HEADER)
+#if defined(BTAS_HAS_CBLAS) && defined(BTAS_HAS_LAPACKE)
+# if not defined(BTAS_CBLAS_HEADER) && not defined(BTAS_LAPACKE_HEADER)
 
-#   ifdef _HAS_INTEL_MKL
+#   ifdef BTAS_HAS_INTEL_MKL
 
 #     include <mkl_cblas.h>
 #     include <mkl_lapacke.h>
 
-#   else  // _HAS_INTEL_MKL
+#   else  // BTAS_HAS_INTEL_MKL
 
 #     include <cblas.h>
       // see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
 #     include <complex>
 #     ifndef lapack_complex_float
 #       define lapack_complex_float std::complex<float>
+#     else // lapack_complex_float
+        static_assert(sizeof(std::complex<float>)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and std::complex<float> do not match");
 #     endif // lapack_complex_float
 #     ifndef lapack_complex_double
 #       define lapack_complex_double std::complex<double>
+#     else // lapack_complex_double
+        static_assert(sizeof(std::complex<double>)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and std::complex<double> do not match");
 #     endif // lapack_complex_double
 #     include <lapacke.h>
 
-#   endif  // _HAS_INTEL_MKL
+#   endif  // BTAS_HAS_INTEL_MKL
 
-# else  // _CBLAS_HEADER
+# else  // BTAS_CBLAS_HEADER
 
-#   include _CBLAS_HEADER
+#   include BTAS_CBLAS_HEADER
     // see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
 #   include <complex>
 #   ifndef lapack_complex_float
 #     define lapack_complex_float std::complex<float>
+#   else // lapack_complex_float
+      static_assert(sizeof(std::complex<float>)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and std::complex<float> do not match");
 #   endif // lapack_complex_float
 #   ifndef lapack_complex_double
 #     define lapack_complex_double std::complex<double>
+#   else // lapack_complex_double
+      static_assert(sizeof(std::complex<double>)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and std::complex<double> do not match");
 #   endif // lapack_complex_double
-#   include _LAPACKE_HEADER
+#   include BTAS_LAPACKE_HEADER
 
-# endif  // _CBLAS_HEADER
+# endif  // BTAS_CBLAS_HEADER
 
-#else  // BTAS_HAS_CBLAS
+#else  // defined(BTAS_HAS_CBLAS) && defined(BTAS_HAS_LAPACKE)
 
 /// major order directive
 enum CBLAS_ORDER { CblasRowMajor, CblasColMajor };
@@ -67,44 +74,11 @@ enum CBLAS_DIAG { CblasNonUnit, CblasUnit };
 /// transposition directive for symmetric matrix (not used)
 enum CBLAS_SIDE { CblasLeft, CblasRight };
 
-#endif // BTAS_HAS_CBLAS
+#endif // defined(BTAS_HAS_CBLAS) && defined(BTAS_HAS_LAPACKE)
 
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-
-// some BLAS libraries define their own types for complex data
-#ifndef HAVE_INTEL_MKL
-#ifndef lapack_complex_float
-# define lapack_complex_float  std::complex<float>
-#else // lapack_complex_float
-static_assert(sizeof(std::complex<float>)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and std::complex<float> do not match");
-#endif // lapack_complex_float
-#ifndef lapack_complex_double
-# define lapack_complex_double std::complex<double>
-#else // lapack_complex_double
-static_assert(sizeof(std::complex<double>)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and std::complex<double> do not match");
-#endif // lapack_complex_double
-#else // HAVE_INTEL_MKL
-// if calling direct need to cast to the MKL complex types
-# ifdef MKL_DIRECT_CALL
-#  include <mkl_types.h>
-#  ifndef lapack_complex_float
-#   define lapack_complex_float MKL_Complex8
-#  endif
-#  ifndef lapack_complex_double
-#   define lapack_complex_double MKL_Complex16
-#  endif
-// else can call via F77 prototypes which don't need type conversion
-# else // MKL_DIRECT_CALL
-#  ifndef lapack_complex_float
-#   define lapack_complex_float  std::complex<float>
-#  endif
-#  ifndef lapack_complex_double
-#   define lapack_complex_double std::complex<double>
-#  endif
-# endif // MKL_DIRECT_CALL
-#endif // HAVE_INTEL_MKL
 
 namespace btas {
 

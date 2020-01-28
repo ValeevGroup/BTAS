@@ -12,7 +12,7 @@
 #include <iostream>
 #include <vector>
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
 #include <mkl_trans.h>
 #endif
 
@@ -211,7 +211,7 @@ namespace btas{
       return epsilon;
     }
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
     /// \brief Computes an approximate core tensor using
     /// Tucker decomposition, e.g.
     ///  \f$ T(I_1 \dots I_N) \approx T(R_1 \dots R_N) U^{(1)} (R_1, I_1) \dots U^{(N)} (R_N, I_N) \f$
@@ -362,7 +362,7 @@ namespace btas{
       return epsilon;
     }
 
-#endif  //_HAS_INTEL_MKL
+#endif  //BTAS_HAS_INTEL_MKL
 
 
   protected:
@@ -663,7 +663,7 @@ namespace btas{
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
 
       // Computes the Khatri-Rao product intermediate
       auto KhatriRao = this->generate_KRP(n, rank, true);

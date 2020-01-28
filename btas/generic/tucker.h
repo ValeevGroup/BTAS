@@ -1,7 +1,7 @@
 #ifndef BTAS_TUCKER_DECOMP_H
 #define BTAS_TUCKER_DECOMP_H
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
 
 #include <btas/generic/core_contract.h>
 #include <btas/generic/flatten.h>
@@ -65,5 +65,5 @@ void tucker_compression(Tensor &A, double epsilon_svd,
   }
 }
 } // namespace btas
-#endif //_HAS_INTEL_MKL
+#endif //BTAS_HAS_INTEL_MKL
 #endif // BTAS_TUCKER_DECOMP_H

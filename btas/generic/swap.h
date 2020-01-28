@@ -1,7 +1,7 @@
 #ifndef BTAS_SWAP_H
 #define BTAS_SWAP_H
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
 
 #include <vector>
 
@@ -32,7 +32,7 @@ namespace btas {
 template <typename Tensor>
 void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
                    bool for_ALS_update = true) {
-#ifndef _HAS_INTEL_MKL
+#ifndef BTAS_HAS_INTEL_MKL
   BTAS_EXCEPTION("In place tranposes require MKL");
 #endif
   // If the mode of interest is the the first mode you are done.
@@ -121,7 +121,7 @@ void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
 
 template <typename Tensor>
 void swap_to_back(Tensor &A, int mode, bool is_in_back = false) {
-#ifndef _HAS_INTEL_MKL
+#ifndef BTAS_HAS_INTEL_MKL
   BTAS_EXCEPTION("In place tranposes require MKL");
 #endif
   if (mode > A.rank())
@@ -159,6 +159,6 @@ void swap_to_back(Tensor &A, int mode, bool is_in_back = false) {
 
 } // namespace btas
 
-#endif //_HAS_INTEL_MKL
+#endif //BTAS_HAS_INTEL_MKL
 
 #endif // BTAS_SWAP_H

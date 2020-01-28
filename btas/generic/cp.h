@@ -23,7 +23,7 @@
 #include <btas/generic/reconstruct.h>
 #include <btas/generic/linear_algebra.h>
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
 #include <mkl_trans.h>
 #endif
 
@@ -126,8 +126,8 @@ namespace btas{
     /// tensor
     /// \param[in] ndim number of modes in the reference tensor.
     CP(int dims) : num_ALS(0) {
-#if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
-      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP decompositions requires LAPACKE or mkl_lapack");
+#if not defined(BTAS_HAS_LAPACKE)
+      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP decompositions requires LAPACKE");
 #endif
       ndim = dims;
     }

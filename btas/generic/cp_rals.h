@@ -22,7 +22,7 @@
 #include <btas/generic/rals_helper.h>
 #include <btas/generic/reconstruct.h>
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
 #include <mkl_trans.h>
 #endif
 
@@ -134,7 +134,7 @@ public:
 
     ~CP_RALS() = default;
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
 
     /// \brief Computes decomposition of the order-N tensor \c tensor
     /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
@@ -379,7 +379,7 @@ public:
       return epsilon;
     }
 
-#endif  //_HAS_INTEL_MKL
+#endif  //BTAS_HAS_INTEL_MKL
 
   protected:
     int size;                   // number of elements in tensor_ref
@@ -691,7 +691,7 @@ public:
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
 
       // Computes the Khatri-Rao product intermediate
       auto KhatriRao = generate_KRP(n, rank, true);

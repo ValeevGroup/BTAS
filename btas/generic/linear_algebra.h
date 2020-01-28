@@ -15,9 +15,9 @@ namespace btas{
 
   template <typename Tensor> void LU_decomp(Tensor &A) {
 
-#ifndef LAPACKE_ENABLED
+#ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Using this function requires LAPACKE");
-#endif // LAPACKE_ENABLED
+#endif // BTAS_HAS_LAPACKE
 
     if(A.rank() > 2){
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
@@ -97,9 +97,9 @@ namespace btas{
 
   template <typename Tensor> bool QR_decomp(Tensor &A) {
 
-#ifndef LAPACKE_ENABLED
+#ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Using this function requires LAPACKE");
-#endif // LAPACKE_ENABLED
+#endif // BTAS_HAS_LAPACKE
 
     if(A.rank() > 2){
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
@@ -137,9 +137,9 @@ namespace btas{
   template <typename Tensor>
   bool Inverse_Matrix(Tensor & A){
 
-#ifndef LAPACKE_ENABLED
+#ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Using LU matrix inversion requires LAPACKE");
-#endif // LAPACKE_ENABLED
+#endif // BTAS_HAS_LAPACKE
 
     if(A.rank() > 2){
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
@@ -173,9 +173,9 @@ namespace btas{
 ///  matrix \c A
   template <typename Tensor>
   void eigenvalue_decomp(Tensor & A, Tensor & lambda){
-#ifndef LAPACKE_ENABLED
+#ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Using eigenvalue decomposition requires LAPACKE");
-#endif // LAPACKE_ENABLED
+#endif // BTAS_HAS_LAPACKE
     if(A.rank() > 2){
       BTAS_EXCEPTION("Tensor rank > 2. Tensor A must be a matrix.");
     }
@@ -197,7 +197,7 @@ namespace btas{
   /// out: The solution x = A^{-1}B
 template <typename Tensor>
 bool cholesky_inverse(Tensor & A, Tensor & B){
-#ifndef LAPACKE_ENABLED
+#ifndef BTAS_HAS_LAPACKE
   BTAS_EXCEPTION("Cholesky inverse function requires LAPACKE")
 #endif
     // This method computes the inverse quickly for a square matrix
@@ -227,9 +227,9 @@ bool cholesky_inverse(Tensor & A, Tensor & B){
 /// \return a^{\dagger} The pseudoinverse of the matrix a.
 template <typename Tensor>
 Tensor pseudoInverse(Tensor & a, bool & fast_pI) {
-#ifndef LAPACKE_ENABLED
+#ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Computing the pseudoinverses requires LAPACKE");
-#endif // LAPACKE_ENABLED
+#endif // BTAS_HAS_LAPACKE
 
     if (a.rank() > 2) {
       BTAS_EXCEPTION("PseudoInverse can only be computed on a matrix");

@@ -122,7 +122,7 @@ namespace btas{
               "Tensor describing symmetries must be defined for all dimensions");
     }
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
     /// \brief Computes decomposition of the order-N tensor \c tensor
     /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
     /// Initial guess for factor matrices start at rank = max_dim(reference_tensor)
@@ -147,7 +147,7 @@ namespace btas{
             int max_als = 20,bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) override{
       BTAS_EXCEPTION("Function not yet implemented");
     }
-#endif //_HAS_INTEL_MKL
+#endif //BTAS_HAS_INTEL_MKL
 
   protected:
     Tensor& tensor_ref_left;        // Tensor in first term of the loss function
