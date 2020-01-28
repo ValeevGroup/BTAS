@@ -5,6 +5,7 @@
 #include <btas/error.h>
 #include <btas/tensor.h>
 #include <btas/generic/linear_algebra.h>
+#include <btas/generic/contract.h>
 
 #include <random>
 #include <stdlib.h>
@@ -58,6 +59,11 @@ void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
   // Add the oversampling to the desired rank
   auto ndim = A.rank();
   auto rank = des_rank + oversampl;
+  std::vector<int> A_modes;
+  for(int i = 0; i< ndim;++i){
+    A_modes.push_back(i);
+  }
+  std::vector<int> final_modes(A_modes);
 
   // Walk through all the modes of A
   for (int n = 0; n < ndim; n++) {
@@ -102,8 +108,28 @@ void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
 
     transforms.push_back(Y);
   }
+  std::vector<int> contract_modes;
+  contract_modes.push_back(0); contract_modes.push_back(ndim);
   for (int n = 0; n < ndim; n++) {
+#ifdef BTAS_HAS_INTEL_MKL
     core_contract(A, transforms[n], n);
+#else
+    std::vector<int> final_dims;
+    for(int j = 0; j < ndim; ++j){
+      if(j == n){
+        final_dims.push_back(transforms[n].extent(1));
+      } else {
+        final_dims.push_back(A.extent(j));
+      }
+    }
+    contract_modes[0] = n;
+    final_modes[n] = ndim;
+    btas::Range final_range(final_dims);
+    Tensor final(final_range);
+    contract(1.0, A, A_modes, transforms[n], contract_modes, 0.0, final, final_modes);
+    final_modes[n] = n;
+    A = final;
+#endif //BTAS_HAS_INTEL_MKL
   }
 }
 } // namespace btas
