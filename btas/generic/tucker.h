@@ -1,10 +1,9 @@
 #ifndef BTAS_TUCKER_DECOMP_H
 #define BTAS_TUCKER_DECOMP_H
 
-#ifdef BTAS_HAS_INTEL_MKL
-
 #include <btas/generic/core_contract.h>
 #include <btas/generic/flatten.h>
+#include <btas/generic/contract.h>
 
 #include <cstdlib>
 
@@ -24,6 +23,10 @@ void tucker_compression(Tensor &A, double epsilon_svd,
   double norm2 = dot(A,A);
   //norm2 *= norm2;
   auto ndim = A.rank();
+  std::vector<int> A_modes;
+  for(int i = 0; i< ndim;++i){
+    A_modes.push_back(i);
+  }
 
   for (int i = 0; i < ndim; i++) {
     // Determine the threshold epsilon_SVD.
@@ -37,10 +40,7 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     gemm(CblasNoTrans, CblasTrans, 1.0, flat, flat, 0.0, S);
 
     // Calculate SVD of smaller object.
-    auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R,
-                              lambda.data());
-    if (info)
-      BTAS_EXCEPTION("Error in computing the tucker SVD");
+    eigenvalue_decomp(S, lambda);
 
     // Find the truncation rank based on the threshold.
     int rank = 0;
@@ -60,10 +60,27 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     // Push the factor matrix back as a transformation.
     transforms.push_back(lambda);
 
+#ifdef BTAS_HAS_INTEL_MKL
     // Contract the factor matrix with the reference tensor, A.
     core_contract(A, lambda, i);
+#else
+    std::vector<int> contract_modes;
+    contract_modes.push_back(i); contract_modes.push_back(ndim);
+    std::vector<int> final_modes;
+    std::vector<int> final_dims;
+    for(int j = 0; j < ndim; ++j){
+      if(j == i){
+        final_modes.push_back(ndim);
+        final_dims.push_back(rank);
+      } else{
+        final_modes.push_back(j);
+        final_dims.push_back(A.extent(j));
+      }
+    }
+    Tensor final(final_dims);
+    btas::contract(1.0, A, A_modes, lambda, {i, ndim}, 0.0, final, final_dims);
+#endif //BTAS_HAS_INTEL_MKL
   }
 }
 } // namespace btas
-#endif //BTAS_HAS_INTEL_MKL
 #endif // BTAS_TUCKER_DECOMP_H
