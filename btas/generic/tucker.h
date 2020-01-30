@@ -67,7 +67,11 @@ void tucker_compression(Tensor &A, double epsilon_svd,
 
     // Push the factor matrix back as a transformation.
     transforms.push_back(lambda);
+  }
 
+  for(int i = 0; i < ndim; ++i){
+    auto & lambda = transforms[i];
+    auto kept_evecs = lambda.extent(1);
 #ifdef BTAS_HAS_INTEL_MKL
     // Contract the factor matrix with the reference tensor, A.
     core_contract(A, lambda, i);
