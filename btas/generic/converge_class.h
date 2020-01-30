@@ -112,7 +112,9 @@ namespace btas {
 
       double fitChange = abs(fitOld_ - fit);
       fitOld_ = fit;
-      //std::cout << fit << "\t" << fitChange << std::endl;
+      if(verbose_) {
+        std::cout << fit << "\t" << fitChange << std::endl;
+      }
       if(fitChange < tol_) {
         converged_num++;
         if(converged_num == 2){
@@ -140,6 +142,10 @@ namespace btas {
       return final_fit_;
     }
 
+    void verbose(bool verb){
+      verbose_ = verb;
+    }
+
   private:
     double tol_;
     double fitOld_ = -1.0;
@@ -148,6 +154,7 @@ namespace btas {
     int iter_ = 0;
     int converged_num = 0;
     Tensor MtKRP_;
+    bool verbose_ = false;
 
     double norm(const std::vector<Tensor> & btas_factors){
       auto rank = btas_factors[0].extent(1);
