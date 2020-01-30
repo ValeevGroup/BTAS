@@ -14,18 +14,18 @@ fi
 
 cd ${BUILD_PREFIX}
 
-##########   test with cblas   ##########
+##########   test with blas+lapack   ##########
 mkdir build_cblas
 cd build_cblas
-cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_ASSERT_THROWS=ON -DUSE_CBLAS=ON -DBoost_FOUND=ON -DBoost_INCLUDE_DIRS=/usr/include/boost -DBoost_LIBRARIES=/usr/lib/x86_64-linux-gnu/libboost_serialization.a -DSKIP_BOOST_SEARCH=ON
+cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_ASSERT_THROWS=ON -DBTAS_BUILD_UNITTEST=ON
 make VERBOSE=1
 make check VERBOSE=1
 cd ..
 
-########## test without cblas ##########
+########## test without blas+lapack   ##########
 mkdir build
 cd build
-cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_ASSERT_THROWS=ON -DBoost_FOUND=ON -DBoost_INCLUDE_DIRS=/usr/include/boost -DBoost_LIBRARIES=/usr/lib/x86_64-linux-gnu/libboost_serialization.a -DSKIP_BOOST_SEARCH=ON
+cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_ASSERT_THROWS=ON  -DBTAS_BUILD_UNITTEST=ON -DBTAS_USE_CBLAS_LAPACKE=OFF
 make VERBOSE=1
 make check VERBOSE=1
 cd ..

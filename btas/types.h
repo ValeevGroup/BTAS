@@ -7,50 +7,53 @@
 
 #include <complex>
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
+#if defined(BTAS_HAS_CBLAS) && defined(BTAS_HAS_LAPACKE)
+# if not defined(BTAS_CBLAS_HEADER) && not defined(BTAS_LAPACKE_HEADER)
 
-#ifdef BTAS_HAS_CBLAS
+#   ifdef BTAS_HAS_INTEL_MKL
 
-#if not defined(_CBLAS_HEADER) && not defined(_LAPACKE_HEADER)
+#     include <mkl_cblas.h>
+#     include <mkl_lapacke.h>
 
-#ifdef _HAS_INTEL_MKL
+#   else  // BTAS_HAS_INTEL_MKL
 
-#include <mkl_cblas.h>
-#include <mkl_lapacke.h>
+#     include <cblas.h>
+      // see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
+#     include <complex>
+#     ifndef lapack_complex_float
+#       define lapack_complex_float std::complex<float>
+#     else // lapack_complex_float
+        static_assert(sizeof(std::complex<float>)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and std::complex<float> do not match");
+#     endif // lapack_complex_float
+#     ifndef lapack_complex_double
+#       define lapack_complex_double std::complex<double>
+#     else // lapack_complex_double
+        static_assert(sizeof(std::complex<double>)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and std::complex<double> do not match");
+#     endif // lapack_complex_double
+#     include <lapacke.h>
 
-#else  // _HAS_INTEL_MKL
+#   endif  // BTAS_HAS_INTEL_MKL
 
-#include <cblas.h>
-// see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
-#include <complex>
-#ifndef lapack_complex_float
-# define lapack_complex_float std::complex<float>
-#endif
-#ifndef lapack_complex_double
-# define lapack_complex_double std::complex<double>
-#endif
-#include <lapacke.h>
+# else  // BTAS_CBLAS_HEADER
 
-#endif  // _HAS_INTEL_MKL
+#   include BTAS_CBLAS_HEADER
+    // see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
+#   include <complex>
+#   ifndef lapack_complex_float
+#     define lapack_complex_float std::complex<float>
+#   else // lapack_complex_float
+      static_assert(sizeof(std::complex<float>)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and std::complex<float> do not match");
+#   endif // lapack_complex_float
+#   ifndef lapack_complex_double
+#     define lapack_complex_double std::complex<double>
+#   else // lapack_complex_double
+      static_assert(sizeof(std::complex<double>)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and std::complex<double> do not match");
+#   endif // lapack_complex_double
+#   include BTAS_LAPACKE_HEADER
 
-#else  // _CBLAS_HEADER
+# endif  // BTAS_CBLAS_HEADER
 
-#include _CBLAS_HEADER
-// see https://github.com/xianyi/OpenBLAS/issues/1992 why this is needed to prevent lapacke.h #define'ing I
-#include <complex>
-#ifndef lapack_complex_float
-# define lapack_complex_float std::complex<float>
-#endif
-#ifndef lapack_complex_double
-# define lapack_complex_double std::complex<double>
-#endif
-#include _LAPACKE_HEADER
-
-#endif  // _CBLAS_HEADER
-
-#else  // BTAS_HAS_CBLAS
+#else  // defined(BTAS_HAS_CBLAS) && defined(BTAS_HAS_LAPACKE)
 
 /// major order directive
 enum CBLAS_ORDER { CblasRowMajor, CblasColMajor };
@@ -67,44 +70,19 @@ enum CBLAS_DIAG { CblasNonUnit, CblasUnit };
 /// transposition directive for symmetric matrix (not used)
 enum CBLAS_SIDE { CblasLeft, CblasRight };
 
-#endif // BTAS_HAS_CBLAS
+#endif // defined(BTAS_HAS_CBLAS) && defined(BTAS_HAS_LAPACKE)
 
-#ifdef __cplusplus
-}
-#endif // __cplusplus
-
-// some BLAS libraries define their own types for complex data
-#ifndef HAVE_INTEL_MKL
+// if lapack types are not defined define them EVEN if not using CBLAS/LAPACKE to make writing generic API easier
 #ifndef lapack_complex_float
-# define lapack_complex_float  std::complex<float>
-#else
+# define lapack_complex_float std::complex<float>
+#else // lapack_complex_float
 static_assert(sizeof(std::complex<float>)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and std::complex<float> do not match");
-#endif
+# endif // lapack_complex_float
 #ifndef lapack_complex_double
 # define lapack_complex_double std::complex<double>
-#else
+#else // lapack_complex_double
 static_assert(sizeof(std::complex<double>)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and std::complex<double> do not match");
-#endif
-#else
-// if calling direct need to cast to the MKL complex types
-# ifdef MKL_DIRECT_CALL
-#  include <mkl_types.h>
-#  ifndef lapack_complex_float
-#   define lapack_complex_float MKL_Complex8
-#  endif
-#  ifndef lapack_complex_double
-#   define lapack_complex_double MKL_Complex16
-#  endif
-// else can call via F77 prototypes which don't need type conversion
-# else
-#  ifndef lapack_complex_float
-#   define lapack_complex_float  std::complex<float>
-#  endif
-#  ifndef lapack_complex_double
-#   define lapack_complex_double std::complex<double>
-#  endif
-# endif
-#endif
+#endif // lapack_complex_double
 
 namespace btas {
 
@@ -124,15 +102,15 @@ namespace btas {
     return *reinterpret_cast<std::complex<float>*>(&val);
   }
   template <typename T>
-  const lapack_complex_float*
-  to_lapack_cptr(const T* ptr) {
-    static_assert(sizeof(T)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and T given to btas::to_lapack_cptr do not match");
+  const lapack_complex_float* to_lapack_cptr(const T* ptr) {
+    static_assert(sizeof(T) == sizeof(lapack_complex_float),
+                  "sizes of lapack_complex_float and T given to btas::to_lapack_cptr do not match");
     return reinterpret_cast<const lapack_complex_float*>(ptr);
   }
   template <typename T>
-  typename std::enable_if<!std::is_const<T>::value, lapack_complex_float*>::type
-  to_lapack_cptr(T* ptr) {
-    static_assert(sizeof(T)==sizeof(lapack_complex_float), "sizes of lapack_complex_float and T given to btas::to_lapack_cptr do not match");
+  typename std::enable_if<!std::is_const<T>::value, lapack_complex_float*>::type to_lapack_cptr(T* ptr) {
+    static_assert(sizeof(T) == sizeof(lapack_complex_float),
+                  "sizes of lapack_complex_float and T given to btas::to_lapack_cptr do not match");
     return reinterpret_cast<lapack_complex_float*>(ptr);
   }
 
@@ -143,27 +121,29 @@ namespace btas {
     return *reinterpret_cast<std::complex<double>*>(&val);
   }
   template <typename T>
-  const lapack_complex_double*
-  to_lapack_zptr(const T* ptr) {
-    static_assert(sizeof(T)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and T given to btas::to_lapack_zptr do not match");
+  const lapack_complex_double* to_lapack_zptr(const T* ptr) {
+    static_assert(sizeof(T) == sizeof(lapack_complex_double),
+                  "sizes of lapack_complex_double and T given to btas::to_lapack_zptr do not match");
     return reinterpret_cast<const lapack_complex_double*>(ptr);
   }
   template <typename T>
-  typename std::enable_if<!std::is_const<T>::value, lapack_complex_double*>::type
-  to_lapack_zptr(T* ptr) {
-    static_assert(sizeof(T)==sizeof(lapack_complex_double), "sizes of lapack_complex_double and T given to btas::to_lapack_zptr do not match");
+  typename std::enable_if<!std::is_const<T>::value, lapack_complex_double*>::type to_lapack_zptr(T* ptr) {
+    static_assert(sizeof(T) == sizeof(lapack_complex_double),
+                  "sizes of lapack_complex_double and T given to btas::to_lapack_zptr do not match");
     return reinterpret_cast<lapack_complex_double*>(ptr);
   }
 
-//
-//  Other aliases for convenience
-//
+  //
+  //  Other aliases for convenience
+  //
 
-/// default size type
-typedef unsigned long size_type;
+  /// default size type
+  typedef unsigned long size_type;
 
-/// null deleter
-struct nulldeleter { void operator() (void const*) { } };
+  /// null deleter
+  struct nulldeleter {
+    void operator()(void const*) {}
+  };
 
 } // namespace btas
 

@@ -12,10 +12,6 @@
 #include <iostream>
 #include <vector>
 
-#ifdef _HAS_INTEL_MKL
-#include <mkl_trans.h>
-#endif
-
 namespace btas{
   /** \brief Computes the Canonical Product (CP) decomposition of an order-N
     tensor using alternating least squares (ALS).
@@ -120,8 +116,6 @@ namespace btas{
 
     ~CP_ALS() = default;
 
-#ifdef _HAS_INTEL_MKL
-
     /// \brief Computes decomposition of the order-N tensor \c tensor
     /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
     /// Initial guess for factor matrices start at rank = max_dim(reference_tensor)
@@ -210,7 +204,6 @@ namespace btas{
         }
         count++;
       }
-      //std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
       return epsilon;
     }
 
@@ -223,15 +216,10 @@ namespace btas{
     /// computed to either finite error or finite rank. Default settings
     /// calculate to finite error. Factor matrices from get_factor_matrices() are
     /// scaled by the Tucker transformations.
-    /// \note This requires Intel MKL.
 
     /// \param[in] tcutSVD Truncation threshold for SVD of each mode in Tucker
     /// decomposition.
     /// \param[in] converge_test Test to see if ALS is converged
-    /// \param[in] opt_rank Should the CP decomposition of tucker
-    /// core tensor find the optimal rank with error < tcutCP? Default = true.
-    /// \param[in] tcutCP How small epsilon must be to consider the CP
-    /// decomposition converged. Default = 1e-2.
     /// \param[in] rank If finding CP
     /// decomposition to finite rank, define CP rank. Default 0 will throw error
     /// for compute_rank.
@@ -239,32 +227,18 @@ namespace btas{
     /// without calculating the Khatri-Rao product? Default = true.
     /// \param[in]
     /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{exact} -
-    /// T_{approx}|| = \epsilon \f$ . Default = true.
-    /// \param[in] step CP_ALS built
-    /// from r =1 to r = \c rank. r increments by \c step; default = 1.
-    /// \param[in]
-    /// max_rank The highest rank approximation computed before giving up on
-    /// CP-ALS. Default = 1e4.
+    /// T_{approx}|| = \epsilon \f$ . Default = false.
     /// \param[in] max_als If CP decomposition is to finite
     /// error, max_als is the highest rank approximation computed before giving up
     /// on CP-ALS. Default = 1e4.
-    /// \param[in] tcutALS How small difference in
-    /// factor matrices must be to consider ALS of a single rank converged.
-    /// Default = 0.1.
-    /// \param[in] SVD_initial_guess Should the initial factor matrices be
-    /// approximated with left singular values? default = false
-    /// \param[in] SVD_rank if \c
-    /// SVD_initial_guess is true specify the rank of the initial guess such that
-    /// SVD_rank <= rank. default = true
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// default = false
     /// \returns 2-norm error, \f$ \epsilon \f$,
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
     ///  ConvClass != FitCheck.
-    double compress_compute_tucker(double tcutSVD, ConvClass & converge_test, bool opt_rank = true, double tcutCP = 1e-2, int rank = 0,
-                                   bool direct = true, bool calculate_epsilon = true, int step = 1, int max_rank = 1e4,
-                                   double max_als = 1e4, bool SVD_initial_guess = false,
-                                   int SVD_rank = 0, bool fast_pI = false) {
+    double compress_compute_tucker(double tcutSVD, ConvClass & converge_test, int rank = 0,
+                                   bool direct = true, bool calculate_epsilon = false,
+                                   double max_als = 1e4, bool fast_pI = false) {
       // Tensor compression
       std::vector<Tensor> transforms;
       tucker_compression(tensor_ref, tcutSVD, transforms);
@@ -272,10 +246,7 @@ namespace btas{
       double epsilon = -1.0;
 
       // CP decomposition
-      if (opt_rank)
-        epsilon = this->compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, max_als, fast_pI, direct);
-      else
-        epsilon = this->compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, max_als, fast_pI, calculate_epsilon, direct);
+      epsilon = this->compute_rank_random(rank, converge_test, max_als, fast_pI, calculate_epsilon, direct);
 
       // scale factor matrices
       for (int i = 0; i < ndim; i++) {
@@ -297,7 +268,6 @@ namespace btas{
     /// either finite error or finite rank.
     /// Default settings calculate to finite error.
     /// Factor matrices are scaled by randomized transformation.
-    /// \note This requires Intel MKL.
 
     /// \param[in] desired_compression_rank The new dimension of each mode after
     /// randomized compression.
@@ -308,51 +278,29 @@ namespace btas{
     /// \param[in] powerit Number of power iterations,
     /// as specified in the literature, to scale the spectrum of each mode.
     /// Default = suggested = 2.
-    /// \param[in] opt_rank Should the CP decomposition
-    /// of tucker core tensor find the optimal rank with error < tcutCP? Default =
-    /// true.
-    /// \param[in] tcutCP How small epsilon must be to consider the CP
-    /// decomposition converged. Default = 1e-2.
     /// \param[in] rank If finding CP
     /// decomposition to finite rank, define CP rank. Default 0 will throw error
     /// for compute_rank.
     /// \param[in] direct Should the CP decomposition be
     /// computed without calculating the Khatri-Rao product? Default = true.
     /// \param[in] calculate_epsilon Should the 2-norm error be calculated
-    /// \f$ ||T_exact - T_approx|| = \epsilon \f$. Default = true.
-    /// \param[in] step
-    /// CP_ALS built from r =1 to r = rank. r increments by step; default = 1.
-    /// \param[in] max_rank The highest rank approximation computed before giving
-    /// up on CP-ALS. Default = 1e5.
+    /// \f$ ||T_exact - T_approx|| = \epsilon \f$. Default = false.
     /// \param[in] max_als If CP decomposition is to
     /// finite error, max_als is the highest rank approximation computed before
     /// giving up on CP-ALS. Default = 1e5.
-    /// \param[in] tcutALS How small
-    /// difference in factor matrices must be to consider ALS of a single rank
-    /// converged. Default = 0.1.
-    /// \param[in] SVD_initial_guess Should the initial factor matrices be
-    /// approximated with left singular values? default = false
-    /// \param[in] SVD_rank if \c
-    /// SVD_initial_guess is true specify the rank of the initial guess such that
-    /// SVD_rank <= rank. default = true
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// default = false
     /// \returns 2-norm error, \f$ \epsilon \f$,
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
     ///  ConvClass != FitCheck.
     double compress_compute_rand(int desired_compression_rank, ConvClass & converge_test, int oversampl = 10, int powerit = 2,
-                                 bool opt_rank = true, double tcutCP = 1e-2, int rank = 0, bool direct = true,
-                                 bool calculate_epsilon = false, int step = 1, int max_rank = 1e5, double max_als = 1e5,
-                                 bool SVD_initial_guess = false, int SVD_rank = 0, bool fast_pI = false) {
+            int rank = 0, bool direct = true, bool calculate_epsilon = false, double max_als = 1e5,
+            bool fast_pI = false) {
       std::vector<Tensor> transforms;
       randomized_decomposition(tensor_ref, transforms, desired_compression_rank, oversampl, powerit);
       size = tensor_ref.size();
-      double epsilon = -1.0;
 
-      if (opt_rank)
-        epsilon = this->compute_error(converge_test, tcutCP, step, max_rank, SVD_initial_guess, SVD_rank, max_als, fast_pI, direct);
-      else
-        epsilon = this->compute_rank(rank, converge_test, step, SVD_initial_guess, SVD_rank, max_als, fast_pI, calculate_epsilon, direct);
+      auto epsilon = this->compute_rank_random(rank, converge_test, max_als, fast_pI, calculate_epsilon, direct);
 
       // scale factor matrices
       for (int i = 0; i < ndim; i++) {
@@ -363,8 +311,6 @@ namespace btas{
 
       return epsilon;
     }
-
-#endif  //_HAS_INTEL_MKL
 
 
   protected:
@@ -401,7 +347,6 @@ namespace btas{
       // If its the first time into build and SVD_initial_guess
       // build and optimize the initial guess based on the left
       // singular vectors of the reference tensor.
-#ifdef _HAS_INTEL_MKL
       if (A.empty() && SVD_initial_guess) {
         if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
 
@@ -437,8 +382,7 @@ namespace btas{
           gemm(CblasNoTrans, CblasTrans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
 
           // Find the Singular vectors of the matrix using eigenvalue decomposition
-          auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', R, S.data(), R, lambda.data());
-          if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
+          eigenvalue_decomp(S, lambda);
 
           // Fill a factor matrix with the singular vectors with the largest corresponding singular
           // values
@@ -486,9 +430,6 @@ namespace btas{
         // Optimize this initial guess.
         ALS(SVD_rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
-#else  // _HAS_INTEL_MKL
-      if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
-#endif // _HAS_INTEL_MKL
       // This loop keeps track of column dimension
       bool opt_in_for_loop = false;
       for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
@@ -636,7 +577,7 @@ namespace btas{
           } else if (dir) {
             direct(i, rank, fast_pI, matlab, converge_test);
           } else {
-            update_w_KRP(i, rank, fast_pI, converge_test);
+            update_w_KRP(i, rank, fast_pI, matlab, converge_test);
           }
         }
         //std::cout << count << "\t";
@@ -665,11 +606,12 @@ namespace btas{
     /// \param[in, out] matlab If \c fast_pI = true then try to solve VA = B instead of taking pseudoinverse
     /// in the same manner that matlab would compute the inverse.
     /// \param[in] converge_test test to see if the ALS is converged
-    void update_w_KRP(int n, int rank, bool & fast_pI, ConvClass & converge_test) {
+    void update_w_KRP(int n, int rank, bool & fast_pI,
+            bool & matlab, ConvClass & converge_test) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
 
       // Computes the Khatri-Rao product intermediate
       auto KhatriRao = this->generate_KRP(n, rank, true);
@@ -702,27 +644,23 @@ namespace btas{
       swap_to_first(tensor_ref, n, true);
 
 #else  // BTAS_HAS_CBLAS
-
       // without MKL program cannot perform the swapping algorithm, must compute
       // flattened intermediate
       gemm(CblasNoTrans, CblasNoTrans, 1.0, flatten(tensor_ref, n), this->generate_KRP(n, rank, true), 0.0, temp);
 #endif
 
       detail::set_MtKRP(converge_test, temp);
-//      if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
-//        converge_test.set_MtKRP(temp);
-//      }
+
       // contract the product from above with the pseudoinverse of the Hadamard
       // produce an optimize factor matrix
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, this->pseudoInverse(n, rank, fast_pI), 0.0, an);
+      this->psuedoinverse_helper(n, fast_pI, matlab, temp);
 
       // compute the difference between this new factor matrix and the previous
       // iteration
-      //for (auto l = 0; l < rank; ++l) A[ndim](l) = normCol(an, l);
-      this->normCol(an);
+      this->normCol(temp);
 
       // Replace the old factor matrix with the new optimized result
-      A[n] = an;
+      A[n] = temp;
     }
 
 
@@ -874,40 +812,13 @@ namespace btas{
       n = last_dim ? ndim - 1: n;
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
-
       detail::set_MtKRP(converge_test, temp);
-#ifdef _HAS_INTEL_MKL
-      if(fast_pI && matlab) {
-        // This method computes the inverse quickly for a square matrix
-        // based on MATLAB's implementation of A / B operator.
-        btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
-        piv.fill(0);
-
-        auto a = this->generate_V(n, rank);
-        int LDB = temp.extent(0);
-        auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, a.data(), rank, piv.data(), temp.data(), rank);
-        if (info == 0) {
-            an = temp;
-        }
-        else{
-          // If inverse fails resort to the pseudoinverse
-          std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
-          matlab = false;
-        }
-      }
-      if(!fast_pI || ! matlab){
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, this->pseudoInverse(n, rank, fast_pI), 0.0, an);
-      }
-#else
-      matlab = false;
-      if(!fast_pI || !matlab){
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, temp, this->pseudoInverse(n, rank, fast_pI), 0.0, an);
-      }
-#endif
+      // Temp is then rewritten with unnormalized new A[n] matrix
+      this->psuedoinverse_helper(n, fast_pI, matlab, temp);
 
       // Normalize the columns of the new factor matrix and update
-      this->normCol(an);
-      A[n] = an;
+      this->normCol(temp);
+      A[n] = temp;
     }
 
   };

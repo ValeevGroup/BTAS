@@ -51,7 +51,7 @@ template <typename Tensor> Tensor flatten(const Tensor &A, int mode) {
 /// matrix X \param[in] indexj The column index of matrix X \param[in] J The
 /// step size for the row dimension of X \param[in] tensor_itr An iterator of \c A.
 /// The value of the iterator is placed in the correct position of X using
-/// recursive calls of fill()m.
+/// recursive calls of fill().
 
 template <typename Tensor, typename iterator>
 void fill(const Tensor &A, int depth, Tensor &X, int mode, int indexi, int indexj,

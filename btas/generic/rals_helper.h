@@ -30,7 +30,6 @@ namespace btas{
     /// \param[in] mode which mode of the actual tensor
     /// is being updated
     /// \param[in] An the updated factor matrix
-    // TODO fix the dot function
     double operator() (int mode, const Tensor& An){
       auto size = An.size();
       auto change = An - prev_[mode];

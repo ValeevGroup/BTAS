@@ -81,7 +81,6 @@ namespace btas{
 
     using CP<Tensor,ConvClass>::A;
     using CP<Tensor,ConvClass>::ndim;
-    using CP<Tensor,ConvClass>::pseudoInverse;
     using CP<Tensor,ConvClass>::normCol;
     using CP<Tensor,ConvClass>::generate_KRP;
     using CP<Tensor,ConvClass>::generate_V;
@@ -131,7 +130,6 @@ namespace btas{
 
     ~CP_DF_ALS() = default;
 
-#ifdef _HAS_INTEL_MKL
     /// \brief Computes decomposition of the order-N tensor \c tensor
     /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
     /// Initial guess for factor matrices start at rank = max_dim(reference_tensor)
@@ -223,12 +221,9 @@ namespace btas{
           ALS(rank_new, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
         }
         count++;
-        //if (count + 1 == panels) max_als = 1000;
       }
-      //std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
       return epsilon;
     }
-#endif // _HAS_INTEL_MKL
 
   protected:
     Tensor &tensor_ref_left;        // Left connected tensor
@@ -271,7 +266,6 @@ namespace btas{
         // If its the first time into build and SVD_initial_guess
         // build and optimize the initial guess based on the left
         // singular vectors of the reference tensor.
-#ifdef _HAS_INTEL_MKL
         if (A.empty() && SVD_initial_guess) {
           if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
 
@@ -340,8 +334,7 @@ namespace btas{
             gemm(CblasNoTrans, CblasTrans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
 
             // Find the Singular vectors of the matrix using eigenvalue decomposition
-            auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', R, S.data(), R, lambda.data());
-            if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
+            eigenvalue_decomp(S, lambda);
 
             // Fill a factor matrix with the singular vectors with the largest corresponding singular
             // values
@@ -383,9 +376,6 @@ namespace btas{
           // Optimize this initial guess.
           ALS(SVD_rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
         }
-#else  // _HAS_INTEL_MKL
-        if (SVD_initial_guess) BTAS_EXCEPTION("Computing the SVD requires LAPACK");
-#endif // _HAS_INTEL_MKL
         // This loop keeps track of column dimension
         bool opt_in_for_loop = false;
         for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
@@ -484,7 +474,6 @@ namespace btas{
       for(int i = 1; i < ndimL; ++i){
         auto & tensor_ref = tensor_ref_left;
         Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
-        //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
         for(auto iter = a.begin(); iter != a.end(); ++iter){
           *(iter) = distribution(generator);
         }
@@ -494,7 +483,6 @@ namespace btas{
         auto & tensor_ref = tensor_ref_right;
 
         Tensor a(tensor_ref.extent(i), rank);
-        //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
         for(auto iter = a.begin(); iter != a.end(); ++iter){
           *(iter) = distribution(generator);
         }
@@ -544,7 +532,7 @@ namespace btas{
         for (auto i = 0; i < ndim; i++) {
           auto tmp = symmetries[i];
           if(tmp == i) {
-            direct(i, rank, matlab, converge_test);
+            direct(i, rank, fast_pI, matlab, converge_test);
           }
           else if(tmp < i){
             A[i] = A[tmp];
@@ -585,7 +573,7 @@ namespace btas{
     /// in the same manner that matlab would compute the inverse.
     /// return if computing the inverse in this was was successful
     /// \param[in] converge_test test to see if the ALS is converged
-    void direct(int n, int rank, bool & matlab, ConvClass & converge_test) {
+    void direct(int n, int rank, bool & fast_pI, bool & matlab, ConvClass & converge_test) {
 
       // Determine if n is in the left or the right tensor
       bool leftTensor = n < (ndimL - 1);
@@ -701,7 +689,6 @@ namespace btas{
       auto a_dim = leftTensor ? contract_dim : ndim - 1;
       auto offset = 0;
 
-      // TODO fix the hadamard contraction loop
       // go through hadamard contract on all dimensions excluding rank (will skip one dimension)
       for(int i = 0; i < ndimCurr - 2; ++i, --contract_dim, --a_dim){
         auto contract_size = dims[contract_dim];
@@ -786,43 +773,16 @@ namespace btas{
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       //t1 = std::chrono::high_resolution_clock::now();
-#ifdef _HAS_INTEL_MKL
-      if(matlab) {
-        // This method computes the inverse quickly for a square matrix
-        // based on MATLAB's implementation of A / B operator.
-        btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
-        piv.fill(0);
 
-        auto a = generate_V(n, rank);
-        int LDB = contract_tensor.extent(0);
-        auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, a.data(), rank, piv.data(), contract_tensor.data(), rank);
-        if (info == 0) {
-          an = contract_tensor;
-        }
-        else{
-          // If inverse fails resort to the pseudoinverse
-          std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
-          matlab = false;
-        }
-      }
-      if(! matlab){
-        bool fast = false;
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(n, rank, fast), 0.0, an);
-      }
-#else
-      matlab = false;
-      if( !matlab){
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(n, rank, matlab), 0.0, an);
-      }
-#endif
+      this->psuedoinverse_helper(n, fast_pI, matlab, contract_tensor);
       //t2 = std::chrono::high_resolution_clock::now();
       //time = t2 - t1;
       //gemm_wPI += time.count();
 
 
       // Normalize the columns of the new factor matrix and update
-      normCol(an);
-      A[n] = an;
+      normCol(contract_tensor);
+      A[n] = contract_tensor;
     }
 
   };

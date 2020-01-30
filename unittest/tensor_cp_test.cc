@@ -21,7 +21,8 @@ TEST_CASE("CP")
   using btas::CP_DF_ALS;
   using btas::COUPLED_CP_ALS;
 
-  double epsilon = fmax(1e-10, std::numeric_limits<double>::epsilon());
+  //double epsilon = fmax(1e-10, std::numeric_limits<double>::epsilon());
+  double epsilon = 1e-7;
   // TEST_CASE("CP_ALS"){
   tensor D3(5, 2, 9);
   std::ifstream in3(__dirname + "/mat3D.txt");
@@ -89,13 +90,12 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
       CHECK((diff - results(1,0)) <= epsilon);
     }
-#ifdef _HAS_INTEL_MKL
     SECTION("ALS MODE = 3, Tucker + CP"){
       auto d = D3;
       CP_ALS<tensor, conv_class> A1(d);
       conv.set_norm(norm3);
       double diff =
-              A1.compress_compute_tucker(0.1, conv, false, 1e-2, 5, true, false);
+              A1.compress_compute_tucker(0.1, conv, 5, true, false, 100, true);
       CHECK((diff - results(2,0)) <= epsilon);
     }
     SECTION("ALS MODE = 3, Random + CP"){
@@ -103,10 +103,9 @@ TEST_CASE("CP")
       CP_ALS<tensor, conv_class> A1(d);
       conv.set_norm(norm3);
       double diff =
-              A1.compress_compute_rand(2, conv, 0, 2, false, 1e-2, 5);
+              A1.compress_compute_rand(2, conv, 0, 2, 5, true, false, 100, true);
       CHECK((diff - results(3,0)) <= epsilon);
     }
-#endif
 
     SECTION("ALS MODE = 4, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D4);
@@ -121,23 +120,20 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
       CHECK((diff - results(5,0)) <= epsilon);
     }
-#ifdef _HAS_INTEL_MKL
     SECTION("ALS MODE = 4, Tucker + CP"){
       auto d = D4;
       CP_ALS<tensor, conv_class> A1(d);
       conv.set_norm(norm4);
-      double diff = A1.compress_compute_tucker(0.1, conv, false, 1e-2, 5);
+      double diff = A1.compress_compute_tucker(0.1, conv, 5, true, false, 1e4, true);
       CHECK((diff - results(6,0)) <= epsilon);
     }
     SECTION("ALS MODE = 4, Random + CP"){
       auto d = D4;
       CP_ALS<tensor, conv_class> A1(d);
       conv.set_norm(norm4);
-      double diff = A1.compress_compute_rand(3, conv, 0, 2, true, 1e-2, 0, true, false, 1, 20, 100);
+      double diff = A1.compress_compute_rand(3, conv, 0, 2, 1, true, false, 20, true);
       CHECK((diff - results(7,0)) <= epsilon);
     }
-#endif
-
     SECTION("ALS MODE = 5, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
@@ -150,22 +146,20 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 10, 200);
       CHECK((diff - results(9,0)) <= epsilon);
     }
-#ifdef _HAS_INTEL_MKL
     SECTION("ALS MODE = 5, Tucker + CP"){
       auto d = D5;
       CP_ALS<tensor, conv_class> A1(d);
       conv.set_norm(norm5);
-      double diff = A1.compress_compute_tucker(0.1, conv, false, 1e-2, 5, true, false);
+      double diff = A1.compress_compute_tucker(0.1, conv, 5, true, false, 100, true);
       CHECK((diff - results(10,0)) <= epsilon);
     }
     SECTION("ALS MODE = 5, Random + CP"){
       auto d = D5;
       CP_ALS<tensor, conv_class> A1(d);
       conv.set_norm(norm5);
-      double diff = A1.compress_compute_rand(1, conv, 0, 2, false, 1e-2, 5);
+      double diff = A1. compress_compute_rand(1, conv, 0, 2, 5, true, false, 100, false);
       CHECK((diff - results(11,0)) <= epsilon);
     }
-#endif
   }
   // RALS tests
   {
@@ -182,25 +176,22 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
       CHECK((diff - results(13,0)) <= epsilon);
     }
-#ifdef _HAS_INTEL_MKL
     SECTION("RALS MODE = 3, Tucker + CP"){
       auto d = D3;
-      CP_ALS<tensor, conv_class> A1(d);
+      CP_RALS<tensor, conv_class> A1(d);
       conv.set_norm(norm3);
       double diff =
-              A1.compress_compute_tucker(0.1, conv, false, 1e-2, 5, true, false);
+              A1.compress_compute_tucker(0.1, conv, 5, true, false, 100, true);
       CHECK((diff - results(14,0)) <= epsilon);
     }
     SECTION("RALS MODE = 3, Random + CP"){
       auto d = D3;
-      CP_ALS<tensor, conv_class> A1(d);
+      CP_RALS<tensor, conv_class> A1(d);
       conv.set_norm(norm3);
       double diff =
-              A1.compress_compute_rand(2, conv, 0, 2, false, 1e-2, 5);
+              A1.compress_compute_rand(2, conv, 0, 2, 5, true, false, 100, true);
       CHECK((diff - results(15,0)) <= epsilon);
     }
-#endif
-
     SECTION("RALS MODE = 4, Finite rank"){
       CP_RALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);
@@ -214,23 +205,20 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
       CHECK((diff - results(17,0)) <= epsilon);
     }
-#ifdef _HAS_INTEL_MKL
     SECTION("RALS MODE = 4, Tucker + CP"){
       auto d = D4;
-      CP_ALS<tensor, conv_class> A1(d);
+      CP_RALS<tensor, conv_class> A1(d);
       conv.set_norm(norm4);
-      double diff = A1.compress_compute_tucker(0.1, conv, false, 1e-2, 5);
+      double diff = A1.compress_compute_tucker(0.1, conv, 5, true, false, 100, true);
       CHECK((diff - results(18,0)) <= epsilon);
     }
     SECTION("RALS MODE = 4, Random + CP"){
       auto d = D4;
-      CP_ALS<tensor, conv_class> A1(d);
+      CP_RALS<tensor, conv_class> A1(d);
       conv.set_norm(norm4);
-      double diff = A1.compress_compute_rand(3, conv, 0, 2, true, 1e-2, 0, true, false, 1, 20, 100);
+      double diff = A1.compress_compute_rand(3, conv, 0, 2, 1, true, false, 20, true);
       CHECK((diff - results(19,0)) <= epsilon);
     }
-#endif
-
     SECTION("RALS MODE = 5, Finite rank"){
       CP_RALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
@@ -243,22 +231,20 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 20);
       CHECK((diff - results(21,0)) <= epsilon);
     }
-#ifdef _HAS_INTEL_MKL
     SECTION("RALS MODE = 5, Tucker + CP"){
       auto d = D5;
-      CP_ALS<tensor, conv_class> A1(d);
+      CP_RALS<tensor, conv_class> A1(d);
       conv.set_norm(norm5);
-      double diff = A1.compress_compute_tucker(0.1, conv, false, 1e-2, 5, true, false);
+      double diff = A1.compress_compute_tucker(0.1, conv, 5, true, false, 100, true);
       CHECK((diff - results(22,0)) <= epsilon);
     }
     SECTION("RALS MODE = 5, Random + CP"){
       auto d = D5;
-      CP_ALS<tensor, conv_class> A1(d);
+      CP_RALS<tensor, conv_class> A1(d);
       conv.set_norm(norm5);
-      double diff = A1.compress_compute_rand(1, conv, 0, 2, false, 1e-2, 5);
+      double diff = A1.compress_compute_rand(1, conv, 0, 2, 5, true, false, 100, true);
       CHECK((diff - results(23,0)) <= epsilon);
     }
-#endif
   }
   // CP-DF-ALS tests
   {

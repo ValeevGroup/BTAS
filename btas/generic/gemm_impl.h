@@ -289,7 +289,7 @@ template<> struct gemm_impl<true>
    {
       const lapack_complex_float alphac = to_lapack_val(std::move(alpha));
       const lapack_complex_float betac  = to_lapack_val(std::move(beta));
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
       cblas_cgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_cptr(itrA), LDA, to_lapack_cptr(itrB), LDB, &betac, to_lapack_cptr(itrC), LDC);
 #else
       cblas_cgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_cptr(itrA), LDA, to_lapack_cptr(itrB), LDB, &betac, to_lapack_cptr(itrC), LDC);
@@ -315,7 +315,7 @@ template<> struct gemm_impl<true>
    {
       const lapack_complex_double alphac = to_lapack_val(std::move(alpha));
       const lapack_complex_double betac  = to_lapack_val(std::move(beta));
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
       cblas_zgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_zptr(itrA), LDA, to_lapack_zptr(itrB), LDB, &betac, to_lapack_zptr(itrC), LDC);
 #else
       cblas_zgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_zptr(itrA), LDA, to_lapack_zptr(itrB), LDB, &betac, to_lapack_zptr(itrC), LDC);

@@ -1,7 +1,7 @@
 #ifndef BTAS_SWAP_H
 #define BTAS_SWAP_H
 
-#ifdef _HAS_INTEL_MKL
+#ifdef BTAS_HAS_INTEL_MKL
 
 #include <vector>
 
@@ -117,7 +117,7 @@ void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
 /// back. Default = false.
 
 template <typename Tensor>
-void swap_to_back(Tensor &A, int mode, bool is_in_back = false) {
+void swap_to_back(Tensor &A, int mode, bool is_in_back = false){
   if (mode > A.rank())
     BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__,
                            "mode > A.rank(), mode out of range");
@@ -153,6 +153,6 @@ void swap_to_back(Tensor &A, int mode, bool is_in_back = false) {
 
 } // namespace btas
 
-#endif //_HAS_INTEL_MKL
+#endif //BTAS_HAS_INTEL_MKL
 
 #endif // BTAS_SWAP_H

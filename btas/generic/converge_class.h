@@ -61,10 +61,13 @@ namespace btas {
     int rank_;               // Rank of the CP problem
   };
 
-  // From Tensor Toolbox : 
-  // The "fit" is defined as 1 - norm(X-full(M))/norm(X) and is
-  // loosely the proportion of the data described by the CP model, i.e., a
-  // fit of 1 is perfect.
+  /**
+   \brief Class used to decide when ALS problem is converged
+   The "fit" is defined as \f$ 1 - \frac{\|X-full(M)\|}{\|X\|} \leq \epsilon\f$
+   where X is the exact tensor and M is the reconstructed CP tensor.
+   This fit is loosely the proportion of the data described by the
+   CP model, i.e., a fit of 1 is perfect.
+   **/
   template<typename Tensor>
   class FitCheck{
   public:
@@ -109,7 +112,9 @@ namespace btas {
 
       double fitChange = abs(fitOld_ - fit);
       fitOld_ = fit;
-      //std::cout << fit << "\t" << fitChange << std::endl;
+      if(verbose_) {
+        std::cout << fit << "\t" << fitChange << std::endl;
+      }
       if(fitChange < tol_) {
         converged_num++;
         if(converged_num == 2){
@@ -137,6 +142,10 @@ namespace btas {
       return final_fit_;
     }
 
+    void verbose(bool verb){
+      verbose_ = verb;
+    }
+
   private:
     double tol_;
     double fitOld_ = -1.0;
@@ -145,6 +154,7 @@ namespace btas {
     int iter_ = 0;
     int converged_num = 0;
     Tensor MtKRP_;
+    bool verbose_ = false;
 
     double norm(const std::vector<Tensor> & btas_factors){
       auto rank = btas_factors[0].extent(1);
@@ -172,6 +182,15 @@ namespace btas {
     }
   };
 
+  /**
+   \brief Class used to decide when ALS problem is converged
+   The "fit" is defined as \f$ 1 - \frac{\|X_1-full(M_1)\|}{\|X_1\|} -
+   \frac{\|X_2-full(M_2)\|}{\|X_2\|}\leq \epsilon\f$
+   where \f$ X_1 \f$ and \f$ X_2 \f$ are tensors coupled by a single mode
+   \f$ M_1 \f$ and \f$ M_2 \f$ are the coupled reconstructed CP tensors.
+   This fit is loosely the proportion of the data described by the
+   CP model, i.e., a fit of 1 is perfect.
+   **/
   template <typename Tensor>
   class CoupledFitCheck{
   public:

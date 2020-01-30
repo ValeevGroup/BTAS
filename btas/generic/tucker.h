@@ -1,10 +1,9 @@
 #ifndef BTAS_TUCKER_DECOMP_H
 #define BTAS_TUCKER_DECOMP_H
 
-#ifdef _HAS_INTEL_MKL
-
 #include <btas/generic/core_contract.h>
 #include <btas/generic/flatten.h>
+#include <btas/generic/contract.h>
 
 #include <cstdlib>
 
@@ -21,9 +20,13 @@ namespace btas {
 template <typename Tensor>
 void tucker_compression(Tensor &A, double epsilon_svd,
                         std::vector<Tensor> &transforms) {
-  double norm2 = norm(A);
-  norm2 *= norm2;
+  double norm2 = dot(A,A);
+  //norm2 *= norm2;
   auto ndim = A.rank();
+  std::vector<int> A_modes;
+  for(int i = 0; i< ndim;++i){
+    A_modes.push_back(i);
+  }
 
   for (int i = 0; i < ndim; i++) {
     // Determine the threshold epsilon_SVD.
@@ -37,10 +40,14 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     gemm(CblasNoTrans, CblasTrans, 1.0, flat, flat, 0.0, S);
 
     // Calculate SVD of smaller object.
+#ifdef BTAS_HAS_LAPACKE
     auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R,
                               lambda.data());
     if (info)
-      BTAS_EXCEPTION("Error in computing the tucker SVD");
+    BTAS_EXCEPTION("Error in computing the tucker SVD");
+#else
+    BTAS_EXCEPTION("Tucker decomposition requires LAPACKE");
+#endif
 
     // Find the truncation rank based on the threshold.
     int rank = 0;
@@ -50,7 +57,8 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     }
 
     // Truncate the column space of the unitary factor matrix.
-    lambda = Tensor(R, R - rank);
+    auto kept_evecs = R - rank;
+    lambda = Tensor(R, kept_evecs);
     auto lower_bound = {0, rank};
     auto upper_bound = {R, R};
     auto view =
@@ -59,18 +67,34 @@ void tucker_compression(Tensor &A, double epsilon_svd,
 
     // Push the factor matrix back as a transformation.
     transforms.push_back(lambda);
+  }
 
+  for(int i = 0; i < ndim; ++i){
+    auto & lambda = transforms[i];
+    auto kept_evecs = lambda.extent(1);
+#ifdef BTAS_HAS_INTEL_MKL
     // Contract the factor matrix with the reference tensor, A.
     core_contract(A, lambda, i);
+#else
+    std::vector<int> contract_modes;
+    contract_modes.push_back(i); contract_modes.push_back(ndim);
+    std::vector<int> final_modes;
+    std::vector<int> final_dims;
+    for(int j = 0; j < ndim; ++j){
+      if(j == i){
+        final_modes.push_back(ndim);
+        final_dims.push_back(kept_evecs);
+      } else{
+        final_modes.push_back(j);
+        final_dims.push_back(A.extent(j));
+      }
+    }
+    btas::Range final_range(final_dims);
+    Tensor final(final_range);
+    btas::contract(1.0, A, A_modes, lambda, contract_modes, 0.0, final, final_modes);
+    A = final;
+#endif //BTAS_HAS_INTEL_MKL
   }
 }
-
-/// calculates the 2-norm of a matrix Mat
-/// \param[in] Mat The matrix who's 2-norm is caclulated
-
-template <typename Tensor> double norm(const Tensor &Mat) {
-  return sqrt(dot(Mat, Mat));
-}
 } // namespace btas
-#endif //_HAS_INTEL_MKL
 #endif // BTAS_TUCKER_DECOMP_H

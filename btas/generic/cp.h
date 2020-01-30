@@ -21,10 +21,7 @@
 #include <btas/generic/converge_class.h>
 #include <btas/generic/rals_helper.h>
 #include <btas/generic/reconstruct.h>
-
-#ifdef _HAS_INTEL_MKL
-#include <mkl_trans.h>
-#endif
+#include <btas/generic/linear_algebra.h>
 
 namespace btas{
   namespace detail{
@@ -125,8 +122,8 @@ namespace btas{
     /// tensor
     /// \param[in] ndim number of modes in the reference tensor.
     CP(int dims) : num_ALS(0) {
-#if not defined(BTAS_HAS_CBLAS) || not defined(_HAS_INTEL_MKL)
-      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP decompositions requires LAPACKE or mkl_lapack");
+#if not defined(BTAS_HAS_LAPACKE)
+      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP decompositions requires LAPACKE");
 #endif
       ndim = dims;
     }
@@ -301,7 +298,6 @@ namespace btas{
       return epsilon;
     }
 
-#ifdef _HAS_INTEL_MKL
     /// virtual function implemented in solver
     /// Computes decomposition of the order-N tensor \c tensor
     /// with rank = \c RankStep * \c panels *  max_dim(reference_tensor) + max_dim(reference_tensor)
@@ -325,7 +321,6 @@ namespace btas{
     /// false && ConvClass != FitCheck.
     virtual double compute_PALS(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4,
                          int max_als = 20,bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) = 0;
-#endif // _HAS_INTEL_MKL
 
     /// returns the rank \c rank optimized factor matrices
     /// \return Factor matrices stored in a vector. For example, a order-3
@@ -424,8 +419,6 @@ namespace btas{
     /// on CP-ALS.
     /// \param[in] calculate_epsilon Should the 2-norm
     /// error be calculated \f$ ||T_{\rm exact} - T_{\rm approx}|| = \epsilon \f$ .
-    /// \param[in] step
-    /// CP_ALS built from r =1 to r = rank. r increments by step.
     /// \param[in, out] epsilon The 2-norm
     /// error between the exact and approximated reference tensor
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
@@ -460,9 +453,9 @@ namespace btas{
       return V;
     }
 
-    // Keep track of the Left hand Khatri-Rao product of matrices and
-    // Continues to multiply be right hand products, skipping
-    // the matrix at index n.
+    /// Keep track of the Left hand Khatri-Rao product of matrices and
+    /// Continues to multiply be right hand products, skipping
+    /// the matrix at index n.
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
     /// \param[in] forward Should the Khatri-Rao product move through the factor
@@ -560,165 +553,41 @@ namespace btas{
     /// Fast pseudo-inverse algorithm described in
     /// https://arxiv.org/pdf/0804.4809.pdf
 
-    /// \param[in] n The mode being optimized, all other modes held constant
-    /// \param[in] R The current rank, column dimension of the factor matrices
-    /// \param[in,out] fast_pI If true, try to compute the pseudo inverse via fast Cholesky decomposition, else use SVD;
-    ///                on return reports whether the fast route was used.
-    /// \param[in] lambda Regularization parameter lambda is added to the diagonal of V
-    /// \return The pseudoinverse of the matrix V.
-    Tensor pseudoInverse(int n, int R, bool & fast_pI, double lambda = 0.0) {
-      // CP_ALS method requires the pseudoinverse of matrix V
-#ifdef _HAS_INTEL_MKL
-      if(fast_pI) {
-        auto a = this->generate_V(n, R, lambda);
-        Tensor temp(R, R), inv(R, R);
-        // compute V^{\dag} = (A^T A) ^{-1} A^T
-        gemm(CblasTrans, CblasNoTrans, 1.0, a, a, 0.0, temp);
-        fast_pI = Inverse_Matrix(temp);
-        if(fast_pI) {
-          gemm(CblasNoTrans, CblasTrans, 1.0, temp, a, 0.0, inv);
-          return inv;
-        }
-        else{
-          std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
-        }
-      }
-#else
-      fast_pI = false;
-#endif // _HAS_INTEL_MKL
-
-      if(!fast_pI) {
-        auto a = this->generate_V(n, R, lambda);
-        Tensor s(Range{Range1{R}});
-        Tensor U(Range{Range1{R}, Range1{R}});
-        Tensor Vt(Range{Range1{R}, Range1{R}});
-
-// btas has no generic SVD for MKL LAPACKE
-//        time1 = std::chrono::high_resolution_clock::now();
-#ifdef _HAS_INTEL_MKL
-        double worksize;
-        double *work = &worksize;
-        lapack_int lwork = -1;
-        lapack_int info = 0;
-
-        char A = 'A';
-
-        // Call dgesvd with lwork = -1 to query optimal workspace size:
-
-        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R,
-                                   &worksize, lwork);
-        if (info != 0)
-          BTAS_EXCEPTION("SVD pseudo inverse failed");
-
-        lwork = (lapack_int) worksize;
-        work = (double *) malloc(sizeof(double) * lwork);
-
-        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R, work,
-                                   lwork);
-        if (info != 0)
-          BTAS_EXCEPTION("SVD pseudo inverse failed");
-
-        free(work);
-#else  // BTAS_HAS_CBLAS
-
-        gesvd('A', 'A', a, s, U, Vt);
-
-#endif
-
-        // Inverse the Singular values with threshold 1e-13 = 0
-        double lr_thresh = 1e-13;
-        Tensor s_inv(Range{Range1{R}, Range1{R}});
-        s_inv.fill(0.0);
-        for (auto i = 0; i < R; ++i) {
-          if (s(i) > lr_thresh)
-            s_inv(i, i) = 1 / s(i);
-          else
-            s_inv(i, i) = s(i);
-        }
-        s.resize(Range{Range1{R}, Range1{R}});
-
-        // Compute the matrix A^-1 from the inverted singular values and the U and
-        // V^T provided by the SVD
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, U, s_inv, 0.0, s);
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
-
-        return U;
-      }
-      else{
-        BTAS_EXCEPTION("Pseudo inverse failed" );
-      }
-    }
-
-    /// SVD referencing code from
-    /// http://www.netlib.org/lapack/explore-html/de/ddd/lapacke_8h_af31b3cb47f7cc3b9f6541303a2968c9f.html
-    /// Fast pseudo-inverse algorithm described in
+    /// Trying to solve Ax = B
+    /// First try Cholesky to solve this problem directly
+    /// second tryfast pseudo-inverse algorithm described in
     /// https://arxiv.org/pdf/0804.4809.pdf
+    /// If all else fails use SVD
 
-    /// \param[in] a matrix to be inverted.
-    /// \return a^{\dagger} The pseudoinverse of the matrix a.
-    Tensor pseudoInverse(Tensor & a){
-      bool matlab = false;
-      auto R = A[0].extent(1);
-      Tensor s(Range{Range1{R}});
-      Tensor U(Range{Range1{R}, Range1{R}});
-      Tensor Vt(Range{Range1{R}, Range1{R}});
-
-      if(! matlab) {
-
-// btas has no generic SVD for MKL LAPACKE
-//        time1 = std::chrono::high_resolution_clock::now();
-#ifdef _HAS_INTEL_MKL
-        double worksize;
-        double *work = &worksize;
-        lapack_int lwork = -1;
-        lapack_int info = 0;
-
-        char A = 'A';
-
-        // Call dgesvd with lwork = -1 to query optimal workspace size:
-
-        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R,
-                                   &worksize, lwork);
-        if (info != 0)
-        BTAS_EXCEPTION("SVD pseudo inverse failed");
-
-        lwork = (lapack_int) worksize;
-        work = (double *) malloc(sizeof(double) * lwork);
-
-        info = LAPACKE_dgesvd_work(LAPACK_ROW_MAJOR, A, A, R, R, a.data(), R, s.data(), U.data(), R, Vt.data(), R, work,
-                                   lwork);
-        if (info != 0)
-        BTAS_EXCEPTION("SVD pseudo inverse failed");
-
-        free(work);
-#else  // BTAS_HAS_CBLAS
-
-        gesvd('A', 'A', a, s, U, Vt);
-
-#endif
-
-        // Inverse the Singular values with threshold 1e-13 = 0
-        double lr_thresh = 1e-13;
-        Tensor s_inv(Range{Range1{R}, Range1{R}});
-        s_inv.fill(0.0);
-        for (auto i = 0; i < R; ++i) {
-          if (s(i) > lr_thresh)
-            s_inv(i, i) = 1 / s(i);
-          else
-            s_inv(i, i) = s(i);
-        }
-        s.resize(Range{Range1{R}, Range1{R}});
-
-        // Compute the matrix A^-1 from the inverted singular values and the U and
-        // V^T provided by the SVD
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, U, s_inv, 0.0, s);
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
-
+    /// \param[in] mode_of_A The mode being optimized used to compute hadamard LHS (V) of ALS problem (Vx = B)
+    /// \param[in,out] fast_pI If true, try to compute the pseudo inverse via fast LU decomposition, else use SVD;
+    ///                on return reports whether the fast route was used.
+    /// \param[in, out] cholesky If true, try to solve the linear equation Vx = B (the ALS problem)
+    ///                using a Cholesky decomposition (lapacke subroutine) on return reports if
+    ///                inversion was successful.
+    /// \param[in, out] B In: The RHS of the ALS problem ( Vx = B ). Out: The solved linear equation
+    ///                     \f$ V^{-1} B \f$
+    /// \param[in] lambda Regularization parameter lambda is added to the diagonal of V
+    void psuedoinverse_helper(int mode_of_A, bool & fast_pI,
+                                bool & cholesky, Tensor & B,
+                                double lambda = 0.0){
+      if(B.empty()){
+        BTAS_EXCEPTION("pseudoinverse helper solves Ax = B.  B cannot be an empty tensor");
       }
-      return U;
+
+      auto rank = A[0].extent(1);
+      auto a = this->generate_V(mode_of_A, rank, lambda);
+
+      if(cholesky) {
+        cholesky = cholesky_inverse(a, B);
+        return;
+      }
+      auto pInv = pseudoInverse(a, fast_pI);
+      Tensor an(B.extent(0), rank);
+      gemm(CblasNoTrans, CblasNoTrans, 1.0, B, pInv, 0.0, an);
+      B = an;
     }
   };
-
 };// namespace btas
 
 #endif //BTAS_GENERIC_CP_H
