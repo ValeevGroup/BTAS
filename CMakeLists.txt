@@ -59,10 +59,6 @@ set(BTAS_INSTALL_DOCDIR "${BTAS_INSTALL_SHAREDIR}/doc"
 set(BTAS_INSTALL_CMAKEDIR "lib/cmake/BTAS"
     CACHE PATH "BTAS CMAKE install directory")
 
-##########################
-# Standard build variables
-##########################
-
 # Get standard build variables from the environment if they have not already been set
 if(NOT CMAKE_C_FLAGS OR NOT DEFINED CMAKE_C_FLAGS)
   set(CMAKE_C_FLAGS "$ENV{CPPFLAGS}")
@@ -176,6 +172,29 @@ ADD_CUSTOM_TARGET(release
   COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR} --target all
   COMMENT "Switch CMAKE_BUILD_TYPE to Release"
   )
+
+##########################
+# Get the git revision tag information
+##########################
+
+if(EXISTS ${PROJECT_SOURCE_DIR}/.git)
+  find_package(Git REQUIRED)
+  execute_process(
+      COMMAND ${GIT_EXECUTABLE} rev-parse -q HEAD
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      OUTPUT_VARIABLE BTAS_REVISION )
+  string(REGEX MATCH "[0-9a-f]*"
+      BTAS_REVISION "${BTAS_REVISION}")
+else()
+  set(BTAS_REVISION "unknown")
+endif()
+
+configure_file(
+    ${PROJECT_SOURCE_DIR}/btas/version.h.in
+    ${PROJECT_BINARY_DIR}/btas/version.h
+)
+install(FILES ${PROJECT_BINARY_DIR}/btas/version.h
+    DESTINATION "${BTAS_INSTALL_INCLUDEDIR}")
 
 # Create the version file
 write_basic_package_version_file(btas-config-version.cmake
