@@ -86,7 +86,7 @@ namespace btas {
       Tensor (const size_type& first, const _args&... rest) :
       range_(range_type(first, rest...))
       {
-        // TODO make this disablable in all constructors
+        // TODO make this disableable in all constructors
         //assert(range_.ordinal(range_.lobound()) == 0);
         array_adaptor<storage_type>::resize(storage_, range_.area());
       }
