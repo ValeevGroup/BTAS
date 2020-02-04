@@ -112,6 +112,19 @@ namespace btas {
         std::fill(begin(), end(), v);
       }
 
+      /// construct from \c range object, copy elements from \c vec
+      template <typename Range, typename U>
+      explicit
+      Tensor (const Range& range,
+              U* vec,
+              typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
+          range_(range.lobound(), range.upbound())
+      {
+        const auto size = range_.area();
+        array_adaptor<storage_type>::resize(storage_, size);
+        std::copy(vec, vec+size, begin());
+      }
+
       /// construct from \c range and \c storage
       template <typename Range, typename Storage>
       explicit

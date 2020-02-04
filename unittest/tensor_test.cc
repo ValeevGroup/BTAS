@@ -124,7 +124,14 @@ TEST_CASE("Tensor Constructors") {
     Range r1(2, 5, 3, 9, 18, 6);
     DTensor T1(r1);
     CHECK(T1.rank() == 6);
+
+    // range + value
+    CHECK_NOTHROW(DTensor(r1, 1.2));
+
+    // range + vector of values
+    CHECK_NOTHROW(DTensor(r1, T1.data()));
   }
+
   SECTION("Fixed Rank Tensor") {
     TArray<double, 3> T0(2, 4, 3);
     CHECK(T0.rank() == 3);
