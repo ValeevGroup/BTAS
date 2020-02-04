@@ -692,7 +692,7 @@ public:
       }
       // contract the product from above with the pseudoinverse of the Hadamard
       // produce an optimize factor matrix
-      this->psuedoinverse_helper(n, fast_pI, matlab, temp, lambda);
+      this->pseudoinverse_helper(n, fast_pI, matlab, temp, lambda);
 
       // compute the difference between this new factor matrix and the previous
       // iteration
@@ -862,7 +862,7 @@ public:
         converge_test.set_MtKRP(temp);
       }
 
-      this->psuedoinverse_helper(n, fast_pI, matlab, temp, lambda);
+      this->pseudoinverse_helper(n, fast_pI, matlab, temp, lambda);
 
       // Normalize the columns of the new factor matrix and update
       normCol(temp);

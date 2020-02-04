@@ -568,7 +568,7 @@ namespace btas{
     /// \param[in, out] B In: The RHS of the ALS problem ( Vx = B ). Out: The solved linear equation
     ///                     \f$ V^{-1} B \f$
     /// \param[in] lambda Regularization parameter lambda is added to the diagonal of V
-    void psuedoinverse_helper(int mode_of_A, bool & fast_pI,
+    void pseudoinverse_helper(int mode_of_A, bool & fast_pI,
                                 bool & cholesky, Tensor & B,
                                 double lambda = 0.0){
       if(B.empty()){
