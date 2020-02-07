@@ -15,7 +15,10 @@ macro(add_custom_target_subproject _subproj _name)
   add_custom_target(${_name}-${_subproj} ${extra_args})
 
   # does the newly-created target compiled by default?
-  list(FIND extra_args ALL target_built_by_default)
+  list(FIND extra_args "ALL" extra_args_has_all)
+  if (NOT (extra_args_has_all EQUAL -1))
+    set (target_built_by_default ON)
+  endif()
 
   if (TARGET ${_name})
     # is existing target ${_name} also compiled by default?
