@@ -160,20 +160,6 @@ else(BTAS_BUILD_UNITTEST)
   add_custom_target_subproject(btas check COMMAND echo "WARNING: unit testing disabled. To enable, give -DBTAS_BUILD_UNITTEST=TRUE to cmake")
 endif(BTAS_BUILD_UNITTEST)
 
-# Add target to allow on-the-fly switching of build type
-
-add_custom_target_subproject(btas debug
-  COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Debug ${PROJECT_SOURCE_DIR}
-  COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR} --target all
-  COMMENT "Switch CMAKE_BUILD_TYPE to Debug"
-  )
-
-add_custom_target_subproject(btas release
-  COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release ${PROJECT_SOURCE_DIR}
-  COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR} --target all
-  COMMENT "Switch CMAKE_BUILD_TYPE to Release"
-  )
-
 ##########################
 # Get the git revision tag information
 ##########################
