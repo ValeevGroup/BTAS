@@ -86,7 +86,7 @@ namespace btas {
       Tensor (const size_type& first, const _args&... rest) :
       range_(range_type(first, rest...))
       {
-        // TODO make this disablable in all constructors
+        // TODO make this disableable in all constructors
         //assert(range_.ordinal(range_.lobound()) == 0);
         array_adaptor<storage_type>::resize(storage_, range_.area());
       }
@@ -110,6 +110,19 @@ namespace btas {
       {
         array_adaptor<storage_type>::resize(storage_, range_.area());
         std::fill(begin(), end(), v);
+      }
+
+      /// construct from \c range object, copy elements from \c vec
+      template <typename Range, typename U>
+      explicit
+      Tensor (const Range& range,
+              U* vec,
+              typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
+          range_(range.lobound(), range.upbound())
+      {
+        const auto size = range_.area();
+        array_adaptor<storage_type>::resize(storage_, size);
+        std::copy(vec, vec+size, begin());
       }
 
       /// construct from \c range and \c storage

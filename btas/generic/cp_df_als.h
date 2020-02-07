@@ -774,7 +774,7 @@ namespace btas{
       // factor matrix
       //t1 = std::chrono::high_resolution_clock::now();
 
-      this->psuedoinverse_helper(n, fast_pI, matlab, contract_tensor);
+      this->pseudoinverse_helper(n, fast_pI, matlab, contract_tensor);
       //t2 = std::chrono::high_resolution_clock::now();
       //time = t2 - t1;
       //gemm_wPI += time.count();
