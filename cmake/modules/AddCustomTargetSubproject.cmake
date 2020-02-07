@@ -23,7 +23,7 @@ macro(add_custom_target_subproject _subproj _name)
     # may indicate inconsistent creation of generic targets
     get_target_property(supertarget_build_by_default ${_name} EXCLUDE_FROM_ALL)
     if (${target_built_by_default} AND NOT ${supertarget_build_by_default})
-      message(WARNING "Created target ${_name}-${_subproj} is built by default but "super"-target ${_name} is not; perhaps it should be?")
+      message(WARNING "Created target ${_name}-${_subproj} is built by default but \"super\"-target ${_name} is not; perhaps it should be?")
     endif()
     add_dependencies(${_name} ${_name}-${_subproj})
   else (TARGET ${_name})

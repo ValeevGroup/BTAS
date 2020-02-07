@@ -21,7 +21,7 @@ target_link_libraries(${executable} BTAS)
 
 # Add targets
 add_dependencies(${executable} External-btas)
-add_dependencies(check ${executable})
+add_dependencies(check-btas ${executable})
 
 # Add a test
 add_test(${executable} ${PROJECT_BINARY_DIR}/unittest/${executable})
