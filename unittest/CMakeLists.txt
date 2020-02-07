@@ -20,7 +20,7 @@ target_link_libraries(${executable} BTAS)
 #append_flags(CMAKE_EXE_LINKER_FLAGS "${BLAS_LINKER_FLAGS}")
 
 # Add targets
-add_dependencies(${executable} External)
+add_dependencies(${executable} External-btas)
 add_dependencies(check ${executable})
 
 # Add a test

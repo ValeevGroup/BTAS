@@ -10,6 +10,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
 include(FeatureSummary)
 include(RedefaultableOption)
 include(CMakePackageConfigHelpers)
+include(AddCustomTargetSubproject)
 
 # Configure options
 redefaultable_option(BTAS_BUILD_UNITTEST "Whether to build unit tests" OFF)
@@ -115,7 +116,7 @@ install(DIRECTORY btas
 ##########################
 # external dependencies
 ##########################
-add_custom_target(External)
+add_custom_target(External-btas)
 
 if (BTAS_USE_CBLAS_LAPACKE)
   find_package(CBLAS REQUIRED)
@@ -153,21 +154,21 @@ add_subdirectory(doc)
 ##########################
 enable_testing(true)
 if (BTAS_BUILD_UNITTEST)
-  add_custom_target(check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
+  add_custom_target_subproject(btas check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
   add_subdirectory(unittest)
 else(BTAS_BUILD_UNITTEST)
-  add_custom_target(check COMMAND echo "WARNING: unit testing disabled. To enable, give -DBTAS_BUILD_UNITTEST=TRUE to cmake")
+  add_custom_target_subproject(btas check COMMAND echo "WARNING: unit testing disabled. To enable, give -DBTAS_BUILD_UNITTEST=TRUE to cmake")
 endif(BTAS_BUILD_UNITTEST)
 
 # Add target to allow on-the-fly switching of build type
 
-ADD_CUSTOM_TARGET(debug
+add_custom_target_subproject(btas debug
   COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Debug ${PROJECT_SOURCE_DIR}
   COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR} --target all
   COMMENT "Switch CMAKE_BUILD_TYPE to Debug"
   )
 
-ADD_CUSTOM_TARGET(release
+add_custom_target_subproject(btas release
   COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release ${PROJECT_SOURCE_DIR}
   COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR} --target all
   COMMENT "Switch CMAKE_BUILD_TYPE to Release"
@@ -219,7 +220,7 @@ install(FILES
     "${PROJECT_BINARY_DIR}/btas-config-version.cmake"
     DESTINATION "${BTAS_INSTALL_CMAKEDIR}"
     COMPONENT btas-config)
-add_custom_target(install-config
+add_custom_target_subproject(btas install-config
     COMMAND ${CMAKE_COMMAND} -DCOMPONENT=btas-config -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
     COMMENT "Installing BTAS config components")
 
