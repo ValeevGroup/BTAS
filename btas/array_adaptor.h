@@ -224,6 +224,17 @@ namespace std {
   {
       return il.begin();
   }
+
+  template <class C, typename std::enable_if<std::is_integral<decltype(std::declval<C>().size())>::value>::type* = nullptr>
+  constexpr auto size(const C& c) -> decltype(c.size())
+  {
+    return c.size();
+  }
+  template <class T, std::size_t N>
+  constexpr std::size_t size(const T (&array)[N]) noexcept
+  {
+    return N;
+  }
 #endif
 
   template <typename T>
