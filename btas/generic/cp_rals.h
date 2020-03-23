@@ -185,8 +185,9 @@ public:
             Tensor b(Range{Range1{A[0].extent(0)}, Range1{rank_new}});
 
             // Move the old factor to the new larger matrix
+            std::uint64_t zero = 0;
             {
-              auto lower_old = {0, 0}, upper_old = {row_extent, rank};
+              auto lower_old = {zero, zero}, upper_old = {row_extent, rank};
               auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
               auto A_itr = A[0].begin();
               for (auto iter = old_view.begin(); iter != old_view.end(); ++iter, ++A_itr) {
@@ -196,7 +197,7 @@ public:
 
             // Fill in the new columns of the factor with random numbers
             {
-              auto lower_new = {0, rank}, upper_new = {row_extent, rank_new};
+              auto lower_new = {zero, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
               std::uniform_real_distribution<> distribution(-1.0, 1.0);
@@ -427,12 +428,12 @@ public:
         std::mt19937 generator(random_seed_accessor());
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         std::uniform_real_distribution<> distribution(-1.0, 1.0);
-        for(auto& i: modes_w_dim_LT_svd){
-          std::uint64_t R = tensor_ref.extent(i);
-          auto lower_bound = {0, R};
+        for(auto& i: modes_w_dim_LT_svd) {
+          std::uint64_t R = tensor_ref.extent(i), zero = 0;
+          auto lower_bound = {zero, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
-          for(auto iter = view.begin(); iter != view.end(); ++iter){
+          for (auto iter = view.begin(); iter != view.end(); ++iter) {
             *(iter) = distribution(generator);
           }
         }
@@ -483,8 +484,9 @@ public:
             std::uint64_t row_extent = A[0].extent(0), rank_old = A[0].extent(1);
             Tensor b(Range{A[0].range().range(0), Range1{i + 1}});
 
+            std::uint64_t zero = 0;
             {
-              auto lower_old = {0, 0}, upper_old = {row_extent, rank_old};
+              auto lower_old = {zero, zero}, upper_old = {row_extent, rank_old};
               auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
               auto A_itr = A[0].begin();
               for(auto iter = old_view.begin(); iter != old_view.end(); ++iter, ++A_itr){
@@ -493,7 +495,7 @@ public:
             }
 
             {
-              auto lower_new = {0, rank_old}, upper_new = {row_extent, (int) i+1};
+              auto lower_new = {zero, rank_old}, upper_new = {row_extent, i + 1};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
               std::uniform_real_distribution<> distribution(-1.0, 1.0);

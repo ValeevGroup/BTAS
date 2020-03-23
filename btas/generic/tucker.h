@@ -58,8 +58,9 @@ void tucker_compression(Tensor &A, double epsilon_svd,
 
     // Truncate the column space of the unitary factor matrix.
     auto kept_evecs = R - rank;
+    std::uint64_t zero = 0;
     lambda = Tensor(R, kept_evecs);
-    auto lower_bound = {0, rank};
+    auto lower_bound = {zero, rank};
     auto upper_bound = {R, R};
     auto view =
         btas::make_view(S.range().slice(lower_bound, upper_bound), S.storage());

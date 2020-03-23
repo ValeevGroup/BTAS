@@ -8,13 +8,13 @@
 #include <btas/generic/scal_impl.h>
 
 namespace btas {
-  template <typename Tensor>
-  Tensor reconstruct(std::vector<Tensor> & A, std::vector<int> dims_order) {
+  template<typename Tensor>
+  Tensor reconstruct(std::vector<Tensor> &A, std::vector<unsigned int> dims_order) {
     if (A.size() - 1 != dims_order.size()) {
       BTAS_EXCEPTION("A.size() - 1 != dims_order.size(), please verify that you have correctly assigned the "
                      "order of dimension reconstruction");
     }
-    std::vector <std::uint64_t> dimensions;
+    std::vector<std::uint64_t> dimensions;
     unsigned int ndim = A.size() - 1;
     for (unsigned int i = 0; i < ndim; i++) {
       dimensions.push_back(A[dims_order[i]].extent(0));
