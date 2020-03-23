@@ -182,8 +182,8 @@ namespace btas{
     if(A.rank() > 2){
       BTAS_EXCEPTION("Tensor rank > 2. Tensor A must be a matrix.");
     }
-    auto lambda_length = lambda.size();
-    auto smallest_mode_A = (A.extent(0) < A.extent(1) ? A.extent(0) : A.extent(1));
+    std::uint64_t lambda_length = lambda.size();
+    std::uint64_t smallest_mode_A = (A.extent(0) < A.extent(1) ? A.extent(0) : A.extent(1));
     if(lambda_length < smallest_mode_A){
       BTAS_EXCEPTION("Volume of lambda must be greater than or equal to the largest mode of A");
     }
@@ -209,7 +209,7 @@ bool cholesky_inverse(Tensor & A, Tensor & B){
 #else //BTAS_HAS_LAPACKE
     // This method computes the inverse quickly for a square matrix
     // based on MATLAB's implementation of A / B operator.
-    auto rank = B.extent(1);
+    std::uint64_t rank = B.extent(1);
     std::uint64_t LDB = B.extent(0);
 
     btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
@@ -243,7 +243,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
       BTAS_EXCEPTION("PseudoInverse can only be computed on a matrix");
     }
 
-    auto row = A.extent(0), col = A.extent(1);
+    std::uint64_t row = A.extent(0), col = A.extent(1);
     auto rank = (row < col ? row : col);
 
     if (fast_pI) {
@@ -268,7 +268,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
     double lr_thresh = 1e-13;
     Tensor s_inv(Range{Range1{row}, Range1{col}});
     s_inv.fill(0.0);
-    for (auto i = 0; i < rank; ++i) {
+    for (std::uint64_t i = 0; i < rank; ++i) {
       if (s(i) > lr_thresh)
         s_inv(i, i) = 1 / s(i);
       else

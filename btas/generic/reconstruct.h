@@ -10,16 +10,16 @@
 namespace btas {
   template <typename Tensor>
   Tensor reconstruct(std::vector<Tensor> & A, std::vector<int> dims_order) {
-    if(A.size() - 1 != dims_order.size()){
+    if (A.size() - 1 != dims_order.size()) {
       BTAS_EXCEPTION("A.size() - 1 != dims_order.size(), please verify that you have correctly assigned the "
                      "order of dimension reconstruction");
     }
-    std::vector <size_t> dimensions;
-    auto ndim = A.size() - 1;
+    std::vector <std::uint64_t> dimensions;
+    unsigned int ndim = A.size() - 1;
     for (unsigned int i = 0; i < ndim; i++) {
       dimensions.push_back(A[dims_order[i]].extent(0));
     }
-    auto rank = A[0].extent(1);
+    std::uint64_t rank = A[0].extent(1);
     for (std::uint64_t i = 0; i < rank; i++) {
       scal(A[dims_order[0]].extent(0), A[ndim](i), std::begin(A[dims_order[0]]) + i, rank);
     }

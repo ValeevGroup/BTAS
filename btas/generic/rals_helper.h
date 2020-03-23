@@ -31,12 +31,12 @@ namespace btas{
     /// is being updated
     /// \param[in] An the updated factor matrix
     double operator()(unsigned int mode, const Tensor &An) {
-      auto size = An.size();
+      std::uint64_t size = An.size();
       auto change = An - prev_[mode];
       double denom = 0.0, s = 0.0;
       auto chg_ptr = change.data();
       auto an_ptr = An.data();
-      for (auto i = 0; i < size; ++i) {
+      for (std::uint64_t i = 0; i < size; ++i) {
         auto val = *(chg_ptr + i);
         s += val * val;
         val = *(an_ptr + i);

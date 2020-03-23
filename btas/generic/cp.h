@@ -346,10 +346,11 @@ namespace btas{
     /// \throws Exception if the CP decomposition is
     /// not yet computed.
     Tensor reconstruct() {
-      if (A.empty()) BTAS_EXCEPTION(
-              "Factor matrices have not been computed. You must first calculate CP decomposition.");
-      std::vector<int> dims;
-      for(auto i = 0; i < ndim; ++i){
+      if (A.empty())
+        BTAS_EXCEPTION(
+                "Factor matrices have not been computed. You must first calculate CP decomposition.");
+      std::vector<unsigned int> dims;
+      for (unsigned int i = 0; i < ndim; ++i) {
         dims.push_back(i);
       }
       return btas::reconstruct(A, dims);
@@ -382,7 +383,7 @@ namespace btas{
     unsigned int num_ALS;                      // Number of ALS iterations
     std::vector <Tensor> A;            // Factor matrices
     unsigned int ndim;                         // Modes in the reference tensor
-    std::vector<int> symmetries;      // Symmetries of the reference tensor
+    std::vector<unsigned int> symmetries;      // Symmetries of the reference tensor
 
     /// Virtual function. Solver classes should implement a build function to
     /// generate factor matrices then compute the CP decomposition
@@ -440,7 +441,7 @@ namespace btas{
       Tensor V(rank, rank);
       V.fill(1.0);
       auto *V_ptr = V.data();
-      for (auto i = 0; i < ndim; ++i) {
+      for (unsigned int i = 0; i < ndim; ++i) {
         if (i != n) {
           Tensor lhs_prod(rank, rank);
           gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
@@ -450,7 +451,7 @@ namespace btas{
         }
       }
 
-      for(auto j = 0; j < rank; ++j){
+      for (std::uint64_t j = 0; j < rank; ++j) {
         *(V_ptr + j * rank + j) += lambda;
       }
 
@@ -470,7 +471,7 @@ namespace btas{
       Tensor left_side_product(Range{Range1{rank}, Range1{rank}});
 
       if (forward) {
-        for (auto i = 0; i < ndim; ++i) {
+        for (unsigned int i = 0; i < ndim; ++i) {
           if ((i == 0 && n != 0) || (i == 1 && n == 0)) {
             left_side_product = A.at(i);
           } else if (i != n) {
@@ -481,12 +482,10 @@ namespace btas{
       }
 
       else {
-        for (auto i = ndim - 1; i > -1; --i) {
+        for (unsigned int i = ndim - 1; i > -1; --i) {
           if ((i == ndim - 1 && n != ndim - 1) || (i == ndim - 2 && n == ndim - 1)) {
             left_side_product = A.at(i);
-          }
-
-          else if (i != n) {
+          } else if (i != n) {
             khatri_rao_product<Tensor>(left_side_product, A[i], temp);
             left_side_product = temp;
           }
@@ -501,8 +500,8 @@ namespace btas{
 
     Tensor normCol(unsigned int factor) {
       if (factor >= ndim) BTAS_EXCEPTION("Factor is out of range");
-      auto rank = A[factor].extent(1);
-      auto size = A[factor].size();
+      std::uint64_t rank = A[factor].extent(1);
+      std::uint64_t size = A[factor].size();
       Tensor lambda(rank);
       lambda.fill(0.0);
       auto A_ptr = A[factor].data();
@@ -526,9 +525,9 @@ namespace btas{
     /// \c Mat with all columns normalized
 
     void normCol(Tensor &Mat) {
-      if(Mat.rank() > 2) BTAS_EXCEPTION("normCol with rank > 2 not yet supported");
-      auto rank = Mat.extent(1);
-      auto size = Mat.size();
+      if (Mat.rank() > 2) BTAS_EXCEPTION("normCol with rank > 2 not yet supported");
+      std::uint64_t rank = Mat.extent(1);
+      std::uint64_t size = Mat.size();
       A[ndim].fill(0.0);
       auto Mat_ptr = Mat.data();
       auto A_ptr = A[ndim].data();
@@ -579,7 +578,7 @@ namespace btas{
         BTAS_EXCEPTION("pseudoinverse helper solves Ax = B.  B cannot be an empty tensor");
       }
 
-      auto rank = A[0].extent(1);
+      std::uint64_t rank = A[0].extent(1);
       auto a = this->generate_V(mode_of_A, rank, lambda);
 
       if (cholesky) {

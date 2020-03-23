@@ -121,8 +121,8 @@ public:
     /// symmetries of {0,1,1,3}
     /// \param[in] tensor the reference tensor to be decomposed.
     /// \param[in] symms the symmetries of the reference tensor.
-    CP_RALS(Tensor& tensor, std::vector<int> & symms) : CP<Tensor, ConvClass>(tensor.rank()),
-    tensor_ref(tensor), size(tensor.size()){
+    CP_RALS(Tensor &tensor, std::vector<unsigned int> &symms) : CP<Tensor, ConvClass>(tensor.rank()),
+                                                                tensor_ref(tensor), size(tensor.size()){
       symmetries = symms;
       if (symmetries.size() > ndim) BTAS_EXCEPTION("Too many symmetries provided")
       for (unsigned int i = 0; i < ndim; ++i) {
@@ -161,9 +161,9 @@ public:
       double epsilon = -1.0;
       unsigned int count = 0;
       // Find the largest rank this will be the first panel
-      auto max_dim = tensor_ref.extent(0);
+      std::uint64_t max_dim = tensor_ref.extent(0);
       for (unsigned int i = 1; i < ndim; ++i) {
-        auto dim = tensor_ref.extent(i);
+        std::uint64_t dim = tensor_ref.extent(i);
         max_dim = (dim > max_dim ? dim : max_dim);
       }
 
@@ -374,7 +374,7 @@ public:
       if (A.empty() && SVD_initial_guess) {
         if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
 
-        std::vector<int> modes_w_dim_LT_svd;
+        std::vector<unsigned int> modes_w_dim_LT_svd;
         A = std::vector<Tensor>(ndim);
 
         // Determine which factor matrices one can fill using SVD initial guess
@@ -441,11 +441,11 @@ public:
         // set the values al lambda, the weigt of each order 1 tensor
         Tensor lambda(Range{Range1{SVD_rank}});
         A.push_back(lambda);
-        for(auto i = 1; i < ndim; ++i){
+        for (unsigned int i = 1; i < ndim; ++i) {
           // normalize the columns of matrices that were set
           // i.e. not symmetric to another mode.
           auto tmp = symmetries[i];
-          if(tmp == i)
+          if (tmp == i)
             this->normCol(A[i]);
           // Then make sure the summetric modes are set here
           A[i] = A[tmp];
@@ -458,10 +458,10 @@ public:
       }
       // This loop keeps track of column dimension
       bool opt_in_for_loop = false;
-      for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
+      for (std::uint64_t i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
         opt_in_for_loop = true;
         // This loop walks through the factor matrices
-        for (auto j = 0; j < ndim; ++j) {  // select a factor matrix
+        for (unsigned int j = 0; j < ndim; ++j) {  // select a factor matrix
           // If no factor matrices exists, make a set of factor matrices
           // and fill them with random numbers that are column normalized
           // and create the weighting vector lambda
@@ -470,7 +470,7 @@ public:
             a.fill(rand());
             A.push_back(a);
             this->normCol(j);
-            if (j  == ndim - 1) {
+            if (j == ndim - 1) {
               Tensor lam(Range{Range1{i + 1}});
               A.push_back(lam);
             }
@@ -590,7 +590,7 @@ public:
 
     void ALS(std::uint64_t rank, ConvClass &converge_test, bool dir, unsigned int max_als, bool calculate_epsilon,
              double &epsilon, bool &fast_pI) {
-      auto count = 0;
+      unsigned int count = 0;
 
       double s = 0.0;
       const auto s0 = 1.0;
@@ -605,9 +605,9 @@ public:
       while(count < max_als && !is_converged){
         count++;
         this->num_ALS++;
-        for (auto i = 0; i < ndim; i++) {
+        for (unsigned int i = 0; i < ndim; i++) {
           auto tmp = symmetries[i];
-          if (tmp != i){
+          if (tmp != i) {
             A[i] = A[tmp];
             lambda[i] = lambda[tmp];
           } else {
@@ -656,7 +656,7 @@ public:
 
       // moves mode n of the reference tensor to the front to simplify contraction
       swap_to_first(tensor_ref, n);
-      std::vector<size_t> tref_indices, KRP_dims, An_indices;
+      std::vector<std::uint64_t> tref_indices, KRP_dims, An_indices;
 
       // resize the Khatri-Rao product to the proper dimensions
       for (unsigned int i = 1; i < ndim; i++) {
@@ -745,7 +745,7 @@ public:
       std::uint64_t pseudo_rank = rank;
 
       // Store the dimensions which are available to hadamard contract
-      std::vector<int> dimensions;
+      std::vector <std::uint64_t> dimensions;
       for (unsigned int i = last_dim ? 1 : 0; i < (last_dim ? ndim : ndim - 1); i++) {
         dimensions.push_back(tensor_ref.extent(i));
       }
@@ -794,8 +794,8 @@ public:
           // If the code hasn't hit the mode of interest yet, it will contract
           // over the middle dimension and sum over the rank.
         else if (contract_dim > n) {
-          auto idx1 = temp.extent(0);
-          auto idx2 = temp.extent(1);
+          std::uint64_t idx1 = temp.extent(0);
+          std::uint64_t idx2 = temp.extent(1);
           for (std::uint64_t i = 0; i < idx1; i++) {
             auto *contract_ptr = contract_tensor.data() + i * rank;
             for (std::uint64_t j = 0; j < idx2; j++) {

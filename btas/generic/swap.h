@@ -40,8 +40,8 @@ void swap_to_first(Tensor &A, unsigned int mode, bool is_in_front = false,
     return;
 
   // Build the resize vector for reference tensor to update dimensions
-  std::vector<int> aug_dims;
-  auto size = A.range().area();
+  std::vector<std::uint64_t> aug_dims;
+  std::uint64_t size = A.range().area();
   for (unsigned int i = 0; i < A.rank(); i++) {
     aug_dims.push_back(A.extent(i));
   }
@@ -124,13 +124,13 @@ void swap_to_back(Tensor &A, unsigned int mode, bool is_in_back = false){
   if (mode == A.rank() - 1)
     return;
 
-  size_t rows = 1;
-  size_t cols = 1;
+  std::uint64_t rows = 1;
+  std::uint64_t cols = 1;
 
   // counts the modes up to and including the mode of interest, these are stored
   // in rows counts all the modes beyond the mode of interest, these are stored
   // as columns
-  auto ndim = A.rank();
+  unsigned int ndim = A.rank();
   auto midpoint = (is_in_back) ? ndim - 1 - mode : mode + 1;
   std::vector<size_t> aug_dims;
   for (unsigned int i = midpoint; i < ndim; i++) {

@@ -33,7 +33,7 @@ namespace btas {
       auto ndim = btas_factors.size() - 1;
       if (prev.empty() || prev[0].size() != btas_factors[0].size()){
         prev.clear();
-        for (std::uint64_t i = 0; i < ndim; ++i) {
+        for (unsigned int i = 0; i < ndim; ++i) {
           prev.push_back(Tensor(btas_factors[i].range()));
           prev[i].fill(0.0);
         }
@@ -41,7 +41,7 @@ namespace btas {
 
       auto diff = 0.0;
       rank_ = btas_factors[0].extent(1);
-      for (std::uint64_t r = 0; r < ndim; ++r) {
+      for (unsigned int r = 0; r < ndim; ++r) {
         auto elements = btas_factors[r].size();
         auto change = prev[r] - btas_factors[r];
         diff += std::sqrt(btas::dot(change, change) / elements);
@@ -164,7 +164,7 @@ namespace btas {
       temp.resize(Range{Range1{rank}, Range1{1}});
       gemm(CblasNoTrans, CblasTrans, 1.0, temp, temp, 0.0, coeffMat);
 
-      for (std::uint64_t i = 0; i < n; ++i) {
+      for (unsigned int i = 0; i < n; ++i) {
         Tensor temp(rank, rank);
         gemm(CblasTrans, CblasNoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
         auto *ptr_coeff = coeffMat.data();
@@ -263,10 +263,10 @@ namespace btas {
       std::vector<Tensor> tensors_right;
       tensors_left.push_back(btas_factors[0]);
       tensors_right.push_back(btas_factors[0]);
-        for (std::uint64_t i = 1; i < ndimL_; ++i) {
+        for (unsigned int i = 1; i < ndimL_; ++i) {
           tensors_left.push_back(btas_factors[i]);
         }
-        for (std::uint64_t i = ndimL_; i < n + 1; ++i) {
+        for (unsigned int i = ndimL_; i < n + 1; ++i) {
           tensors_right.push_back(btas_factors[i]);
         }
       tensors_left.push_back(btas_factors[n]);
@@ -327,7 +327,7 @@ namespace btas {
       temp.resize(Range{Range1{rank}, Range1{1}});
       gemm(CblasNoTrans, CblasTrans, 1.0, temp, temp, 0.0, coeffMat);
 
-      for (std::uint64_t i = 0; i < n; ++i) {
+      for (unsigned int i = 0; i < n; ++i) {
         Tensor temp(rank, rank);
         gemm(CblasTrans, CblasNoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
         auto *ptr_coeff = coeffMat.data();

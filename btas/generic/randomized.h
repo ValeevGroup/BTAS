@@ -19,20 +19,20 @@ namespace btas {
 /// column drawn from a random distribution and orthogonalized
 template <typename Tensor> void generate_random_metric(Tensor &A) {
   using value_type = typename Tensor::value_type;
-  for (auto i = 0; i < A.extent(1); i++) {
+  for (std::uint64_t i = 0; i < A.extent(1); i++) {
     std::random_device rd;
     // uncomment for more randomness
     // std::mt19937 gen(rd());
     std::mt19937 gen(1.0); // comment out for more randomness.
-    std::normal_distribution<value_type> distribution(0.0, 10.0);
+    std::normal_distribution <value_type> distribution(0.0, 10.0);
     value_type norm = 0.0;
-    for (auto j = 0; j < A.extent(0); j++) {
+    for (std::uint64_t j = 0; j < A.extent(0); j++) {
       A(j, i) = abs(distribution(gen));
       norm += A(j, i) * A(j, i);
     }
 
     norm = sqrt(norm);
-    for (auto j = 0; j < A.extent(0); j++) {
+    for (std::uint64_t j = 0; j < A.extent(0); j++) {
       A(j, i) /= norm;
     }
 
@@ -57,8 +57,8 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
                                 std::uint64_t des_rank, unsigned int oversampl = 10,
                                 unsigned int powerit = 2) {
     // Add the oversampling to the desired rank
-    auto ndim = A.rank();
-    auto rank = des_rank + oversampl;
+    std::uint64_t ndim = A.rank();
+    std::uint64_t rank = des_rank + oversampl;
     std::vector<int> A_modes;
     for (unsigned int i = 0; i < ndim; ++i) {
       A_modes.push_back(i);

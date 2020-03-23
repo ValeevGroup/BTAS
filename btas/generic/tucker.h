@@ -20,10 +20,10 @@ namespace btas {
 template <typename Tensor>
 void tucker_compression(Tensor &A, double epsilon_svd,
                         std::vector<Tensor> &transforms) {
-  double norm2 = dot(A,A);
+  double norm2 = dot(A, A);
   //norm2 *= norm2;
-  auto ndim = A.rank();
-  std::vector<int> A_modes;
+  unsigned int ndim = A.rank();
+  std::vector<unsigned int> A_modes;
   for (unsigned int i = 0; i < ndim; ++i) {
     A_modes.push_back(i);
   }
@@ -71,7 +71,7 @@ void tucker_compression(Tensor &A, double epsilon_svd,
 
   for (unsigned int i = 0; i < ndim; ++i) {
     auto &lambda = transforms[i];
-    auto kept_evecs = lambda.extent(1);
+    std::uint64_t kept_evecs = lambda.extent(1);
 #ifdef BTAS_HAS_INTEL_MKL
     // Contract the factor matrix with the reference tensor, A.
     core_contract(A, lambda, i);

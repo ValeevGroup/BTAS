@@ -94,7 +94,7 @@ namespace btas{
             CP<Tensor, ConvClass>(left.rank() + right.rank() - 1),
             tensor_ref_left(left), tensor_ref_right(right), ndimL(left.rank())
     {
-      for (std::uint64_t i = 0; i < ndim; ++i) {
+      for (unsigned int i = 0; i < ndim; ++i) {
         symmetries.push_back(i);
       }
     }
@@ -114,7 +114,7 @@ namespace btas{
             tensor_ref_left(left), tensor_ref_right(right), ndimL(left.rank())
     {
       symmetries = symms;
-      for (std::uint64_t i = 0; i < ndim; ++i) {
+      for (unsigned int i = 0; i < ndim; ++i) {
         if (symmetries[i] > i)
           BTAS_EXCEPTION("Symmetries should always refer to factors at earlier positions");
       }
@@ -192,27 +192,27 @@ namespace btas{
 
         // Determine which factor matrices one can fill using SVD initial guess
         // start with left then do right
-        auto ndimR = tensor_ref_right.rank();
-        for (std::uint64_t i = 0; i < ndimL; i++) {
+        unsigned int ndimR = tensor_ref_right.rank();
+        for (unsigned int i = 0; i < ndimL; i++) {
           if (tensor_ref_left.extent(i) < SVD_rank) {
             modes_w_dim_LT_svd.push_back(i);
           }
         }
-        for (std::uint64_t i = 1; i < ndimR; i++) {
+        for (unsigned int i = 1; i < ndimR; i++) {
           if (tensor_ref_right.extent(i) < SVD_rank) {
             modes_w_dim_LT_svd.push_back(i + ndimL - 1);
           }
         }
 
-        for (std::uint64_t tensor = 0; tensor < 2; ++tensor) {
+        for (unsigned int tensor = 0; tensor < 2; ++tensor) {
           auto &tensor_ref = tensor == 0 ? tensor_ref_left : tensor_ref_right;
-          auto ndim_curr = tensor_ref.rank();
+          unsigned int ndim_curr = tensor_ref.rank();
           // Fill all factor matrices with their singular vectors,
           // because we contract X X^T (where X is reference tensor) to make finding
           // singular vectors an eigenvalue problem some factor matrices will not be
           // full rank;
           bool left = tensor == 0;
-          for (std::uint64_t i = left ? 0 : 1; i < ndim_curr; i++) {
+          for (unsigned int i = left ? 0 : 1; i < ndim_curr; i++) {
             std::uint64_t R = tensor_ref.extent(i);
             Tensor S(R, R), lambda(R);
 
@@ -234,7 +234,7 @@ namespace btas{
               *(l_iter) = *(iter);
             }
 
-            std::uint64_t A_dim = left ? i : i + ndimL - 1;
+            unsigned int A_dim = left ? i : i + ndimL - 1;
             A[A_dim] = lambda;
           }
         }
@@ -244,7 +244,7 @@ namespace btas{
         std::uniform_real_distribution<> distribution(-1.0, 1.0);
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd){
-          auto dim = i < ndimL ? i : i - ndimL +1;
+          unsigned int dim = i < ndimL ? i : i - ndimL + 1;
           auto &tensor_ref = i < ndimL ? tensor_ref_left : tensor_ref_right;
           std::uint64_t R = tensor_ref.extent(dim);
           auto lower_bound = {0, R};
@@ -259,7 +259,7 @@ namespace btas{
         // set the values al lambda, the weigt of each order 1 tensor
         Tensor lambda(Range{Range1{SVD_rank}});
         A.push_back(lambda);
-        for(auto i = 0; i < ndim; ++i){
+        for (unsigned int i = 0; i < ndim; ++i) {
           this->normCol(A[i]);
         }
 
@@ -267,14 +267,14 @@ namespace btas{
         ALS(SVD_rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
       // This loop keeps track of column dimension
-      for (auto i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
+      for (std::uint64_t i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
         // This loop walks through the factor matrices
-        for (auto j = 0; j < ndim; ++j) {  // select a factor matrix
+        for (unsigned int j = 0; j < ndim; ++j) {  // select a factor matrix
           // If no factor matrices exists, make a set of factor matrices
           // and fill them with random numbers that are column normalized
           // and create the weighting vector lambda
           auto left = (j < ndimL);
-          auto & tensor_ref = left ? tensor_ref_left : tensor_ref_right;
+          auto &tensor_ref = left ? tensor_ref_left : tensor_ref_right;
           if (i == 0) {
             Tensor a(Range{tensor_ref.range().range((left ? j : j - ndimL + 1)), Range1{i + 1}});
             a.fill(rand());
@@ -372,7 +372,7 @@ namespace btas{
     ALS(unsigned std::uint64_t rank, ConvClass &converge_test, bool dir, unsigned int max_als, bool calculate_epsilon,
         double &epsilon, bool &fast_pI) {
 
-      auto count = 0;
+      unsigned int count = 0;
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
@@ -381,9 +381,9 @@ namespace btas{
       while (count < max_als && !is_converged) {
         count++;
         this->num_ALS++;
-        for (auto i = 0; i < ndim; i++) {
+        for (unsigned int i = 0; i < ndim; i++) {
           auto tmp = symmetries[i];
-          if(tmp == i) {
+          if (tmp == i) {
             direct(i, rank, fast_pI, matlab, converge_test);
           } else {
             A[i] = A[tmp];
@@ -416,7 +416,7 @@ namespace btas{
         // Start by computing (B^{X}_{abcd...} C^{-X}_{abcd...}) + B^{X}_{ijkl...} C^{-X}_{ijkl...}) = K
         // where C^{-X}_{abcd...} = C^{a} \odot C^{b} \odot C^{c} \odot C^{d} \dots ( the khatri-rao
         // product without the factor matrix C^X
-        auto coupled_dim = tensor_ref_left.extent(0);
+        std::uint64_t coupled_dim = tensor_ref_left.extent(0);
         Tensor K(coupled_dim, rank);
         K.fill(0.0);
 

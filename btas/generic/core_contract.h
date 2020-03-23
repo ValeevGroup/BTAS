@@ -30,7 +30,7 @@ void core_contract(Tensor &A, const Tensor &Q, unsigned int mode, bool transpose
 
   // Allocate the appropriate memory for the resulting tensor
   temp_dims.push_back((transpose) ? Q.extent(1) : Q.extent(0));
-  for (std::uint64_t i = 1; i < ndim; i++)
+  for (unsigned int i = 1; i < ndim; i++)
     temp_dims.push_back(A.extent(i));
   Tensor temp(Range{temp_dims});
   temp_dims.clear();
@@ -41,7 +41,7 @@ void core_contract(Tensor &A, const Tensor &Q, unsigned int mode, bool transpose
   Q_indicies.push_back((transpose) ? ndim : 0);
   temp_dims.push_back(ndim);
   A_indices.push_back(0);
-  for (std::uint64_t i = 1; i < ndim; i++) {
+  for (unsigned int i = 1; i < ndim; i++) {
     A_indices.push_back(i);
     temp_dims.push_back(i);
   }
