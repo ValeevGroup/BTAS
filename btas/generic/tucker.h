@@ -24,16 +24,16 @@ void tucker_compression(Tensor &A, double epsilon_svd,
   //norm2 *= norm2;
   auto ndim = A.rank();
   std::vector<int> A_modes;
-  for(int i = 0; i< ndim;++i){
+  for (unsigned int i = 0; i < ndim; ++i) {
     A_modes.push_back(i);
   }
 
-  for (int i = 0; i < ndim; i++) {
+  for (unsigned int i = 0; i < ndim; i++) {
     // Determine the threshold epsilon_SVD.
     auto flat = flatten(A, i);
     auto threshold = epsilon_svd * epsilon_svd * norm2 / ndim;
 
-    int R = flat.extent(0);
+    std::uint64_t R = flat.extent(0);
     Tensor S(R, R), lambda(R, 1);
 
     // Contract A_n^T A_n to reduce the dimension of the SVD object to I_n X I_n
@@ -50,7 +50,7 @@ void tucker_compression(Tensor &A, double epsilon_svd,
 #endif
 
     // Find the truncation rank based on the threshold.
-    int rank = 0;
+    std::uint64_t rank = 0;
     for (auto &eigvals : lambda) {
       if (eigvals < threshold)
         rank++;
@@ -69,22 +69,23 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     transforms.push_back(lambda);
   }
 
-  for(int i = 0; i < ndim; ++i){
-    auto & lambda = transforms[i];
+  for (unsigned int i = 0; i < ndim; ++i) {
+    auto &lambda = transforms[i];
     auto kept_evecs = lambda.extent(1);
 #ifdef BTAS_HAS_INTEL_MKL
     // Contract the factor matrix with the reference tensor, A.
     core_contract(A, lambda, i);
 #else
     std::vector<int> contract_modes;
-    contract_modes.push_back(i); contract_modes.push_back(ndim);
+    contract_modes.push_back(i);
+    contract_modes.push_back(ndim);
     std::vector<int> final_modes;
     std::vector<int> final_dims;
-    for(int j = 0; j < ndim; ++j){
-      if(j == i){
+    for (unsigned int j = 0; j < ndim; ++j) {
+      if (j == i) {
         final_modes.push_back(ndim);
         final_dims.push_back(kept_evecs);
-      } else{
+      } else {
         final_modes.push_back(j);
         final_dims.push_back(A.extent(j));
       }

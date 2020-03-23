@@ -10,15 +10,16 @@ namespace btas {
 /// where \f$J = I_1 * I_2 * ...I_{mode-1} * I_{mode+1} * ... * I_N.\f$
 /// \return Matrix with dimension \f$(I_{mode}, J)\f$
 
-template <typename Tensor> Tensor flatten(const Tensor &A, int mode) {
-  
+template<typename Tensor>
+Tensor flatten(const Tensor &A, unsigned int mode) {
+
   if (mode >= A.rank())
     BTAS_EXCEPTION("Cannot flatten along mode outside of A.rank()");
-  
+
   // make X the correct size
   Tensor X(A.extent(mode), A.range().area() / A.extent(mode));
 
-  int indexi = 0, indexj = 0;
+  std::uint64_t indexi = 0, indexj = 0;
   auto ndim = A.rank();
   // J is the new step size found by removing the mode of interest
   std::vector<int> J(ndim, 1);
@@ -53,18 +54,19 @@ template <typename Tensor> Tensor flatten(const Tensor &A, int mode) {
 /// The value of the iterator is placed in the correct position of X using
 /// recursive calls of fill().
 
-template <typename Tensor, typename iterator>
-void fill(const Tensor &A, int depth, Tensor &X, int mode, int indexi, int indexj,
-          const std::vector<int> &J, iterator &tensor_itr) {
-  auto ndim = A.rank();
-  if (depth < ndim) {
-    
-    // Creates a for loop based on the number of modes A has
-    for (auto i = 0; i < A.extent(depth); ++i) {
-      
-      // use the for loop to find the column dimension index
-      if (depth != mode) {
-        indexj += i * J[depth]; // column matrix index
+  template<typename Tensor, typename iterator>
+  void
+  fill(const Tensor &A, std::uint64_t depth, Tensor &X, unsigned int mode, std::uint64_t indexi, std::uint64_t indexj,
+       const std::vector<int> &J, iterator &tensor_itr) {
+    auto ndim = A.rank();
+    if (depth < ndim) {
+
+      // Creates a for loop based on the number of modes A has
+      for (auto i = 0; i < A.extent(depth); ++i) {
+
+        // use the for loop to find the column dimension index
+        if (depth != mode) {
+          indexj += i * J[depth]; // column matrix index
       }
       
       // if this depth is the mode being flattened use the for loop to find the

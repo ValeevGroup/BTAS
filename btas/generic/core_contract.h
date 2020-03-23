@@ -17,8 +17,8 @@ namespace btas {
 /// \param[in] transpose Is Q transposed in the matrix/tensor contraction?
 /// Default value = true.
 
-template <typename Tensor>
-void core_contract(Tensor &A, const Tensor &Q, int mode, bool transpose = true) {
+template<typename Tensor>
+void core_contract(Tensor &A, const Tensor &Q, unsigned int mode, bool transpose = true) {
 
   using btas::Range;
   auto ndim = A.rank();
@@ -30,7 +30,7 @@ void core_contract(Tensor &A, const Tensor &Q, int mode, bool transpose = true) 
 
   // Allocate the appropriate memory for the resulting tensor
   temp_dims.push_back((transpose) ? Q.extent(1) : Q.extent(0));
-  for (int i = 1; i < ndim; i++)
+  for (std::uint64_t i = 1; i < ndim; i++)
     temp_dims.push_back(A.extent(i));
   Tensor temp(Range{temp_dims});
   temp_dims.clear();
@@ -41,7 +41,7 @@ void core_contract(Tensor &A, const Tensor &Q, int mode, bool transpose = true) 
   Q_indicies.push_back((transpose) ? ndim : 0);
   temp_dims.push_back(ndim);
   A_indices.push_back(0);
-  for (int i = 1; i < ndim; i++) {
+  for (std::uint64_t i = 1; i < ndim; i++) {
     A_indices.push_back(i);
     temp_dims.push_back(i);
   }

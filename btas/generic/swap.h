@@ -30,7 +30,7 @@ namespace btas {
 /// required for the ALS, if making a general swap this should be false.
 
 template <typename Tensor>
-void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
+void swap_to_first(Tensor &A, unsigned int mode, bool is_in_front = false,
                    bool for_ALS_update = true) {
   // If the mode of interest is the the first mode you are done.
   if(mode > A.rank()){
@@ -42,7 +42,7 @@ void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
   // Build the resize vector for reference tensor to update dimensions
   std::vector<int> aug_dims;
   auto size = A.range().area();
-  for (int i = 0; i < A.rank(); i++) {
+  for (unsigned int i = 0; i < A.rank(); i++) {
     aug_dims.push_back(A.extent(i));
   }
 
@@ -84,7 +84,7 @@ void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
   // now the mode of interest. Swapping the rows and columns back at the end
   // will preserve order of the dimensions.
   else {
-    for (int i = 0; i <= mode; i++)
+    for (unsigned int i = 0; i <= mode; i++)
       rows *= A.extent(i);
     cols = size / rows;
     double *data_ptr = A.data();
@@ -95,7 +95,7 @@ void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
     size_t in_rows = (is_in_front) ? A.extent(0) : rows / A.extent(mode);
     size_t in_cols = (is_in_front) ? rows / A.extent(0) : A.extent(mode);
 
-    for (int i = 0; i < cols; i++) {
+    for (std::uint64_t i = 0; i < cols; i++) {
       data_ptr = A.data() + i * step;
       mkl_dimatcopy('R', 'T', in_rows, in_cols, 1.0, data_ptr, in_cols,
                     in_rows);
@@ -117,7 +117,7 @@ void swap_to_first(Tensor &A, int mode, bool is_in_front = false,
 /// back. Default = false.
 
 template <typename Tensor>
-void swap_to_back(Tensor &A, int mode, bool is_in_back = false){
+void swap_to_back(Tensor &A, unsigned int mode, bool is_in_back = false){
   if (mode > A.rank())
     BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__,
                            "mode > A.rank(), mode out of range");
@@ -133,11 +133,11 @@ void swap_to_back(Tensor &A, int mode, bool is_in_back = false){
   auto ndim = A.rank();
   auto midpoint = (is_in_back) ? ndim - 1 - mode : mode + 1;
   std::vector<size_t> aug_dims;
-  for (int i = midpoint; i < ndim; i++) {
+  for (unsigned int i = midpoint; i < ndim; i++) {
     aug_dims.push_back(A.extent(i));
     cols *= A.extent(i);
   }
-  for (int i = 0; i < midpoint; i++) {
+  for (unsigned int i = 0; i < midpoint; i++) {
     aug_dims.push_back(A.extent(i));
     rows *= A.extent(i);
   }

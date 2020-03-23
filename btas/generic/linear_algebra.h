@@ -48,14 +48,14 @@ namespace btas{
     for (auto &j : piv)
       j -= 1;
 
-    int pivsize = piv.extent(0);
+    std::uint64_t pivsize = piv.extent(0);
     piv.resize(Range{Range1{A.extent(0)}});
 
     // Walk through the full pivot array and
     // put the correct index values throughout
-    for (int i = 0; i < piv.extent(0); i++) {
+    for (std::uint64_t i = 0; i < piv.extent(0); i++) {
       if (i == piv(i) || i >= pivsize) {
-        for (int j = 0; j < i; j++) {
+        for (std::uint64_t j = 0; j < i; j++) {
           if (i == piv(j)) {
             piv(i) = j;
             break;
@@ -64,7 +64,7 @@ namespace btas{
       }
       if (i >= pivsize) {
         piv(i) = i;
-        for (int j = 0; j < i; j++)
+        for (std::uint64_t j = 0; j < i; j++)
           if (i == piv(j)) {
             piv(i) = j;
             break;
@@ -73,12 +73,12 @@ namespace btas{
     }
 
     // generating the pivot matrix from the correct indices found above
-    for (int i = 0; i < piv.extent(0); i++)
+    for (std::uint64_t i = 0; i < piv.extent(0); i++)
       P(piv(i), i) = 1;
 
     // Use the output of LAPACKE to make a lower triangular matrix, L
-    for (int i = 0; i < L.extent(0); i++) {
-      for (int j = 0; j < i && j < L.extent(1); j++) {
+    for (std::uint64_t i = 0; i < L.extent(0); i++) {
+      for (std::uint64_t j = 0; j < i && j < L.extent(1); j++) {
         L(i, j) = A(i, j);
       }
       if (i < L.extent(1))
@@ -105,8 +105,8 @@ namespace btas{
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
     }
 
-    int Qm = A.extent(0);
-    int Qn = A.extent(1);
+    std::uint64_t Qm = A.extent(0);
+    std::uint64_t Qn = A.extent(1);
     Tensor B(1, std::min(Qm, Qn));
 
     // LAPACKE doesn't directly calculate Q. Must first call this function to
@@ -210,7 +210,7 @@ bool cholesky_inverse(Tensor & A, Tensor & B){
     // This method computes the inverse quickly for a square matrix
     // based on MATLAB's implementation of A / B operator.
     auto rank = B.extent(1);
-    int LDB = B.extent(0);
+    std::uint64_t LDB = B.extent(0);
 
     btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
     piv.fill(0);

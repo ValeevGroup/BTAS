@@ -33,7 +33,7 @@ namespace btas {
       auto ndim = btas_factors.size() - 1;
       if (prev.empty() || prev[0].size() != btas_factors[0].size()){
         prev.clear();
-        for(int i = 0; i < ndim; ++i){
+        for (std::uint64_t i = 0; i < ndim; ++i) {
           prev.push_back(Tensor(btas_factors[i].range()));
           prev[i].fill(0.0);
         }
@@ -41,14 +41,14 @@ namespace btas {
 
       auto diff = 0.0;
       rank_ = btas_factors[0].extent(1);
-      for(int r = 0; r < ndim; ++r){
+      for (std::uint64_t r = 0; r < ndim; ++r) {
         auto elements = btas_factors[r].size();
         auto change = prev[r] - btas_factors[r];
-        diff += std::sqrt(btas::dot(change, change)/elements);
+        diff += std::sqrt(btas::dot(change, change) / elements);
         prev[r] = btas_factors[r];
       }
 
-      if(diff < this->tol_){
+      if (diff < this->tol_) {
         return true;
       }
       return false;
@@ -56,9 +56,9 @@ namespace btas {
 
   private:
     double tol_;
-    std::vector<Tensor> prev;     // Set of previous factor matrices
-    int ndim;                     // Number of factor matrices
-    int rank_;               // Rank of the CP problem
+    std::vector <Tensor> prev;     // Set of previous factor matrices
+    unsigned int ndim;                     // Number of factor matrices
+    unsigned int rank_;               // Rank of the CP problem
   };
 
   /**
@@ -90,19 +90,19 @@ namespace btas {
       temp.fill(0.0);
       auto * ptr_A = btas_factors[n].data();
       auto * ptr_MtKRP = MtKRP_.data();
-      for(int i = 0; i < size; ++i){
+      for (std::uint64_t i = 0; i < size; ++i) {
         *(ptr_MtKRP + i) *= *(ptr_A + i);
       }
 
       auto * ptr_temp = temp.data();
-      for(int i = 0; i < size; ++i){
+      for (std::uint64_t i = 0; i < size; ++i) {
         *(ptr_temp + i % rank) += *(ptr_MtKRP + i);
       }
 
       size = temp.size();
       ptr_A = btas_factors[n+1].data();
       double iprod = 0.0;
-      for(int i = 0; i < size; ++i){
+      for (std::uint64_t i = 0; i < size; ++i) {
         iprod += *(ptr_temp + i) * *(ptr_A + i);
       }
 
@@ -142,7 +142,7 @@ namespace btas {
       return final_fit_;
     }
 
-    void verbose(bool verb){
+    void verbose(bool verb) {
       verbose_ = verb;
     }
 
@@ -151,12 +151,12 @@ namespace btas {
     double fitOld_ = -1.0;
     double normT_ = -1.0;
     double final_fit_ = 0.0;
-    int iter_ = 0;
-    int converged_num = 0;
+    unsigned int iter_ = 0;
+    unsigned int converged_num = 0;
     Tensor MtKRP_;
     bool verbose_ = false;
 
-    double norm(const std::vector<Tensor> & btas_factors){
+    double norm(const std::vector <Tensor> &btas_factors) {
       auto rank = btas_factors[0].extent(1);
       auto n = btas_factors.size() - 1;
       Tensor coeffMat(rank, rank);
@@ -164,13 +164,13 @@ namespace btas {
       temp.resize(Range{Range1{rank}, Range1{1}});
       gemm(CblasNoTrans, CblasTrans, 1.0, temp, temp, 0.0, coeffMat);
 
-      for(int i = 0; i < n; ++i){
+      for (std::uint64_t i = 0; i < n; ++i) {
         Tensor temp(rank, rank);
         gemm(CblasTrans, CblasNoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
-        auto * ptr_coeff = coeffMat.data();
-        auto * ptr_temp = temp.data();
-        for(int i = 0; i < rank * rank; ++i){
-          *(ptr_coeff + i) *= *(ptr_temp + i);
+        auto *ptr_coeff = coeffMat.data();
+        auto *ptr_temp = temp.data();
+        for (std::uint64_t j = 0; j < rank * rank; ++j) {
+          *(ptr_coeff + j) *= *(ptr_temp + j);
         }
       }
 
@@ -194,9 +194,9 @@ namespace btas {
   template <typename Tensor>
   class CoupledFitCheck{
   public:
-      /// constructor for the base convergence test object
-      /// \param[in] tol tolerance for ALS convergence
-    explicit CoupledFitCheck(int lhs_dims, double tol = 1e-4): tol_(tol), ndimL_(lhs_dims){
+    /// constructor for the base convergence test object
+    /// \param[in] tol tolerance for ALS convergence
+    explicit CoupledFitCheck(unsigned int lhs_dims, double tol = 1e-4) : tol_(tol), ndimL_(lhs_dims) {
     }
 
     ~CoupledFitCheck() = default;
@@ -216,10 +216,10 @@ namespace btas {
 
       {
         auto &A = btas_factors[ndimL_ - 1];
-        for (int i = 0; i < contract_size; ++i) {
+        for (std::uint64_t i = 0; i < contract_size; ++i) {
           auto *ptr_A = A.data() + i * rank;
           auto *ptr_MtKRP = MtKRPL_.data() + i * rank;
-          for (int r = 0; r < rank; ++r) {
+          for (std::uint64_t r = 0; r < rank; ++r) {
             *(tempL.data() + r) += *(ptr_A + r) * *(ptr_MtKRP + r);
           }
         }
@@ -229,10 +229,10 @@ namespace btas {
         auto n = btas_factors.size() - 2;
         contract_size = btas_factors[n].extent(0);
         auto &A = btas_factors[n];
-        for (int i = 0; i < contract_size; ++i) {
+        for (std::uint64_t i = 0; i < contract_size; ++i) {
           auto *ptr_A = A.data() + i * rank;
           auto *ptr_MtKRP = MtKRPR_.data() + i * rank;
-          for (int r = 0; r < rank; ++r) {
+          for (std::uint64_t r = 0; r < rank; ++r) {
             *(tempR.data() + r) += *(ptr_A + r) * *(ptr_MtKRP + r);
           }
         }
@@ -246,14 +246,14 @@ namespace btas {
       {
         auto * ptr_A = btas_factors[n].data();
         auto * ptr_temp = tempL.data();
-        for (int i = 0; i < rank; ++i) {
+        for (std::uint64_t i = 0; i < rank; ++i) {
           iprodL += *(ptr_temp + i) * *(ptr_A + i);
         }
       }
       {
         auto * ptr_A = btas_factors[n].data();
         auto * ptr_temp = tempR.data();
-        for (int i = 0; i < rank; ++i) {
+        for (std::uint64_t i = 0; i < rank; ++i) {
           iprodR += *(ptr_temp + i) * *(ptr_A + i);
         }
       }
@@ -263,12 +263,12 @@ namespace btas {
       std::vector<Tensor> tensors_right;
       tensors_left.push_back(btas_factors[0]);
       tensors_right.push_back(btas_factors[0]);
-      for(int i = 1; i < ndimL_; ++i){
-        tensors_left.push_back(btas_factors[i]);
-      }
-      for(int i = ndimL_; i < n+1; ++i){
-        tensors_right.push_back(btas_factors[i]);
-      }
+        for (std::uint64_t i = 1; i < ndimL_; ++i) {
+          tensors_left.push_back(btas_factors[i]);
+        }
+        for (std::uint64_t i = ndimL_; i < n + 1; ++i) {
+          tensors_right.push_back(btas_factors[i]);
+        }
       tensors_left.push_back(btas_factors[n]);
 
       double normFactorsL = norm(tensors_left);
@@ -315,9 +315,9 @@ namespace btas {
     double fitOld_ = -1.0;
     double final_fit_ = 0.0;
     double normTL_ = -1.0, normTR_ = -1.0;
-    int iter_ = 0;
+    unsigned int iter_ = 0;
     Tensor MtKRPL_, MtKRPR_;
-    int ndimL_;
+    unsigned int ndimL_;
 
     double norm(const std::vector<Tensor> & btas_factors){
       auto rank = btas_factors[0].extent(1);
@@ -327,13 +327,13 @@ namespace btas {
       temp.resize(Range{Range1{rank}, Range1{1}});
       gemm(CblasNoTrans, CblasTrans, 1.0, temp, temp, 0.0, coeffMat);
 
-      for(int i = 0; i < n; ++i){
+      for (std::uint64_t i = 0; i < n; ++i) {
         Tensor temp(rank, rank);
         gemm(CblasTrans, CblasNoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
-        auto * ptr_coeff = coeffMat.data();
-        auto * ptr_temp = temp.data();
-        for(int i = 0; i < rank * rank; ++i){
-          *(ptr_coeff + i) *= *(ptr_temp + i);
+        auto *ptr_coeff = coeffMat.data();
+        auto *ptr_temp = temp.data();
+        for (std::uint64_t j = 0; j < rank * rank; ++j) {
+          *(ptr_coeff + j) *= *(ptr_temp + j);
         }
       }
 

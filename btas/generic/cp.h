@@ -121,7 +121,7 @@ namespace btas{
     /// the number of iterations and the number of dimensions of the original
     /// tensor
     /// \param[in] ndim number of modes in the reference tensor.
-    CP(int dims) : num_ALS(0) {
+    CP(unsigned int dims) : num_ALS(0) {
 #if not defined(BTAS_HAS_LAPACKE)
       BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP decompositions requires LAPACKE");
 #endif
@@ -158,8 +158,8 @@ namespace btas{
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
 
-    double compute_rank(int rank, ConvClass &converge_test, int step = 1,
-                        bool SVD_initial_guess = false, int SVD_rank = 0, int max_als = 1e4,
+    double compute_rank(std::uint64_t rank, ConvClass &converge_test, unsigned int step = 1,
+                        bool SVD_initial_guess = false, std::uint64_t SVD_rank = 0, unsigned int max_als = 1e4,
                         bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       if (SVD_initial_guess && SVD_rank > rank) BTAS_EXCEPTION("Initial guess is larger than the desired CP rank");
@@ -191,7 +191,7 @@ namespace btas{
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_rank_random(int rank, ConvClass &converge_test, int max_als = 1e4,
+    double compute_rank_random(std::uint64_t rank, ConvClass &converge_test, unsigned int max_als = 1e4,
                                bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       double epsilon = -1.0;
@@ -231,10 +231,10 @@ namespace btas{
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_error(ConvClass &converge_test, double tcutCP = 1e-2, int step = 1,
-                         int max_rank = 1e5, bool SVD_initial_guess = false, int SVD_rank = 0,
+    double compute_error(ConvClass &converge_test, double tcutCP = 1e-2, unsigned int step = 1,
+                         unsigned int max_rank = 1e5, bool SVD_initial_guess = false, std::uint64_t SVD_rank = 0,
                          double max_als = 1e4, bool fast_pI = false, bool direct = true) {
-      int rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
+      std::uint64_t rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
       double epsilon = tcutCP + 1;
       while (epsilon > tcutCP && rank < max_rank) {
         build(rank, converge_test, direct, max_als, true, step, epsilon, SVD_initial_guess, SVD_rank, fast_pI);
@@ -273,8 +273,8 @@ namespace btas{
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_geometric(int desired_rank, ConvClass &converge_test, int geometric_step = 2,
-                             bool SVD_initial_guess = false, int SVD_rank = 0, int max_als = 1e4,
+    double compute_geometric(std::uint64_t desired_rank, ConvClass &converge_test, unsigned int geometric_step = 2,
+                             bool SVD_initial_guess = false, std::uint64_t SVD_rank = 0, unsigned int max_als = 1e4,
                              bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) {
       if (geometric_step <= 0) {
         BTAS_EXCEPTION("The step size must be larger than 0");
@@ -283,7 +283,7 @@ namespace btas{
         BTAS_EXCEPTION("Initial guess is larger than desired CP rank");
       }
       double epsilon = -1.0;
-      int rank = (SVD_initial_guess) ? SVD_rank : 1;
+      std::uint64_t rank = (SVD_initial_guess) ? SVD_rank : 1;
 
       while (rank <= desired_rank && rank < max_als) {
         build(rank, converge_test, direct, max_als, calculate_epsilon, geometric_step, epsilon, SVD_initial_guess,
@@ -319,8 +319,9 @@ namespace btas{
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    virtual double compute_PALS(std::vector<ConvClass> & converge_list, double RankStep = 0.5, int panels = 4,
-                         int max_als = 20,bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) = 0;
+    virtual double compute_PALS(std::vector <ConvClass> &converge_list, double RankStep = 0.5, unsigned int panels = 4,
+                                unsigned int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
+                                bool direct = true) = 0;
 
     /// returns the rank \c rank optimized factor matrices
     /// \return Factor matrices stored in a vector. For example, a order-3
@@ -356,11 +357,11 @@ namespace btas{
 
     // For debug purposes
     void print(Tensor& tensor){
-      if(tensor.rank() == 2){
-        int row = tensor.extent(0), col = tensor.extent(1);
-        for(int i = 0; i < row; ++i){
-          const auto * tensor_ptr = tensor.data() + i * col;
-          for(int j = 0; j < col; ++j){
+      if(tensor.rank() == 2) {
+        std::uint64_t row = tensor.extent(0), col = tensor.extent(1);
+        for (std::uint64_t i = 0; i < row; ++i) {
+          const auto *tensor_ptr = tensor.data() + i * col;
+          for (std::uint64_t j = 0; j < col; ++j) {
             //os << *(tensor_ptr + j) << ",\t";
             std::cout << *(tensor_ptr + j) << ",\t";
           }
@@ -368,19 +369,19 @@ namespace btas{
         }
       }
       else{
-        for(auto &i: tensor){
+        for (auto &i: tensor) {
           //os << i << ", \t";
           std::cout << i << ",";
         }
       }
       std::cout << std::endl;
-      return ;
+      return;
     }
 
   protected:
-    int num_ALS;                      // Number of ALS iterations
-    std::vector<Tensor> A;            // Factor matrices
-    int ndim;                         // Modes in the reference tensor
+    unsigned int num_ALS;                      // Number of ALS iterations
+    std::vector <Tensor> A;            // Factor matrices
+    unsigned int ndim;                         // Modes in the reference tensor
     std::vector<int> symmetries;      // Symmetries of the reference tensor
 
     /// Virtual function. Solver classes should implement a build function to
@@ -403,8 +404,10 @@ namespace btas{
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    virtual void build(int rank, ConvClass &converge_test, bool direct, int max_als, bool calculate_epsilon, int step, double &epsilon,
-                  bool SVD_initial_guess, int SVD_rank, bool & fast_pI) = 0;
+    virtual void
+    build(std::uint64_t rank, ConvClass &converge_test, bool direct, unsigned int max_als, bool calculate_epsilon,
+          unsigned int step, double &epsilon,
+          bool SVD_initial_guess, std::uint64_t SVD_rank, bool &fast_pI) = 0;
     
     /// Virtual function. Solver classes should implement a build function to generate factor matrices then compute the CP decomposition
     /// Create a rank \c rank initial guess using
@@ -424,25 +427,26 @@ namespace btas{
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    virtual void build_random(int rank, ConvClass &converge_test, bool direct, int max_als, bool calculate_epsilon, double &epsilon,
-                              bool & fast_pI) = 0;
+    virtual void build_random(std::uint64_t rank, ConvClass &converge_test, bool direct, unsigned int max_als,
+                              bool calculate_epsilon, double &epsilon,
+                              bool &fast_pI) = 0;
 
     /// Generates V by first Multiply A^T.A then Hadamard product V(i,j) *=
     /// A^T.A(i,j);
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
     /// \param[in] lambda regularization parameter, lambda is added to the diagonal of V
-    Tensor generate_V(int n, int rank, double lambda = 0.0) {
+    Tensor generate_V(unsigned int n, std::uint64_t rank, double lambda = 0.0) {
       Tensor V(rank, rank);
       V.fill(1.0);
-      auto * V_ptr = V.data();
+      auto *V_ptr = V.data();
       for (auto i = 0; i < ndim; ++i) {
         if (i != n) {
           Tensor lhs_prod(rank, rank);
           gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
-          const auto * lhs_ptr = lhs_prod.data();
-          for(int j = 0; j < rank*rank; j++)
-            *(V_ptr + j) *= *(lhs_ptr +j);
+          const auto *lhs_ptr = lhs_prod.data();
+          for (std::uint64_t j = 0; j < rank * rank; j++)
+            *(V_ptr + j) *= *(lhs_ptr + j);
         }
       }
 
@@ -461,7 +465,7 @@ namespace btas{
     /// \param[in] forward Should the Khatri-Rao product move through the factor
     /// matrices in the forward (0 to ndim) or backward (ndim to 0) direction
     /// \return the Khatri-Rao product of the factor matrices excluding the nth factor
-    Tensor generate_KRP(int n, int rank, bool forward) {
+    Tensor generate_KRP(unsigned int n, std::uint64_t rank, bool forward) {
       Tensor temp(Range{Range1{A.at(n).extent(0)}, Range1{rank}});
       Tensor left_side_product(Range{Range1{rank}, Range1{rank}});
 
@@ -495,21 +499,21 @@ namespace btas{
     /// the \c factor factor matrix with all columns normalized.
     /// \return The column norms of the \c factor factor matrix
 
-    Tensor normCol(int factor) {
-      if(factor >= ndim) BTAS_EXCEPTION("Factor is out of range");
+    Tensor normCol(unsigned int factor) {
+      if (factor >= ndim) BTAS_EXCEPTION("Factor is out of range");
       auto rank = A[factor].extent(1);
       auto size = A[factor].size();
       Tensor lambda(rank);
       lambda.fill(0.0);
       auto A_ptr = A[factor].data();
       auto lam_ptr = lambda.data();
-      for(int i = 0; i < size; ++i){
+      for (std::uint64_t i = 0; i < size; ++i) {
         *(lam_ptr + i % rank) += *(A_ptr + i) * *(A_ptr + i);
       }
-      for(int i = 0; i < rank; ++i){
+      for (std::uint64_t i = 0; i < rank; ++i) {
         *(lam_ptr + i) = sqrt(*(lam_ptr + i));
       }
-      for(int i = 0; i < size; ++i){
+      for (std::uint64_t i = 0; i < size; ++i) {
         *(A_ptr + i) /= *(lam_ptr + i % rank);
       }
       return lambda;
@@ -528,17 +532,17 @@ namespace btas{
       A[ndim].fill(0.0);
       auto Mat_ptr = Mat.data();
       auto A_ptr = A[ndim].data();
-      for(int i = 0; i < size; ++i){
+      for (std::uint64_t i = 0; i < size; ++i) {
         *(A_ptr + i % rank) += *(Mat_ptr + i) * *(Mat_ptr + i);
       }
-      for(int i = 0; i < rank; ++i){
+      for (std::uint64_t i = 0; i < rank; ++i) {
         *(A_ptr + i) = sqrt(*(A_ptr + i));
       }
-      for(int i = 0; i < size; ++i){
-        if(*(A_ptr + i % rank) > 1e-12)
+      for (std::uint64_t i = 0; i < size; ++i) {
+        if (*(A_ptr + i % rank) > 1e-12)
           *(Mat_ptr + i) /= *(A_ptr + i % rank);
         else
-          *(Mat_ptr +i ) = 0;
+          *(Mat_ptr + i) = 0;
 
       }
     }
@@ -568,17 +572,17 @@ namespace btas{
     /// \param[in, out] B In: The RHS of the ALS problem ( Vx = B ). Out: The solved linear equation
     ///                     \f$ V^{-1} B \f$
     /// \param[in] lambda Regularization parameter lambda is added to the diagonal of V
-    void pseudoinverse_helper(int mode_of_A, bool & fast_pI,
-                                bool & cholesky, Tensor & B,
-                                double lambda = 0.0){
-      if(B.empty()){
+    void pseudoinverse_helper(unsigned int mode_of_A, bool &fast_pI,
+                              bool &cholesky, Tensor &B,
+                              double lambda = 0.0) {
+      if (B.empty()) {
         BTAS_EXCEPTION("pseudoinverse helper solves Ax = B.  B cannot be an empty tensor");
       }
 
       auto rank = A[0].extent(1);
       auto a = this->generate_V(mode_of_A, rank, lambda);
 
-      if(cholesky) {
+      if (cholesky) {
         cholesky = cholesky_inverse(a, B);
         return;
       }

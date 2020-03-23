@@ -16,18 +16,18 @@ namespace btas {
     }
     std::vector <size_t> dimensions;
     auto ndim = A.size() - 1;
-    for (int i = 0; i < ndim; i++) {
+    for (unsigned int i = 0; i < ndim; i++) {
       dimensions.push_back(A[dims_order[i]].extent(0));
     }
     auto rank = A[0].extent(1);
-    for (int i = 0; i < rank; i++) {
+    for (std::uint64_t i = 0; i < rank; i++) {
       scal(A[dims_order[0]].extent(0), A[ndim](i), std::begin(A[dims_order[0]]) + i, rank);
     }
 
     // Make the Khatri-Rao product of all the factor matrices execpt the last dimension
     Tensor KRP = A[dims_order[0]];
     Tensor hold = A[dims_order[0]];
-    for (int i = 1; i < A.size() - 2; i++) {
+    for (unsigned int i = 1; i < A.size() - 2; i++) {
       khatri_rao_product(KRP, A[dims_order[i]], hold);
       KRP = hold;
     }
@@ -41,7 +41,7 @@ namespace btas {
     hold.resize(dimensions);
 
     // remove the scaling applied to the first factor matrix
-    for (int i = 0; i < rank; i++) {
+    for (std::uint64_t i = 0; i < rank; i++) {
       scal(A[dims_order[0]].extent(0), 1 / A[ndim](i), std::begin(A[dims_order[0]]) + i, rank);
     }
     return hold;
