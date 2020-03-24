@@ -84,6 +84,8 @@ namespace btas{
     using CP<Tensor,ConvClass>::generate_V;
     using CP<Tensor,ConvClass>::norm;
     using CP<Tensor,ConvClass>::symmetries;
+    using typename CP<Tensor,ConvClass>::ind_t;
+    using typename CP<Tensor,ConvClass>::ord_t;
 
     /// Create a COUPLED CP ALS object, child class of the CP object
     /// that stores the reference tensors.
@@ -177,9 +179,9 @@ namespace btas{
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     // TODO make use of symmetries in this function
-    void build(std::uint64_t rank, ConvClass &converge_test, bool direct, unsigned int max_als,
+    void build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als,
                bool calculate_epsilon,
-               unsigned int step, double &epsilon, bool SVD_initial_guess, std::uint64_t SVD_rank,
+               ind_t step, double &epsilon, bool SVD_initial_guess, ind_t SVD_rank,
                bool &fast_pI) override {
       // If its the first time into build and SVD_initial_guess
       // build and optimize the initial guess based on the left
@@ -246,7 +248,7 @@ namespace btas{
         for(auto& i: modes_w_dim_LT_svd) {
           unsigned int dim = i < ndimL ? i : i - ndimL + 1;
           auto &tensor_ref = i < ndimL ? tensor_ref_left : tensor_ref_right;
-          std::uint64_t R = tensor_ref.extent(dim), zero = 0;
+          ind_t R = tensor_ref.extent(dim), zero = 0;
           auto lower_bound = {zero, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
@@ -346,7 +348,7 @@ namespace btas{
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void build_random(std::uint64_t rank, ConvClass &converge_test, bool direct, unsigned int max_als,
+    void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als,
                       bool calculate_epsilon, double &epsilon,
                       bool &fast_pI) override {
       BTAS_EXCEPTION("Function not yet implemented");

@@ -117,6 +117,9 @@ namespace btas{
   template <typename Tensor, class ConvClass>
   class CP {
   public:
+    using ind_t = long;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
     /// Create a generic CP object that stores the factor matrices,
     /// the number of iterations and the number of dimensions of the original
     /// tensor
@@ -158,8 +161,8 @@ namespace btas{
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
 
-    double compute_rank(std::uint64_t rank, ConvClass &converge_test, unsigned int step = 1,
-                        bool SVD_initial_guess = false, std::uint64_t SVD_rank = 0, unsigned int max_als = 1e4,
+    double compute_rank(ind_t rank, ConvClass &converge_test, ind_t step = 1,
+                        bool SVD_initial_guess = false, ind_t SVD_rank = 0, ind_t max_als = 1e4,
                         bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       if (SVD_initial_guess && SVD_rank > rank) BTAS_EXCEPTION("Initial guess is larger than the desired CP rank");
@@ -191,7 +194,7 @@ namespace btas{
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_rank_random(std::uint64_t rank, ConvClass &converge_test, unsigned int max_als = 1e4,
+    double compute_rank_random(ind_t rank, ConvClass &converge_test, ind_t max_als = 1e4,
                                bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       double epsilon = -1.0;
@@ -231,10 +234,10 @@ namespace btas{
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_error(ConvClass &converge_test, double tcutCP = 1e-2, unsigned int step = 1,
-                         unsigned int max_rank = 1e5, bool SVD_initial_guess = false, std::uint64_t SVD_rank = 0,
+    double compute_error(ConvClass &converge_test, double tcutCP = 1e-2, ind_t step = 1,
+                         ind_t max_rank = 1e5, bool SVD_initial_guess = false, ind_t SVD_rank = 0,
                          double max_als = 1e4, bool fast_pI = false, bool direct = true) {
-      std::uint64_t rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
+      ind_t rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
       double epsilon = tcutCP + 1;
       while (epsilon > tcutCP && rank < max_rank) {
         build(rank, converge_test, direct, max_als, true, step, epsilon, SVD_initial_guess, SVD_rank, fast_pI);
@@ -273,8 +276,8 @@ namespace btas{
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_geometric(std::uint64_t desired_rank, ConvClass &converge_test, unsigned int geometric_step = 2,
-                             bool SVD_initial_guess = false, std::uint64_t SVD_rank = 0, unsigned int max_als = 1e4,
+    double compute_geometric(ind_t desired_rank, ConvClass &converge_test, ind_t geometric_step = 2,
+                             bool SVD_initial_guess = false, ind_t SVD_rank = 0, ind_t max_als = 1e4,
                              bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) {
       if (geometric_step <= 0) {
         BTAS_EXCEPTION("The step size must be larger than 0");
@@ -283,7 +286,7 @@ namespace btas{
         BTAS_EXCEPTION("Initial guess is larger than desired CP rank");
       }
       double epsilon = -1.0;
-      std::uint64_t rank = (SVD_initial_guess) ? SVD_rank : 1;
+      ind_t rank = (SVD_initial_guess) ? SVD_rank : 1;
 
       while (rank <= desired_rank && rank < max_als) {
         build(rank, converge_test, direct, max_als, calculate_epsilon, geometric_step, epsilon, SVD_initial_guess,
@@ -359,10 +362,10 @@ namespace btas{
     // For debug purposes
     void print(Tensor& tensor){
       if(tensor.rank() == 2) {
-        std::uint64_t row = tensor.extent(0), col = tensor.extent(1);
-        for (std::uint64_t i = 0; i < row; ++i) {
+        ord_t row = tensor.extent(0), col = tensor.extent(1);
+        for (ind_t i = 0; i < row; ++i) {
           const auto *tensor_ptr = tensor.data() + i * col;
-          for (std::uint64_t j = 0; j < col; ++j) {
+          for (ind_t j = 0; j < col; ++j) {
             //os << *(tensor_ptr + j) << ",\t";
             std::cout << *(tensor_ptr + j) << ",\t";
           }
@@ -406,9 +409,9 @@ namespace btas{
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     virtual void
-    build(std::uint64_t rank, ConvClass &converge_test, bool direct, unsigned int max_als, bool calculate_epsilon,
-          unsigned int step, double &epsilon,
-          bool SVD_initial_guess, std::uint64_t SVD_rank, bool &fast_pI) = 0;
+    build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
+          ind_t step, double &epsilon,
+          bool SVD_initial_guess, ind_t SVD_rank, bool &fast_pI) = 0;
     
     /// Virtual function. Solver classes should implement a build function to generate factor matrices then compute the CP decomposition
     /// Create a rank \c rank initial guess using
@@ -428,7 +431,7 @@ namespace btas{
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    virtual void build_random(std::uint64_t rank, ConvClass &converge_test, bool direct, unsigned int max_als,
+    virtual void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als,
                               bool calculate_epsilon, double &epsilon,
                               bool &fast_pI) = 0;
 
@@ -437,7 +440,8 @@ namespace btas{
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
     /// \param[in] lambda regularization parameter, lambda is added to the diagonal of V
-    Tensor generate_V(unsigned int n, std::uint64_t rank, double lambda = 0.0) {
+    Tensor generate_V(unsigned int n, ind_t rank, double lambda = 0.0) {
+      const ord_t rank2 = rank * (ord_t)rank;
       Tensor V(rank, rank);
       V.fill(1.0);
       auto *V_ptr = V.data();
@@ -446,13 +450,14 @@ namespace btas{
           Tensor lhs_prod(rank, rank);
           gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
           const auto *lhs_ptr = lhs_prod.data();
-          for (std::uint64_t j = 0; j < rank * rank; j++)
+          for (ord_t j = 0; j < rank2; j++)
             *(V_ptr + j) *= *(lhs_ptr + j);
         }
       }
 
-      for (std::uint64_t j = 0; j < rank; ++j) {
-        *(V_ptr + j * rank + j) += lambda;
+      ord_t j_times_rank = 0;
+      for (ind_t j = 0; j < rank; ++j, j_times_rank+=rank) {
+        *(V_ptr + j_times_rank + j) += lambda;
       }
 
       return V;
@@ -466,7 +471,7 @@ namespace btas{
     /// \param[in] forward Should the Khatri-Rao product move through the factor
     /// matrices in the forward (0 to ndim) or backward (ndim to 0) direction
     /// \return the Khatri-Rao product of the factor matrices excluding the nth factor
-    Tensor generate_KRP(unsigned int n, std::uint64_t rank, bool forward) {
+    Tensor generate_KRP(unsigned int n, ind_t rank, bool forward) {
       Tensor temp(Range{Range1{A.at(n).extent(0)}, Range1{rank}});
       Tensor left_side_product(Range{Range1{rank}, Range1{rank}});
 
@@ -500,19 +505,19 @@ namespace btas{
 
     Tensor normCol(unsigned int factor) {
       if (factor >= ndim) BTAS_EXCEPTION("Factor is out of range");
-      std::uint64_t rank = A[factor].extent(1);
-      std::uint64_t size = A[factor].size();
+      ind_t rank = A[factor].extent(1);
+      ord_t size = A[factor].size();
       Tensor lambda(rank);
       lambda.fill(0.0);
       auto A_ptr = A[factor].data();
       auto lam_ptr = lambda.data();
-      for (std::uint64_t i = 0; i < size; ++i) {
+      for (ord_t i = 0; i < size; ++i) {
         *(lam_ptr + i % rank) += *(A_ptr + i) * *(A_ptr + i);
       }
-      for (std::uint64_t i = 0; i < rank; ++i) {
+      for (ind_t i = 0; i < rank; ++i) {
         *(lam_ptr + i) = sqrt(*(lam_ptr + i));
       }
-      for (std::uint64_t i = 0; i < size; ++i) {
+      for (ord_t i = 0; i < size; ++i) {
         *(A_ptr + i) /= *(lam_ptr + i % rank);
       }
       return lambda;
@@ -526,18 +531,18 @@ namespace btas{
 
     void normCol(Tensor &Mat) {
       if (Mat.rank() > 2) BTAS_EXCEPTION("normCol with rank > 2 not yet supported");
-      std::uint64_t rank = Mat.extent(1);
-      std::uint64_t size = Mat.size();
+      ind_t rank = Mat.extent(1);
+      ord_t size = Mat.size();
       A[ndim].fill(0.0);
       auto Mat_ptr = Mat.data();
       auto A_ptr = A[ndim].data();
-      for (std::uint64_t i = 0; i < size; ++i) {
+      for (ord_t i = 0; i < size; ++i) {
         *(A_ptr + i % rank) += *(Mat_ptr + i) * *(Mat_ptr + i);
       }
-      for (std::uint64_t i = 0; i < rank; ++i) {
+      for (ind_t i = 0; i < rank; ++i) {
         *(A_ptr + i) = sqrt(*(A_ptr + i));
       }
-      for (std::uint64_t i = 0; i < size; ++i) {
+      for (ord_t i = 0; i < size; ++i) {
         if (*(A_ptr + i % rank) > 1e-12)
           *(Mat_ptr + i) /= *(A_ptr + i % rank);
         else
@@ -578,7 +583,7 @@ namespace btas{
         BTAS_EXCEPTION("pseudoinverse helper solves Ax = B.  B cannot be an empty tensor");
       }
 
-      std::uint64_t rank = A[0].extent(1);
+      auto rank = A[0].extent(1);
       auto a = this->generate_V(mode_of_A, rank, lambda);
 
       if (cholesky) {

@@ -71,6 +71,9 @@ namespace btas {
   template<typename Tensor>
   class FitCheck{
   public:
+    using ind_t = long;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
     /// constructor for the base convergence test object
     /// \param[in] tol tolerance for ALS convergence
     explicit FitCheck(double tol = 1e-4): tol_(tol){
@@ -84,25 +87,25 @@ namespace btas {
     bool operator () (const std::vector<Tensor> & btas_factors){
       if(normT_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
       auto n = btas_factors.size() - 2;
-      auto size = btas_factors[n].size();
+      ord_t size = btas_factors[n].size();
       auto rank = btas_factors[n].extent(1);
       Tensor temp(btas_factors[n+1].range());
       temp.fill(0.0);
       auto * ptr_A = btas_factors[n].data();
       auto * ptr_MtKRP = MtKRP_.data();
-      for (std::uint64_t i = 0; i < size; ++i) {
+      for (ord_t i = 0; i < size; ++i) {
         *(ptr_MtKRP + i) *= *(ptr_A + i);
       }
 
       auto * ptr_temp = temp.data();
-      for (std::uint64_t i = 0; i < size; ++i) {
+      for (ord_t i = 0; i < size; ++i) {
         *(ptr_temp + i % rank) += *(ptr_MtKRP + i);
       }
 
       size = temp.size();
       ptr_A = btas_factors[n+1].data();
       double iprod = 0.0;
-      for (std::uint64_t i = 0; i < size; ++i) {
+      for (ord_t i = 0; i < size; ++i) {
         iprod += *(ptr_temp + i) * *(ptr_A + i);
       }
 

@@ -86,7 +86,8 @@ namespace btas{
     using CP<Tensor,ConvClass>::generate_V;
     using CP<Tensor,ConvClass>::norm;
     using CP<Tensor,ConvClass>::symmetries;
-
+    using typename CP<Tensor,ConvClass>::ind_t;
+    using typename CP<Tensor,ConvClass>::ord_t;
 
     /// Create a CP DF ALS object, child class of the CP object
     /// that stores the reference tensors.
@@ -261,9 +262,9 @@ namespace btas{
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
 
     // TODO take advantage of symmetries in build
-    void build(std::uint64_t rank, ConvClass &converge_test, bool direct, unsigned int max_als, bool calculate_epsilon,
-               unsigned int step, double &epsilon,
-               bool SVD_initial_guess, std::uint64_t SVD_rank, bool &fast_pI) override {
+    void build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
+               ind_t step, double &epsilon,
+               bool SVD_initial_guess, ind_t SVD_rank, bool &fast_pI) override {
       {
         bool factors_set = false;
         // If its the first time into build and SVD_initial_guess
@@ -359,7 +360,7 @@ namespace btas{
           std::uniform_real_distribution<> distribution(-1.0, 1.0);
           // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
           for(auto& i: modes_w_dim_LT_svd) {
-            std::uint64_t R = tensor_ref.extent(i), zero = 0;
+            ind_t R = tensor_ref.extent(i), zero = 0;
             auto lower_bound = {zero, R};
             auto upper_bound = {R, SVD_rank};
             auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
@@ -468,7 +469,7 @@ namespace btas{
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void build_random(std::uint64_t rank, ConvClass &converge_test, bool direct, unsigned int max_als,
+    void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als,
                       bool calculate_epsilon, double &epsilon,
                       bool &fast_pI) override {
 
