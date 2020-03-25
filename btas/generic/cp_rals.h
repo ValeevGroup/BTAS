@@ -109,7 +109,7 @@ public:
     /// \param[in] tensor the reference tensor to be decomposed.
     CP_RALS(Tensor& tensor): CP<Tensor,ConvClass>(tensor.rank()), tensor_ref(tensor),
             size(tensor.size()){
-      for (unsigned int i = 0; i < ndim; ++i) {
+      for (size_t i = 0; i < ndim; ++i) {
         symmetries.push_back(i);
       }
     }
@@ -123,13 +123,12 @@ public:
     /// symmetries of {0,1,1,3}
     /// \param[in] tensor the reference tensor to be decomposed.
     /// \param[in] symms the symmetries of the reference tensor.
-    CP_RALS(Tensor &tensor, std::vector<unsigned int> &symms) : CP<Tensor, ConvClass>(tensor.rank()),
-                                                                tensor_ref(tensor), size(tensor.size()){
+    CP_RALS(Tensor &tensor, std::vector<size_t> &symms) : CP<Tensor, ConvClass>(tensor.rank()),
+                                                          tensor_ref(tensor), size(tensor.size()){
       symmetries = symms;
       if (symmetries.size() > ndim) BTAS_EXCEPTION("Too many symmetries provided")
-      for (unsigned int i = 0; i < ndim; ++i) {
-        if (symmetries[i] > i)
-          BTAS_EXCEPTION("Symmetries should always refer to factors at earlier positions");
+      for (size_t i = 0; i < ndim; ++i) {
+        if (symmetries[i] > i) BTAS_EXCEPTION("Symmetries should always refer to factors at earlier positions");
       }
 
     }
@@ -163,16 +162,16 @@ public:
       double epsilon = -1.0;
       unsigned int count = 0;
       // Find the largest rank this will be the first panel
-      std::uint64_t max_dim = tensor_ref.extent(0);
-      for (unsigned int i = 1; i < ndim; ++i) {
-        std::uint64_t dim = tensor_ref.extent(i);
+      ind_t max_dim = tensor_ref.extent(0);
+      for (size_t i = 1; i < ndim; ++i) {
+        ind_t dim = tensor_ref.extent(i);
         max_dim = (dim > max_dim ? dim : max_dim);
       }
 
-      while(count < panels){
+      while (count < panels) {
         auto converge_test = converge_list[count];
         // Use tucker initial guess (SVD) to compute the first panel
-        if(count == 0) {
+        if (count == 0) {
           build(max_dim, converge_test, direct, max_als, calculate_epsilon, 1, epsilon, true, max_dim, fast_pI);
         }
           // All other panels build the rank buy RankStep variable
@@ -181,8 +180,8 @@ public:
           // Kick out the first factor when it is replaced.
           // This is the easiest way to resize and preserve the columns
           // (if this is rebuilt with rank as columns this resize would be easier)
-          std::uint64_t rank = A[0].extent(1), rank_new = rank + RankStep * max_dim;
-          for (unsigned int i = 0; i < ndim; ++i) {
+          ind_t rank = A[0].extent(1), rank_new = rank + RankStep * max_dim;
+          for (size_t i = 0; i < ndim; ++i) {
             std::uint64_t row_extent = A[0].extent(0);
             Tensor b(Range{Range1{A[0].extent(0)}, Range1{rank_new}});
 
@@ -213,7 +212,7 @@ public:
             // replace the lambda matrix when done with all the factors
             if (i + 1 == ndim) {
               b.resize(Range{Range1{rank_new}});
-              for (std::uint64_t k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
+              for (ind_t k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
               A.erase(A.begin());
               A.push_back(b);
             }
@@ -258,11 +257,11 @@ public:
     /// \returns 2-norm error, \f$ \epsilon \f$,
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
     ///  ConvClass != FitCheck.
-    double compress_compute_tucker(double tcutSVD, ConvClass &converge_test, std::uint64_t rank = 0,
+    double compress_compute_tucker(double tcutSVD, ConvClass &converge_test, ind_t rank = 0,
                                    bool direct = true, bool calculate_epsilon = false, double max_als = 1e4,
                                    bool fast_pI = false) {
       // Tensor compression
-      std::vector <Tensor> transforms;
+      std::vector<Tensor> transforms;
       tucker_compression(tensor_ref, tcutSVD, transforms);
       size = tensor_ref.size();
       double epsilon = -1.0;
@@ -272,7 +271,7 @@ public:
 
 
       // scale factor matrices
-      for (unsigned int i = 0; i < ndim; i++) {
+      for (size_t i = 0; i < ndim; i++) {
         Tensor tt(transforms[i].extent(0), A[i].extent(1));
         gemm(CblasNoTrans, CblasNoTrans, 1.0, transforms[i], A[i], 0.0, tt);
         A[i] = tt;
@@ -317,9 +316,9 @@ public:
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
     ///  ConvClass != FitCheck.
     double
-    compress_compute_rand(std::uint64_t desired_compression_rank, ConvClass &converge_test, unsigned int oversampl = 10,
+    compress_compute_rand(ind_t desired_compression_rank, ConvClass &converge_test, unsigned int oversampl = 10,
                           unsigned int powerit = 2,
-                          std::uint64_t rank = 0, bool direct = true, bool calculate_epsilon = false,
+                          ind_t rank = 0, bool direct = true, bool calculate_epsilon = false,
                           double max_als = 1e5, bool fast_pI = false) {
       std::vector <Tensor> transforms;
       randomized_decomposition(tensor_ref, transforms, desired_compression_rank, oversampl, powerit);
@@ -330,7 +329,7 @@ public:
       epsilon = this->compute_rank_random(rank, converge_test, max_als, fast_pI, calculate_epsilon, direct);
 
       // scale factor matrices
-      for (unsigned int i = 0; i < ndim; i++) {
+      for (size_t i = 0; i < ndim; i++) {
         Tensor tt(transforms[i].extent(0), A[i].extent(1));
         gemm(CblasNoTrans, CblasNoTrans, 1.0, transforms[i], A[i], 0.0, tt);
         A[i] = tt;
@@ -340,7 +339,7 @@ public:
     }
 
   protected:
-    std::uint64_t size;                   // number of elements in tensor_ref
+    ord_t size;                   // number of elements in tensor_ref
     Tensor &tensor_ref;        // Tensor to be decomposed
     RALSHelper <Tensor> helper;  // Helper object to compute regularized steps
 
@@ -377,12 +376,12 @@ public:
       if (A.empty() && SVD_initial_guess) {
         if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
 
-        std::vector<unsigned int> modes_w_dim_LT_svd;
+        std::vector<size_t> modes_w_dim_LT_svd;
         A = std::vector<Tensor>(ndim);
 
         // Determine which factor matrices one can fill using SVD initial guess
         // Don't do the modes that are symmetric to other modes
-        for (unsigned int i = 1; i < ndim; i++) {
+        for (size_t i = 1; i < ndim; i++) {
           auto tmp = symmetries[i];
           if (tmp != i) continue;
           if (tensor_ref.extent(i) < SVD_rank) {
@@ -397,12 +396,12 @@ public:
         A[0] = Tensor(tensor_ref.extent(0), SVD_rank);
         A[0].fill(0.0);
 
-        for (unsigned int i = 1; i < ndim; i++) {
+        for (size_t i = 1; i < ndim; i++) {
           // If a mode is symmetric to another mode skip this whole process
           // Will set the modes equal at the end
           auto tmp = symmetries[i];
           if (tmp != i) continue;
-          std::uint64_t R = tensor_ref.extent(i);
+          ind_t R = tensor_ref.extent(i);
           Tensor S(R, R), lambda(R);
 
           // Contract refrence tensor to make it square matrix of mode i
@@ -426,7 +425,6 @@ public:
           A[i] = lambda;
         }
 
-        //srand(3);
         std::mt19937 generator(random_seed_accessor());
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         std::uniform_real_distribution<> distribution(-1.0, 1.0);
@@ -444,7 +442,7 @@ public:
         // set the values al lambda, the weigt of each order 1 tensor
         Tensor lambda(Range{Range1{SVD_rank}});
         A.push_back(lambda);
-        for (unsigned int i = 1; i < ndim; ++i) {
+        for (size_t i = 1; i < ndim; ++i) {
           // normalize the columns of matrices that were set
           // i.e. not symmetric to another mode.
           auto tmp = symmetries[i];
@@ -461,10 +459,10 @@ public:
       }
       // This loop keeps track of column dimension
       bool opt_in_for_loop = false;
-      for (std::uint64_t i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
+      for (ind_t i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
         opt_in_for_loop = true;
         // This loop walks through the factor matrices
-        for (unsigned int j = 0; j < ndim; ++j) {  // select a factor matrix
+        for (size_t j = 0; j < ndim; ++j) {  // select a factor matrix
           // If no factor matrices exists, make a set of factor matrices
           // and fill them with random numbers that are column normalized
           // and create the weighting vector lambda
@@ -483,10 +481,9 @@ public:
             // with new column dimension col_dimension_old + skip
             // fill the new columns with random numbers and normalize the columns
           else {
-            std::uint64_t row_extent = A[0].extent(0), rank_old = A[0].extent(1);
+            ind_t row_extent = A[0].extent(0), rank_old = A[0].extent(1), zero = 0;
             Tensor b(Range{A[0].range().range(0), Range1{i + 1}});
 
-            std::uint64_t zero = 0;
             {
               auto lower_old = {zero, zero}, upper_old = {row_extent, rank_old};
               auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
@@ -510,7 +507,7 @@ public:
             A.push_back(b);
             if (j + 1 == ndim) {
               b.resize(Range{Range1{i + 1}});
-              for (std::uint64_t k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
+              for (ind_t k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
               A.erase(A.begin());
               A.push_back(b);
             }
@@ -552,7 +549,7 @@ public:
       std::mt19937 generator(random_seed_accessor());
       //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
       std::uniform_real_distribution<> distribution(-1.0, 1.0);
-      for (unsigned int i = 0; i < this->ndim; ++i) {
+      for (size_t i = 0; i < this->ndim; ++i) {
         // If this mode is symmetric to a previous mode, set it equal to
         // previous mode, else make a random matrix.
         auto tmp = symmetries[i];
@@ -592,7 +589,7 @@ public:
     /// error between the exact and approximated reference tensor
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
 
-    void ALS(std::uint64_t rank, ConvClass &converge_test, bool dir, unsigned int max_als, bool calculate_epsilon,
+    void ALS(ind_t rank, ConvClass &converge_test, bool dir, ind_t max_als, bool calculate_epsilon,
              double &epsilon, bool &fast_pI) {
       unsigned int count = 0;
 
@@ -609,7 +606,7 @@ public:
       while(count < max_als && !is_converged){
         count++;
         this->num_ALS++;
-        for (unsigned int i = 0; i < ndim; i++) {
+        for (size_t i = 0; i < ndim; i++) {
           auto tmp = symmetries[i];
           if (tmp != i) {
             A[i] = A[tmp];
@@ -648,7 +645,7 @@ public:
     /// \param[in] lambda regularization parameter
     /// \param[in, out] s regularization step size, returns updated stepsize based on ALS iteration
     /// \param[in] converge_test test to see if the ALS is converged
-    void update_w_KRP(unsigned int n, std::uint64_t rank, bool &fast_pI, bool &matlab,
+    void update_w_KRP(size_t n, ind_t rank, bool &fast_pI, bool &matlab,
                       double lambda, double &s, ConvClass &converge_test) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
@@ -660,7 +657,7 @@ public:
 
       // moves mode n of the reference tensor to the front to simplify contraction
       swap_to_first(tensor_ref, n);
-      std::vector<std::uint64_t> tref_indices, KRP_dims, An_indices;
+      std::vector<ind_t> tref_indices, KRP_dims, An_indices;
 
       // resize the Khatri-Rao product to the proper dimensions
       for (unsigned int i = 1; i < ndim; i++) {
@@ -674,7 +671,7 @@ public:
       An_indices.push_back(0);
       An_indices.push_back(ndim);
       tref_indices.push_back(0);
-      for (unsigned int i = 1; i < ndim; i++) {
+      for (size_t i = 1; i < ndim; i++) {
         tref_indices.push_back(i);
         KRP_dims.push_back(i);
       }
@@ -736,21 +733,21 @@ public:
     /// \param[in] lambda regularization parameter
     /// \param[in, out] s regularization step size, returns updated stepsize based on ALS iteration
     /// \param[in] converge_test test to see if the ALS is converged
-    void direct(unsigned int n, std::uint64_t rank, bool &fast_pI, bool &matlab, double lambda, double &s,
+    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, double lambda, double &s,
                 ConvClass &converge_test) {
 
       // Determine if n is the last mode, if it is first contract with first mode
       // and transpose the product
       bool last_dim = n == ndim - 1;
       // product of all dimensions
-      std::uint64_t LH_size = size;
-      unsigned int contract_dim = last_dim ? 0 : ndim - 1;
-      std::uint64_t offset_dim = tensor_ref.extent(n);
-      std::uint64_t pseudo_rank = rank;
+      ord_t LH_size = size;
+      size_t contract_dim = last_dim ? 0 : ndim - 1;
+      ord_t offset_dim = tensor_ref.extent(n);
+      ord_t pseudo_rank = rank;
 
       // Store the dimensions which are available to hadamard contract
-      std::vector <std::uint64_t> dimensions;
-      for (unsigned int i = last_dim ? 1 : 0; i < (last_dim ? ndim : ndim - 1); i++) {
+      std::vector<ind_t> dimensions;
+      for (size_t i = last_dim ? 1 : 0; i < (last_dim ? ndim : ndim - 1); i++) {
         dimensions.push_back(tensor_ref.extent(i));
       }
 
@@ -791,6 +788,8 @@ public:
         // If the middle dimension is the mode not being contracted, I will move
         // it to the right hand side temp((size of tensor_ref/product of
         // dimension contracted, rank * mode n dimension)
+        ord_t idx1 = temp.extent(0), idx2 = temp.extent(1);
+        const auto &a = A[(last_dim ? contract_dim + 1 : contract_dim)];
         if (n == contract_dim) {
           pseudo_rank *= offset_dim;
         }
@@ -798,15 +797,12 @@ public:
           // If the code hasn't hit the mode of interest yet, it will contract
           // over the middle dimension and sum over the rank.
         else if (contract_dim > n) {
-          std::uint64_t idx1 = temp.extent(0);
-          std::uint64_t idx2 = temp.extent(1);
-          for (std::uint64_t i = 0; i < idx1; i++) {
+          for (ord_t i = 0; i < idx1; i++) {
             auto *contract_ptr = contract_tensor.data() + i * rank;
-            for (std::uint64_t j = 0; j < idx2; j++) {
+            for (ord_t j = 0; j < idx2; j++) {
               const auto *temp_ptr = temp.data() + i * idx2 * rank + j * rank;
-
-              const auto *A_ptr = A[(last_dim ? contract_dim + 1 : contract_dim)].data() + j * rank;
-              for (std::uint64_t r = 0; r < rank; r++) {
+              const auto *A_ptr = a.data() + j * rank;
+              for (ord_t r = 0; r < rank; r++) {
                 *(contract_ptr + r) += *(temp_ptr + r) * *(A_ptr + r);
               }
             }
@@ -817,15 +813,14 @@ public:
           // If the code has passed the mode of interest, it will contract over
           // the middle dimension and sum over rank * mode n dimension
         else {
-          std::uint64_t idx1 = temp.extent(0), idx2 = temp.extent(1), offset = offset_dim;
-          for (std::uint64_t i = 0; i < idx1; i++) {
+          //ord_t offset = offset_dim;
+          for (ord_t i = 0; i < idx1; i++) {
             auto *contract_ptr = contract_tensor.data() + i * pseudo_rank;
-            for (std::uint64_t j = 0; j < idx2; j++) {
+            for (ord_t j = 0; j < idx2; j++) {
               const auto *temp_ptr = temp.data() + i * idx2 * pseudo_rank + j * pseudo_rank;
-
-              const auto *A_ptr = A[(last_dim ? contract_dim + 1 : contract_dim)].data() + j * rank;
-              for (std::uint64_t k = 0; k < offset; k++) {
-                for (std::uint64_t r = 0; r < rank; r++) {
+              const auto *A_ptr = a.data() + j * rank;
+              for (ord_t k = 0; k < offset_dim; k++) {
+                for (ord_t r = 0; r < rank; r++) {
                   *(contract_ptr + k * rank + r) += *(temp_ptr + k * rank + r) * *(A_ptr + r);
                 }
               }
@@ -848,13 +843,14 @@ public:
         Tensor contract_tensor(Range{Range1{temp.extent(1)}, Range1{rank}});
         contract_tensor.fill(0.0);
 
-        std::uint64_t idx1 = temp.extent(0), idx2 = temp.extent(1);
-        for (std::uint64_t i = 0; i < idx1; i++) {
-          const auto *A_ptr = A[(last_dim ? 1 : 0)].data() + i * rank;
-          for (std::uint64_t j = 0; j < idx2; j++) {
+        ord_t idx1 = temp.extent(0), idx2 = temp.extent(1);
+        const auto &a = A[(last_dim ? 1 : 0)];
+        for (ord_t i = 0; i < idx1; i++) {
+          const auto *A_ptr = a.data() + i * rank;
+          for (ord_t j = 0; j < idx2; j++) {
             const auto *temp_ptr = temp.data() + i * idx2 * rank + j * rank;
             auto *contract_ptr = contract_tensor.data() + j * rank;
-            for (std::uint64_t r = 0; r < rank; r++) {
+            for (ord_t r = 0; r < rank; r++) {
               *(contract_ptr + r) += *(A_ptr + r) * *(temp_ptr + r);
             }
           }

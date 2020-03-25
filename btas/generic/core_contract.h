@@ -18,19 +18,24 @@ namespace btas {
 /// Default value = true.
 
 template<typename Tensor>
-void core_contract(Tensor &A, const Tensor &Q, unsigned int mode, bool transpose = true) {
+void core_contract(Tensor &A, const Tensor &Q,
+                   typename range_traits<typename Tensor::range_type>::ordinal_type mode,
+                   bool transpose = true) {
 
   using btas::Range;
-  auto ndim = A.rank();
+  using ind_t = long;
+  using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
+  size_t ndim = A.rank();
 
   // Reorder A so contraction of nth mode will be in the front
   swap_to_first(A, mode, false, false);
 
-  std::vector<int> temp_dims, A_indices, Q_indicies;
+  std::vector<ord_t> temp_dims, A_indices, Q_indicies;
 
   // Allocate the appropriate memory for the resulting tensor
   temp_dims.push_back((transpose) ? Q.extent(1) : Q.extent(0));
-  for (unsigned int i = 1; i < ndim; i++)
+  for (size_t i = 1; i < ndim; i++)
     temp_dims.push_back(A.extent(i));
   Tensor temp(Range{temp_dims});
   temp_dims.clear();
@@ -41,7 +46,7 @@ void core_contract(Tensor &A, const Tensor &Q, unsigned int mode, bool transpose
   Q_indicies.push_back((transpose) ? ndim : 0);
   temp_dims.push_back(ndim);
   A_indices.push_back(0);
-  for (unsigned int i = 1; i < ndim; i++) {
+  for (size_t i = 1; i < ndim; i++) {
     A_indices.push_back(i);
     temp_dims.push_back(i);
   }

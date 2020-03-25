@@ -124,7 +124,7 @@ namespace btas{
     /// the number of iterations and the number of dimensions of the original
     /// tensor
     /// \param[in] ndim number of modes in the reference tensor.
-    CP(unsigned int dims) : num_ALS(0) {
+    CP(size_t dims) : num_ALS(0) {
 #if not defined(BTAS_HAS_LAPACKE)
       BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP decompositions requires LAPACKE");
 #endif
@@ -169,7 +169,7 @@ namespace btas{
       double epsilon = -1.0;
       build(rank, converge_test, direct, max_als, calculate_epsilon, step, epsilon, SVD_initial_guess, SVD_rank,
             fast_pI);
-      //std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
+      std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
 
       detail::get_fit(converge_test, epsilon);
 
@@ -200,7 +200,7 @@ namespace btas{
       double epsilon = -1.0;
       build_random(rank, converge_test, direct, max_als, calculate_epsilon, epsilon,
                    fast_pI);
-      //std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
+      std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
 
       detail::get_fit(converge_test, epsilon);
 
@@ -236,7 +236,7 @@ namespace btas{
     /// false && ConvClass != FitCheck.
     double compute_error(ConvClass &converge_test, double tcutCP = 1e-2, ind_t step = 1,
                          ind_t max_rank = 1e5, bool SVD_initial_guess = false, ind_t SVD_rank = 0,
-                         double max_als = 1e4, bool fast_pI = false, bool direct = true) {
+                         ind_t max_als = 1e4, bool fast_pI = false, bool direct = true) {
       ind_t rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
       double epsilon = tcutCP + 1;
       while (epsilon > tcutCP && rank < max_rank) {
@@ -349,11 +349,10 @@ namespace btas{
     /// \throws Exception if the CP decomposition is
     /// not yet computed.
     Tensor reconstruct() {
-      if (A.empty())
-        BTAS_EXCEPTION(
-                "Factor matrices have not been computed. You must first calculate CP decomposition.");
-      std::vector<unsigned int> dims;
-      for (unsigned int i = 0; i < ndim; ++i) {
+      if (A.empty()) BTAS_EXCEPTION(
+              "Factor matrices have not been computed. You must first calculate CP decomposition.");
+      std::vector<size_t> dims;
+      for (size_t i = 0; i < ndim; ++i) {
         dims.push_back(i);
       }
       return btas::reconstruct(A, dims);
@@ -362,10 +361,10 @@ namespace btas{
     // For debug purposes
     void print(Tensor& tensor){
       if(tensor.rank() == 2) {
-        ord_t row = tensor.extent(0), col = tensor.extent(1);
-        for (ind_t i = 0; i < row; ++i) {
+        ind_t row = tensor.extent(0), col = tensor.extent(1);
+        for (ord_t i = 0; i < row; ++i) {
           const auto *tensor_ptr = tensor.data() + i * col;
-          for (ind_t j = 0; j < col; ++j) {
+          for (ord_t j = 0; j < col; ++j) {
             //os << *(tensor_ptr + j) << ",\t";
             std::cout << *(tensor_ptr + j) << ",\t";
           }
@@ -384,9 +383,9 @@ namespace btas{
 
   protected:
     unsigned int num_ALS;                      // Number of ALS iterations
-    std::vector <Tensor> A;            // Factor matrices
-    unsigned int ndim;                         // Modes in the reference tensor
-    std::vector<unsigned int> symmetries;      // Symmetries of the reference tensor
+    std::vector<Tensor> A;            // Factor matrices
+    size_t ndim;                         // Modes in the reference tensor
+    std::vector<size_t> symmetries;      // Symmetries of the reference tensor
 
     /// Virtual function. Solver classes should implement a build function to
     /// generate factor matrices then compute the CP decomposition
@@ -440,12 +439,12 @@ namespace btas{
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
     /// \param[in] lambda regularization parameter, lambda is added to the diagonal of V
-    Tensor generate_V(unsigned int n, ind_t rank, double lambda = 0.0) {
-      const ord_t rank2 = rank * (ord_t)rank;
+    Tensor generate_V(size_t n, ind_t rank, double lambda = 0.0) {
+      const ord_t rank2 = rank * (ord_t) rank;
       Tensor V(rank, rank);
       V.fill(1.0);
       auto *V_ptr = V.data();
-      for (unsigned int i = 0; i < ndim; ++i) {
+      for (size_t i = 0; i < ndim; ++i) {
         if (i != n) {
           Tensor lhs_prod(rank, rank);
           gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
@@ -471,12 +470,12 @@ namespace btas{
     /// \param[in] forward Should the Khatri-Rao product move through the factor
     /// matrices in the forward (0 to ndim) or backward (ndim to 0) direction
     /// \return the Khatri-Rao product of the factor matrices excluding the nth factor
-    Tensor generate_KRP(unsigned int n, ind_t rank, bool forward) {
+    Tensor generate_KRP(size_t n, ind_t rank, bool forward) {
       Tensor temp(Range{Range1{A.at(n).extent(0)}, Range1{rank}});
       Tensor left_side_product(Range{Range1{rank}, Range1{rank}});
 
       if (forward) {
-        for (unsigned int i = 0; i < ndim; ++i) {
+        for (size_t i = 0; i < ndim; ++i) {
           if ((i == 0 && n != 0) || (i == 1 && n == 0)) {
             left_side_product = A.at(i);
           } else if (i != n) {
@@ -487,7 +486,7 @@ namespace btas{
       }
 
       else {
-        for (unsigned int i = ndim - 1; i > -1; --i) {
+        for (size_t i = ndim - 1; i > -1; --i) {
           if ((i == ndim - 1 && n != ndim - 1) || (i == ndim - 2 && n == ndim - 1)) {
             left_side_product = A.at(i);
           } else if (i != n) {
@@ -503,7 +502,7 @@ namespace btas{
     /// the \c factor factor matrix with all columns normalized.
     /// \return The column norms of the \c factor factor matrix
 
-    Tensor normCol(unsigned int factor) {
+    Tensor normCol(size_t factor) {
       if (factor >= ndim) BTAS_EXCEPTION("Factor is out of range");
       ind_t rank = A[factor].extent(1);
       ord_t size = A[factor].size();
@@ -576,14 +575,14 @@ namespace btas{
     /// \param[in, out] B In: The RHS of the ALS problem ( Vx = B ). Out: The solved linear equation
     ///                     \f$ V^{-1} B \f$
     /// \param[in] lambda Regularization parameter lambda is added to the diagonal of V
-    void pseudoinverse_helper(unsigned int mode_of_A, bool &fast_pI,
+    void pseudoinverse_helper(size_t mode_of_A, bool &fast_pI,
                               bool &cholesky, Tensor &B,
                               double lambda = 0.0) {
       if (B.empty()) {
         BTAS_EXCEPTION("pseudoinverse helper solves Ax = B.  B cannot be an empty tensor");
       }
 
-      auto rank = A[0].extent(1);
+      ind_t rank = A[0].extent(1);
       auto a = this->generate_V(mode_of_A, rank, lambda);
 
       if (cholesky) {

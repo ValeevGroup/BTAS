@@ -98,7 +98,7 @@ namespace btas{
             CP<Tensor,ConvClass>(left.rank() + right.rank() - 2),
             tensor_ref_left(left), tensor_ref_right(right),
             ndimL(left.rank()), ndimR(right.rank()) {
-      for (unsigned int i = 0; i < ndim; ++i) {
+      for (size_t i = 0; i < ndim; ++i) {
         symmetries.push_back(i);
       }
     }
@@ -113,15 +113,14 @@ namespace btas{
     /// \param[in] left the reference tensor, $B$ to be decomposed.
     /// \param[in] right the reference tensor, $Z$ to be decomposed.
     /// \param[in] symms the symmetries of the reference tensor.
-    CP_DF_ALS(Tensor &left, Tensor &right, std::vector<unsigned int> &symms) :
+    CP_DF_ALS(Tensor &left, Tensor &right, std::vector<size_t> &symms) :
             CP<Tensor, ConvClass>(left.rank() + right.rank() - 2),
             tensor_ref_left(left), tensor_ref_right(right),
             ndimL(left.rank()), ndimR(right.rank())
     {
       symmetries = symms;
-      for (unsigned int i = 0; i < ndim; ++i) {
-        if (symmetries[i] > i)
-          BTAS_EXCEPTION("Symmetries should always refer to factors at earlier positions");
+      for (size_t i = 0; i < ndim; ++i) {
+        if (symmetries[i] > i) BTAS_EXCEPTION("Symmetries should always refer to factors at earlier positions");
       }
       if (symmetries.size() != ndim) BTAS_EXCEPTION(
               "Tensor describing symmetries must be equal to number of non-connected dimensions");
@@ -155,25 +154,25 @@ namespace btas{
                         unsigned int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
                         bool direct = true) override {
       if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
-      if (converge_list.size() < panels)
-        BTAS_EXCEPTION("Too few convergence tests.  Must provide a list of panels convergence tests");
+      if (converge_list.size() < panels) BTAS_EXCEPTION(
+              "Too few convergence tests.  Must provide a list of panels convergence tests");
       double epsilon = -1.0;
       unsigned int count = 0;
       // Find the largest rank this will be the first panel
-      std::uint64_t max_dim = tensor_ref_left.extent(0);
-      for (unsigned int i = 1; i < ndimL; ++i) {
-        std::uint64_t dim = tensor_ref_left.extent(i);
+      ind_t max_dim = tensor_ref_left.extent(0);
+      for (size_t i = 1; i < ndimL; ++i) {
+        ind_t dim = tensor_ref_left.extent(i);
         max_dim = (dim > max_dim ? dim : max_dim);
       }
-      for (unsigned int i = 0; i < ndimR; ++i) {
-        std::uint64_t dim = tensor_ref_right.extent(i);
+      for (size_t i = 0; i < ndimR; ++i) {
+        ind_t dim = tensor_ref_right.extent(i);
         max_dim = (dim > max_dim ? dim : max_dim);
       }
 
-      while(count < panels){
+      while (count < panels) {
         auto converge_test = converge_list[count];
         // Use tucker initial guess (SVD) to compute the first panel
-        if(count == 0) {
+        if (count == 0) {
           build(max_dim, converge_test, direct, max_als, calculate_epsilon, 1, epsilon, true, max_dim, fast_pI);
           //build(max_dim, converge_test, max_als, calculate_epsilon, 1, epsilon, true, max_dim, fast_pI);
         }
@@ -183,9 +182,9 @@ namespace btas{
           // Kick out the first factor when it is replaced.
           // This is the easiest way to resize and preserve the columns
           // (if this is rebuilt with rank as columns this resize would be easier)
-          std::uint64_t rank = A[0].extent(1), rank_new = rank + RankStep * max_dim;
-          for (unsigned int i = 0; i < ndim; ++i) {
-            std::uint64_t row_extent = A[0].extent(0), zero = 0;
+          ind_t rank = A[0].extent(1), rank_new = rank + RankStep * max_dim;
+          for (size_t i = 0; i < ndim; ++i) {
+            ind_t row_extent = A[0].extent(0), zero = 0;
             Tensor b(Range{Range1{A[0].extent(0)}, Range1{rank_new}});
 
             // Move the old factor to the new larger matrix
@@ -214,7 +213,7 @@ namespace btas{
             // replace the lambda matrix when done with all the factors
             if (i + 1 == ndim) {
               b.resize(Range{Range1{rank_new}});
-              for (std::uint64_t k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
+              for (ind_t k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
               A.erase(A.begin());
               A.push_back(b);
             }
@@ -231,11 +230,11 @@ namespace btas{
   protected:
     Tensor &tensor_ref_left;        // Left connected tensor
     Tensor &tensor_ref_right;       // Right connected tensor
-    unsigned int ndimL;                      // Number of dimensions in left tensor
-    unsigned int ndimR;                      // number of dims in the right tensor
+    size_t ndimL;                      // Number of dimensions in left tensor
+    size_t ndimR;                      // number of dims in the right tensor
     bool lastLeft = false;
     Tensor leftTimesRight;
-    std::vector <std::uint64_t> dims;
+    std::vector<size_t> dims;
 
     /// Creates an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
@@ -435,7 +434,8 @@ namespace btas{
               A.push_back(b);
               if (j + 1 == ndim) {
                 b.resize(Range{Range1{i + 1}});
-                for (std::uint64_t k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
+                for (ind_t t k = 0; k < A[0].extent(0);
+                k++) b(k) = A[0](k);
                 A.erase(A.begin());
                 A.push_back(b);
               }
@@ -475,7 +475,7 @@ namespace btas{
 
       std::mt19937 generator(random_seed_accessor());
       std::uniform_real_distribution<> distribution(-1.0, 1.0);
-      for (unsigned int i = 1; i < ndimL; ++i) {
+      for (size_t i = 1; i < ndimL; ++i) {
         auto &tensor_ref = tensor_ref_left;
         Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
         for (auto iter = a.begin(); iter != a.end(); ++iter) {
@@ -483,7 +483,7 @@ namespace btas{
         }
         A.push_back(a);
       }
-      for (unsigned int i = 1; i < ndimR; ++i) {
+      for (size_t i = 1; i < ndimR; ++i) {
         auto &tensor_ref = tensor_ref_right;
 
         Tensor a(tensor_ref.extent(i), rank);
@@ -496,7 +496,7 @@ namespace btas{
       Tensor lambda(rank);
       lambda.fill(0.0);
       this->A.push_back(lambda);
-      for (unsigned int i = 0; i < ndim; ++i) {
+      for (size_t i = 0; i < ndim; ++i) {
         normCol(i);
       }
 
@@ -519,10 +519,9 @@ namespace btas{
     /// \param[in, out] epsilon The 2-norm
     /// error between the exact and approximated reference tensor
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void
-    ALS(std::uint64_t rank, ConvClass &converge_test, unsigned int max_als, bool calculate_epsilon, double &epsilon,
-        bool &fast_pI) {
-      auto count = 0;
+    void ALS(ind_t rank, ConvClass &converge_test, unsigned int max_als,
+             bool calculate_epsilon, double &epsilon, bool &fast_pI) {
+      unsigned int count = 0;
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
@@ -532,10 +531,10 @@ namespace btas{
       leftTimesRight = Tensor(1);
       leftTimesRight.fill(0.0);
       //std::cout << "count\tfit\tchange" << std::endl;
-      while(count < max_als && !is_converged){
+      while (count < max_als && !is_converged) {
         count++;
         this->num_ALS++;
-        for (unsigned int i = 0; i < ndim; i++) {
+        for (size_t i = 0; i < ndim; i++) {
           auto tmp = symmetries[i];
           if (tmp == i) {
             direct(i, rank, fast_pI, matlab, converge_test);
@@ -577,14 +576,14 @@ namespace btas{
     /// in the same manner that matlab would compute the inverse.
     /// return if computing the inverse in this was was successful
     /// \param[in] converge_test test to see if the ALS is converged
-    void direct(unsigned int n, std::uint64_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {
+    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {
 
       // Determine if n is in the left or the right tensor
       bool leftTensor = n < (ndimL - 1);
       Tensor an(A[n].range());
 
       if (lastLeft != leftTensor) {
-        dims = std::vector<std::uint64_t>(leftTensor ? tensor_ref_left.rank() : tensor_ref_right.rank());
+        dims = std::vector<ind_t>(leftTensor ? tensor_ref_left.rank() : tensor_ref_right.rank());
         Tensor K(tensor_ref_right.extent(0), rank);
         {
           lastLeft = leftTensor;
@@ -592,8 +591,8 @@ namespace btas{
           auto &tensor_ref = leftTensor ? tensor_ref_right : tensor_ref_left;
 
           // How many dimension in this side of the tensor
-          unsigned int ndimCurr = tensor_ref.rank();
-          std::uint64_t sizeCurr = tensor_ref.size();
+          size_t ndimCurr = tensor_ref.rank();
+          ord_t sizeCurr = tensor_ref.size();
           // save range for resize at the end.
           auto R = tensor_ref.range();
 
@@ -604,7 +603,7 @@ namespace btas{
 
           // This is for size of the dimension being contracted
           // picked from tensor_ref
-          std::uint64_t contract_size = tensor_ref.extent(ndimCurr - 1);
+          ind_t contract_size = tensor_ref.extent(ndimCurr - 1);
 
           // Make the intermediate that will be contracted then hadamard contracted
           // Also resize the tensor for gemm contraction
@@ -622,24 +621,24 @@ namespace btas{
           --contract_dim_inter;
 
           // Now want to hadamard contract all the dimension that aren't the connecting dimension
-          for (unsigned int i = 0; i < ndimCurr - 2; ++i, --contract_dim_inter) {
+          for (size_t i = 0; i < ndimCurr - 2; ++i, --contract_dim_inter) {
             // The contract_size now starts at the second last dimension
             contract_size = tensor_ref.extent(ndimCurr - 2 - i);
             // Store the LH most dimension size in idx1
-            std::uint64_t idx1 = sizeCurr / contract_size;
+            ord_t idx1 = sizeCurr / contract_size;
             contract_tensor.resize(Range{Range1{idx1}, Range1{contract_size}, Range1{rank}});
             // After hadamard product middle dimension is gone
             Tensor temp(idx1, rank);
             temp.fill(0.0);
 
-            for (std::uint64_t j = 0; j < idx1; ++j) {
+            const auto &a = A[contract_dim_inter];
+            for (ord_t j = 0; j < idx1; ++j) {
               auto *temp_ptr = temp.data() + j * rank;
-              for (std::uint64_t k = 0; k < contract_size; ++k) {
+              for (ord_t k = 0; k < contract_size; ++k) {
                 const auto *contract_ptr = contract_tensor.data() + j * contract_size * rank + k * rank;
-                const auto *A_ptr = A[contract_dim_inter].data() + k * rank;
-                for (std::uint64_t r = 0; r < rank; ++r) {
+                const auto *A_ptr = a.data() + k * rank;
+                for (ord_t = 0; r < rank; ++r) {
                   *(temp_ptr + r) += *(contract_ptr + r) * *(A_ptr + r);
-                  //temp(j, r) += contract_tensor(j, k, r) * A[contract_dim_inter](k, r);
                 }
               }
             }
@@ -662,7 +661,7 @@ namespace btas{
           // make the new factor matrix for after process
 
           // LH side of tensor after contracting (doesn't include rank or connecting dimension)
-          std::uint64_t LH_size = tensor_ref.size() / tensor_ref.extent(0);
+          ord_t LH_size = tensor_ref.size() / tensor_ref.extent(0);
           // Temp holds the intermediate after contracting out the connecting dimension
           // It will be set up to enter hadamard product loop
           leftTimesRight = Tensor(LH_size, rank);
@@ -674,7 +673,7 @@ namespace btas{
           tensor_ref.resize(R);
 
           //std::vector<int> dims(tensor_ref.rank());
-          for (unsigned int i = 1; i < tensor_ref.rank(); ++i) {
+          for (size_t i = 1; i < tensor_ref.rank(); ++i) {
             dims[i - 1] = tensor_ref.extent(i);
           }
           dims[dims.size() - 1] = rank;
@@ -682,24 +681,24 @@ namespace btas{
       }
 
       Tensor contract_tensor = leftTimesRight;
-      std::uint64_t LH_size = contract_tensor.size() / rank;
+      ord_t LH_size = contract_tensor.size() / rank;
       // If hadamard loop has to skip a dimension it is stored here.
-      std::uint64_t pseudo_rank = rank;
+      ord_t pseudo_rank = rank;
       // number of dimensions in tensor_ref
-      unsigned int ndimCurr = leftTensor ? tensor_ref_left.rank() : tensor_ref_right.rank();
+      size_t ndimCurr = leftTensor ? tensor_ref_left.rank() : tensor_ref_right.rank();
       // the dimension that is being hadamard contracted out.
-      unsigned int contract_dim = ndimCurr - 2;
-      unsigned int nInTensor = leftTensor ? n : n - ndimL + 1;
-      unsigned int a_dim = leftTensor ? contract_dim : ndim - 1;
-      std::uint64_t offset = 0;
+      size_t contract_dim = ndimCurr - 2,
+              nInTensor = leftTensor ? n : n - ndimL + 1,
+              a_dim = leftTensor ? contract_dim : ndim - 1,
+              offset = 0;
 
       // go through hadamard contract on all dimensions excluding rank (will skip one dimension)
-      for (unsigned int i = 0; i < ndimCurr - 2; ++i, --contract_dim, --a_dim) {
+      for (size_t i = 0; i < ndimCurr - 2; ++i, --contract_dim, --a_dim) {
         auto contract_size = dims[contract_dim];
         LH_size /= contract_size;
         contract_tensor.resize(Range{Range1{LH_size}, Range1{contract_size}, Range1{pseudo_rank}});
         Tensor temp(Range{Range1{LH_size}, Range1{pseudo_rank}});
-        auto &a = A[a_dim];
+        const auto &a = A[a_dim];
 
         temp.fill(0.0);
 
@@ -714,12 +713,12 @@ namespace btas{
           // If the code hasn't hit the mode of interest yet, it will contract
           // over the middle dimension and sum over the rank.
         else if (contract_dim > nInTensor){
-          for (std::uint64_t j = 0; j < LH_size; ++j) {
+          for (ord_t j = 0; j < LH_size; ++j) {
             auto *temp_ptr = temp.data() + j * pseudo_rank;
-            for (std::uint64_t k = 0; k < contract_size; ++k) {
+            for (ord_t k = 0; k < contract_size; ++k) {
               const auto *contract_ptr = contract_tensor.data() + j * contract_size * pseudo_rank + k * pseudo_rank;
               const auto *A_ptr = a.data() + k * pseudo_rank;
-              for (std::uint64_t r = 0; r < pseudo_rank; ++r) {
+              for (ord_t r = 0; r < pseudo_rank; ++r) {
                 *(temp_ptr + r) += *(contract_ptr + r) * *(A_ptr + r);
               }
             }
@@ -729,11 +728,11 @@ namespace btas{
           // If the code has passed the mode of interest, it will contract over
           // the middle dimension and sum over rank * mode n dimension
         else{
-          for (std::uint64_t j = 0; j < LH_size; ++j) {
+          for (ord_t j = 0; j < LH_size; ++j) {
             auto *temp_ptr = temp.data() + j * pseudo_rank;
-            for (std::uint64_t k = 0; k < contract_size; ++k) {
+            for (ord_t k = 0; k < contract_size; ++k) {
               const auto *A_ptr = a.data() + k * rank;
-              for (std::uint64_t l = 0; l < offset; ++l) {
+              for (ord_t l = 0; l < offset; ++l) {
                 const auto *contract_ptr = contract_tensor.data() + j * contract_size * pseudo_rank
                                            + k * pseudo_rank + l * rank;
                 for (std::uint64_t r = 0; r < rank; ++r) {
@@ -754,18 +753,18 @@ namespace btas{
       // out the 0th mode here, the above algorithm can't perform this
       // contraction because the mode of interest is coupled with the rank
       if(nInTensor != 0){
-        std::uint64_t contract_size = contract_tensor.extent(0);
+        ind_t contract_size = contract_tensor.extent(0);
         Tensor temp(Range{Range1{offset}, Range1{rank}});
         contract_tensor.resize(Range{Range1{contract_size}, Range1{offset}, Range1{rank}});
         temp.fill(0.0);
-        auto & a = A[a_dim];
+        const auto &a = A[a_dim];
 
-        for (std::uint64_t i = 0; i < contract_size; i++) {
+        for (ord_t i = 0; i < contract_size; i++) {
           const auto *A_ptr = a.data() + i * rank;
-          for (std::uint64_t j = 0; j < offset; j++) {
+          for (ord_t j = 0; j < offset; j++) {
             const auto *contract_ptr = contract_tensor.data() + i * offset * rank + j * rank;
             auto *temp_ptr = temp.data() + j * rank;
-            for (std::uint64_t r = 0; r < rank; r++) {
+            for (ord_t r = 0; r < rank; r++) {
               *(temp_ptr + r) += *(A_ptr + r) * *(contract_ptr + r);
             }
           }
@@ -790,6 +789,7 @@ namespace btas{
     }
 
   };
+
 
 } // namepsace btas
 

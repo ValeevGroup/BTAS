@@ -18,26 +18,29 @@ namespace btas {
 /// desired rank of the randmoized compression method.  Out: A random matrix,
 /// column drawn from a random distribution and orthogonalized
 template <typename Tensor> void generate_random_metric(Tensor &A) {
-  using value_type = typename Tensor::value_type;
-  for (std::uint64_t i = 0; i < A.extent(1); i++) {
-    std::random_device rd;
-    // uncomment for more randomness
-    // std::mt19937 gen(rd());
-    std::mt19937 gen(1.0); // comment out for more randomness.
-    std::normal_distribution <value_type> distribution(0.0, 10.0);
-    value_type norm = 0.0;
-    for (std::uint64_t j = 0; j < A.extent(0); j++) {
-      A(j, i) = abs(distribution(gen));
-      norm += A(j, i) * A(j, i);
-    }
+    using ind_t = long;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+    using value_type = typename Tensor::value_type;
+    for (ind_t i = 0; i < A.extent(1); i++) {
+      std::random_device rd;
+      // uncomment for more randomness
+      // std::mt19937 gen(rd());
+      std::mt19937 gen(1.0); // comment out for more randomness.
+      std::normal_distribution<value_type> distribution(0.0, 10.0);
+      value_type norm = 0.0;
+      for (ind_t j = 0; j < A.extent(0); j++) {
+        auto val = abs(distribution(gen));
+        norm += val * val;
+        A(i, j) = val;
+      }
 
-    norm = sqrt(norm);
-    for (std::uint64_t j = 0; j < A.extent(0); j++) {
-      A(j, i) /= norm;
-    }
+      norm = sqrt(norm);
+      for (ind_t j = 0; j < A.extent(0); j++) {
+        A(j, i) /= norm;
+      }
 
-    distribution.reset();
-  }
+      distribution.reset();
+    }
   QR_decomp(A);
 }
 
@@ -53,20 +56,23 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
 /// specified in the literature, to scale the spectrum of each mode. Default =
 /// suggested = 2.
   template<typename Tensor>
-  void randomized_decomposition(Tensor &A, std::vector <Tensor> &transforms,
-                                std::uint64_t des_rank, unsigned int oversampl = 10,
-                                unsigned int powerit = 2) {
+  void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
+                                std::uint64_t des_rank, size_t oversampl = 10,
+                                size_t powerit = 2) {
+    using ind_t = long;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
     // Add the oversampling to the desired rank
-    std::uint64_t ndim = A.rank();
-    std::uint64_t rank = des_rank + oversampl;
-    std::vector<int> A_modes;
-    for (unsigned int i = 0; i < ndim; ++i) {
+    size_t ndim = A.rank();
+    ind_t rank = des_rank + oversampl;
+    std::vector<size_t> A_modes;
+    for (size_t i = 0; i < ndim; ++i) {
       A_modes.push_back(i);
     }
-    std::vector<int> final_modes(A_modes);
+    std::vector<size_t> final_modes(A_modes);
 
     // Walk through all the modes of A
-    for (unsigned int n = 0; n < ndim; n++) {
+    for (size_t n = 0; n < ndim; n++) {
       // Flatten A
       auto An = flatten(A, n);
 
@@ -79,7 +85,7 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
       gemm(CblasNoTrans, CblasNoTrans, 1.0, An, G, 0.0, Y);
 
     // Start power iteration
-      for (unsigned int j = 0; j < powerit; j++) {
+      for (size_t j = 0; j < powerit; j++) {
         // Find L of an LU decomposition of the projected flattened tensor
         LU_decomp(Y);
         Tensor Z(An.extent(1), Y.extent(1));
@@ -108,14 +114,14 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
 
     transforms.push_back(Y);
   }
-  std::vector<int> contract_modes;
+    std::vector<size_t> contract_modes;
   contract_modes.push_back(0); contract_modes.push_back(ndim);
-    for (unsigned int n = 0; n < ndim; n++) {
+    for (size_t n = 0; n < ndim; n++) {
 #ifdef BTAS_HAS_INTEL_MKL
       core_contract(A, transforms[n], n);
 #else
-      std::vector<int> final_dims;
-      for (unsigned int j = 0; j < ndim; ++j) {
+      std::vector<ind_t> final_dims;
+      for (size_t j = 0; j < ndim; ++j) {
         if (j == n) {
           final_dims.push_back(transforms[n].extent(1));
         } else {
