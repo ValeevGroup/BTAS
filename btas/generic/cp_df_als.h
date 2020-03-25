@@ -383,6 +383,7 @@ namespace btas{
         bool opt_in_for_loop = false;
         for (std::uint64_t i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
           opt_in_for_loop = true;
+          ind_t rank_new = i + 1;
           // This loop walks through the factor matrices
           for (unsigned int j = 0; j < ndim; ++j) {  // select a factor matrix
             // If no factor matrices exists, make a set of factor matrices
@@ -391,25 +392,26 @@ namespace btas{
             if (i == 0) {
               Tensor a;
               if (j < ndimL - 1) {
-                a = Tensor(Range{tensor_ref_left.range().range(j + 1), Range1{i + 1}});
+                a = Tensor(Range{tensor_ref_left.range().range(j + 1), Range1{rank_new}});
               } else {
-                a = Tensor(Range{tensor_ref_right.range().range(j - ndimL + 2), Range1{i + 1}});
+                a = Tensor(Range{tensor_ref_right.range().range(j - ndimL + 2), Range1{rank_new}});
               }
+//              std::mt19937 generator(random_seed_accessor());
+//              std::uniform_real_distribution<> distribution(-1.0, 1.0);
+//              for(auto iter = a.begin(); iter != a.end(); ++iter) {
+//                *(iter) = distribution(generator);
+//              }
               a.fill(rand());
               A.push_back(a);
               normCol(j);
-              if (j  == ndim - 1) {
-                Tensor lam(Range{Range1{i + 1}});
-                A.push_back(lam);
-              }
             }
 
               // If the factor matrices have memory allocated, rebuild each matrix
               // with new column dimension col_dimension_old + skip
               // fill the new columns with random numbers and normalize the columns
             else {
-              std::uint64_t row_extent = A[0].extent(0), rank_old = A[0].extent(1), zero = 0;
-              Tensor b(Range{A[0].range().range(0), Range1{i + 1}});
+              ind_t row_extent = A[0].extent(0), rank_old = A[0].extent(1), zero = 0;
+              Tensor b(Range{A[0].range().range(0), Range1{rank_new}});
 
               {
                 auto lower_old = {zero, zero}, upper_old = {row_extent, rank_old};
@@ -421,7 +423,7 @@ namespace btas{
               }
 
               {
-                auto lower_new = {zero, rank_old}, upper_new = {row_extent, i + 1};
+                auto lower_new = {zero, rank_old}, upper_new = {row_extent, rank_new};
                 auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
                 std::mt19937 generator(random_seed_accessor());
                 std::uniform_real_distribution<> distribution(-1.0, 1.0);
@@ -433,16 +435,16 @@ namespace btas{
               A.erase(A.begin());
               A.push_back(b);
               if (j + 1 == ndim) {
-                b.resize(Range{Range1{i + 1}});
-                for (ind_t t k = 0; k < A[0].extent(0);
-                k++) b(k) = A[0](k);
                 A.erase(A.begin());
-                A.push_back(b);
               }
             }
           }
+          {
+            Tensor lam(Range{Range1{rank_new}});
+            A.push_back(lam);
+          }
           // compute the ALS of factor matrices with rank = i + 1.
-          ALS(i + 1, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
+          ALS(rank_new, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
         }
         if(factors_set && ! opt_in_for_loop){
           ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
