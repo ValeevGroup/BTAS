@@ -50,7 +50,7 @@ namespace btas{
     for (auto &j : piv)
       j -= 1;
 
-    std::uint64_t pivsize = piv.extent(0);
+    ind_t pivsize = piv.extent(0);
     piv.resize(Range{Range1{A.extent(0)}});
 
     // Walk through the full pivot array and
@@ -81,7 +81,7 @@ namespace btas{
     // Use the output of LAPACKE to make a lower triangular matrix, L
     // TODO Make this more efficient using pointer arithmetic
     for (ord_t i = 0; i < L.extent(0); i++) {
-      for (ord_t = 0; j < i && j < L.extent(1); j++) {
+      for (ord_t j = 0; j < i && j < L.extent(1); j++) {
         L(i, j) = A(i, j);
       }
       if (i < L.extent(1))

@@ -57,7 +57,7 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
 /// suggested = 2.
   template<typename Tensor>
   void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
-                                std::uint64_t des_rank, size_t oversampl = 10,
+                                long des_rank, size_t oversampl = 10,
                                 size_t powerit = 2) {
     using ind_t = long;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;

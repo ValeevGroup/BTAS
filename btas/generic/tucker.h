@@ -26,7 +26,6 @@ void tucker_compression(Tensor &A, double epsilon_svd,
 
   double norm2 = dot(A, A);
   //norm2 *= norm2;
-  size_t ndim = A.rank();
   std::vector<size_t> A_modes;
   for (size_t i = 0; i < ndim; ++i) {
     A_modes.push_back(i);

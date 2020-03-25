@@ -143,8 +143,8 @@ namespace btas{
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_PALS(std::vector<ConvClass> &converge_list, double RankStep = 0.5, unsigned int panels = 4,
-                        unsigned int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
+    double compute_PALS(std::vector<ConvClass> &converge_list, double RankStep = 0.5, size_t panels = 4,
+                        int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
                         bool direct = true) override {
       BTAS_EXCEPTION("Function not yet implemented");
     }
@@ -180,7 +180,7 @@ namespace btas{
     // TODO make use of symmetries in this function
     void build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als,
                bool calculate_epsilon,
-               ind_t step, double &epsilon, bool SVD_initial_guess, int_t SVD_rank,
+               ind_t step, double &epsilon, bool SVD_initial_guess, ind_t SVD_rank,
                bool &fast_pI) override {
       // If its the first time into build and SVD_initial_guess
       // build and optimize the initial guess based on the left
@@ -282,10 +282,6 @@ namespace btas{
             a.fill(rand());
             A.push_back(a);
             this->normCol(j);
-            if (j  == ndim - 1) {
-              Tensor lam(Range{Range1{i + 1}});
-              A.push_back(lam);
-            }
           }
 
             // If the factor matrices have memory allocated, rebuild each matrix
@@ -317,10 +313,7 @@ namespace btas{
             A.erase(A.begin());
             A.push_back(b);
             if (j + 1 == ndim) {
-              b.resize(Range{Range1{i + 1}});
-              for (ind_t k = 0; k < A[0].extent(0); k++) b(k) = A[0](k);
               A.erase(A.begin());
-              A.push_back(b);
             }
           }
         }
@@ -378,7 +371,7 @@ namespace btas{
     ALS(ind_t rank, ConvClass &converge_test, bool dir, unsigned int max_als, bool calculate_epsilon,
         double &epsilon, bool &fast_pI) {
 
-      unsigned int count = 0;
+      size_t count = 0;
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
@@ -417,7 +410,7 @@ namespace btas{
     /// in the same manner that matlab would compute the inverse.
     /// return if computing the inverse in this was was successful
     /// \param[in] converge_test test to see if the ALS is converged
-    void direct(unsigned int n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {
+    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {
       if (n == 0) {
         // Start by computing (B^{X}_{abcd...} C^{-X}_{abcd...}) + B^{X}_{ijkl...} C^{-X}_{ijkl...}) = K
         // where C^{-X}_{abcd...} = C^{a} \odot C^{b} \odot C^{c} \odot C^{d} \dots ( the khatri-rao

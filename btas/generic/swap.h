@@ -8,6 +8,7 @@
 #include <mkl_trans.h>
 
 #include <btas/error.h>
+#include <btas/range_traits.h>
 
 //***IMPORTANT***//
 // do not use swap to first then use swap to back

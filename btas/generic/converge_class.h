@@ -60,7 +60,7 @@ namespace btas {
     double tol_;
     std::vector<Tensor> prev;     // Set of previous factor matrices
     size_t ndim;                     // Number of factor matrices
-    ord_t rank_;               // Rank of the CP problem
+    ind_t rank_;               // Rank of the CP problem
   };
 
   /**
@@ -86,11 +86,11 @@ namespace btas {
     /// Function to check convergence of the ALS problem
     /// convergence when \f$ \|T - \hat{T}^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
     /// \param[in] btas_factors Current set of factor matrices
-    bool operator () (const std::vector<Tensor> & btas_factors){
+    bool operator () (std::vector<Tensor> & btas_factors){
       if(normT_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
       auto n = btas_factors.size() - 2;
       ord_t size = btas_factors[n].size();
-      ord_t rank = btas_factors[n].extent(1);
+      ind_t rank = btas_factors[n].extent(1);
       Tensor temp(btas_factors[n + 1].range());
       temp.fill(0.0);
       auto * ptr_A = btas_factors[n].data();
@@ -156,20 +156,20 @@ namespace btas {
     double fitOld_ = -1.0;
     double normT_ = -1.0;
     double final_fit_ = 0.0;
-    unsigned int iter_ = 0;
-    unsigned int converged_num = 0;
+    size_t iter_ = 0;
+    size_t converged_num = 0;
     Tensor MtKRP_;
     bool verbose_ = false;
 
-    double norm(const std::vector <Tensor> &btas_factors) {
-      ord_t rank = btas_factors[0].extent(1);
+    double norm(std::vector <Tensor> &btas_factors) {
+      ind_t rank = btas_factors[0].extent(1), one = 1.0;
       auto n = btas_factors.size() - 1;
       Tensor coeffMat(rank, rank);
-      const auto &temp = btas_factors[n];
-      temp.resize(Range{Range1{rank}, Range1{1}});
+      auto & temp = btas_factors[n];
+      temp.resize(Range{Range1{rank}, Range1{one}});
       gemm(CblasNoTrans, CblasTrans, 1.0, temp, temp, 0.0, coeffMat);
 
-      auto rank2 = rank * rank;
+      auto rank2 = rank * (ord_t) rank;
       for (size_t i = 0; i < n; ++i) {
         Tensor temp(rank, rank);
         gemm(CblasTrans, CblasNoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
@@ -325,7 +325,7 @@ namespace btas {
     double fitOld_ = -1.0;
     double final_fit_ = 0.0;
     double normTL_ = -1.0, normTR_ = -1.0;
-    unsigned int iter_ = 0;
+    size_t iter_ = 0;
     Tensor MtKRPL_, MtKRPR_;
     size_t ndimL_;
 

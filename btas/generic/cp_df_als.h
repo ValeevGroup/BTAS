@@ -150,14 +150,14 @@ namespace btas{
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_PALS(std::vector <ConvClass> &converge_list, double RankStep = 0.5, unsigned int panels = 4,
-                        unsigned int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
+    double compute_PALS(std::vector <ConvClass> &converge_list, double RankStep = 0.5, size_t panels = 4,
+            int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
                         bool direct = true) override {
       if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
       if (converge_list.size() < panels) BTAS_EXCEPTION(
               "Too few convergence tests.  Must provide a list of panels convergence tests");
       double epsilon = -1.0;
-      unsigned int count = 0;
+      size_t count = 0;
       // Find the largest rank this will be the first panel
       ind_t max_dim = tensor_ref_left.extent(0);
       for (size_t i = 1; i < ndimL; ++i) {
@@ -279,15 +279,15 @@ namespace btas{
           // Must reconstruct with matrix multiplication so
           // get size of product of dimensions (not connecting) for left and right side
           // Also need tensor dimensions to resize tensor_ref after contraction
-          std::vector <std::uint64_t> TRdims(ndim);
-          std::uint64_t trLsize = 1.0, trRsize = 1.0;
-          for (unsigned int i = 1; i < ndimL; ++i) {
-            std::uint64_t dim = tensor_ref_left.extent(i);
+          std::vector <ord_t> TRdims(ndim);
+          ord_t trLsize = 1.0, trRsize = 1.0;
+          for (size_t i = 1; i < ndimL; ++i) {
+            ord_t dim = tensor_ref_left.extent(i);
             TRdims[i - 1] = dim;
             trLsize *= dim;
           }
-          for (unsigned int i = 1; i < ndimR; ++i) {
-            std::uint64_t dim = tensor_ref_right.extent(i);
+          for (size_t i = 1; i < ndimR; ++i) {
+            ord_t dim = tensor_ref_right.extent(i);
             // i = 1 must take it to 0; then add left dimensions; then subtract 1 for connecting dimension
             TRdims[i + ndimR - 2] = dim;
             trRsize *= dim;
@@ -316,7 +316,7 @@ namespace btas{
           A = std::vector<Tensor>(ndim);
 
           // Determine which factor matrices one can fill using SVD initial guess
-          for (unsigned int i = 0; i < ndim; i++) {
+          for (size_t i = 0; i < ndim; i++) {
             if (tensor_ref.extent(i) < SVD_rank) {
               modes_w_dim_LT_svd.push_back(i);
             }
@@ -329,8 +329,8 @@ namespace btas{
           A[0] = Tensor(tensor_ref.extent(0), SVD_rank);
           A[0].fill(0.0);
 
-          for (unsigned int i = 0; i < ndim; i++) {
-            std::uint64_t R = tensor_ref.extent(i);
+          for (size_t i = 0; i < ndim; i++) {
+            ind_t R = tensor_ref.extent(i);
             Tensor S(R, R), lambda(R);
 
             // Contract refrence tensor to make it square matrix of mode i
@@ -372,7 +372,7 @@ namespace btas{
           // set the values al lambda, the weigt of each order 1 tensor
           Tensor lambda(Range{Range1{SVD_rank}});
           A.push_back(lambda);
-          for (unsigned int i = 0; i < ndim; ++i) {
+          for (size_t i = 0; i < ndim; ++i) {
             normCol(A[i]);
           }
 
@@ -381,11 +381,11 @@ namespace btas{
         }
         // This loop keeps track of column dimension
         bool opt_in_for_loop = false;
-        for (std::uint64_t i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
+        for (ind_t i = (A.empty()) ? 0 : A.at(0).extent(1); i < rank; i += step) {
           opt_in_for_loop = true;
           ind_t rank_new = i + 1;
           // This loop walks through the factor matrices
-          for (unsigned int j = 0; j < ndim; ++j) {  // select a factor matrix
+          for (size_t j = 0; j < ndim; ++j) {  // select a factor matrix
             // If no factor matrices exists, make a set of factor matrices
             // and fill them with random numbers that are column normalized
             // and create the weighting vector lambda
@@ -521,9 +521,9 @@ namespace btas{
     /// \param[in, out] epsilon The 2-norm
     /// error between the exact and approximated reference tensor
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void ALS(ind_t rank, ConvClass &converge_test, unsigned int max_als,
+    void ALS(ind_t rank, ConvClass &converge_test, int max_als,
              bool calculate_epsilon, double &epsilon, bool &fast_pI) {
-      unsigned int count = 0;
+      size_t count = 0;
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
@@ -585,7 +585,7 @@ namespace btas{
       Tensor an(A[n].range());
 
       if (lastLeft != leftTensor) {
-        dims = std::vector<ind_t>(leftTensor ? tensor_ref_left.rank() : tensor_ref_right.rank());
+        dims = std::vector<size_t>((leftTensor ? tensor_ref_left.rank() : tensor_ref_right.rank()));
         Tensor K(tensor_ref_right.extent(0), rank);
         {
           lastLeft = leftTensor;
@@ -639,7 +639,7 @@ namespace btas{
               for (ord_t k = 0; k < contract_size; ++k) {
                 const auto *contract_ptr = contract_tensor.data() + j * contract_size * rank + k * rank;
                 const auto *A_ptr = a.data() + k * rank;
-                for (ord_t = 0; r < rank; ++r) {
+                for (ord_t r = 0; r < rank; ++r) {
                   *(temp_ptr + r) += *(contract_ptr + r) * *(A_ptr + r);
                 }
               }
@@ -737,7 +737,7 @@ namespace btas{
               for (ord_t l = 0; l < offset; ++l) {
                 const auto *contract_ptr = contract_tensor.data() + j * contract_size * pseudo_rank
                                            + k * pseudo_rank + l * rank;
-                for (std::uint64_t r = 0; r < rank; ++r) {
+                for (ord_t r = 0; r < rank; ++r) {
                   *(temp_ptr + l * rank + r) += *(contract_ptr + r) * *(A_ptr + r);
                   //temp(j, l*rank + r) += contract_tensor(j,k,l*rank+r) * A[a_dim](k,r);
                 }

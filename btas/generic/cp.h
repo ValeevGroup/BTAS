@@ -322,8 +322,8 @@ namespace btas{
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    virtual double compute_PALS(std::vector <ConvClass> &converge_list, double RankStep = 0.5, unsigned int panels = 4,
-                                unsigned int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
+    virtual double compute_PALS(std::vector <ConvClass> &converge_list, double RankStep = 0.5, size_t panels = 4,
+            int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
                                 bool direct = true) = 0;
 
     /// returns the rank \c rank optimized factor matrices
@@ -382,7 +382,7 @@ namespace btas{
     }
 
   protected:
-    unsigned int num_ALS;                      // Number of ALS iterations
+    size_t num_ALS;                      // Number of ALS iterations
     std::vector<Tensor> A;            // Factor matrices
     size_t ndim;                         // Modes in the reference tensor
     std::vector<size_t> symmetries;      // Symmetries of the reference tensor

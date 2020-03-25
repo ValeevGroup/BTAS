@@ -155,12 +155,12 @@ public:
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_PALS(std::vector <ConvClass> &converge_list, double RankStep = 0.5, unsigned int panels = 4,
-                        unsigned int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
+    double compute_PALS(std::vector <ConvClass> &converge_list, double RankStep = 0.5, size_t panels = 4,
+            int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
                         bool direct = true) override {
       if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
       double epsilon = -1.0;
-      unsigned int count = 0;
+      size_t count = 0;
       // Find the largest rank this will be the first panel
       ind_t max_dim = tensor_ref.extent(0);
       for (size_t i = 1; i < ndim; ++i) {
@@ -182,11 +182,10 @@ public:
           // (if this is rebuilt with rank as columns this resize would be easier)
           ind_t rank = A[0].extent(1), rank_new = rank + RankStep * max_dim;
           for (size_t i = 0; i < ndim; ++i) {
-            std::uint64_t row_extent = A[0].extent(0);
+            ind_t row_extent = A[0].extent(0), zero = 0;
             Tensor b(Range{Range1{A[0].extent(0)}, Range1{rank_new}});
 
             // Move the old factor to the new larger matrix
-            std::uint64_t zero = 0;
             {
               auto lower_old = {zero, zero}, upper_old = {row_extent, rank};
               auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
@@ -316,8 +315,8 @@ public:
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
     ///  ConvClass != FitCheck.
     double
-    compress_compute_rand(ind_t desired_compression_rank, ConvClass &converge_test, unsigned int oversampl = 10,
-                          unsigned int powerit = 2,
+    compress_compute_rand(ind_t desired_compression_rank, ConvClass &converge_test, long oversampl = 10,
+                          size_t powerit = 2,
                           ind_t rank = 0, bool direct = true, bool calculate_epsilon = false,
                           double max_als = 1e5, bool fast_pI = false) {
       std::vector <Tensor> transforms;
@@ -551,7 +550,6 @@ public:
                       bool calculate_epsilon, double &epsilon,
                       bool &fast_pI) override {
       std::mt19937 generator(random_seed_accessor());
-      //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
       std::uniform_real_distribution<> distribution(-1.0, 1.0);
       for (size_t i = 0; i < this->ndim; ++i) {
         // If this mode is symmetric to a previous mode, set it equal to
@@ -595,7 +593,7 @@ public:
 
     void ALS(ind_t rank, ConvClass &converge_test, bool dir, ind_t max_als, bool calculate_epsilon,
              double &epsilon, bool &fast_pI) {
-      unsigned int count = 0;
+      size_t count = 0;
 
       double s = 0.0;
       const auto s0 = 1.0;
@@ -664,7 +662,7 @@ public:
       std::vector<ind_t> tref_indices, KRP_dims, An_indices;
 
       // resize the Khatri-Rao product to the proper dimensions
-      for (unsigned int i = 1; i < ndim; i++) {
+      for (size_t i = 1; i < ndim; i++) {
         KRP_dims.push_back(tensor_ref.extent(i));
       }
       KRP_dims.push_back(rank);

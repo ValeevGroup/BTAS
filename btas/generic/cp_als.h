@@ -138,14 +138,14 @@ namespace btas{
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
 
-    double compute_PALS(std::vector <ConvClass> &converge_list, double RankStep = 0.5, unsigned int panels = 4,
-                        unsigned int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
+    double compute_PALS(std::vector <ConvClass> &converge_list, double RankStep = 0.5, size_t panels = 4,
+            int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
                         bool direct = true) override {
       if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
       if (converge_list.size() < panels) BTAS_EXCEPTION(
               "Too few convergence tests.  Must provide a list of panels convergence tests");
       double epsilon = -1.0;
-      unsigned int count = 0;
+      size_t count = 0;
       // Find the largest rank this will be the first panel
       ind_t max_dim = tensor_ref.extent(0);
       for (size_t i = 1; i < ndim; ++i) {
@@ -252,7 +252,7 @@ namespace btas{
       epsilon = this->compute_rank_random(rank, converge_test, max_als, fast_pI, calculate_epsilon, direct);
 
       // scale factor matrices
-      for (unsigned int i = 0; i < ndim; i++) {
+      for (size_t i = 0; i < ndim; i++) {
         Tensor tt(transforms[i].extent(0), A[i].extent(1));
         gemm(CblasNoTrans, CblasNoTrans, 1.0, transforms[i], A[i], 0.0, tt);
         A[i] = tt;
@@ -297,8 +297,8 @@ namespace btas{
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
     ///  ConvClass != FitCheck.
     double
-    compress_compute_rand(ind_t desired_compression_rank, ConvClass &converge_test, unsigned int oversampl = 10,
-                          unsigned int powerit = 2,
+    compress_compute_rand(ind_t desired_compression_rank, ConvClass &converge_test, long oversampl = 10,
+                          size_t powerit = 2,
                           ind_t rank = 0, bool direct = true, bool calculate_epsilon = false,
                           ind_t max_als = 1e5, bool fast_pI = false) {
       std::vector<Tensor> transforms;
@@ -456,10 +456,6 @@ namespace btas{
             a.fill(rand());
             A.push_back(a);
             this->normCol(j);
-            if (j == ndim - 1) {
-              Tensor lam(Range{Range1{i + 1}});
-              A.push_back(lam);
-            }
           }
 
             // If the factor matrices have memory allocated, rebuild each matrix
@@ -531,7 +527,6 @@ namespace btas{
                       bool calculate_epsilon, double &epsilon,
                       bool &fast_pI) override {
       std::mt19937 generator(random_seed_accessor());
-      //std::uniform_int_distribution<unsigned int> distribution(0, std::numeric_limits<unsigned int>::max() - 1);
       std::uniform_real_distribution<> distribution(-1.0, 1.0);
       for (size_t i = 0; i < this->ndim; ++i) {
         // If this mode is symmetric to a previous mode, set it equal to
@@ -572,10 +567,10 @@ namespace btas{
     /// error between the exact and approximated reference tensor
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
 
-    void ALS(ind_t rank, ConvClass &converge_test, bool dir, unsigned int max_als, bool calculate_epsilon,
+    void ALS(ind_t rank, ConvClass &converge_test, bool dir, int max_als, bool calculate_epsilon,
              double &epsilon, bool &fast_pI) {
 
-      unsigned int count = 0;
+      size_t count = 0;
 
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
@@ -634,10 +629,10 @@ namespace btas{
 
       // moves mode n of the reference tensor to the front to simplify contraction
       swap_to_first(tensor_ref, n);
-      std::vector<int_t> tref_indices, KRP_dims, An_indices;
+      std::vector<ind_t> tref_indices, KRP_dims, An_indices;
 
       // resize the Khatri-Rao product to the proper dimensions
-      for (unsigned int i = 1; i < ndim; i++) {
+      for (size_t i = 1; i < ndim; i++) {
         KRP_dims.push_back(tensor_ref.extent(i));
       }
       KRP_dims.push_back(rank);
@@ -707,7 +702,7 @@ namespace btas{
       bool last_dim = n == ndim - 1;
       // product of all dimensions
       ord_t LH_size = size;
-      unsigned int contract_dim = last_dim ? 0 : ndim - 1;
+      size_t contract_dim = last_dim ? 0 : ndim - 1;
       ind_t offset_dim = tensor_ref.extent(n);
       ind_t pseudo_rank = rank;
 
@@ -751,6 +746,7 @@ namespace btas{
                           Range1{pseudo_rank}});
         Tensor contract_tensor(Range{Range1{temp.extent(0)}, Range1{temp.extent(2)}});
         contract_tensor.fill(0.0);
+        const auto &a = A[(last_dim ? contract_dim + 1 : contract_dim)];
         // If the middle dimension is the mode not being contracted, I will move
         // it to the right hand side temp((size of tensor_ref/product of
         // dimension contracted, rank * mode n dimension)
@@ -760,7 +756,6 @@ namespace btas{
 
         // If the code hasn't hit the mode of interest yet, it will contract
         // over the middle dimension and sum over the rank.
-        const auto &a = A[(last_dim ? contract_dim + 1 : contract_dim)];
 
         else if (contract_dim > n) {
           ord_t idx1 = temp.extent(0);

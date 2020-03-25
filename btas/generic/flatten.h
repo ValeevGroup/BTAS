@@ -21,12 +21,12 @@ Tensor flatten(const Tensor &A, size_t mode) {
   Tensor X(A.extent(mode), A.range().area() / A.extent(mode));
 
   ord_t indexi = 0, indexj = 0;
-  unsigned int ndim = A.rank();
+  size_t ndim = A.rank();
   // J is the new step size found by removing the mode of interest
   std::vector<ord_t> J(ndim, 1);
-  for (unsigned int i = 0; i < ndim; ++i)
+  for (size_t i = 0; i < ndim; ++i)
     if (i != mode)
-      for (unsigned int m = 0; m < i; ++m)
+      for (size_t m = 0; m < i; ++m)
         if (m != mode)
           J[i] *= A.extent(m);
 
@@ -58,7 +58,7 @@ Tensor flatten(const Tensor &A, size_t mode) {
   template<typename Tensor, typename iterator, typename ord_t>
   void fill(const Tensor &A, size_t depth, Tensor &X, size_t mode,
             ord_t indexi, ord_t indexj, const std::vector<ord_t> &J, iterator &tensor_itr) {
-    unsigned int ndim = A.rank();
+    size_t ndim = A.rank();
     if (depth < ndim) {
 
       // Creates a for loop based on the number of modes A has
