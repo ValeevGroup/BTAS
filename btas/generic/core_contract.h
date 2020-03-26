@@ -19,7 +19,7 @@ namespace btas {
 
 template<typename Tensor>
 void core_contract(Tensor &A, const Tensor &Q,
-                   typename range_traits<typename Tensor::range_type>::ordinal_type mode,
+                   size_t mode,
                    bool transpose = true) {
 
   using btas::Range;
