@@ -169,7 +169,7 @@ namespace btas{
       double epsilon = -1.0;
       build(rank, converge_test, direct, max_als, calculate_epsilon, step, epsilon, SVD_initial_guess, SVD_rank,
             fast_pI);
-      std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
+      //std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
 
       detail::get_fit(converge_test, epsilon);
 
@@ -200,7 +200,7 @@ namespace btas{
       double epsilon = -1.0;
       build_random(rank, converge_test, direct, max_als, calculate_epsilon, epsilon,
                    fast_pI);
-      std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
+      //std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
 
       detail::get_fit(converge_test, epsilon);
 
