@@ -14,7 +14,7 @@ namespace btas {
 
 template <class Tensor>
 void khatri_rao_product(const Tensor &A, const Tensor &B, Tensor &AB) {
-  using ind_t = long;
+  using ind_t = typename Tensor::range_type::index_type::value_type;
   using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
   // Make sure the tensors are matrices

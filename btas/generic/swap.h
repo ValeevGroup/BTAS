@@ -33,7 +33,7 @@ namespace btas {
 template<typename Tensor>
 void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
                    bool for_ALS_update = true) {
-  using ind_t = long;
+  using ind_t = typename Tensor::range_type::index_type::value_type;
   using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
   auto ndim = A.rank();
   // If the mode of interest is the the first mode you are done.
@@ -122,7 +122,7 @@ void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
 
   template<typename Tensor>
   void swap_to_back(Tensor &A, size_t mode, bool is_in_back = false) {
-    using ind_t = long;
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
     auto ndim = A.rank();
 

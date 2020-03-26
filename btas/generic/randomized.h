@@ -18,7 +18,7 @@ namespace btas {
 /// desired rank of the randmoized compression method.  Out: A random matrix,
 /// column drawn from a random distribution and orthogonalized
 template <typename Tensor> void generate_random_metric(Tensor &A) {
-    using ind_t = long;
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
     using value_type = typename Tensor::value_type;
     for (ind_t i = 0; i < A.extent(1); i++) {
@@ -59,7 +59,7 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
   void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
                                 long des_rank, size_t oversampl = 10,
                                 size_t powerit = 2) {
-    using ind_t = long;
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     // Add the oversampling to the desired rank

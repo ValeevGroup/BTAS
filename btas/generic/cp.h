@@ -117,7 +117,7 @@ namespace btas{
   template <typename Tensor, class ConvClass>
   class CP {
   public:
-    using ind_t = long;
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     /// Create a generic CP object that stores the factor matrices,

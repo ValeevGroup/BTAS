@@ -10,7 +10,7 @@
 namespace btas {
   template<typename Tensor>
   Tensor reconstruct(std::vector<Tensor> &A, std::vector<size_t> dims_order) {
-    using ind_t = long;
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     if (A.size() - 1 != dims_order.size()) {

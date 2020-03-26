@@ -12,7 +12,7 @@ namespace btas{
 /// The L of an LU decomposition of \c A.
 
   template <typename Tensor> void LU_decomp(Tensor &A) {
-    using ind_t = long;
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
 #ifndef BTAS_HAS_LAPACKE
@@ -104,7 +104,7 @@ namespace btas{
     BTAS_EXCEPTION("Using this function requires LAPACKE");
 #else //BTAS_HAS_LAPACKE
 
-    using ind_t = long;
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     if (A.rank() > 2) {
@@ -185,7 +185,7 @@ namespace btas{
 #ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Using eigenvalue decomposition requires LAPACKE");
 #else //BTAS_HAS_LAPACKE
-    using ind_t = long;
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     if (A.rank() > 2) {
@@ -216,7 +216,7 @@ bool cholesky_inverse(Tensor & A, Tensor & B) {
 #ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Cholesky inverse function requires LAPACKE");
 #else //BTAS_HAS_LAPACKE
-    using ind_t = long;
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
     // This method computes the inverse quickly for a square matrix
     // based on MATLAB's implementation of A / B operator.
@@ -249,7 +249,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
     BTAS_EXCEPTION("Computing the pseudoinverses requires LAPACKE");
 #else //BTAS_HAS_LAPACKE
 
-    using ind_t = long;
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
     if (A.rank() > 2) {
       BTAS_EXCEPTION("PseudoInverse can only be computed on a matrix");

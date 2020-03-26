@@ -12,7 +12,7 @@ namespace btas {
 
 template<typename Tensor>
 Tensor flatten(const Tensor &A, size_t mode) {
-  using ind_t = long;
+  using ind_t = typename Tensor::range_type::index_type::value_type;
   using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
   if (mode >= A.rank()) BTAS_EXCEPTION("Cannot flatten along mode outside of A.rank()");
@@ -58,11 +58,12 @@ Tensor flatten(const Tensor &A, size_t mode) {
   template<typename Tensor, typename iterator, typename ord_t>
   void fill(const Tensor &A, size_t depth, Tensor &X, size_t mode,
             ord_t indexi, ord_t indexj, const std::vector<ord_t> &J, iterator &tensor_itr) {
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     size_t ndim = A.rank();
     if (depth < ndim) {
 
       // Creates a for loop based on the number of modes A has
-      for (long i = 0; i < A.extent(depth); ++i) {
+      for (ind_t i = 0; i < A.extent(depth); ++i) {
 
         // use the for loop to find the column dimension index
         if (depth != mode) {
