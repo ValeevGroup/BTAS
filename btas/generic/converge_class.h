@@ -86,15 +86,15 @@ namespace btas {
     /// Function to check convergence of the ALS problem
     /// convergence when \f$ \|T - \hat{T}^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
     /// \param[in] btas_factors Current set of factor matrices
-    bool operator () (std::vector<Tensor> & btas_factors){
-      if(normT_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
+    bool operator()(const std::vector<Tensor> &btas_factors) {
+      if (normT_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
       auto n = btas_factors.size() - 2;
       ord_t size = btas_factors[n].size();
       ind_t rank = btas_factors[n].extent(1);
       Tensor temp(btas_factors[n + 1].range());
       temp.fill(0.0);
-      auto * ptr_A = btas_factors[n].data();
-      auto * ptr_MtKRP = MtKRP_.data();
+      auto *ptr_A = btas_factors[n].data();
+      auto *ptr_MtKRP = MtKRP_.data();
       for (ord_t i = 0; i < size; ++i) {
         *(ptr_MtKRP + i) *= *(ptr_A + i);
       }
@@ -161,13 +161,15 @@ namespace btas {
     Tensor MtKRP_;
     bool verbose_ = false;
 
-    double norm(std::vector <Tensor> &btas_factors) {
+    double norm(const std::vector<Tensor> &btas_factors) {
       ind_t rank = btas_factors[0].extent(1), one = 1.0;
       auto n = btas_factors.size() - 1;
       Tensor coeffMat(rank, rank);
-      auto & temp = btas_factors[n];
-      temp.resize(Range{Range1{rank}, Range1{one}});
-      gemm(CblasNoTrans, CblasTrans, 1.0, temp, temp, 0.0, coeffMat);
+      auto &temp = btas_factors[n];
+      ger(1.0, temp, temp, coeffMat);
+
+      //temp.resize(Range{Range1{rank}, Range1{one}});
+      //gemm(CblasNoTrans, CblasTrans, 1.0, temp, temp, 0.0, coeffMat);
 
       auto rank2 = rank * (ord_t) rank;
       for (size_t i = 0; i < n; ++i) {
