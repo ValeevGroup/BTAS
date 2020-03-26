@@ -504,7 +504,7 @@ namespace btas{
       }
     }
 
-    ///s Create a rank \c rank initial guess using
+    /// Create a rank \c rank initial guess using
     /// random numbers from a uniform distribution
 
     /// \param[in] rank The rank of the CP decomposition.
