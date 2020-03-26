@@ -17,7 +17,7 @@ namespace btas {
   **/
   template <typename Tensor>
   class NormCheck {
-    using ind_t = long;
+    using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
   public:

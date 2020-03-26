@@ -23,7 +23,7 @@ void core_contract(Tensor &A, const Tensor &Q,
                    bool transpose = true) {
 
   using btas::Range;
-  using ind_t = long;
+  using ind_t = typename Range::index_type::value_type;
   using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
   size_t ndim = A.rank();
