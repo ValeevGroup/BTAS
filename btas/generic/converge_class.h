@@ -168,9 +168,6 @@ namespace btas {
       auto &temp = btas_factors[n];
       ger(1.0, temp, temp, coeffMat);
 
-      //temp.resize(Range{Range1{rank}, Range1{one}});
-      //gemm(CblasNoTrans, CblasTrans, 1.0, temp, temp, 0.0, coeffMat);
-
       auto rank2 = rank * (ord_t) rank;
       for (size_t i = 0; i < n; ++i) {
         Tensor temp(rank, rank);
