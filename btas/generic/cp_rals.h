@@ -140,7 +140,8 @@ public:
     /// Initial guess for factor matrices start at rank = max_dim(reference_tensor)
     /// and builds rank \c panel times by \c RankStep * max_dim(reference_tensor) increments
 
-    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in, out] converge_list Tests to see if ALS is converged, holds the value of fit.
+    /// should be as many tests as there are panels
     /// \param[in] RankStep CP_ALS increment of the panel
     /// \param[in] panels number of times the rank will be built
     /// \param[in]
@@ -239,7 +240,7 @@ public:
 
     /// \param[in] tcutSVD Truncation threshold for SVD of each mode in Tucker
     /// decomposition.
-    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
     /// \param[in] rank If finding CP
     /// decomposition to finite rank, define CP rank. Default 0 will throw error
     /// for compute_rank.
@@ -292,7 +293,7 @@ public:
 
     /// \param[in] desired_compression_rank The new dimension of each mode after
     /// randomized compression.
-    /// /// \param[in] converge_test Test to see if ALS is converged.
+    /// /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit..
     /// \param[in] oversampl Oversampling added to the
     /// desired_compression_rank required to provide a more optimal decomposition.
     /// Default = suggested = 10.
@@ -350,7 +351,7 @@ public:
     /// incrementing column dimension, R, by \c step
 
     /// \param[in] rank The rank of the CP decomposition.
-    /// \param[in] converge_test Test to see if ALS is converged.
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit..
     /// \param[in] direct The CP decomposition be computed without calculating the
     /// Khatri-Rao product?
     /// \param[in] max_als If CP decomposition is to finite
@@ -531,7 +532,7 @@ public:
     /// random numbers from a uniform distribution
 
     /// \param[in] rank The rank of the CP decomposition.
-    /// \param[in] converge_test Test to see if ALS is converged.
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit..
     /// \param[in] direct The CP decomposition be computed without calculating the
     /// Khatri-Rao product?
     /// \param[in] max_als If CP decomposition is to finite
@@ -576,7 +577,7 @@ public:
 
     /// performs the RALS method to minimize the loss function for a single rank
     /// \param[in] rank The rank of the CP decomposition.
-    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
     /// \param[in] dir The CP decomposition be computed without calculating the
     /// Khatri-Rao product?
     /// \param[in] max_als If CP decomposition is to finite
@@ -646,7 +647,7 @@ public:
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// \param[in] lambda regularization parameter
     /// \param[in, out] s regularization step size, returns updated stepsize based on ALS iteration
-    /// \param[in] converge_test test to see if the ALS is converged
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
     void update_w_KRP(size_t n, ind_t rank, bool &fast_pI, bool &matlab,
                       double lambda, double &s, ConvClass &converge_test) {
       Tensor temp(A[n].extent(0), rank);
@@ -734,7 +735,7 @@ public:
     /// return if computing the inverse in this was was successful
     /// \param[in] lambda regularization parameter
     /// \param[in, out] s regularization step size, returns updated stepsize based on ALS iteration
-    /// \param[in] converge_test test to see if the ALS is converged
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
     void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, double lambda, double &s,
                 ConvClass &converge_test) {
 

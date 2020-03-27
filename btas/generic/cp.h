@@ -140,7 +140,7 @@ namespace btas{
     /// error.
 
     /// \param[in] rank The rank of the CP decomposition.
-    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
     /// \param[in] step CP_ALS built
     /// from r =1 to r = \c rank. r increments by \c step; default = 1.
     /// \param[in] SVD_initial_guess Should the initial factor matrices be
@@ -181,7 +181,7 @@ namespace btas{
     /// using random numbers.
 
     /// \param[in] rank The rank of the CP decomposition.
-    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
     /// \param[in]
     /// max_als Max number of iterations allowed to converge the ALS approximation default = 1e4
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
@@ -212,7 +212,7 @@ namespace btas{
     /// \f[ || T_{exact} - T_{approx}||_F = \epsilon \leq tcutCP \f]
     /// with rank incrementing by \c step.
 
-    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
     /// \param[in] tcutCP How small \f$\epsilon\f$ must be to consider the CP
     /// decomposition converged. Default = 1e-2.
     /// \param[in] step CP_ALS built from r =1 to r = \c rank. r
@@ -255,7 +255,7 @@ namespace btas{
 
     /// \param[in] desired_rank Rank of CP decomposition, r, will build by
     /// geometric step until \f$ r \leq \f$ \c desired_rank.
-    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
     /// \param[in] geometric_step CP_ALS built from r =1 to r = \c rank. r increments by r *=
     /// \c geometric_step; default = 2.
     /// \param[in] SVD_initial_guess Should the initial factor matrices be
@@ -307,7 +307,8 @@ namespace btas{
     /// Initial guess for factor matrices start at rank = max_dim(reference_tensor)
     /// and builds rank \c panel times by \c RankStep * max_dim(reference_tensor) increments
 
-    /// \param[in] converge_test Test to see if ALS is converged
+    /// \param[in, out] converge_list Tests to see if ALS is converged, holds the value of fit.
+    /// should be as many tests as there are panels
     /// \param[in] RankStep CP_ALS increment of the panel
     /// \param[in] panels number of times the rank will be built
     /// \param[in]
@@ -392,7 +393,7 @@ namespace btas{
     /// This function should have options for HOSVD and for building rank by \c step increments
 
     /// \param[in] rank The rank of the CP decomposition.
-    /// \param[in] converge_test Test to see if ALS is converged.
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
     /// \param[in] direct The CP decomposition be computed without calculating the
     /// Khatri-Rao product?
     /// \param[in] max_als If CP decomposition is to finite
@@ -417,7 +418,7 @@ namespace btas{
     /// random numbers from a uniform distribution
 
     /// \param[in] rank The rank of the CP decomposition.
-    /// \param[in] converge_test Test to see if ALS is converged.
+    /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
     /// \param[in] direct The CP decomposition be computed without calculating the
     /// Khatri-Rao product?
     /// \param[in] max_als If CP decomposition is to finite
