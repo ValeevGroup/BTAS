@@ -363,9 +363,10 @@ namespace btas{
     void print(Tensor& tensor){
       if(tensor.rank() == 2) {
         ind_t row = tensor.extent(0), col = tensor.extent(1);
-        for (ord_t i = 0; i < row; ++i) {
-          const auto *tensor_ptr = tensor.data() + i * col;
-          for (ord_t j = 0; j < col; ++j) {
+        ord_t i_times_col = 0;
+        for (ind_t i = 0; i < row; ++i, i_times_col+=col) {
+          const auto *tensor_ptr = tensor.data() + i_times_col;
+          for (ind_t j = 0; j < col; ++j) {
             //os << *(tensor_ptr + j) << ",\t";
             std::cout << *(tensor_ptr + j) << ",\t";
           }

@@ -28,16 +28,18 @@ void khatri_rao_product(const Tensor &A, const Tensor &B, Tensor &AB) {
   ind_t A_row = A.extent(0);
   ind_t B_row = B.extent(0);
   ind_t KRP_dim = A.extent(1);
-  for (ord_t i = 0; i < A_row; ++i) {
-    const auto *A_ptr = A.data() + i * KRP_dim;
-    for (ord_t j = 0; j < B_row; ++j) {
-      const auto *B_ptr = B.data() + j * KRP_dim;
-      auto *AB_ptr = AB.data() + i * B_row * KRP_dim + j * KRP_dim;
-      for (ord_t k = 0; k < KRP_dim; ++k) {
-        //AB(i * B.extent(0) + j, k) = A(i, k) * B(j, k);
+  ord_t i_times_krp = 0, i_times_brow_krp = 0;
+  for (ind_t i = 0; i < A_row; ++i, i_times_krp += KRP_dim) {
+    const auto *A_ptr = A.data() + i_times_krp;
+    ord_t j_times_KRP = 0;
+    for (ind_t j = 0; j < B_row; ++j, j_times_KRP += KRP_dim) {
+      const auto *B_ptr = B.data() + j_times_KRP;
+      auto *AB_ptr = AB.data() + i_times_brow_krp + j_times_KRP;
+      for (ind_t k = 0; k < KRP_dim; ++k) {
         *(AB_ptr + k) = *(A_ptr + k) * *(B_ptr + k);
       }
     }
+    i_times_brow_krp += j_times_KRP;
   }
 }
 
