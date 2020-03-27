@@ -10,21 +10,23 @@ namespace btas {
 /// where \f$J = I_1 * I_2 * ...I_{mode-1} * I_{mode+1} * ... * I_N.\f$
 /// \return Matrix with dimension \f$(I_{mode}, J)\f$
 
-template <typename Tensor> Tensor flatten(const Tensor &A, int mode) {
-  
-  if (mode >= A.rank())
-    BTAS_EXCEPTION("Cannot flatten along mode outside of A.rank()");
-  
+template<typename Tensor>
+Tensor flatten(const Tensor &A, size_t mode) {
+  using ind_t = typename Tensor::range_type::index_type::value_type;
+  using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
+  if (mode >= A.rank()) BTAS_EXCEPTION("Cannot flatten along mode outside of A.rank()");
+
   // make X the correct size
   Tensor X(A.extent(mode), A.range().area() / A.extent(mode));
 
-  int indexi = 0, indexj = 0;
-  auto ndim = A.rank();
+  ord_t indexi = 0, indexj = 0;
+  size_t ndim = A.rank();
   // J is the new step size found by removing the mode of interest
-  std::vector<int> J(ndim, 1);
-  for (auto i = 0; i < ndim; ++i)
+  std::vector<ord_t> J(ndim, 1);
+  for (size_t i = 0; i < ndim; ++i)
     if (i != mode)
-      for (auto m = 0; m < i; ++m)
+      for (size_t m = 0; m < i; ++m)
         if (m != mode)
           J[i] *= A.extent(m);
 
@@ -53,24 +55,25 @@ template <typename Tensor> Tensor flatten(const Tensor &A, int mode) {
 /// The value of the iterator is placed in the correct position of X using
 /// recursive calls of fill().
 
-template <typename Tensor, typename iterator>
-void fill(const Tensor &A, int depth, Tensor &X, int mode, int indexi, int indexj,
-          const std::vector<int> &J, iterator &tensor_itr) {
-  auto ndim = A.rank();
-  if (depth < ndim) {
-    
-    // Creates a for loop based on the number of modes A has
-    for (auto i = 0; i < A.extent(depth); ++i) {
-      
-      // use the for loop to find the column dimension index
-      if (depth != mode) {
-        indexj += i * J[depth]; // column matrix index
-      }
-      
-      // if this depth is the mode being flattened use the for loop to find the
-      // row dimension
-      else {
-        indexi = i; // row matrix index
+  template<typename Tensor, typename iterator, typename ord_t>
+  void fill(const Tensor &A, size_t depth, Tensor &X, size_t mode,
+            ord_t indexi, ord_t indexj, const std::vector<ord_t> &J, iterator &tensor_itr) {
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    size_t ndim = A.rank();
+    if (depth < ndim) {
+
+      // Creates a for loop based on the number of modes A has
+      for (ind_t i = 0; i < A.extent(depth); ++i) {
+
+        // use the for loop to find the column dimension index
+        if (depth != mode) {
+          indexj += i * J[depth]; // column matrix index
+        }
+
+          // if this depth is the mode being flattened use the for loop to find the
+          // row dimension
+        else {
+          indexi = i; // row matrix index
       }
 
       fill(A, depth + 1, X, mode, indexi, indexj, J, tensor_itr);

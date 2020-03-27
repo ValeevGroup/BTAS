@@ -1078,6 +1078,7 @@ namespace btas {
     struct range_traits<RangeNd<_Order, _Index, _Ordinal> > {
         const static CBLAS_ORDER order = _Order;
         typedef _Index index_type;
+        typedef typename _Ordinal::value_type ordinal_type;
     };
 
     using Range = RangeNd<>;
@@ -1243,7 +1244,7 @@ namespace btas {
     RangeNd<_Order, _Index>
     diag(const RangeNd<_Order, _Index, _Ordinal>& r)
       {
-      if(r.rank() == 0) return r;
+      if(r.rank() == 0ul) return r;
       using index_value = typename RangeNd<_Order,_Index>::index_type::value_type;
       index_value stride = 1,
                   prod_extents = 1,

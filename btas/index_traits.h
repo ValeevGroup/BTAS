@@ -1,6 +1,7 @@
 #ifndef __BTAS_INDEX_TRAITS_H
 #define __BTAS_INDEX_TRAITS_H 1
 
+#include <cstdint>
 #include <iterator>
 #include <type_traits>
 
@@ -41,6 +42,34 @@ public:
    static constexpr const bool
    value = false;
 };
+
+template <size_t Width>
+struct signed_int;
+template <>
+struct signed_int<8ul> {
+  using type = int_fast8_t;
+};
+template <>
+struct signed_int<16ul> {
+  using type = int_fast16_t;
+};
+template <>
+struct signed_int<32ul> {
+  using type = int_fast32_t;
+};
+template <>
+struct signed_int<64ul> {
+  using type = int_fast64_t;
+};
+template <>
+struct signed_int<128ul> {
+  using type = int_fast64_t;
+};
+template <>
+struct signed_int<256ul> {
+  using type = int_fast64_t;
+};
+template <size_t Width> using signed_int_t = typename signed_int<Width>::type;
 
 } // namespace btas
 

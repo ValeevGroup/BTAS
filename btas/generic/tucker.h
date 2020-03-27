@@ -20,20 +20,23 @@ namespace btas {
 template <typename Tensor>
 void tucker_compression(Tensor &A, double epsilon_svd,
                         std::vector<Tensor> &transforms) {
-  double norm2 = dot(A,A);
-  //norm2 *= norm2;
+  using ind_t = typename Tensor::range_type::index_type::value_type;
+  using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
   auto ndim = A.rank();
-  std::vector<int> A_modes;
-  for(int i = 0; i< ndim;++i){
+
+  double norm2 = dot(A, A);
+  //norm2 *= norm2;
+  std::vector<size_t> A_modes;
+  for (size_t i = 0; i < ndim; ++i) {
     A_modes.push_back(i);
   }
 
-  for (int i = 0; i < ndim; i++) {
+  for (size_t i = 0; i < ndim; i++) {
     // Determine the threshold epsilon_SVD.
     auto flat = flatten(A, i);
     auto threshold = epsilon_svd * epsilon_svd * norm2 / ndim;
 
-    int R = flat.extent(0);
+    ind_t R = flat.extent(0);
     Tensor S(R, R), lambda(R, 1);
 
     // Contract A_n^T A_n to reduce the dimension of the SVD object to I_n X I_n
@@ -50,7 +53,7 @@ void tucker_compression(Tensor &A, double epsilon_svd,
 #endif
 
     // Find the truncation rank based on the threshold.
-    int rank = 0;
+    ind_t rank = 0;
     for (auto &eigvals : lambda) {
       if (eigvals < threshold)
         rank++;
@@ -58,8 +61,9 @@ void tucker_compression(Tensor &A, double epsilon_svd,
 
     // Truncate the column space of the unitary factor matrix.
     auto kept_evecs = R - rank;
+    ind_t zero = 0;
     lambda = Tensor(R, kept_evecs);
-    auto lower_bound = {0, rank};
+    auto lower_bound = {zero, rank};
     auto upper_bound = {R, R};
     auto view =
         btas::make_view(S.range().slice(lower_bound, upper_bound), S.storage());
@@ -69,22 +73,23 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     transforms.push_back(lambda);
   }
 
-  for(int i = 0; i < ndim; ++i){
-    auto & lambda = transforms[i];
-    auto kept_evecs = lambda.extent(1);
+  for (size_t i = 0; i < ndim; ++i) {
+    auto &lambda = transforms[i];
+    ind_t kept_evecs = lambda.extent(1);
 #ifdef BTAS_HAS_INTEL_MKL
     // Contract the factor matrix with the reference tensor, A.
     core_contract(A, lambda, i);
 #else
-    std::vector<int> contract_modes;
-    contract_modes.push_back(i); contract_modes.push_back(ndim);
-    std::vector<int> final_modes;
-    std::vector<int> final_dims;
-    for(int j = 0; j < ndim; ++j){
-      if(j == i){
+    std::vector<size_t> contract_modes;
+    contract_modes.push_back(i);
+    contract_modes.push_back(ndim);
+    std::vector<size_t> final_modes;
+    std::vector<size_t> final_dims;
+    for (size_t j = 0; j < ndim; ++j) {
+      if (j == i) {
         final_modes.push_back(ndim);
         final_dims.push_back(kept_evecs);
-      } else{
+      } else {
         final_modes.push_back(j);
         final_dims.push_back(A.extent(j));
       }

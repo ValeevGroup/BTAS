@@ -7,17 +7,19 @@
 #include <btas/error.h>
 
 namespace btas{
-  /// Computes L of the LU decomposition of tensor \c A
+/// Computes L of the LU decomposition of tensor \c A
 /// \param[in, out] A In: A reference matrix to be LU decomposed.  Out:
 /// The L of an LU decomposition of \c A.
 
   template <typename Tensor> void LU_decomp(Tensor &A) {
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
 #ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Using this function requires LAPACKE");
 #else //BTAS_HAS_LAPACKE
 
-    if(A.rank() > 2){
+    if (A.rank() > 2) {
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
     }
 
@@ -48,14 +50,14 @@ namespace btas{
     for (auto &j : piv)
       j -= 1;
 
-    int pivsize = piv.extent(0);
+    ind_t pivsize = piv.extent(0);
     piv.resize(Range{Range1{A.extent(0)}});
 
     // Walk through the full pivot array and
     // put the correct index values throughout
-    for (int i = 0; i < piv.extent(0); i++) {
+    for (ind_t i = 0; i < piv.extent(0); i++) {
       if (i == piv(i) || i >= pivsize) {
-        for (int j = 0; j < i; j++) {
+        for (ind_t j = 0; j < i; j++) {
           if (i == piv(j)) {
             piv(i) = j;
             break;
@@ -64,7 +66,7 @@ namespace btas{
       }
       if (i >= pivsize) {
         piv(i) = i;
-        for (int j = 0; j < i; j++)
+        for (ind_t j = 0; j < i; j++)
           if (i == piv(j)) {
             piv(i) = j;
             break;
@@ -73,12 +75,13 @@ namespace btas{
     }
 
     // generating the pivot matrix from the correct indices found above
-    for (int i = 0; i < piv.extent(0); i++)
+    for (ind_t i = 0; i < piv.extent(0); i++)
       P(piv(i), i) = 1;
 
     // Use the output of LAPACKE to make a lower triangular matrix, L
-    for (int i = 0; i < L.extent(0); i++) {
-      for (int j = 0; j < i && j < L.extent(1); j++) {
+    // TODO Make this more efficient using pointer arithmetic
+    for (ord_t i = 0; i < L.extent(0); i++) {
+      for (ord_t j = 0; j < i && j < L.extent(1); j++) {
         L(i, j) = A(i, j);
       }
       if (i < L.extent(1))
@@ -101,12 +104,15 @@ namespace btas{
     BTAS_EXCEPTION("Using this function requires LAPACKE");
 #else //BTAS_HAS_LAPACKE
 
-    if(A.rank() > 2){
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
+    if (A.rank() > 2) {
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
     }
 
-    int Qm = A.extent(0);
-    int Qn = A.extent(1);
+    ind_t Qm = A.extent(0);
+    ind_t Qn = A.extent(1);
     Tensor B(1, std::min(Qm, Qn));
 
     // LAPACKE doesn't directly calculate Q. Must first call this function to
@@ -175,21 +181,24 @@ namespace btas{
 /// or equal to the largest mode of \c A. Out: The eigenvalues of the
 ///  matrix \c A
   template <typename Tensor>
-  void eigenvalue_decomp(Tensor & A, Tensor & lambda){
+  void eigenvalue_decomp(Tensor & A, Tensor & lambda) {
 #ifndef BTAS_HAS_LAPACKE
     BTAS_EXCEPTION("Using eigenvalue decomposition requires LAPACKE");
 #else //BTAS_HAS_LAPACKE
-    if(A.rank() > 2){
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
+    if (A.rank() > 2) {
       BTAS_EXCEPTION("Tensor rank > 2. Tensor A must be a matrix.");
     }
-    auto lambda_length = lambda.size();
-    auto smallest_mode_A = (A.extent(0) < A.extent(1) ? A.extent(0) : A.extent(1));
-    if(lambda_length < smallest_mode_A){
+    ord_t lambda_length = lambda.size();
+    ind_t smallest_mode_A = (A.extent(0) < A.extent(1) ? A.extent(0) : A.extent(1));
+    if (lambda_length < smallest_mode_A) {
       BTAS_EXCEPTION("Volume of lambda must be greater than or equal to the largest mode of A");
     }
 
     auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', smallest_mode_A,
-            A.data(), smallest_mode_A, lambda.data());
+                              A.data(), smallest_mode_A, lambda.data());
     if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
 #endif // BTAS_HAS_LAPACKE
   }
@@ -203,22 +212,23 @@ namespace btas{
   /// out: The solution x = A^{-1}B
   /// \return bool true if inversion was successful false if failed.
 template <typename Tensor>
-bool cholesky_inverse(Tensor & A, Tensor & B){
+bool cholesky_inverse(Tensor & A, Tensor & B) {
 #ifndef BTAS_HAS_LAPACKE
-  BTAS_EXCEPTION("Cholesky inverse function requires LAPACKE");
+    BTAS_EXCEPTION("Cholesky inverse function requires LAPACKE");
 #else //BTAS_HAS_LAPACKE
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
     // This method computes the inverse quickly for a square matrix
     // based on MATLAB's implementation of A / B operator.
-    auto rank = B.extent(1);
-    int LDB = B.extent(0);
+    ind_t rank = B.extent(1);
+    ind_t LDB = B.extent(0);
 
-    btas::Tensor<int, DEFAULT::range, varray<int> > piv(rank);
+    btas::Tensor<int, DEFAULT::range, varray < int> > piv(rank);
     piv.fill(0);
     auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, A.data(), rank, piv.data(), B.data(), rank);
     if (info == 0) {
       return true;
-    }
-    else{
+    } else {
       // If inverse fails resort to the pseudoinverse
       std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
       return false;
@@ -239,11 +249,13 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
     BTAS_EXCEPTION("Computing the pseudoinverses requires LAPACKE");
 #else //BTAS_HAS_LAPACKE
 
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
     if (A.rank() > 2) {
       BTAS_EXCEPTION("PseudoInverse can only be computed on a matrix");
     }
 
-    auto row = A.extent(0), col = A.extent(1);
+    ind_t row = A.extent(0), col = A.extent(1);
     auto rank = (row < col ? row : col);
 
     if (fast_pI) {
@@ -268,7 +280,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
     double lr_thresh = 1e-13;
     Tensor s_inv(Range{Range1{row}, Range1{col}});
     s_inv.fill(0.0);
-    for (auto i = 0; i < rank; ++i) {
+    for (ind_t i = 0; i < rank; ++i) {
       if (s(i) > lr_thresh)
         s_inv(i, i) = 1 / s(i);
       else

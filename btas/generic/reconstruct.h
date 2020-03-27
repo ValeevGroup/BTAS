@@ -8,26 +8,29 @@
 #include <btas/generic/scal_impl.h>
 
 namespace btas {
-  template <typename Tensor>
-  Tensor reconstruct(std::vector<Tensor> & A, std::vector<int> dims_order) {
-    if(A.size() - 1 != dims_order.size()){
+  template<typename Tensor>
+  Tensor reconstruct(std::vector<Tensor> &A, std::vector<size_t> dims_order) {
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
+    if (A.size() - 1 != dims_order.size()) {
       BTAS_EXCEPTION("A.size() - 1 != dims_order.size(), please verify that you have correctly assigned the "
                      "order of dimension reconstruction");
     }
-    std::vector <size_t> dimensions;
-    auto ndim = A.size() - 1;
-    for (int i = 0; i < ndim; i++) {
+    std::vector<ord_t> dimensions;
+    size_t ndim = A.size() - 1;
+    for (size_t i = 0; i < ndim; i++) {
       dimensions.push_back(A[dims_order[i]].extent(0));
     }
-    auto rank = A[0].extent(1);
-    for (int i = 0; i < rank; i++) {
+    ind_t rank = A[0].extent(1);
+    for (ind_t i = 0; i < rank; i++) {
       scal(A[dims_order[0]].extent(0), A[ndim](i), std::begin(A[dims_order[0]]) + i, rank);
     }
 
     // Make the Khatri-Rao product of all the factor matrices execpt the last dimension
     Tensor KRP = A[dims_order[0]];
     Tensor hold = A[dims_order[0]];
-    for (int i = 1; i < A.size() - 2; i++) {
+    for (size_t i = 1; i < A.size() - 2; i++) {
       khatri_rao_product(KRP, A[dims_order[i]], hold);
       KRP = hold;
     }
@@ -41,7 +44,7 @@ namespace btas {
     hold.resize(dimensions);
 
     // remove the scaling applied to the first factor matrix
-    for (int i = 0; i < rank; i++) {
+    for (ind_t i = 0; i < rank; i++) {
       scal(A[dims_order[0]].extent(0), 1 / A[ndim](i), std::begin(A[dims_order[0]]) + i, rank);
     }
     return hold;
