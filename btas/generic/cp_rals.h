@@ -35,6 +35,9 @@ namespace btas{
     ranks. Also provides Tucker and randomized Tucker-like compressions coupled
     with CP-RALS decomposition. Does not support strided ranges.
 
+   \warning this code takes a non-const reference \c tensor_ref but does
+   not modify the values. This is a result of API (reshape needs non-const tensor)
+   
     Synopsis:
     \code
     // Constructors

@@ -33,6 +33,9 @@ namespace btas{
     and $Z \in \mathbb{R}^{X \times \dots}$ and thus share a factor matrix
     Decomposition optimization will use alternating least squares (ALS).
 
+   \warning this code takes a non-const reference \c tensor_ref but does
+   not modify the values. This is a result of API (reshape needs non-const tensor)
+
     Synopsis:
     \code
     // Constructors
