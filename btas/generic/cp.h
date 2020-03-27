@@ -515,8 +515,8 @@ namespace btas{
       for (ord_t i = 0; i < size; ++i) {
         *(lam_ptr + i % rank) += *(A_ptr + i) * *(A_ptr + i);
       }
-      for (ind_t i = 0; i < rank; ++i) {
-        *(lam_ptr + i) = sqrt(*(lam_ptr + i));
+      for (ind_t col = 0; col < rank; ++col) {
+        *(lam_ptr + col) = sqrt(*(lam_ptr + col));
       }
       for (ord_t i = 0; i < size; ++i) {
         *(A_ptr + i) /= *(lam_ptr + i % rank);
