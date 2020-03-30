@@ -102,10 +102,10 @@ check_type_size("long long" BTAS_HAS_LONG_LONG)
 # create exportable BTAS library target
 #######################################
 add_library(BTAS INTERFACE)
-install(TARGETS BTAS EXPORT btas COMPONENT BTAS)
 target_compile_features(BTAS INTERFACE "cxx_std_11")
 target_include_directories(BTAS INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${BTAS_INSTALL_INCLUDEDIR}>)
+install(TARGETS BTAS EXPORT btas COMPONENT BTAS)
 install(DIRECTORY btas
     COMPONENT BTAS
     DESTINATION "${BTAS_INSTALL_INCLUDEDIR}"
