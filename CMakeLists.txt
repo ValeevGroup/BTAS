@@ -187,6 +187,10 @@ install(FILES ${PROJECT_BINARY_DIR}/btas/version.h
 write_basic_package_version_file(btas-config-version.cmake
     VERSION ${BTAS_VERSION} COMPATIBILITY AnyNewerVersion)
 
+# Create the targets file
+export(EXPORT btas
+    FILE "${PROJECT_BINARY_DIR}/btas-targets.cmake")
+
 ## Create the configure file
 configure_package_config_file(cmake/btas-config.cmake.in
     "${PROJECT_BINARY_DIR}/btas-config.cmake"
