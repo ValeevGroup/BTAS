@@ -190,7 +190,7 @@ write_basic_package_version_file(btas-config-version.cmake
 # Create the targets file
 export(EXPORT btas
        NAMESPACE BTAS::
-       FILE "${PROJECT_BINARY_DIR}/btas-targets.cmake")
+       FILE btas-targets.cmake)
 message(STATUS "exported BTAS targets")
 if (NOT TARGET BTAS)
   message(FATAL_ERROR "ouch")
