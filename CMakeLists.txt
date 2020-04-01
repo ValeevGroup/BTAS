@@ -181,7 +181,7 @@ configure_file(
     ${PROJECT_BINARY_DIR}/btas/version.h
 )
 install(FILES ${PROJECT_BINARY_DIR}/btas/version.h
-    DESTINATION "${BTAS_INSTALL_INCLUDEDIR}")
+    DESTINATION "${BTAS_INSTALL_INCLUDEDIR}/btas")
 
 # Create the version file
 write_basic_package_version_file(btas-config-version.cmake
