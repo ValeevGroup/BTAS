@@ -12,6 +12,11 @@
 #  MKL_SOLVER_LIBRARIES - list of libraries to add for the solvers
 #  MKL_CDFT_LIBRARIES - list of libraries to add for the solvers
 
+# These are used to control the behavior:
+# ENV{MKLROOT} - path to the top of MKL tree (default: /opt/intel/mkl)
+# MKL_THREADING - controls the threading backend used by MKL, sequential (SEQ), TBB (TBB) or OpenMP (OMP) (default: OMP)
+# MKL_PREFER_ILP64 - controls whether ILP64 is preferred on 64-bit platforms (default: true)
+
 # Do nothing if MKL_FOUND was set before!
 IF (NOT MKL_FOUND)
 
