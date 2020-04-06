@@ -56,6 +56,7 @@ IF (NOT MKL_FOUND)
   SET(INTEL_OMP_DIR "${DEFAULT_INTEL_MKL_DIR}" CACHE STRING
       "Root directory of the Intel OpenMP (standalone)")
   SET(MKL_THREADING "OMP" CACHE STRING "MKL flavor: SEQ, TBB or OMP (default)")
+  SET(MKL_PREFER_ILP64 ON CACHE BOOL "MKL preference: ILP64 (yes) or {LP64,LP32} (no)")
 
   IF (NOT "${MKL_THREADING}" STREQUAL "SEQ" AND
       NOT "${MKL_THREADING}" STREQUAL "TBB" AND
@@ -63,18 +64,19 @@ IF (NOT MKL_FOUND)
     MESSAGE(FATAL_ERROR "Invalid MKL_THREADING (${MKL_THREADING}), should be one of: SEQ, TBB, OMP")
   ENDIF()
 
-  IF ("${MKL_THREADING}" STREQUAL "TBB" AND NOT USE_TBB)
-    MESSAGE(FATAL_ERROR "MKL_THREADING is TBB but USE_TBB is turned off")
-  ENDIF()
-
   MESSAGE(STATUS "MKL_THREADING = ${MKL_THREADING}")
+  MESSAGE(STATUS "MKL_PREFER_ILP64 = ${MKL_PREFER_ILP64}")
 
   # Checks
   CHECK_TYPE_SIZE("void*" SIZE_OF_VOIDP)
   IF ("${SIZE_OF_VOIDP}" EQUAL 8)
     SET(mklvers "intel64")
     SET(iccvers "intel64")
-    SET(mkl64s "_lp64")
+    if (MKL_PREFER_ILP64)
+      SET(mkl64s "_ilp64")
+    else(MKL_PREFER_ILP64)
+      SET(mkl64s "_lp64")
+    endif(MKL_PREFER_ILP64)
   ELSE ("${SIZE_OF_VOIDP}" EQUAL 8)
     SET(mklvers "32")
     SET(iccvers "ia32")
