@@ -23,7 +23,7 @@ wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCT
 echo "deb https://apt.repos.intel.com/mkl all main" | tee -a /etc/apt/sources.list.d/intel-mkl.list > /dev/null
 apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
 apt-get -yq update >> ~/apt-get-update.log
-apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 libboost-dev libboost-serialization-dev libblas-dev liblapack-dev liblapacke-dev intel-mkl-2019.4-070 clang-7 clang-8 clang-9 cmake cmake-data
+apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-6 g++-7 g++-8 libboost-dev libboost-serialization-dev libblas-dev liblapack-dev liblapacke-dev intel-mkl-2019.4-070 clang-7 clang-8 clang-9 cmake cmake-data
 mkdir -p ${TRAVIS_BUILD_TOPDIR}
 cd ${TRAVIS_BUILD_TOPDIR}
 git clone https://github.com/BTAS/BTAS.git ${TRAVIS_BUILD_TOPDIR}/BTAS/BTAS

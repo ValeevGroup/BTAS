@@ -23,7 +23,7 @@ namespace btas{
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
     }
 
-    btas::Tensor<int> piv(std::min(A.extent(0), A.extent(1)));
+    btas::Tensor<lapack_int> piv(std::min(A.extent(0), A.extent(1)));
     Tensor L(A.range());
     Tensor P(A.extent(0), A.extent(0));
     P.fill(0.0);
@@ -153,7 +153,7 @@ namespace btas{
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
     }
 
-    btas::Tensor<int> piv(std::min(A.extent(0), A.extent(1)));
+    btas::Tensor<lapack_int> piv(std::min(A.extent(0), A.extent(1)));
     piv.fill(0);
 
     // LAPACKE LU decomposition gives back dense L and U to be
@@ -223,7 +223,7 @@ bool cholesky_inverse(Tensor & A, Tensor & B) {
     ind_t rank = B.extent(1);
     ind_t LDB = B.extent(0);
 
-    btas::Tensor<int, DEFAULT::range, varray < int> > piv(rank);
+    btas::Tensor<lapack_int, DEFAULT::range, varray <lapack_int> > piv(rank);
     piv.fill(0);
     auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, A.data(), rank, piv.data(), B.data(), rank);
     if (info == 0) {

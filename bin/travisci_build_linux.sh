@@ -17,7 +17,13 @@ cd ${BUILD_PREFIX}
 ##########   test with blas+lapack   ##########
 mkdir build_cblas
 cd build_cblas
-cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_ASSERT_THROWS=ON -DBTAS_BUILD_UNITTEST=ON
+# control whether to use ILP64 or not by the parity of
+# GCC_VERSION + CLANG_VERSION
+gccv=$GCC_VERSION
+clangv=$([ "X$CLANG_VERSION" = "X" ] && echo "0" || echo "$CLANG_VERSION")
+ilp64v=$(($gccv+$clangv))
+export PREFER_ILP64=$((ilp64v % 2))
+cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_ASSERT_THROWS=ON -DBTAS_BUILD_UNITTEST=ON -DMKL_PREFER_ILP64=${PREFER_ILP64}
 make VERBOSE=1
 make check VERBOSE=1
 cd ..
