@@ -4,6 +4,7 @@
 #  MKL_FOUND - set to true if a library implementing the CBLAS interface is found
 #  MKL_VERSION - best guess of the found mkl version
 #  MKL_INCLUDE_DIR - path to include dir.
+#  MKL_ILP64 - if true, use 64-bit integer API (set preprocessor macros MKL_ILP64=1 or MKL_INT=<a 64-bit int type> )
 #  MKL_LIBRARIES - list of libraries for base mkl
 #  MKL_OPENMP_TYPE - OpenMP flavor that the found mkl uses: GNU or Intel
 #  MKL_OPENMP_LIBRARY - path to the OpenMP library the found mkl uses
@@ -60,7 +61,7 @@ IF (NOT MKL_FOUND)
       "Root directory of the Intel MKL (standalone)")
   SET(INTEL_OMP_DIR "${DEFAULT_INTEL_MKL_DIR}" CACHE STRING
       "Root directory of the Intel OpenMP (standalone)")
-  SET(MKL_THREADING "OMP" CACHE STRING "MKL flavor: SEQ, TBB or OMP (default)")
+  SET(MKL_THREADING "OMP" CACHE STRING "MKL backend: SEQ, TBB or OMP (default)")
   SET(MKL_PREFER_ILP64 ON CACHE BOOL "MKL preference: ILP64 (yes) or {LP64,LP32} (no)")
 
   IF (NOT "${MKL_THREADING}" STREQUAL "SEQ" AND
@@ -392,6 +393,11 @@ IF (NOT MKL_FOUND)
   SET(CMAKE_INCLUDE_PATH ${saved_CMAKE_INCLUDE_PATH})
   IF (MKL_LIBRARIES AND MKL_INCLUDE_DIR)
     SET(MKL_FOUND TRUE)
+    IF ("${MKL_LIBRARIES}" MATCHES "_ilp64")
+      SET (MKL_ILP64 ON)
+    ELSE ()
+      SET (MKL_ILP64 OFF)
+    ENDIF ()
   ELSE (MKL_LIBRARIES AND MKL_INCLUDE_DIR)
     if (MKL_LIBRARIES AND NOT MKL_INCLUDE_DIR)
       MESSAGE(WARNING "MKL libraries files are found, but MKL header files are \
