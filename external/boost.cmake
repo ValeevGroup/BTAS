@@ -11,9 +11,9 @@ if (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
   # try config first
   # OPTIONAL_COMPONENTS in FindBoost available since 3.11
   cmake_minimum_required(VERSION 3.11.0)
-  find_package(Boost CONFIG COMPONENTS boost ${Boost_BTAS_DEPS_LIBRARIES})
+  find_package(Boost CONFIG OPTIONAL_COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
   if (NOT TARGET Boost::boost)
-    find_package(Boost REQUIRED COMPONENTS boost OPTIONAL_COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
+    find_package(Boost REQUIRED OPTIONAL_COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
     set(Boost_USE_CONFIG FALSE)
   else()
     set(Boost_USE_CONFIG TRUE)
