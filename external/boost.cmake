@@ -5,19 +5,20 @@ if (BOOST_ROOT OR BOOST_INCLUDEDIR)
   set(Boost_NO_SYSTEM_PATHS TRUE)
 endif()
 
-if (NOT TARGET Boost::boost)
-  # Boost::boost is defined since 3.5
-  cmake_minimum_required(VERSION 3.5.0)
-  # try config first
+# make sure Boost::boost is available, and look for optional serialization component
+if (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
   set(Boost_BTAS_DEPS_LIBRARIES serialization)
-  find_package(Boost CONFIG COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
+  # try config first
+  # OPTIONAL_COMPONENTS in FindBoost available since 3.11
+  cmake_minimum_required(VERSION 3.11.0)
+  find_package(Boost CONFIG COMPONENTS boost ${Boost_BTAS_DEPS_LIBRARIES})
   if (NOT TARGET Boost::boost)
-    find_package(Boost REQUIRED COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
+    find_package(Boost REQUIRED COMPONENTS boost OPTIONAL_COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
     set(Boost_USE_CONFIG FALSE)
   else()
     set(Boost_USE_CONFIG TRUE)
   endif()
-endif (NOT TARGET Boost::boost)
+endif (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
 
 # Perform a compile check with Boost
 list(APPEND CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIRS})
