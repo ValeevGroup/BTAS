@@ -64,6 +64,8 @@ IF (NOT MKL_FOUND)
       "Root directory of the Intel OpenMP (standalone)")
   SET(MKL_THREADING "OMP" CACHE STRING "MKL backend: SEQ, TBB or OMP (default)")
   SET(MKL_PREFER_ILP64 ON CACHE BOOL "MKL preference: ILP64 (yes) or {LP64,LP32} (no)")
+
+  # initialize BLA_STATIC, if needed, and adjust the library suffixes search list
   if (BUILD_SHARED_LIBS)
     set(_bla_static FALSE)
   else (BUILD_SHARED_LIBS)

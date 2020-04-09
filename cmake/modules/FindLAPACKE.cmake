@@ -31,6 +31,17 @@ ENDIF(BTAS_ENABLE_MKL)
 
 INCLUDE(CheckLibraryList)
 
+# initialize BLA_STATIC, if needed, and adjust the library suffixes search list
+if (BUILD_SHARED_LIBS)
+  set(_bla_static FALSE)
+else (BUILD_SHARED_LIBS)
+  set(_bla_static TRUE)
+endif (BUILD_SHARED_LIBS)
+set(BLA_STATIC ${_bla_static} CACHE BOOL "Whether to use static linkage for BLAS, LAPACK, and related libraries")
+if (BLA_STATIC)
+  list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+endif(BLA_STATIC)
+
 # Apple does not provide LAPACKE as part of Accelerate/vecLib
 
 # LAPACKE in ATLAS library? (http://math-atlas.sourceforge.net/)
@@ -73,3 +84,7 @@ IF(NOT LAPACKE_FIND_QUIETLY)
     MESSAGE(STATUS "LAPACKE library not found.")
   ENDIF(LAPACKE_FOUND)
 ENDIF(NOT LAPACKE_FIND_QUIETLY)
+
+if (BLA_STATIC)
+  list(REMOVE_AT CMAKE_FIND_LIBRARY_SUFFIXES 0)
+endif(BLA_STATIC)
