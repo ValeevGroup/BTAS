@@ -17,6 +17,7 @@
 # ENV{MKLROOT} - path to the top of MKL tree (default: /opt/intel/mkl)
 # MKL_THREADING - controls the threading backend used by MKL, sequential (SEQ), TBB (TBB) or OpenMP (OMP) (default: OMP)
 # MKL_PREFER_ILP64 - controls whether ILP64 is preferred on 64-bit platforms (default: true)
+# BLA_STATIC - controls whether to link libraries statically (default: NOT ${BUILD_SHARED_LIBS})
 
 # Do nothing if MKL_FOUND was set before!
 IF (NOT MKL_FOUND)
@@ -63,6 +64,15 @@ IF (NOT MKL_FOUND)
       "Root directory of the Intel OpenMP (standalone)")
   SET(MKL_THREADING "OMP" CACHE STRING "MKL backend: SEQ, TBB or OMP (default)")
   SET(MKL_PREFER_ILP64 ON CACHE BOOL "MKL preference: ILP64 (yes) or {LP64,LP32} (no)")
+  if (BUILD_SHARED_LIBS)
+    set(_bla_static FALSE)
+  else (BUILD_SHARED_LIBS)
+    set(_bla_static TRUE)
+  endif (BUILD_SHARED_LIBS)
+  set(BLA_STATIC ${_bla_static} CACHE BOOL "Whether to use static linkage for BLAS, LAPACK, and related libraries")
+  if (BLA_STATIC)
+    list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  endif(BLA_STATIC)
 
   IF (NOT "${MKL_THREADING}" STREQUAL "SEQ" AND
       NOT "${MKL_THREADING}" STREQUAL "TBB" AND
@@ -72,6 +82,7 @@ IF (NOT MKL_FOUND)
 
   MESSAGE(STATUS "MKL_THREADING = ${MKL_THREADING}")
   MESSAGE(STATUS "MKL_PREFER_ILP64 = ${MKL_PREFER_ILP64}")
+  MESSAGE(STATUS "BLA_STATIC = ${BLA_STATIC}")
 
   # Checks
   CHECK_TYPE_SIZE("void*" SIZE_OF_VOIDP)
@@ -423,6 +434,10 @@ IF (NOT MKL_FOUND)
       MESSAGE(STATUS "MKL library not found")
     ENDIF(MKL_FOUND)
   ENDIF(NOT MKL_FIND_QUIETLY)
+
+  if (BLA_STATIC)
+    list(REMOVE_AT CMAKE_FIND_LIBRARY_SUFFIXES 0)
+  endif(BLA_STATIC)
 
   # Do nothing if MKL_FOUND was set before!
 ENDIF (NOT MKL_FOUND)
