@@ -56,7 +56,38 @@ IF(NOT LAPACKE_LIBRARIES)
     TRUE )
 ENDIF(NOT LAPACKE_LIBRARIES)
 
-# Generic LAPACKE library
+# NETLIB LAPACKE library (w/o Fortran)
+IF(NOT LAPACKE_LIBRARIES)
+  CHECK_LIBRARY_LIST(
+      LAPACKE_LIBRARIES
+      LAPACKE
+      LAPACKE_dgesv
+      ""
+      "lapacke;lapack;blas"
+      "lapacke.h"
+      TRUE )
+ENDIF()
+
+# NETLIB LAPACKE library (w/ Fortran)
+get_property(_project_languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+IF((NOT LAPACKE_LIBRARIES) AND ("Fortran" IN_LIST _project_languages OR CMAKE_Fortran_COMPILER))
+  if (NOT("Fortran" IN_LIST _project_languages))
+    enable_language(Fortran)
+  endif()
+  set(_current_CMAKE_LIBRARY_PATH "${CMAKE_LIBRARY_PATH}")
+  list(APPEND CMAKE_LIBRARY_PATH "${CMAKE_Fortran_IMPLICIT_LINK_DIRECTORIES}")
+  CHECK_LIBRARY_LIST(
+      LAPACKE_LIBRARIES
+      LAPACKE
+      LAPACKE_dgesv
+      ""
+      "lapacke;lapack;blas;libgfortran${CMAKE_SHARED_LIBRARY_SUFFIX};libm${CMAKE_SHARED_LIBRARY_SUFFIX};libpthread${CMAKE_SHARED_LIBRARY_SUFFIX}"
+      "lapacke.h"
+      TRUE )
+  set(CMAKE_LIBRARY_PATH "${_current_CMAKE_LIBRARY_PATH}")
+ENDIF()
+
+# Generic LAPACKE library (w/o any prereqs)
 IF(NOT LAPACKE_LIBRARIES)
   CHECK_LIBRARY_LIST(
     LAPACKE_LIBRARIES
