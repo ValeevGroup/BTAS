@@ -355,12 +355,12 @@ IF (NOT MKL_FOUND)
     ENDFOREACH(mklrtl)
   ENDIF (NOT "${MKL_THREADING}" STREQUAL "SEQ")
 
-  # Second: search for sequential ones
+  # Second: search for sequential ones N.B. still need pthreads thanks to mkl_core
   FOREACH(mkliface ${mklifaces})
     FOREACH(mkl64 ${mkl64s} "")
       IF (NOT MKL_LIBRARIES)
         CHECK_ALL_LIBRARIES(MKL_LIBRARIES MKL_OPENMP_TYPE MKL_OPENMP_LIBRARY cblas_sgemm
-            "mkl_${mkliface}${mkl64};mkl_sequential;mkl_core;${mkl_m};${mkl_dl}" "")
+            "mkl_${mkliface}${mkl64};mkl_sequential;mkl_core;${mkl_pthread};${mkl_m};${mkl_dl}" "")
         IF (MKL_LIBRARIES)
           SET(mklseq "_sequential")
         ENDIF (MKL_LIBRARIES)
