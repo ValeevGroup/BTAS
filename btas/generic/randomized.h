@@ -19,7 +19,6 @@ namespace btas {
 /// column drawn from a random distribution and orthogonalized
 template <typename Tensor> void generate_random_metric(Tensor &A) {
     using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
     using value_type = typename Tensor::value_type;
     for (ind_t i = 0; i < A.extent(1); i++) {
       std::random_device rd;
@@ -60,7 +59,6 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
                                 long des_rank, size_t oversampl = 10,
                                 size_t powerit = 2) {
     using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     // Add the oversampling to the desired rank
     size_t ndim = A.rank();

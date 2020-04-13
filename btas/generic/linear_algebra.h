@@ -105,7 +105,6 @@ namespace btas{
 #else //BTAS_HAS_LAPACKE
 
     using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     if (A.rank() > 2) {
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
@@ -217,7 +216,6 @@ bool cholesky_inverse(Tensor & A, Tensor & B) {
     BTAS_EXCEPTION("Cholesky inverse function requires LAPACKE");
 #else //BTAS_HAS_LAPACKE
     using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
     // This method computes the inverse quickly for a square matrix
     // based on MATLAB's implementation of A / B operator.
     ind_t rank = B.extent(1);
@@ -250,7 +248,6 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
 #else //BTAS_HAS_LAPACKE
 
     using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
     if (A.rank() > 2) {
       BTAS_EXCEPTION("PseudoInverse can only be computed on a matrix");
     }
