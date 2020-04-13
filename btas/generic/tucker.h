@@ -21,7 +21,6 @@ template <typename Tensor>
 void tucker_compression(Tensor &A, double epsilon_svd,
                         std::vector<Tensor> &transforms) {
   using ind_t = typename Tensor::range_type::index_type::value_type;
-  using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
   auto ndim = A.rank();
 
   double norm2 = dot(A, A);

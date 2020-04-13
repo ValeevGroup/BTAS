@@ -12,7 +12,6 @@ namespace btas {
 
 template<typename Tensor>
 Tensor flatten(const Tensor &A, size_t mode) {
-  using ind_t = typename Tensor::range_type::index_type::value_type;
   using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
   if (mode >= A.rank()) BTAS_EXCEPTION("Cannot flatten along mode outside of A.rank()");

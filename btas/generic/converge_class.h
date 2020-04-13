@@ -162,7 +162,7 @@ namespace btas {
     bool verbose_ = false;
 
     double norm(const std::vector<Tensor> &btas_factors) {
-      ind_t rank = btas_factors[0].extent(1), one = 1.0;
+      ind_t rank = btas_factors[0].extent(1);
       auto n = btas_factors.size() - 1;
       Tensor coeffMat(rank, rank);
       auto &temp = btas_factors[n];
