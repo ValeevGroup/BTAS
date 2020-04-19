@@ -42,6 +42,8 @@ if (BLA_STATIC)
   list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 "${CMAKE_STATIC_LIBRARY_SUFFIX}")
 endif(BLA_STATIC)
 
+# first look for known cases with nonstandard header names, then for libs accessible via cblas.h
+
 # Apple CBLAS library?
 IF(NOT CBLAS_LIBRARIES)
   CHECK_LIBRARY_LIST(
@@ -64,6 +66,18 @@ IF( NOT CBLAS_LIBRARIES )
     "vecLib/vecLib.h"
     TRUE )
 ENDIF( NOT CBLAS_LIBRARIES )
+
+# BLAS already found? Look for cblas linked against BLAS_LIBRARIES
+IF (BLAS_FOUND AND NOT CBLAS_LIBRARIES)
+  CHECK_LIBRARY_LIST(
+    CBLAS_LIBRARIES
+    CBLAS
+    cblas_dgemm
+    "${BLAS_LIBRARIES}"
+    "cblas"
+    "cblas.h"
+    TRUE )
+ENDIF(BLAS_FOUND AND NOT CBLAS_LIBRARIES)
 
 # CBLAS in ATLAS library? (http://math-atlas.sourceforge.net/)
 IF(NOT CBLAS_LIBRARIES)

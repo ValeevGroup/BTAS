@@ -44,6 +44,17 @@ endif(BLA_STATIC)
 
 # Apple does not provide LAPACKE as part of Accelerate/vecLib
 
+IF (LAPACK_FOUND AND NOT LAPACKE_LIBRARIES)
+  CHECK_LIBRARY_LIST(
+    LAPACKE_LIBRARIES
+    LAPACKE
+    LAPACKE_dgesv
+    "${LAPACK_LIBRARIES}"
+    "lapacke"
+    "lapacke.h"
+    TRUE )
+ENDIF(LAPACK_FOUND AND NOT LAPACKE_LIBRARIES)
+
 # LAPACKE in ATLAS library? (http://math-atlas.sourceforge.net/)
 IF(NOT LAPACKE_LIBRARIES)
   CHECK_LIBRARY_LIST(
