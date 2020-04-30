@@ -35,6 +35,12 @@ macro(BTAS_FINDMKL_FIND_LIBRARY)
   endif()
 endmacro()
 
+if (DEFINED CMAKE_SYSTEM_NAME)
+  set(_cmake_system_name ${CMAKE_SYSTEM_NAME})
+else(DEFINED CMAKE_SYSTEM_NAME)
+  set(_cmake_system_name ${CMAKE_HOST_SYSTEM_NAME})
+endif(DEFINED CMAKE_SYSTEM_NAME)
+
 # Do nothing if MKL_FOUND was set before!
 IF (NOT MKL_FOUND)
 
@@ -439,6 +445,12 @@ IF (NOT MKL_FOUND)
     SET(MKL_FOUND FALSE)
     SET(MKL_VERSION)  # clear MKL_VERSION
   ENDIF (MKL_LIBRARIES AND MKL_INCLUDE_DIR)
+
+  # if using static libs on Linux assume weak linker, need to explicitly specify grouping to resolve cyclic deps
+  if (BLA_STATIC AND _cmake_system_name STREQUAL Linux)
+    list(PREPEND MKL_LIBRARIES "-Wl,--start-group")
+    list(APPEND MKL_LIBRARIES "-Wl,--end-group")
+  endif(BLA_STATIC AND _cmake_system_name STREQUAL Linux)
 
   # Standard termination
   IF(NOT MKL_FOUND AND MKL_FIND_REQUIRED)
