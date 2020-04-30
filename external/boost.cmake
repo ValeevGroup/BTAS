@@ -28,13 +28,10 @@ if (Boost_CONTAINER_FOUND)
   target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BOOST_CONTAINER=1 -DBTAS_TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK})
 endif()
 
-include(CheckCXXSourceRuns)
-
-CHECK_CXX_SOURCE_RUNS(
-    "
+set(_btas_boostcheck_source "
     #define BOOST_TEST_MAIN main_tester
     #include <boost/test/included/unit_test.hpp>
-    
+
     #include <fstream>
     #include <cstdio>
     #include <boost/archive/text_oarchive.hpp>
@@ -42,7 +39,7 @@ CHECK_CXX_SOURCE_RUNS(
     #ifdef BTAS_HAS_BOOST_CONTAINER
     #  include <boost/container/small_vector.hpp>
     #endif
-    
+
     class A {
       public:
         A() : a_(0) {}
@@ -52,7 +49,7 @@ CHECK_CXX_SOURCE_RUNS(
         }
       private:
         int a_;
-        
+
         friend class boost::serialization::access;
         template<class Archive>
         void serialize(Archive & ar, const unsigned int version)
@@ -64,7 +61,7 @@ CHECK_CXX_SOURCE_RUNS(
     BOOST_AUTO_TEST_CASE( serialization )
     {
       BOOST_CHECK( true );
-      
+
       A i(1);
       const char* fname = \"tmp.boost\";
       std::ofstream ofs(fname);
@@ -81,7 +78,7 @@ CHECK_CXX_SOURCE_RUNS(
         remove(fname);
       }
     }
-    
+
     #ifdef BTAS_HAS_BOOST_CONTAINER
     BOOST_AUTO_TEST_CASE( container )
     {
@@ -92,7 +89,14 @@ CHECK_CXX_SOURCE_RUNS(
       BOOST_CHECK(v[1] == 1);
     }
     #endif  // BTAS_HAS_BOOST_CONTAINER
-    "  BOOST_COMPILES_AND_RUNS)
+    ")
+if (CMAKE_CROSSCOMPILING)
+  include(CheckCXXSourceCompiles)
+  check_cxx_source_compiles("${_btas_boostcheck_source}" BOOST_COMPILES_AND_RUNS)
+else(CMAKE_CROSSCOMPILING)
+  include(CheckCXXSourceRuns)
+  check_cxx_source_runs("${_btas_boostcheck_source}" BOOST_COMPILES_AND_RUNS)
+endif(CMAKE_CROSSCOMPILING)
 
 if (BOOST_COMPILES_AND_RUNS)
     target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BOOST_SERIALIZATION=1)
