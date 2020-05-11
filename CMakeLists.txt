@@ -215,7 +215,7 @@ install(FILES
     DESTINATION "${BTAS_INSTALL_CMAKEDIR}"
     COMPONENT btas-config)
 add_custom_target_subproject(btas install-config
-    COMMAND ${CMAKE_COMMAND} -DCOMPONENT=btas-config -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+    COMMAND ${CMAKE_COMMAND} -DCOMPONENT=btas-config -P ${PROJECT_BINARY_DIR}/cmake_install.cmake
     COMMENT "Installing BTAS config components")
 
 feature_summary(WHAT ALL
