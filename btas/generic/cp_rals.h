@@ -22,6 +22,9 @@
 #include <btas/generic/rals_helper.h>
 #include <btas/generic/reconstruct.h>
 
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
+
 #ifdef BTAS_HAS_INTEL_MKL
 #include <mkl_trans.h>
 #endif
@@ -553,8 +556,10 @@ public:
     void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als,
                       bool calculate_epsilon, double &epsilon,
                       bool &fast_pI) override {
-      std::mt19937 generator(random_seed_accessor());
-      std::uniform_real_distribution<> distribution(-1.0, 1.0);
+      //std::mt19937 generator(random_seed_accessor());
+      //std::uniform_real_distribution<> distribution(-1.0, 1.0);
+      boost::random::mt19937 generator(random_seed_accessor());
+      boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
       for (size_t i = 0; i < this->ndim; ++i) {
         // If this mode is symmetric to a previous mode, set it equal to
         // previous mode, else make a random matrix.

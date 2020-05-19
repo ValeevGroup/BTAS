@@ -23,6 +23,8 @@
 #include <btas/generic/converge_class.h>
 #include <btas/generic/rals_helper.h>
 #include <btas/generic/reconstruct.h>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
 
 namespace btas{
 
@@ -479,8 +481,10 @@ namespace btas{
                       bool calculate_epsilon, double &epsilon,
                       bool &fast_pI) override {
 
-      std::mt19937 generator(random_seed_accessor());
-      std::uniform_real_distribution<> distribution(-1.0, 1.0);
+      //std::mt19937 generator(random_seed_accessor());
+      //std::uniform_real_distribution<> distribution(-1.0, 1.0);
+      boost::random::mt19937 generator(random_seed_accessor());
+      boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
       for (size_t i = 1; i < ndimL; ++i) {
         auto &tensor_ref = tensor_ref_left;
         Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
