@@ -5,25 +5,11 @@
 #ifndef BTAS_GENERIC_COUPLED_CP_ALS_H
 #define BTAS_GENERIC_COUPLED_CP_ALS_H
 
-#include <btas/error.h>
-#include <btas/generic/cp.h>
-
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <vector>
-
-#include <btas/generic/default_random_seed.h>
-#include <btas/generic/core_contract.h>
-#include <btas/generic/flatten.h>
-#include <btas/generic/khatri_rao_product.h>
-#include <btas/generic/randomized.h>
-#include <btas/generic/swap.h>
-#include <btas/generic/tucker.h>
-#include <btas/generic/converge_class.h>
-#include <btas/generic/rals_helper.h>
-#include <btas/generic/reconstruct.h>
-#include <btas/generic/linear_algebra.h>
+#include <random>
 
 namespace btas{
 

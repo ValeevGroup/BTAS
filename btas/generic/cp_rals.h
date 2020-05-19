@@ -9,18 +9,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
+#include <random>
 
-#include <btas/generic/cp.h>
-#include <btas/generic/default_random_seed.h>
-#include <btas/generic/core_contract.h>
-#include <btas/generic/flatten.h>
-#include <btas/generic/khatri_rao_product.h>
-#include <btas/generic/randomized.h>
-#include <btas/generic/swap.h>
-#include <btas/generic/tucker.h>
-#include <btas/generic/converge_class.h>
 #include <btas/generic/rals_helper.h>
-#include <btas/generic/reconstruct.h>
 
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
