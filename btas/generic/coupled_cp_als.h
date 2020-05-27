@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
-#include <random>
 
 namespace btas{
 
@@ -221,7 +220,7 @@ namespace btas{
             auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
             auto view = make_view(S.range().slice(lower_bound, upper_bound), S.storage());
             auto l_iter = lambda.begin();
-            for(auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter){
+            for (auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter) {
               *(l_iter) = *(iter);
             }
 
@@ -230,11 +229,11 @@ namespace btas{
           }
         }
 
-        //srand(3);
-        std::mt19937 generator(random_seed_accessor());
-        std::uniform_real_distribution<> distribution(-1.0, 1.0);
+        // srand(3);
+        boost::random::mt19937 generator(random_seed_accessor());
+        boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
-        for(auto& i: modes_w_dim_LT_svd) {
+        for (auto &i : modes_w_dim_LT_svd) {
           size_t dim = i < ndimL ? i : i - ndimL + 1;
           auto &tensor_ref = i < ndimL ? tensor_ref_left : tensor_ref_right;
           ind_t R = tensor_ref.extent(dim), zero = 0;
@@ -293,9 +292,9 @@ namespace btas{
             {
               auto lower_new = {zero, rank_old}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(random_seed_accessor());
-              std::uniform_real_distribution<> distribution(-1.0, 1.0);
-              for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
+              boost::random::mt19937 generator(random_seed_accessor());
+              boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
+              for (auto iter = new_view.begin(); iter != new_view.end(); ++iter) {
                 *(iter) = distribution(generator);
               }
             }
