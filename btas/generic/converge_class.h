@@ -164,9 +164,9 @@ namespace btas {
     double norm(const std::vector<Tensor> &btas_factors) {
       ind_t rank = btas_factors[0].extent(1);
       auto n = btas_factors.size() - 1;
-      Tensor coeffMat(rank, rank);
-      auto &temp = btas_factors[n];
-      ger(1.0, temp, temp, coeffMat);
+      Tensor coeffMat;
+      auto &temp1 = btas_factors[n];
+      ger(1.0, temp1, temp1, coeffMat);
 
       auto rank2 = rank * (ord_t) rank;
       for (size_t i = 0; i < n; ++i) {
