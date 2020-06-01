@@ -279,8 +279,16 @@ namespace btas {
         return *this;
       }
 
+      /// conversion to value_type, asserts that \c rang().area()==1
+      explicit
+      operator value_type() const
+      {
+        BTAS_ASSERT(range_.area() == 1);
+        return *data();
+      }
+
       /// assign scalar to this (i.e. fill this with scalar)
-      template <typename Scalar, typename = btas::void_t<decltype(static_cast<typename storage_type::value_type>(std::declval<Scalar>()))>>
+      template <typename Scalar, typename = typename std::enable_if<not std::is_same<typename std::decay<Scalar>::type,Tensor>::value>::type, typename = btas::void_t<decltype(static_cast<typename storage_type::value_type>(std::declval<Scalar>()))>>
       Tensor&
       operator= (Scalar&& v)
       {

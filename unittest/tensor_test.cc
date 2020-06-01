@@ -183,6 +183,9 @@ TEST_CASE("Custom Tensor") {
 }
 
 TEST_CASE("Tensor Operations") {
+  DTensor T0(1);
+  fillEls(T0);
+
   DTensor T2(3, 2);
   fillEls(T2);
 
@@ -196,6 +199,11 @@ TEST_CASE("Tensor Operations") {
 
   SECTION("Element Access") {
     CHECK(T3(2,1,3) == 1213);
+  }
+
+  SECTION("Conversion to Scalar") {
+    CHECK_THROWS_AS( static_cast<double>(T2), btas::exception);
+    CHECK_NOTHROW( static_cast<double>(T0) == 11);
   }
 
   SECTION("Generate") {
