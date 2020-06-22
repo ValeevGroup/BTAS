@@ -40,6 +40,12 @@ namespace btas {
       /// type of Range
       typedef _Range range_type;
 
+      /// type of ordinal
+      typedef typename _Range::ordinal_type ordinal_type;
+
+      /// type of 1-index
+      typedef typename _Range::index1_type index1_type;
+
       /// type of index
       typedef typename _Range::index_type index_type;
 
