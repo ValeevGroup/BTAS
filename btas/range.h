@@ -694,7 +694,7 @@ namespace btas {
       static_assert(btas::is_index<_Index>::value, "RangeNd<_Index> instantiated with an _Index type that does not meet the TWG.Index concept");
       typedef RangeNd this_type;
       typedef _Index index_type; ///< index type
-      typedef _Index::value_type index1_type; ///< 1-index type
+      typedef typename _Index::value_type index1_type; ///< 1-index type
       const static CBLAS_ORDER order = _Order;
 
       typedef typename _Ordinal::value_type ordinal_type; ///< Ordinal value type
