@@ -40,7 +40,7 @@
    </tr>
 
    <tr>
-    <td> \c index1_type </td>
+    <td> \c ordinal_type </td>
     <td> the ordinal type supporting \c range_type ; alias to \c range_type::ordinal_type
     </td>
     <td> An integral type </td>
