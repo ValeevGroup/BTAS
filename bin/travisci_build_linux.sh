@@ -1,5 +1,14 @@
 #!/bin/sh
 
+# get the most recent cmake available
+if [ ! -d "${INSTALL_PREFIX}/cmake" ]; then
+  CMAKE_VERSION=3.17.0
+  CMAKE_URL="https://cmake.org/files/v${CMAKE_VERSION%.[0-9]}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
+  mkdir ${INSTALL_PREFIX}/cmake && wget --no-check-certificate -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C ${INSTALL_PREFIX}/cmake
+fi
+export PATH=${INSTALL_PREFIX}/cmake/bin:${PATH}
+cmake --version
+
 set -ev
 
 # Environment variables
@@ -34,10 +43,16 @@ cd ${BUILD_PREFIX}
 icl_install_prefix=$PWD/icl_install
 git clone https://dbwy@bitbucket.org/icl/blaspp.git
 git clone https://dbwy@bitbucket.org/icl/lapackpp.git
-cmake -Hblaspp -Bbuild_blaspp -DCMAKE_INSTALL_PREFIX=${icl_install} -Dbuild_tests=OFF
-make -C build_blaspp -j2 install
-cmake -Hlapackpp -Bbuild_lapackpp -DCMAKE_INSTALL_PREFIX=${icl_install} -DBUILD_LAPACKPP_TESTS=OFF
-make -C build_lapackpp -j2 install
+
+mkdir -p blaspp/build && cd blaspp/build
+cmake .. -DCMAKE_INSTALL_PREFIX=${icl_install} -Dbuild_tests=OFF
+make -j2 install
+
+
+mkdir -p lapackpp/build && cd lapackpp/build
+cmake .. -DCMAKE_INSTALL_PREFIX=${icl_install} -DBUILD_LAPACKPP_TESTS=OFF
+make -j2 install
+cd ../..
 
 
 ########## test without blas+lapack   ##########
