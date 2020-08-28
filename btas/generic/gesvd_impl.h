@@ -6,11 +6,14 @@
 #include <iterator>
 #include <type_traits>
 
+#include <btas/tensor.h>
 #include <btas/tensor_traits.h>
 #include <btas/types.h>
+#include <btas/type_traits.h>
 
 #include <btas/generic/numeric_type.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
+#include <btas/generic/blas_lapack_delegator.h>
 
 namespace btas {
 
@@ -21,10 +24,10 @@ template<> struct gesvd_impl<true>
 {
    /// GESVD implementation
    template<class _IteratorA, class _IteratorS, class _IteratorU, class _IteratorVt>
-   static void call (
-      const CBLAS_ORDER& order,
-      const char& jobu,
-      const char& jobvt,
+   static void call_impl (
+      const blas::Layout& order,
+      lapack::Job jobu,
+      lapack::Job jobvt,
       const unsigned long& Msize,
       const unsigned long& Nsize,
             _IteratorA itrA,
@@ -33,94 +36,146 @@ template<> struct gesvd_impl<true>
             _IteratorU itrU,
       const unsigned long& LDU,
             _IteratorVt itrVt,
-      const unsigned long& LDVt)
+      const unsigned long& LDVt,
+      generic_impl_tag)
    {
       assert(false); // gesvd_impl<true> for a generic iterator type has not yet been implemented.
    }
 
-#ifdef BTAS_HAS_CBLAS
-
-   static void call (
-      const CBLAS_ORDER& order,
-      const char& jobu,
-      const char& jobvt,
+   template<class _IteratorA, class _IteratorS, class _IteratorU, class _IteratorVt>
+   static void call_impl (
+      const blas::Layout& order,
+      lapack::Job jobu,
+      lapack::Job jobvt,
       const unsigned long& Msize,
       const unsigned long& Nsize,
-            float* itrA,
+            _IteratorA itrA,
       const unsigned long& LDA,
-            float* itrS,
-            float* itrU,
+            _IteratorS itrS,
+            _IteratorU itrU,
       const unsigned long& LDU,
-            float* itrVt,
-      const unsigned long& LDVt)
+            _IteratorVt itrVt,
+      const unsigned long& LDVt,
+      blas_lapack_impl_tag)
    {
-      unsigned long Ksize = (Msize < Nsize) ? Msize : Nsize;
-      float* superb = new float[Ksize-1];
-      LAPACKE_sgesvd(order, jobu, jobvt, Msize, Nsize, itrA, LDA, itrS, itrU, LDU, itrVt, LDVt, superb);
-      delete [] superb;
+
+     using value_type = typename std::iterator_traits<_IteratorA>::value_type;
+     using real_type  = real_type_t<value_type>;
+
+     // LAPACKPP only works for ColMajor, so we actually perform the SVD on
+     // A**T if RowMajor
+
+     const bool needU       = jobu  != lapack::Job::NoVec;
+     const bool needVt      = jobvt != lapack::Job::NoVec;
+     const bool needVectors = needU or needVt;
+
+     const bool fullU     = jobu  == lapack::Job::AllVec;
+     const bool fullVt    = jobvt == lapack::Job::AllVec;
+     const bool inplaceU  = jobu  == lapack::Job::OverwriteVec;
+     const bool inplaceVt = jobvt == lapack::Job::OverwriteVec;
+
+     if( inplaceU and inplaceVt ) 
+       BTAS_EXCEPTION("SVD cannot return both vectors inplace");
+
+
+
+     value_type dummy;
+     value_type* A = static_cast<value_type*>(&(*itrA));
+     value_type* U = (needU and not inplaceU) ?
+                      static_cast<value_type*>(&(*itrU)) : &dummy;
+     value_type* Vt = (needVt and not inplaceVt) ?
+                      static_cast<value_type*>(&(*itrVt)) : &dummy;
+
+     real_type* S = static_cast<real_type*> (&(*itrS));
+
+     // Singular values are invaraint to transposition, so it doesn't
+     // matter if we run through the col major code if we done need them
+     if( order == blas::Layout::ColMajor or !needVectors ) {
+
+       std::cout << "IN LAPACKPP GESVD IMPL (ColMajor)" << std::endl;
+       lapack::gesvd( jobvt, jobu, Msize, Nsize, A, LDA, S, U, LDU, Vt, LDVt );
+
+     } else {
+
+       const auto Ksize     = std::min( Msize, Nsize );
+
+       size_t rm_rows_A  = Msize;     
+       size_t rm_cols_A  = Nsize;
+       size_t rm_rows_U  = Msize;
+       size_t rm_cols_U  = fullU  ? Msize : Ksize;
+       size_t rm_rows_Vt = fullVt ? Nsize : Ksize;
+       size_t rm_cols_Vt = Nsize;
+
+       // This is the volume of storage we have
+       size_t volA  = LDA  * rm_rows_A;
+       size_t volU  = LDU  * rm_rows_U;
+       size_t volVt = LDVt * rm_rows_Vt;
+
+
+       // A = U(A) * S(A) * V(A)**H ===> A**T = CONJ(V(A)) * S(A) * U(A)**T
+       
+       // Run SVD with U <-> VT swapped
+       size_t cm_rows_A  = rm_cols_A;
+       size_t cm_cols_A  = rm_rows_A;
+       size_t cm_rows_U  = rm_cols_Vt;
+       size_t cm_cols_U  = rm_rows_Vt;
+       size_t cm_rows_Vt = rm_cols_U;
+       size_t cm_cols_Vt = rm_rows_U;
+
+       // Check if U with fit in the memory space of VT and <->
+       value_type* U_use  = Vt;
+       value_type* Vt_use = U;
+
+#if 0 // Pretty sure this isn't needed
+       value_type* U_local = nullptr, Vt_local = nullptr;
+
+       size_t req_szVt = cm_cols_Vt * cm_rows_Vt;
+       size_t req_szU  = cm_cols_U  * cm_rows_U;
+
+       std::allocator<value_type> allocator;
+       if( needU and (not inplaceU) and volVt < req_szU ) {
+         U_local = allocator.allocate( req_szU );
+         U_use   = U_local;
+       }
+
+       if( needVt and (not inplaceVt) and volU < req_szVt ) {
+         Vt_local = allocator.allocate( req_szVt );
+         Vt_use   = Vt_local;
+       }
+#endif
+
+       std::cout << "IN LAPACKPP GESVD IMPL (RowMajor)" << std::endl;
+       lapack::gesvd( jobu, jobvt, cm_rows_A, cm_cols_A, A, cm_rows_A,
+                      S, U_use, cm_rows_U, Vt_use, cm_rows_Vt );
+     }
+ 
+     
+
+     
    }
 
+   template<class _IteratorA, class _IteratorS, class _IteratorU, class _IteratorVt>
    static void call (
-      const CBLAS_ORDER& order,
-      const char& jobu,
-      const char& jobvt,
+      const blas::Layout& order,
+      lapack::Job jobu,
+      lapack::Job jobvt,
       const unsigned long& Msize,
       const unsigned long& Nsize,
-            double* itrA,
+            _IteratorA itrA,
       const unsigned long& LDA,
-            double* itrS,
-            double* itrU,
+            _IteratorS itrS,
+            _IteratorU itrU,
       const unsigned long& LDU,
-            double* itrVt,
-      const unsigned long& LDVt)
+            _IteratorVt itrVt,
+      const unsigned long& LDVt )
    {
-      unsigned long Ksize = (Msize < Nsize) ? Msize : Nsize;
-      double* superb = new double[Ksize-1];
-      LAPACKE_dgesvd(order, jobu, jobvt, Msize, Nsize, itrA, LDA, itrS, itrU, LDU, itrVt, LDVt, superb);
-      delete [] superb;
+
+     call_impl( order, jobu, jobvt, Msize, Nsize, itrA, LDA, itrS, itrU, LDU,
+                itrVt, LDVt, 
+                blas_lapack_impl_t<_IteratorA,_IteratorS,_IteratorU,_IteratorVt>() );
+
    }
 
-   static void call (
-      const CBLAS_ORDER& order,
-      const char& jobu,
-      const char& jobvt,
-      const unsigned long& Msize,
-      const unsigned long& Nsize,
-            std::complex<float>* itrA,
-      const unsigned long& LDA,
-            float* itrS,
-            std::complex<float>* itrU,
-      const unsigned long& LDU,
-            std::complex<float>* itrVt,
-      const unsigned long& LDVt)
-   {
-      unsigned long Ksize = (Msize < Nsize) ? Msize : Nsize;
-      float* superb = new float[Ksize-1];
-      LAPACKE_cgesvd(order, jobu, jobvt, Msize, Nsize, to_lapack_cptr(itrA), LDA, itrS, to_lapack_cptr(itrU), LDU, to_lapack_cptr(itrVt), LDVt, superb);
-      delete [] superb;
-   }
-
-   static void call (
-      const CBLAS_ORDER& order,
-      const char& jobu,
-      const char& jobvt,
-      const unsigned long& Msize,
-      const unsigned long& Nsize,
-            std::complex<double>* itrA,
-      const unsigned long& LDA,
-            double* itrS,
-            std::complex<double>* itrU,
-      const unsigned long& LDU,
-            std::complex<double>* itrVt,
-      const unsigned long& LDVt)
-   {
-      unsigned long Ksize = (Msize < Nsize) ? Msize : Nsize;
-      double* superb = new double[Ksize-1];
-      LAPACKE_zgesvd(order, jobu, jobvt, Msize, Nsize, to_lapack_zptr(itrA), LDA, itrS, to_lapack_zptr(itrU), LDU, to_lapack_zptr(itrVt), LDVt, superb);
-      delete [] superb;
-   }
-
-#endif // BTAS_HAS_CBLAS
 
 };
 
@@ -129,9 +184,9 @@ template<> struct gesvd_impl<false>
    /// GESVD implementation
    template<class _IteratorA, class _IteratorS, class _IteratorU, class _IteratorVt>
    static void call (
-      const CBLAS_ORDER& order,
-      const char& jobu,
-      const char& jobvt,
+      const blas::Layout& order,
+      lapack::Job jobu,
+      lapack::Job jobvt,
       const unsigned long& Msize,
       const unsigned long& Nsize,
             _IteratorA itrA,
@@ -152,9 +207,9 @@ template<> struct gesvd_impl<false>
 /// Generic implementation of BLAS GESVD in terms of C++ iterator
 template<class _IteratorA, class _IteratorS, class _IteratorU, class _IteratorVt>
 void gesvd (
-   const CBLAS_ORDER& order,
-   const char& jobu,
-   const char& jobvt,
+   const blas::Layout& order,
+   lapack::Job jobu,
+   lapack::Job jobvt,
    const unsigned long& Msize,
    const unsigned long& Nsize,
          _IteratorA itrA,
@@ -197,7 +252,7 @@ void gesvd (
 //  ================================================================================================
 
 /// Generic interface of BLAS-GESVD
-/// \param order storage order of tensor in matrix view (CblasRowMajor, CblasColMajor)
+/// \param order storage order of tensor in matrix view (blas::Layout::RowMajor, blas::Layout::ColMajor)
 /// \param transA transpose directive for tensor A (CblasNoTrans, CblasTrans, CblasConjTrans)
 /// \param alpha scalar value to be multiplied to A * X
 /// \param A input tensor
@@ -214,8 +269,8 @@ template<
    >::type
 >
 void gesvd (
-   const char& jobu,
-   const char& jobvt,
+   lapack::Job jobu,
+   lapack::Job jobvt,
          _TensorA& A,
          _VectorS& S,
          _TensorU& U,
@@ -224,8 +279,8 @@ void gesvd (
     static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorU>::value &&
                   boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorVt>::value,
                   "btas::gesvd does not support mixed storage order");
-    const CBLAS_ORDER order = boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorA>::row_major ?
-                              CblasRowMajor : CblasColMajor;
+    const blas::Layout order = boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorA>::row_major ?
+                              blas::Layout::RowMajor : blas::Layout::ColMajor;
 
    assert(!A.empty());
 
@@ -252,8 +307,8 @@ void gesvd (
    Nsize = std::accumulate(std::begin(extentA)+rankU-1, std::end(extentA),   1ul, std::multiplies<size_type>());
 
    size_type Ksize = std::min(Msize,Nsize);
-   size_type Ucols = (jobu == 'A') ? Msize : Ksize;
-   size_type Vtrows = (jobvt == 'A') ? Nsize : Ksize;
+   size_type Ucols = (jobu == lapack::Job::AllVec) ? Msize : Ksize;
+   size_type Vtrows = (jobvt == lapack::Job::AllVec) ? Nsize : Ksize;
 
    extentS[0] = Ksize;
 
@@ -263,7 +318,7 @@ void gesvd (
    extentVt[0] = Vtrows;
    for (size_type i = 1; i < rankVt; ++i) extentVt[i] = extentA[i+rankU-2];
 
-   if(order == CblasRowMajor)
+   if(order == blas::Layout::RowMajor)
    {
       LDA = Nsize;
       LDU = Ucols;

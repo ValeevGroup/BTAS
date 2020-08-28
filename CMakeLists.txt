@@ -1,6 +1,6 @@
 #; -*-CMake-*-
 
-cmake_minimum_required (VERSION 3.8.0)  # cxx_std_11 compile feature
+cmake_minimum_required (VERSION 3.8.0)  # cxx_std_17 compile feature
 project (BTAS)
 enable_language(CXX)
 
@@ -17,10 +17,10 @@ redefaultable_option(BTAS_BUILD_UNITTEST "Whether to build unit tests" OFF)
 add_feature_info(BUILD_UNITTEST BTAS_BUILD_UNITTEST "Will build unit tests")
 redefaultable_option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw; enable if BTAS_BUILD_UNITTEST=ON" OFF)
 add_feature_info(ASSERT_THROWS BTAS_ASSERT_THROWS "BTAS_ASSERT(x) will throw if x is false, and not be affected by NDEBUG")
-redefaultable_option(BTAS_USE_CBLAS_LAPACKE "Whether to use BLAS+LAPACK via CBLAS+LAPACKE" ON)
-add_feature_info(USE_CBLAS_LAPACKE BTAS_USE_CBLAS_LAPACKE "Will use BLAS and LAPACK linear algebra libraries via their CBLAS and LAPACKE interfaces")
-redefaultable_option(BTAS_ENABLE_MKL "Whether to look for Intel MKL" ON)
-add_feature_info(ENABLE_MKL BTAS_ENABLE_MKL "Will look for Intel MKL library")
+#redefaultable_option(BTAS_USE_CBLAS_LAPACKE "Whether to use BLAS+LAPACK via CBLAS+LAPACKE" ON)
+#add_feature_info(USE_CBLAS_LAPACKE BTAS_USE_CBLAS_LAPACKE "Will use BLAS and LAPACK linear algebra libraries via their CBLAS and LAPACKE interfaces")
+#redefaultable_option(BTAS_ENABLE_MKL "Whether to look for Intel MKL" ON)
+#add_feature_info(ENABLE_MKL BTAS_ENABLE_MKL "Will look for Intel MKL library")
 
 set(TARGET_MAX_INDEX_RANK 6 CACHE STRING "Determines the rank for which the default BTAS index type will use stack (default: 6); this requires Boost.Container")
 add_feature_info("TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK}" TRUE "default BTAS index type will use stack for rank<=${TARGET_MAX_INDEX_RANK}")
@@ -79,12 +79,12 @@ endif()
 set(CMAKE_SKIP_RPATH FALSE)
 
 ##########################
-# We use C++11 features
+# We use C++17 features
 ##########################
 # but insist on strict standard
-set(CMAKE_CXX_STANDARD 11 CACHE STRING "C++ ISO Standard version")
-if (NOT(CMAKE_CXX_STANDARD EQUAL 11 OR CMAKE_CXX_STANDARD EQUAL 14 OR CMAKE_CXX_STANDARD EQUAL 17 OR CMAKE_CXX_STANDARD EQUAL 20))
-  message(FATAL_ERROR "C++ 2011 ISO Standard or higher is required to compile BTAS")
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ ISO Standard version")
+if (NOT(CMAKE_CXX_STANDARD EQUAL 17 OR CMAKE_CXX_STANDARD EQUAL 20))
+  message(FATAL_ERROR "C++ 2017 ISO Standard or higher is required to compile BTAS")
 endif()
 # C++20 is only configurable via compile features with cmake 3.12 and older
 if (CMAKE_CXX_STANDARD EQUAL 20 AND CMAKE_VERSION VERSION_LESS 3.12.0)
@@ -102,7 +102,7 @@ check_type_size("long long" BTAS_HAS_LONG_LONG)
 # create exportable BTAS library target
 #######################################
 add_library(BTAS INTERFACE)
-target_compile_features(BTAS INTERFACE "cxx_std_11")
+target_compile_features(BTAS INTERFACE "cxx_std_17")
 target_include_directories(BTAS INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${BTAS_INSTALL_INCLUDEDIR}>)
 install(TARGETS BTAS EXPORT btas COMPONENT BTAS)
@@ -118,25 +118,29 @@ install(DIRECTORY btas
 ##########################
 add_custom_target(External-btas)
 
-if (BTAS_USE_CBLAS_LAPACKE)
-  find_package(CBLAS REQUIRED)
-  find_package(LAPACKE REQUIRED)
-  target_compile_definitions(BTAS INTERFACE -DBTAS_CBLAS_HEADER="${CBLAS_INCLUDE_FILE}" -DBTAS_LAPACKE_HEADER="${LAPACKE_INCLUDE_FILE}" -DBTAS_HAS_CBLAS=1 -DBTAS_HAS_LAPACKE=1)
-  message(STATUS "** CBLAS_LIBRARIES = ${CBLAS_LIBRARIES}")
-  message(STATUS "** CBLAS_INCLUDE_DIR = ${CBLAS_INCLUDE_DIR}")
-  message(STATUS "** CBLAS_INCLUDE_FILE = ${CBLAS_INCLUDE_FILE}")
-  message(STATUS "** LAPACKE_LIBRARIES = ${LAPACKE_LIBRARIES}")
-  message(STATUS "** LAPACKE_INCLUDE_DIR = ${LAPACKE_INCLUDE_DIR}")
-  message(STATUS "** LAPACKE_INCLUDE_FILE = ${LAPACKE_INCLUDE_FILE}")
-  target_include_directories(BTAS INTERFACE ${CBLAS_INCLUDE_DIR} ${LAPACKE_INCLUDE_DIR})
-  if (MKL_FOUND)
-    target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_INTEL_MKL=1)
-    if (MKL_ILP64)
-      target_compile_definitions(BTAS INTERFACE -DMKL_ILP64=1)
-    endif(MKL_ILP64)
-  endif(MKL_FOUND)
-  target_link_libraries(BTAS INTERFACE ${LAPACKE_LIBRARIES} ${CBLAS_LIBRARIES})
-endif(BTAS_USE_CBLAS_LAPACKE)
+#if (BTAS_USE_CBLAS_LAPACKE)
+#  find_package(CBLAS REQUIRED)
+#  find_package(LAPACKE REQUIRED)
+#  target_compile_definitions(BTAS INTERFACE -DBTAS_CBLAS_HEADER="${CBLAS_INCLUDE_FILE}" -DBTAS_LAPACKE_HEADER="${LAPACKE_INCLUDE_FILE}" -DBTAS_HAS_CBLAS=1 -DBTAS_HAS_LAPACKE=1)
+#  message(STATUS "** CBLAS_LIBRARIES = ${CBLAS_LIBRARIES}")
+#  message(STATUS "** CBLAS_INCLUDE_DIR = ${CBLAS_INCLUDE_DIR}")
+#  message(STATUS "** CBLAS_INCLUDE_FILE = ${CBLAS_INCLUDE_FILE}")
+#  message(STATUS "** LAPACKE_LIBRARIES = ${LAPACKE_LIBRARIES}")
+#  message(STATUS "** LAPACKE_INCLUDE_DIR = ${LAPACKE_INCLUDE_DIR}")
+#  message(STATUS "** LAPACKE_INCLUDE_FILE = ${LAPACKE_INCLUDE_FILE}")
+#  target_include_directories(BTAS INTERFACE ${CBLAS_INCLUDE_DIR} ${LAPACKE_INCLUDE_DIR})
+#  if (MKL_FOUND)
+#    target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_INTEL_MKL=1)
+#    if (MKL_ILP64)
+#      target_compile_definitions(BTAS INTERFACE -DMKL_ILP64=1)
+#    endif(MKL_ILP64)
+#  endif(MKL_FOUND)
+#  target_link_libraries(BTAS INTERFACE ${LAPACKE_LIBRARIES} ${CBLAS_LIBRARIES})
+#endif(BTAS_USE_CBLAS_LAPACKE)
+
+find_package( blaspp   REQUIRED )
+find_package( lapackpp REQUIRED )
+target_link_libraries( BTAS INTERFACE blaspp lapackpp )
 
 include(external/boost.cmake)
 

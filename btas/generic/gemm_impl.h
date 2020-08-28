@@ -19,14 +19,16 @@ namespace btas {
 
 template<bool _Finalize> struct gemm_impl { };
 
+
+
+
 template<> struct gemm_impl<true>
 {
-   /// GEMM implementation
    template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
-   static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
-      const CBLAS_TRANSPOSE& transB,
+   static void call_impl (
+      const blas::Layout& order,
+      const blas::Op& transA,
+      const blas::Op& transB,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const unsigned long& Ksize,
@@ -37,12 +39,13 @@ template<> struct gemm_impl<true>
       const unsigned long& LDB,
       const _T& beta,
             _IteratorC itrC,
-      const unsigned long& LDC)
+      const unsigned long& LDC,
+      generic_impl_tag)
    {
       // For column-major order, recall this as C^T = B^T * A^T in row-major order
-      if (order == CblasColMajor)
+      if (order == blas::Layout::ColMajor)
       {
-         gemm_impl<true>::call(CblasRowMajor, transB, transA, Nsize, Msize, Ksize, alpha, itrB, LDB, itrA, LDA, beta, itrC, LDC);
+         gemm_impl<true>::call(blas::Layout::RowMajor, transB, transA, Nsize, Msize, Ksize, alpha, itrB, LDB, itrA, LDA, beta, itrC, LDC);
 
          return;
       }
@@ -57,7 +60,7 @@ template<> struct gemm_impl<true>
       }
 
       // A:NoTrans / B:NoTrans
-      if (transA == CblasNoTrans && transB == CblasNoTrans)
+      if (transA == blas::Op::NoTrans && transB == blas::Op::NoTrans)
       {
          auto itrB_save = itrB;
          auto itrC_save = itrC;
@@ -76,7 +79,7 @@ template<> struct gemm_impl<true>
          }
       }
       // A:NoTrans / B:Trans
-      else if (transA == CblasNoTrans && transB == CblasTrans)
+      else if (transA == blas::Op::NoTrans && transB == blas::Op::Trans)
       {
          auto itrA_save = itrA;
          auto itrB_save = itrB;
@@ -95,7 +98,7 @@ template<> struct gemm_impl<true>
          }
       }
       // A:NoTrans / B:ConjTrans
-      else if (transA == CblasNoTrans && transB == CblasConjTrans)
+      else if (transA == blas::Op::NoTrans && transB == blas::Op::ConjTrans)
       {
          auto itrA_save = itrA;
          auto itrB_save = itrB;
@@ -114,7 +117,7 @@ template<> struct gemm_impl<true>
          }
       }
       // A:Trans / B:NoTrans
-      else if (transA == CblasTrans && transB == CblasNoTrans)
+      else if (transA == blas::Op::Trans && transB == blas::Op::NoTrans)
       {
          auto itrB_save = itrB;
          auto itrC_save = itrC;
@@ -133,7 +136,7 @@ template<> struct gemm_impl<true>
          }
       }
       // A:ConjTrans / B:NoTrans
-      else if (transA == CblasConjTrans && transB == CblasNoTrans)
+      else if (transA == blas::Op::ConjTrans && transB == blas::Op::NoTrans)
       {
          auto itrB_save = itrB;
          auto itrC_save = itrC;
@@ -152,7 +155,7 @@ template<> struct gemm_impl<true>
          }
       }
       // A:Trans / B:Trans
-      else if (transA == CblasTrans && transB == CblasTrans)
+      else if (transA == blas::Op::Trans && transB == blas::Op::Trans)
       {
          auto itrA_save = itrA;
          auto itrC_save = itrC;
@@ -170,7 +173,7 @@ template<> struct gemm_impl<true>
          }
       }
       // A:Trans / B:ConjTrans
-      else if (transA == CblasTrans && transB == CblasConjTrans)
+      else if (transA == blas::Op::Trans && transB == blas::Op::ConjTrans)
       {
          auto itrA_save = itrA;
          auto itrC_save = itrC;
@@ -188,7 +191,7 @@ template<> struct gemm_impl<true>
          }
       }
       // A:ConjTrans / B:Trans
-      else if (transA == CblasConjTrans && transB == CblasTrans)
+      else if (transA == blas::Op::ConjTrans && transB == blas::Op::Trans)
       {
          auto itrA_save = itrA;
          auto itrC_save = itrC;
@@ -206,7 +209,7 @@ template<> struct gemm_impl<true>
          }
       }
       // A:ConjTrans / B:ConjTrans
-      else if (transA == CblasConjTrans && transB == CblasConjTrans)
+      else if (transA == blas::Op::ConjTrans && transB == blas::Op::ConjTrans)
       {
          auto itrA_save = itrA;
          auto itrC_save = itrC;
@@ -226,114 +229,89 @@ template<> struct gemm_impl<true>
       else {
         assert(false);
       }
+
    }
 
-#ifdef BTAS_HAS_CBLAS
 
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, float>::value>::type>
-   static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
-      const CBLAS_TRANSPOSE& transB,
+
+   template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
+   static void call_impl (
+      const blas::Layout& order,
+      const blas::Op& transA,
+      const blas::Op& transB,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const unsigned long& Ksize,
       const _T& alpha,
-      const float* itrA,
+            _IteratorA itrA,
       const unsigned long& LDA,
-      const float* itrB,
+            _IteratorB itrB,
       const unsigned long& LDB,
       const _T& beta,
-            float* itrC,
-      const unsigned long& LDC)
+            _IteratorC itrC,
+      const unsigned long& LDC,
+      blas_lapack_impl_tag)
    {
-      cblas_sgemm(order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
-   }
 
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, double>::value>::type>
+      using a_traits = std::iterator_traits<_IteratorA>;
+      using b_traits = std::iterator_traits<_IteratorB>;
+      using c_traits = std::iterator_traits<_IteratorC>;
+
+      using a_value_type = typename a_traits::value_type;
+      using b_value_type = typename b_traits::value_type;
+      using c_value_type = typename c_traits::value_type;
+
+      using a_ptr_type = const a_value_type*;
+      using b_ptr_type = const b_value_type*;
+      using c_ptr_type =       c_value_type*;
+
+      std::cout << "IN BLASPP GEMM IMPL" << std::endl;
+      blas::gemm( order, transA, transB, Msize, Nsize, Ksize, alpha,
+                  static_cast<a_ptr_type>(&(*itrA)), LDA,
+                  static_cast<b_ptr_type>(&(*itrB)), LDB,
+                  beta,
+                  static_cast<c_ptr_type>(&(*itrC)), LDC );
+    }
+
+   template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
    static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
-      const CBLAS_TRANSPOSE& transB,
+      const blas::Layout& order,
+      const blas::Op& transA,
+      const blas::Op& transB,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const unsigned long& Ksize,
       const _T& alpha,
-      const double* itrA,
+            _IteratorA itrA,
       const unsigned long& LDA,
-      const double* itrB,
+            _IteratorB itrB,
       const unsigned long& LDB,
       const _T& beta,
-            double* itrC,
+            _IteratorC itrC,
       const unsigned long& LDC)
    {
-      cblas_dgemm(order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA, itrB, LDB, beta, itrC, LDC);
-   }
 
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<float>>::value>::type>
-   static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
-      const CBLAS_TRANSPOSE& transB,
-      const unsigned long& Msize,
-      const unsigned long& Nsize,
-      const unsigned long& Ksize,
-      const _T& alpha,
-      const std::complex<float>* itrA,
-      const unsigned long& LDA,
-      const std::complex<float>* itrB,
-      const unsigned long& LDB,
-      const _T& beta,
-            std::complex<float>* itrC,
-      const unsigned long& LDC)
-   {
-      const lapack_complex_float alphac = to_lapack_val(std::move(alpha));
-      const lapack_complex_float betac  = to_lapack_val(std::move(beta));
-#ifdef BTAS_HAS_INTEL_MKL
-      cblas_cgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_cptr(itrA), LDA, to_lapack_cptr(itrB), LDB, &betac, to_lapack_cptr(itrC), LDC);
-#else
-      cblas_cgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_cptr(itrA), LDA, to_lapack_cptr(itrB), LDB, &betac, to_lapack_cptr(itrC), LDC);
-#endif
-   }
+     call_impl( order, transA, transB, Msize, Nsize, Ksize, alpha, itrA, LDA,
+                itrB, LDB, beta, itrC, LDC, 
+                blas_lapack_impl_t<_IteratorA,_IteratorB,_IteratorC>() );
 
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<double>>::value>::type>
-   static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
-      const CBLAS_TRANSPOSE& transB,
-      const unsigned long& Msize,
-      const unsigned long& Nsize,
-      const unsigned long& Ksize,
-      const _T& alpha,
-      const std::complex<double>* itrA,
-      const unsigned long& LDA,
-      const std::complex<double>* itrB,
-      const unsigned long& LDB,
-      const _T& beta,
-            std::complex<double>* itrC,
-      const unsigned long& LDC)
-   {
-      const lapack_complex_double alphac = to_lapack_val(std::move(alpha));
-      const lapack_complex_double betac  = to_lapack_val(std::move(beta));
-#ifdef BTAS_HAS_INTEL_MKL
-      cblas_zgemm3m(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_zptr(itrA), LDA, to_lapack_zptr(itrB), LDB, &betac, to_lapack_zptr(itrC), LDC);
-#else
-      cblas_zgemm(order, transA, transB, Msize, Nsize, Ksize, &alphac, to_lapack_zptr(itrA), LDA, to_lapack_zptr(itrB), LDB, &betac, to_lapack_zptr(itrC), LDC);
-#endif
    }
-
-#endif // BTAS_HAS_CBLAS
 
 };
+
+
+
+
+
 
 #if 1
 template<> struct gemm_impl<false>
 {
    template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
    static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
-      const CBLAS_TRANSPOSE& transB,
+      const blas::Layout& order,
+      const blas::Op& transA,
+      const blas::Op& transB,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const unsigned long& Ksize,
@@ -347,7 +325,7 @@ template<> struct gemm_impl<false>
       const unsigned long& LDC)
    {
       // currently, column-major order has not yet been supported at this level
-      assert(order == CblasRowMajor);
+      assert(order == blas::Layout::RowMajor);
 
       if (beta == NumericType<_T>::zero())
       {
@@ -359,7 +337,7 @@ template<> struct gemm_impl<false>
       }
 
       // A:NoTrans / B:NoTrans
-      if (transA == CblasNoTrans && transB == CblasNoTrans)
+      if (transA == blas::Op::NoTrans && transB == blas::Op::NoTrans)
       {
          auto itrB_save = itrB;
          auto itrC_save = itrC;
@@ -378,7 +356,7 @@ template<> struct gemm_impl<false>
          }
       }
       // A:NoTrans / B:Trans
-      else if (transA == CblasNoTrans && transB != CblasNoTrans)
+      else if (transA == blas::Op::NoTrans && transB != blas::Op::NoTrans)
       {
          auto itrA_save = itrA;
          auto itrB_save = itrB;
@@ -397,7 +375,7 @@ template<> struct gemm_impl<false>
          }
       }
       // A:Trans / B:NoTrans
-      else if (transA != CblasNoTrans && transB == CblasNoTrans)
+      else if (transA != blas::Op::NoTrans && transB == blas::Op::NoTrans)
       {
          auto itrB_save = itrB;
          auto itrC_save = itrC;
@@ -416,7 +394,7 @@ template<> struct gemm_impl<false>
          }
       }
       // A:Trans / B:Trans
-      else if (transA != CblasNoTrans && transB != CblasNoTrans)
+      else if (transA != blas::Op::NoTrans && transB != blas::Op::NoTrans)
       {
          auto itrA_save = itrA;
          auto itrC_save = itrC;
@@ -442,9 +420,9 @@ template<> struct gemm_impl<false>
 /// Generic implementation of BLAS GEMM in terms of C++ iterator
 template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
 void gemm (
-   const CBLAS_ORDER& order,
-   const CBLAS_TRANSPOSE& transA,
-   const CBLAS_TRANSPOSE& transB,
+   const blas::Layout& order,
+   const blas::Op& transA,
+   const blas::Op& transB,
    const unsigned long& Msize,
    const unsigned long& Nsize,
    const unsigned long& Ksize,
@@ -504,8 +482,8 @@ template<
    >::type
 >
 void gemm (
-   const CBLAS_TRANSPOSE& transA,
-   const CBLAS_TRANSPOSE& transB,
+   const blas::Op& transA,
+   const blas::Op& transB,
    const _T& alpha,
    const _TensorA& A,
    const _TensorB& B,
@@ -515,8 +493,8 @@ void gemm (
    static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorC>::value &&
                  boxtensor_storage_order<_TensorB>::value == boxtensor_storage_order<_TensorC>::value,
                  "btas::gemm does not support mixed storage order");
-   const CBLAS_ORDER order = boxtensor_storage_order<_TensorC>::value == boxtensor_storage_order<_TensorC>::row_major ?
-                             CblasRowMajor : CblasColMajor;
+   const blas::Layout order = boxtensor_storage_order<_TensorC>::value == boxtensor_storage_order<_TensorC>::row_major ?
+                             blas::Layout::RowMajor : blas::Layout::ColMajor;
 
    typedef unsigned long size_type;
 
@@ -530,7 +508,7 @@ void gemm (
    }
 
    typedef typename _TensorA::value_type value_type;
-   assert(not ((transA == CblasConjTrans || transB == CblasConjTrans) && std::is_fundamental<value_type>::value));
+   assert(not ((transA == blas::Op::ConjTrans || transB == blas::Op::ConjTrans) && std::is_fundamental<value_type>::value));
 
 
    // get contraction rank
@@ -555,11 +533,11 @@ void gemm (
    size_type LDB = 0; // Leading dims of B
    size_type LDC = 0; // Leading dims of C
 
-   Msize = (transA == CblasNoTrans)
+   Msize = (transA == blas::Op::NoTrans)
            ? std::accumulate(std::begin(extentA), std::begin(extentA)+M, 1ul, std::multiplies<size_type>())
            : std::accumulate(std::begin(extentA)+K, std::end(extentA),   1ul, std::multiplies<size_type>())
    ;
-   Ksize = (transA == CblasNoTrans)
+   Ksize = (transA == blas::Op::NoTrans)
            ? std::accumulate(std::begin(extentA)+M, std::end(extentA),   1ul, std::multiplies<size_type>())
            : std::accumulate(std::begin(extentA), std::begin(extentA)+K, 1ul, std::multiplies<size_type>())
    ;
@@ -571,29 +549,29 @@ void gemm (
      assert(Barea % Ksize == 0);
 
      // strong checks
-     if (transA == CblasNoTrans && transB == CblasNoTrans)
+     if (transA == blas::Op::NoTrans && transB == blas::Op::NoTrans)
        assert(std::equal(std::begin(extentA)+M, std::end(extentA), std::begin(extentB)));
-     if (transA == CblasNoTrans && transB != CblasNoTrans)
+     if (transA == blas::Op::NoTrans && transB != blas::Op::NoTrans)
        assert(std::equal(std::begin(extentA)+M, std::end(extentA), std::begin(extentB)+N));
-     if (transA != CblasNoTrans && transB == CblasNoTrans)
+     if (transA != blas::Op::NoTrans && transB == blas::Op::NoTrans)
        assert(std::equal(std::begin(extentA), std::begin(extentA)+K, std::begin(extentB)));
-     if (transA != CblasNoTrans && transB != CblasNoTrans)
+     if (transA != blas::Op::NoTrans && transB != blas::Op::NoTrans)
        assert(std::equal(std::begin(extentA), std::begin(extentA)+K, std::begin(extentB)+N));
    }
 
    Nsize = Barea / Ksize;
 
-   if(order == CblasRowMajor) {
-     if(transA == CblasNoTrans) LDA = Ksize;
+   if(order == blas::Layout::RowMajor) {
+     if(transA == blas::Op::NoTrans) LDA = Ksize;
      else LDA = Msize;
-     if(transB == CblasNoTrans) LDB = Nsize;
+     if(transB == blas::Op::NoTrans) LDB = Nsize;
      else LDB = Ksize;
      LDC = Nsize;
    }
    else {
-     if(transA == CblasNoTrans) LDA = Msize;
+     if(transA == blas::Op::NoTrans) LDA = Msize;
      else LDA = Ksize;
-     if(transB == CblasNoTrans) LDB = Ksize;
+     if(transB == blas::Op::NoTrans) LDB = Ksize;
      else LDB = Msize;
      LDA = Msize;
      LDB = Ksize;
@@ -602,21 +580,21 @@ void gemm (
 
    if (C.empty()) {     // C empty -> compute extentC
      extentC = btas::array_adaptor<decltype(extentC)>::construct(M+N);
-     if (transA == CblasNoTrans)
+     if (transA == blas::Op::NoTrans)
        for (size_type i = 0; i < M; ++i) extentC[i] = extentA[i];
      else
        for (size_type i = 0; i < M; ++i) extentC[i] = extentA[K+i];
-     if (transB == CblasNoTrans)
+     if (transB == blas::Op::NoTrans)
        for (size_type i = 0; i < N; ++i) extentC[M+i] = extentB[K+i];
      else
        for (size_type i = 0; i < N; ++i) extentC[M+i] = extentB[i];
    }
    else { // C not empty -> validate extentC
-     if (transA == CblasNoTrans)
+     if (transA == blas::Op::NoTrans)
        assert(std::equal(std::begin(extentA), std::begin(extentA)+M, std::begin(extentC)));
      else
        assert(std::equal(std::begin(extentA)+K, std::end(extentA), std::begin(extentC)));
-     if (transB == CblasNoTrans)
+     if (transB == blas::Op::NoTrans)
        assert(std::equal(std::begin(extentB)+K, std::end(extentB), std::begin(extentC)+M));
      else
        assert(std::equal(std::begin(extentB), std::begin(extentB)+N, std::begin(extentC)+M));

@@ -7,6 +7,7 @@
 
 #include <complex>
 
+#if 0
 #if defined(BTAS_HAS_CBLAS) && defined(BTAS_HAS_LAPACKE)
 # if not defined(BTAS_CBLAS_HEADER) && not defined(BTAS_LAPACKE_HEADER)
 
@@ -146,5 +147,26 @@ namespace btas {
   };
 
 } // namespace btas
+
+#endif
+
+#include <blas.hh>
+#include <lapack.hh>
+
+namespace btas {
+
+  //
+  //  Other aliases for convenience
+  //
+
+  /// default size type
+  typedef unsigned long size_type;
+
+  /// null deleter
+  struct nulldeleter {
+    void operator()(void const*) {}
+  };
+
+}
 
 #endif // __BTAS_TYPES_H

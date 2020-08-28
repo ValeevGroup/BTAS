@@ -171,7 +171,7 @@ namespace btas {
       auto rank2 = rank * (ord_t) rank;
       Tensor temp(rank, rank);
       for (size_t i = 0; i < n; ++i) {
-        gemm(CblasTrans, CblasNoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
+        gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
         auto *ptr_coeff = coeffMat.data();
         auto *ptr_temp = temp.data();
         for (ord_t j = 0; j < rank2; ++j) {
@@ -334,12 +334,12 @@ namespace btas {
       Tensor coeffMat(rank, rank);
       auto temp = btas_factors[n];
       temp.resize(Range{Range1{rank}, Range1{1}});
-      gemm(CblasNoTrans, CblasTrans, 1.0, temp, temp, 0.0, coeffMat);
+      gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, temp, temp, 0.0, coeffMat);
 
       auto rank2 = rank * rank;
       for (size_t i = 0; i < n; ++i) {
         Tensor temp(rank, rank);
-        gemm(CblasTrans, CblasNoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
+        gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
         auto *ptr_coeff = coeffMat.data();
         auto *ptr_temp = temp.data();
         for (ord_t j = 0; j < rank2; ++j) {

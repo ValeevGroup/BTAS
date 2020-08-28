@@ -7,9 +7,11 @@
 
 #include <btas/tensor_traits.h>
 #include <btas/types.h>
+#include <btas/type_traits.h>
 
 #include <btas/generic/numeric_type.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
+#include <btas/generic/blas_lapack_delegator.h>
 
 namespace btas {
 
@@ -22,10 +24,11 @@ template<bool _Finalize> struct scal_impl { };
 template<> struct scal_impl<true>
 {
    template<typename _T, class _IteratorX>
-   static void call (
+   static void call_impl (
       const unsigned long& Nsize,
       const _T& alpha,
-            _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX)
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            generic_impl_tag)
    {
       for (unsigned long i = 0; i < Nsize; ++i, itrX += incX)
       {
@@ -33,45 +36,26 @@ template<> struct scal_impl<true>
       }
    }
 
-#ifdef BTAS_HAS_CBLAS
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, float>::value>::type>
-   static void call (
+   template<typename _T, class _IteratorX>
+   static void call_impl (
       const unsigned long& Nsize,
       const _T& alpha,
-            float* itrX, const typename std::iterator_traits<float*>::difference_type& incX)
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            blas_lapack_impl_tag)
    {
-      cblas_sscal(Nsize, alpha, itrX, incX);
+     std::cout << "IN BLASPP SCAL IMPL" << std::endl;
+     blas::scal( Nsize, alpha, static_cast<_T*>(&(*itrX)), incX );
    }
 
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, double>::value>::type>
+   template<typename _T, class _IteratorX>
    static void call (
       const unsigned long& Nsize,
       const _T& alpha,
-            double* itrX, const typename std::iterator_traits<double*>::difference_type& incX)
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX )
    {
-      cblas_dscal(Nsize, alpha, itrX, incX);
+     call_impl( Nsize, alpha, itrX, incX, blas_lapack_impl_t<_IteratorX>() );
    }
 
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<float>>::value>::type>
-   static void call (
-      const unsigned long& Nsize,
-      const _T& alpha,
-            std::complex<float>* itrX, const typename std::iterator_traits<std::complex<float>*>::difference_type& incX)
-   {
-      const lapack_complex_double alphac(std::move(alpha));
-      cblas_cscal(Nsize, &alphac, to_lapack_cptr(itrX), incX);
-   }
-
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<double>>::value>::type>
-   static void call (
-      const unsigned long& Nsize,
-      const _T& alpha,
-            std::complex<double>* itrX, const typename std::iterator_traits<std::complex<double>*>::difference_type& incX)
-   {
-      const lapack_complex_double alphac(std::move(alpha));
-      cblas_zscal(Nsize, &alphac, to_lapack_zptr(itrX), incX);
-   }
-#endif
 };
 
 /// Case that alpha is multiplied recursively by SCAL
@@ -82,7 +66,7 @@ template<> struct scal_impl<false>
    static void call (
       const unsigned long& Nsize,
       const _T& alpha,
-            _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX)
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX)
    {
       for (unsigned long i = 0; i < Nsize; ++i, itrX += incX)
       {
@@ -98,11 +82,11 @@ template<typename _T, class _IteratorX>
 void scal (
    const unsigned long& Nsize,
    const _T& alpha,
-         _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX)
+         _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX)
 {
    typedef std::iterator_traits<_IteratorX> __traits_X;
 
-   static_assert(std::is_same<typename __traits_X::iterator_category, std::random_access_iterator_tag>::value, "iterator X must be a random access iterator");
+   static_assert(is_random_access_iterator_v<_IteratorX>, "iterator X must be a random access iterator");
 
    typedef typename __traits_X::value_type __value_X;
    typedef typename std::conditional<std::is_convertible<_T, __value_X>::value, __value_X, _T>::type __alpha;

@@ -65,15 +65,15 @@ TEST_CASE("Range")
         }
     SECTION("Fixed-rank Range")
         {
-        RangeNd<CblasRowMajor, std::array<long, 3> > r3(begin, size);
+        RangeNd<blas::Layout::RowMajor, std::array<long, 3> > r3(begin, size);
         CHECK(r3.area()== 48);
-        typedef RangeNd<CblasRowMajor, std::array<size_t, 3>> Range3d;
+        typedef RangeNd<blas::Layout::RowMajor, std::array<size_t, 3>> Range3d;
         Range3d x;
         CHECK(x.rank()== 3);
         }
     SECTION("Col-major std::vector-based Range")
         {
-        RangeNd<CblasColMajor, std::vector<long> > r4(size);
+        RangeNd<blas::Layout::ColMajor, std::vector<long> > r4(size);
         CHECK(r4.area()== 18);
         }
     SECTION("Initialized by initializer list")
@@ -120,9 +120,9 @@ TEST_CASE("Range")
         Range r({1,1,1},{3,3,4});
         for(auto i: diag(r))
             CHECK(diag(r).ordinal(i) == r.ordinal(Range::index_type ({i[0],i[0],i[0]})));
-        RangeNd<CblasColMajor> rc({1,1,1},{3,3,4});
+        RangeNd<blas::Layout::ColMajor> rc({1,1,1},{3,3,4});
         for(auto i : diag(rc))
-            CHECK(diag(rc).ordinal(i) == rc.ordinal(RangeNd<CblasColMajor>::index_type ({i[0],i[0],i[0]})));
+            CHECK(diag(rc).ordinal(i) == rc.ordinal(RangeNd<blas::Layout::ColMajor>::index_type ({i[0],i[0],i[0]})));
         }
     SECTION("Group and Flatten")
         {

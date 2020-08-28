@@ -449,7 +449,7 @@ namespace btas{
       Tensor lhs_prod(rank, rank);
       for (size_t i = 0; i < ndim; ++i) {
         if (i != n) {
-          gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
+          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
           const auto *lhs_ptr = lhs_prod.data();
           for (ord_t j = 0; j < rank2; j++)
             *(V_ptr + j) *= *(lhs_ptr + j);
@@ -593,7 +593,7 @@ namespace btas{
       }
       auto pInv = pseudoInverse(a, fast_pI);
       Tensor an(B.extent(0), rank);
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, B, pInv, 0.0, an);
+      gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, B, pInv, 0.0, an);
       B = an;
     }
   };

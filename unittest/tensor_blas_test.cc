@@ -281,6 +281,7 @@ TEST_CASE("Tensor Ger")
         }
     }
 
+
 TEST_CASE("Tensor Gemv")
     {
 
@@ -302,7 +303,7 @@ TEST_CASE("Tensor Gemv")
         for(long l=0;l<A.extent(3);l++){
             Ytest(i,j)+=alpha*A(i,j,k,l)*X(k,l);
         }
-        gemv(CblasNoTrans,alpha,A,X,beta,Y);
+        gemv(blas::Op::NoTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
         CHECK(res < eps_double);
@@ -326,7 +327,7 @@ TEST_CASE("Tensor Gemv")
         for(long l=0;l<A.extent(1);l++){
             Ytest(i,j)+=alpha*A(k,l,i,j)*X(k,l);
         }
-        gemv(CblasTrans,alpha,A,X,beta,Y);
+        gemv(blas::Op::Trans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
         CHECK(res < eps_double);
@@ -350,7 +351,7 @@ TEST_CASE("Tensor Gemv")
         for(long l=0;l<A.extent(3);l++){
             Ytest(i,j)+=alpha*A(i,j,k,l)*X(k,l);
         }
-        gemv(CblasNoTrans,alpha,A,X,beta,Y);
+        gemv(blas::Op::NoTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
         CHECK(res < eps_float);
@@ -374,7 +375,7 @@ TEST_CASE("Tensor Gemv")
         for(long l=0;l<A.extent(3);l++){
             Ytest(i,j)+=alpha*A(i,j,k,l)*X(k,l);
         }
-        gemv(CblasNoTrans,alpha,A,X,beta,Y);
+        gemv(blas::Op::NoTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
         CHECK(res < eps_double);
@@ -398,7 +399,7 @@ TEST_CASE("Tensor Gemv")
         for(long l=0;l<A.extent(1);l++){
             Ytest(i,j)+=alpha*A(k,l,i,j)*X(k,l);
         }
-        gemv(CblasTrans,alpha,A,X,beta,Y);
+        gemv(blas::Op::Trans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
         CHECK(res < eps_double);
@@ -426,7 +427,7 @@ TEST_CASE("Tensor Gemv")
             Ytest(i,j)+=alpha*conj(A(k,l,i,j))*X(k,l);
             //Ytest(i,j)+=alpha*A(k,l,i,j)*X(k,l);
         }
-        gemv(CblasConjTrans,alpha,A,X,beta,Y);
+        gemv(blas::Op::ConjTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
         CHECK(res < eps_double);
@@ -450,7 +451,7 @@ TEST_CASE("Tensor Gemv")
         for(long l=0;l<A.extent(3);l++){
             Ytest(i,j)+=alpha*A(i,j,k,l)*X(k,l);
         }
-        gemv(CblasNoTrans,alpha,A,X,beta,Y);
+        gemv(blas::Op::NoTrans,alpha,A,X,beta,Y);
         double res=0;
         for(auto i : Y.range()) res+= std::abs(Ytest(i)- Y(i));
         CHECK(res < eps_float);
@@ -481,7 +482,7 @@ TEST_CASE("Tensor Gemm")
         for(long m=0;m<B.extent(2);m++){
             Ctest(i,j,m)+=alpha*A(i,j,k,l)*B(k,l,m);
         }
-        gemm(CblasNoTrans,CblasNoTrans,alpha,A,B,beta,C);
+        gemm(blas::Op::NoTrans,blas::Op::NoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
         CHECK(res < eps_double);
@@ -507,7 +508,7 @@ TEST_CASE("Tensor Gemm")
         for(long m=0;m<B.extent(2);m++){
             Ctest(i,j,m)+=alpha*A(k,l,i,j)*B(k,l,m);
         }
-        gemm(CblasTrans,CblasNoTrans,alpha,A,B,beta,C);
+        gemm(blas::Op::Trans,blas::Op::NoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
         CHECK(res < eps_double);
@@ -532,7 +533,7 @@ TEST_CASE("Tensor Gemm")
         for(long m=0;m<B.extent(2);m++){
             Ctest(i,j,m)+=alpha*A(i,j,k,l)*B(k,l,m);
         }
-        gemm(CblasNoTrans,CblasNoTrans,alpha,A,B,beta,C);
+        gemm(blas::Op::NoTrans,blas::Op::NoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
         CHECK(res < eps_float);
@@ -558,7 +559,7 @@ TEST_CASE("Tensor Gemm")
         for(long m=0;m<B.extent(2);m++){
             Ctest(i,j,m)+=alpha*A(k,l,i,j)*B(k,l,m);
         }
-        gemm(CblasTrans,CblasNoTrans,alpha,A,B,beta,C);
+        gemm(blas::Op::Trans,blas::Op::NoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
         CHECK(res < eps_float);
@@ -583,7 +584,7 @@ TEST_CASE("Tensor Gemm")
         for(long m=0;m<B.extent(2);m++){
             Ctest(i,j,m)+=alpha*A(i,j,k,l)*B(k,l,m);
         }
-        gemm(CblasNoTrans,CblasNoTrans,alpha,A,B,beta,C);
+        gemm(blas::Op::NoTrans,blas::Op::NoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
         CHECK(res < eps_double);
@@ -608,7 +609,7 @@ TEST_CASE("Tensor Gemm")
         for(long m=0;m<B.extent(2);m++){
             Ctest(i,j,m)+=alpha*A(k,l,i,j)*B(k,l,m);
         }
-        gemm(CblasTrans,CblasNoTrans,alpha,A,B,beta,C);
+        gemm(blas::Op::Trans,blas::Op::NoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
         CHECK(res < eps_double);
@@ -633,7 +634,7 @@ TEST_CASE("Tensor Gemm")
         for(long m=0;m<B.extent(2);m++){
             Ctest(i,j,m)+=alpha*conj(A(k,l,i,j))*B(k,l,m);
         }
-        gemm(CblasConjTrans,CblasNoTrans,alpha,A,B,beta,C);
+        gemm(blas::Op::ConjTrans,blas::Op::NoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
         CHECK(res < eps_double);
@@ -658,7 +659,7 @@ TEST_CASE("Tensor Gemm")
         for(long m=0;m<B.extent(2);m++){
             Ctest(i,j,m)+=alpha*A(i,j,k,l)*B(k,l,m);
         }
-        gemm(CblasNoTrans,CblasNoTrans,alpha,A,B,beta,C);
+        gemm(blas::Op::NoTrans,blas::Op::NoTrans,alpha,A,B,beta,C);
         double res=0;
         for(auto i : C.range()) res+= std::abs(Ctest(i)- C(i));
         CHECK(res < eps_float);

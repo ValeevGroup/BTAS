@@ -39,7 +39,7 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     Tensor S(R, R), lambda(R, 1);
 
     // Contract A_n^T A_n to reduce the dimension of the SVD object to I_n X I_n
-    gemm(CblasNoTrans, CblasTrans, 1.0, flat, flat, 0.0, S);
+    gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flat, flat, 0.0, S);
 
     // Calculate SVD of smaller object.
 #ifdef BTAS_HAS_LAPACKE

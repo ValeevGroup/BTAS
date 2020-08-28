@@ -232,13 +232,13 @@ TEST_CASE("Tensor Operations") {
     Tensor<Tensor<double>> C(4, 2);
     C.fill(Tensor<double>(
         2, 4));  // rank info is required to determine contraction ranks at gemm
-    btas::gemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 1.0, C);
+    btas::gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, A, B, 1.0, C);
     Tensor<Tensor<double>> Ctest(4, 2);
     Ctest.fill(Tensor<double>(2, 4));
     for (size_t i0 = 0; i0 < A.extent(0); i0++)
       for (size_t i1 = 0; i1 < A.extent(1); i1++)
         for (size_t i2 = 0; i2 < B.extent(1); i2++)
-          btas::gemm(CblasNoTrans, CblasNoTrans, 1.0, A(i0, i1), B(i1, i2), 1.0,
+          btas::gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, A(i0, i1), B(i1, i2), 1.0,
                      Ctest(i0, i2));
 
     const auto eps_double = 1.e4 * std::numeric_limits<double>::epsilon();

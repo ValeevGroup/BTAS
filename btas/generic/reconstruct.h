@@ -38,7 +38,7 @@ namespace btas {
     // contract the rank dimension of the Khatri-Rao product with the rank dimension of
     // the last factor matrix. hold is now the reconstructed tensor
     hold = Tensor(KRP.extent(0), A[dims_order[ndim - 1]].extent(0));
-    gemm(CblasNoTrans, CblasTrans, 1.0, KRP, A[dims_order[ndim - 1]], 0.0, hold);
+    gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, KRP, A[dims_order[ndim - 1]], 0.0, hold);
 
     // resize the reconstructed tensor to the correct dimensions
     hold.resize(dimensions);

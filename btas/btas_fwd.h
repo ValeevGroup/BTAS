@@ -21,24 +21,24 @@ namespace btas {
     /// It maps the index to its ordinal value. It also knows whether
     /// the map is contiguous (i.e. whether adjacent indices have adjacent ordinal
     /// values).
-    template <CBLAS_ORDER _Order = CblasRowMajor,
+    template <blas::Layout _Order = blas::Layout::RowMajor,
             typename _Index = btas::DEFAULT::index_type
     >
     class BoxOrdinal;
 
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
             typename _Index>
     std::ostream& operator<<(std::ostream&, const BoxOrdinal<_Order,_Index>&);
 
         /// RangeNd extends BaseRangeNd to compute ordinals, as specified by \c _Ordinal .
     /// It conforms to the \ref sec_TWG_Range_Concept_Range_Box "TWG.BoxRange" concept.
-    template <CBLAS_ORDER _Order = CblasRowMajor,
+    template <blas::Layout _Order = blas::Layout::RowMajor,
             typename _Index = btas::DEFAULT::index_type,
             typename _Ordinal = btas::BoxOrdinal<_Order,_Index>
     >
     class RangeNd;
 
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
             typename _Index,
             typename _Ordinal>
     std::ostream& operator<<(std::ostream&, const RangeNd<_Order,_Index, _Ordinal>&);

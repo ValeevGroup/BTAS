@@ -222,7 +222,7 @@ namespace btas{
             Tensor S(R, R), lambda(R);
 
             // Contract refrence tensor to make it square matrix of mode i
-            gemm(CblasNoTrans, CblasTrans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
+            gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
 
             // Find the Singular vectors of the matrix using eigenvalue decomposition
             eigenvalue_decomp(S, lambda);
@@ -437,7 +437,7 @@ namespace btas{
 
           Tensor contract_tensor(LHSsize, rank);
           tensor_ref.resize(Range{Range1{LHSsize}, Range1{contract_size}});
-          gemm(CblasNoTrans, CblasNoTrans, 1.0, tensor_ref, A[A_dim], 0.0, contract_tensor);
+          gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, tensor_ref, A[A_dim], 0.0, contract_tensor);
           tensor_ref.resize(R);
           --A_dim;
           for (size_t contract_dim = ndim_curr - 2; contract_dim > 0; --contract_dim, --A_dim) {
@@ -468,7 +468,7 @@ namespace btas{
         {
           for (size_t i = 1; i < ndimL; ++i) {
             Tensor temp(rank, rank);
-            gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, temp);
+            gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i], A[i], 0.0, temp);
             for (ord_t j = 0; j < rank2; ++j) {
               *(J1.data() + j) *= *(temp.data() + j);
             }
@@ -477,7 +477,7 @@ namespace btas{
           J2.fill(1.0);
           for (size_t i = ndimL; i < ndim; ++i) {
             Tensor temp(rank, rank);
-            gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, temp);
+            gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i], A[i], 0.0, temp);
             for (ord_t j = 0; j < rank2; ++j) {
               *(J2.data() + j) *= *(temp.data() + j);
             }
@@ -486,7 +486,7 @@ namespace btas{
         }
         // Finally Form the product of K * J^\dagger
         Tensor a0(coupled_dim, rank);
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, K, pseudoInverse(J1, fast_pI), 0.0, a0);
+        gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, K, pseudoInverse(J1, fast_pI), 0.0, a0);
         this->normCol(a0);
         A[0] = a0;
       }
@@ -504,7 +504,7 @@ namespace btas{
 
         tensor_ref.resize(Range{Range1{contract_size}, Range1{LHSsize}});
         Tensor contract_tensor(LHSsize, rank);
-        gemm(CblasTrans, CblasNoTrans, 1.0, tensor_ref, A[A_dim], 0.0, contract_tensor);
+        gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, tensor_ref, A[A_dim], 0.0, contract_tensor);
 
         tensor_ref.resize(R);
         A_dim = left ? ndimL - 1 : ndim - 1;
@@ -547,12 +547,12 @@ namespace btas{
         contract_tensor.resize(Range{Range1{skip_dim}, Range1{rank}});
 
         Tensor G(rank, rank);
-        gemm(CblasTrans, CblasNoTrans, 1.0, A[0], A[0], 0.0, G);
+        gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[0], A[0], 0.0, G);
         auto rank2 = rank * (ord_t) rank;
         for (size_t i = (left ? 1 : ndimL); i < (left ? ndimL : ndim); ++i) {
           if (i != n) {
             Tensor temp(rank, rank);
-            gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, temp);
+            gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i], A[i], 0.0, temp);
             for (ord_t j = 0; j < rank2; ++j) {
               *(G.data() + j) *= *(temp.data() + j);
             }
@@ -563,7 +563,7 @@ namespace btas{
         else if(n == this->ndim - 1)
           detail::set_MtKRPR(converge_test, contract_tensor);
         Tensor an(skip_dim, rank);
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, contract_tensor, pseudoInverse(G, fast_pI), 0.0, an);
+        gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, contract_tensor, pseudoInverse(G, fast_pI), 0.0, an);
         this->normCol(an);
         A[n] = an;
       }
