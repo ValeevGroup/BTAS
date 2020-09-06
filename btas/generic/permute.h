@@ -22,18 +22,26 @@ namespace btas {
                                           >::type
           >
   void
-  permute(const _TensorX& X, const _Permutation& p, _TensorY& Y)
-    {
-    const auto pr = permute(X.range(),p);
-    Y.resize(pr);
-    const auto itrX = std::begin(X);
-    auto itrY = std::begin(Y);
-    for(auto i : Y.range())
-        {
+  permute(const _TensorX& X, const _Permutation& p, _TensorY& Y) {
+    const auto& r = X.range();
+    using range_type = std::decay_t<decltype(r)>;
+    constexpr const bool r_is_permutable = range_traits<range_type>::is_general_layout;
+
+    auto do_perm = [](auto&& X, auto&& Y, auto&& pr) {
+      Y.resize(pr);
+      const auto itrX = std::begin(X);
+      auto itrY = std::begin(Y);
+      for (auto && i : Y.range()) {
         *itrY = *(itrX + pr.ordinal(i));
         ++itrY;
-        }
+      }
+    };
+    if (r_is_permutable)
+      do_perm(X, Y, permute(r, p));
+    else {
+      do_perm(X, Y, permute(btas::Range(r.lobound(), r.upbound(), r.stride()), p));
     }
+  }
 
   /// permute \c X using permutation \c p, write result to \c Y
   template<class _TensorX, class _TensorY, typename _T,

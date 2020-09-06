@@ -1080,6 +1080,7 @@ namespace btas {
         const static CBLAS_ORDER order = _Order;
         typedef _Index index_type;
         typedef typename _Ordinal::value_type ordinal_type;
+        constexpr static const bool is_general_layout = true;
     };
 
     using Range = RangeNd<>;
