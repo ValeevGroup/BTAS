@@ -14,7 +14,7 @@
 
 namespace btas {
 
-  /// permute \c X using permutation \c p, write result to \c Y
+  /// permute \c X using from-permutation \c p, write result to \c Y
   template<class _TensorX, typename _Permutation, class _TensorY,
            class = typename std::enable_if<is_boxtensor<_TensorX>::value &&
                                            is_index<_Permutation>::value &&
@@ -43,7 +43,7 @@ namespace btas {
     }
   }
 
-  /// permute \c X using permutation \c p, write result to \c Y
+  /// permute \c X using from-permutation \c p, write result to \c Y
   template<class _TensorX, class _TensorY, typename _T,
            class = typename std::enable_if<is_boxtensor<_TensorX>::value &&
                                            is_boxtensor<_TensorY>::value
@@ -109,7 +109,7 @@ namespace btas {
    permute(X, prm, Y);
 }
 
-  /// permute \c X using permutation \c p, write result to \c Y
+  /// permute \c X annotated with \c aX into \c Y annotated with \c aY
   template<class _TensorX, class _TensorY, typename _T,
            class = typename std::enable_if<is_boxtensor<_TensorX>::value &&
                                            is_boxtensor<_TensorY>::value

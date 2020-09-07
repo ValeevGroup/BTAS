@@ -1183,9 +1183,10 @@ namespace btas {
 
     /// Permutes a Range
 
-    /// permutes the dimensions using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned
-    /// {lb[0], lb[1], ... }, after this call \c lobound() will return {lb[p[0]], lb[p[1]], ...}.
-    /// \param perm an array specifying permutation of the dimensions
+    /// permutes the axes using from-permutation \c p = {p[0], p[1], ... };
+    /// for example, after this call \c lobound()[p[i]] will return the value originally
+    /// returned by \c lobound()[i]
+    /// \param perm a sequence specifying from-permutation of the axes
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal,
@@ -1215,9 +1216,10 @@ namespace btas {
 
     /// Permutes a Range
 
-    /// permutes the axes using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned
-    /// {lb[0], lb[1], ... }, after this call \c lobound() will return {lb[p[0]], lb[p[1]], ...} .
-    /// \param perm an array specifying permutation of the axes
+    /// permutes the axes using from-permutation \c p = {p[0], p[1], ... };
+    /// for example, after this call \c lobound()[p[i]] will return the value originally
+    /// returned by \c lobound()[i]
+    /// \param perm an initializer list specifying from-permutation of the axes
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal,
