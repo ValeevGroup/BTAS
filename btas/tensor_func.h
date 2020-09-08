@@ -28,7 +28,7 @@ namespace btas {
                                                             typename Nref<_T>::storage_type
                                                            >::type>;
 
-  /// Permutes tensor \p t using from-permutation \p p
+  /// Permutes tensor \p t using permutation \p p specified in the preimage ("from") convention
   template<typename _T,
            typename _Permutation>
   TensorViewOf<_T>
@@ -37,7 +37,7 @@ namespace btas {
       return make_view( permute(t.range(), p), t.storage() );
   }
 
-  /// Permutes tensor \p t using from-permutation \p p
+  /// Permutes tensor \p t using permutation \p p specified in the preimage ("from") convention
   template<typename _T,
            typename _U>
   TensorViewOf<_T>

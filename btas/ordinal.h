@@ -264,7 +264,7 @@ namespace btas {
 
   /// Permutes a Range
 
-  /// permutes the axes using from-permutation \c p = {p[0], p[1], ... };
+  /// permutes the axes using permutation \c p={p[0],p[1],...} specified in the preimage ("from") convention;
   /// for example, after this call \c stride()[p[i]] will return the value originally
   /// returned by \c stride()[i]
   /// \param perm a sequence specifying from-permutation of the axes
