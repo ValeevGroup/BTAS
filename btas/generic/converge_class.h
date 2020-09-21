@@ -354,5 +354,141 @@ namespace btas {
       return sqrt(abs(nrm));
     }
   };
+
+  template<typename Tensor>
+  class FitCheckDF{
+  public:
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
+    /// constructor for the base convergence test object
+    /// \param[in] tol tolerance for ALS convergence
+    explicit FitCheckDF(double tol = 1e-4): tol_(tol){
+    }
+
+    ~FitCheckDF() = default;
+
+    /// Function to check convergence of the ALS problem
+    /// convergence when \f$ \|T - \hat{T}^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
+    /// \param[in] btas_factors Current set of factor matrices
+    bool operator()(const std::vector<Tensor> &btas_factors) {
+      if (normT_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
+      auto n = btas_factors.size() - 2;
+      ord_t size = btas_factors[n].size();
+      ind_t rank = btas_factors[n].extent(1);
+      Tensor temp(btas_factors[n + 1].range());
+      temp.fill(0.0);
+      auto *ptr_A = btas_factors[n].data();
+      auto *ptr_MtKRP = MtKRP_.data();
+      for (ord_t i = 0; i < size; ++i) {
+        *(ptr_MtKRP + i) *= *(ptr_A + i);
+      }
+
+      auto * ptr_temp = temp.data();
+      for (ord_t i = 0; i < size; ++i) {
+        *(ptr_temp + i % rank) += *(ptr_MtKRP + i);
+      }
+
+      size = temp.size();
+      ptr_A = btas_factors[n+1].data();
+      double iprod = 0.0;
+      for (ord_t i = 0; i < size; ++i) {
+        iprod += *(ptr_temp + i) * *(ptr_A + i);
+      }
+
+      double normFactors = norm(btas_factors);
+      double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * iprod));
+      double fit = 1 - (normResidual / normT_);
+
+      double fitChange = abs(fitOld_ - fit);
+      fitOld_ = fit;
+      if(verbose_) {
+        std::cout << fit << "\t" << fitChange << std::endl;
+      }
+      if(fitChange < tol_) {
+        converged_num++;
+        if(converged_num == 2){
+          iter_ = 0;
+          converged_num = 0;
+          final_fit_ = fitOld_;
+          fitOld_ = -1.0;
+          return true;
+        }
+      }
+
+      ++iter_;
+      return false;
+    }
+
+    void set_norm(double normT){
+      normT_ = normT;
+    }
+
+    void set_MtKRP(Tensor & MtKRP){
+      MtKRP_ = MtKRP;
+    }
+
+    double get_fit(){
+      return final_fit_;
+    }
+
+    void verbose(bool verb) {
+      verbose_ = verb;
+    }
+
+    void set_V(std::vector<Tensor> & ata){
+      V = ata;
+      return;
+    }
+
+  private:
+    double tol_;
+    double fitOld_ = -1.0;
+    double normT_ = -1.0;
+    double final_fit_ = 0.0;
+    size_t iter_ = 0;
+    size_t converged_num = 0;
+    Tensor MtKRP_;
+    bool verbose_ = false;
+    std::vector<Tensor> V;
+
+    double norm(const std::vector<Tensor> &btas_factors) {
+      ind_t rank = btas_factors[0].extent(1);
+      auto n = btas_factors.size() - 1;
+      Tensor coeffMat;
+      contract(1.0, btas_factors[0], {1,2}, btas_factors[3], {1,3}, 0.0, coeffMat, {2,3});
+      auto &temp = btas_factors[n];
+      ger(1.0, temp, temp, coeffMat);
+
+      auto rank2 = rank * (ord_t) rank;
+      {
+        Tensor LHS = V[1], temp;
+        auto *ptr_coeff = LHS.data();
+        auto *ptr_temp = V[2].data();
+        for (ord_t j = 0; j < rank2; ++j) {
+          *(ptr_coeff + j) *= *(ptr_temp + j);
+        }
+        contract(1.0, LHS, {1,2}, coeffMat, {2,3}, 0.0, temp, {1,3});
+        contract(1.0, coeffMat, {1,2}, temp, {1,3}, 0.0, LHS, {2,3});
+        coeffMat = LHS;
+      }
+      {
+        Tensor RHS = V[4], temp;
+        auto *ptr_coeff = RHS.data();
+        auto *ptr_temp = V[2].data();
+        for (ord_t j = 0; j < rank2; ++j) {
+          *(ptr_coeff + j) *= *(ptr_temp + j);
+        }
+        contract(1.0, RHS, {1,2}, coeffMat, {2,3}, 0.0, temp, {1,3});
+        coeffMat = temp;
+      }
+
+      auto nrm = 0.0;
+      for(auto & i: coeffMat){
+        nrm += i;
+      }
+      return sqrt(abs(nrm));
+    }
+  };
 } //namespace btas
 #endif  // BTAS_GENERIC_CONV_BASE_CLASS
