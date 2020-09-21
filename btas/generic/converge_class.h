@@ -165,6 +165,7 @@ namespace btas {
       ind_t rank = btas_factors[0].extent(1);
       auto n = btas_factors.size() - 1;
       Tensor coeffMat(rank, rank);
+      coeffMat.fill(0.0);
       auto &temp = btas_factors[n];
       ger(1.0, temp, temp, coeffMat);
 
