@@ -39,6 +39,12 @@
    </tr>
 
    <tr>
+    <td> \c index1_type </td>
+    <td> the base type of indices contained by the Range, alias to \c index_type::value_type </td>
+    <td> an integral type </td>
+   </tr>
+
+   <tr>
     <td> \c ordinal_type </td>
     <td> the type of ordinals for the indices in the Range; usually \c index_type will not have ordering operators, hence
     conversion to ordinal_type is necessary to define the order of indices in Range. The map from index to ordinal is one-to-one.

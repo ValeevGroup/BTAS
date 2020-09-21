@@ -89,7 +89,7 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
         Tensor Z(An.extent(1), Y.extent(1));
 
         // Find the L of an LU decomposition of the L above (called Y) projected
-        // onto the rlattened reference tensor
+        // onto the flattened reference tensor
         gemm(CblasTrans, CblasNoTrans, 1.0, An, Y, 0.0, Z);
         LU_decomp(Z);
 

@@ -33,6 +33,20 @@
    </tr>
 
    <tr>
+    <td> \c index1_type </td>
+    <td> the 1-index type supporting \c range_type ; alias to \c range_type::index1_type
+    </td>
+    <td> An integral type </td>
+   </tr>
+
+   <tr>
+    <td> \c ordinal_type </td>
+    <td> the ordinal type supporting \c range_type ; alias to \c range_type::ordinal_type
+    </td>
+    <td> An integral type </td>
+   </tr>
+
+   <tr>
     <td> \c iterator </td>
     <td> iterator over Tensor elements, dereference to <code>value_type</code> </td>
     <td> this type model the constant Bidirectional Iterator concept defined in

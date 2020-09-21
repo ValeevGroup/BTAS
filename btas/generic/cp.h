@@ -468,9 +468,9 @@ namespace btas{
       Tensor V(rank, rank);
       V.fill(1.0);
       auto *V_ptr = V.data();
+      Tensor lhs_prod(rank, rank);
       for (size_t i = 0; i < ndim; ++i) {
         if (i != n) {
-          Tensor lhs_prod(rank, rank);
           gemm(CblasTrans, CblasNoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
           const auto *lhs_ptr = lhs_prod.data();
           for (ord_t j = 0; j < rank2; j++)

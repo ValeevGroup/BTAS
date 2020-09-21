@@ -8,6 +8,7 @@
 
 #include <btas/tensor_traits.h>
 #include <btas/types.h>
+#include <btas/array_adaptor.h>
 
 #include <btas/generic/numeric_type.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
@@ -261,7 +262,15 @@ void ger (
    // get shapes
    const typename _TensorX::range_type::extent_type& extentX = extent(X);
    const typename _TensorY::range_type::extent_type& extentY = extent(Y);
-         typename _TensorA::range_type::extent_type  extentA = extent(A);
+         typename _TensorA::range_type::extent_type  extentA;
+   if (!A.empty())
+     extentA = extent(A);
+   else {
+     array_adaptor<decltype(extentA)>::resize(extentA, rank(extentX) + rank(extentY));
+     std::copy(std::begin(extentX), std::end(extentX), std::begin(extentA));
+     std::copy(std::begin(extentY), std::end(extentY), std::begin(extentA) + rank(extentX));
+   }
+
 
    size_type Msize = std::accumulate(std::begin(extentX), std::end(extentX), 1ul, std::multiplies<size_type>());
    size_type Nsize = std::accumulate(std::begin(extentY), std::end(extentY), 1ul, std::multiplies<size_type>());

@@ -262,9 +262,12 @@ namespace btas {
 
   /// Permutes BoxOrdinal
 
-  /// permutes the dimensions using permutation \c p = {p[0], p[1], ... }; for example, if \c stride() initially returned
-  /// {s[0], s[1], ... }, after this call \c stride() will return {s[p[0]], s[p[1]], ...}.
-  /// \param perm an array specifying permutation of the dimensions
+  /// Permutes a Range
+
+  /// permutes the axes using permutation \c p={p[0],p[1],...} specified in the preimage ("from") convention;
+  /// for example, after this call \c stride()[p[i]] will return the value originally
+  /// returned by \c stride()[i]
+  /// \param perm a sequence specifying from-permutation of the axes
   template <CBLAS_ORDER _Order,
             typename _Index,
             typename AxisPermutation,

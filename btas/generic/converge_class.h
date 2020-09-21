@@ -170,8 +170,8 @@ namespace btas {
       ger(1.0, temp, temp, coeffMat);
 
       auto rank2 = rank * (ord_t) rank;
+      Tensor temp(rank, rank);
       for (size_t i = 0; i < n; ++i) {
-        Tensor temp(rank, rank);
         gemm(CblasTrans, CblasNoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
         auto *ptr_coeff = coeffMat.data();
         auto *ptr_temp = temp.data();

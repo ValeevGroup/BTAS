@@ -691,9 +691,10 @@ namespace btas {
       struct Enabler {};
 
     public:
-      static_assert(btas::is_index<_Index>::value, "RangeNd<_Index> instantiated with an _Index tyope that does not meet the TWG.Index concept");
+      static_assert(btas::is_index<_Index>::value, "RangeNd<_Index> instantiated with an _Index type that does not meet the TWG.Index concept");
       typedef RangeNd this_type;
       typedef _Index index_type; ///< index type
+      typedef typename _Index::value_type index1_type; ///< 1-index type
       const static CBLAS_ORDER order = _Order;
 
       typedef typename _Ordinal::value_type ordinal_type; ///< Ordinal value type
@@ -1079,6 +1080,7 @@ namespace btas {
         const static CBLAS_ORDER order = _Order;
         typedef _Index index_type;
         typedef typename _Ordinal::value_type ordinal_type;
+        constexpr static const bool is_general_layout = true;
     };
 
     using Range = RangeNd<>;
@@ -1181,9 +1183,10 @@ namespace btas {
 
     /// Permutes a Range
 
-    /// permutes the dimensions using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned
-    /// {lb[0], lb[1], ... }, after this call \c lobound() will return {lb[p[0]], lb[p[1]], ...}.
-    /// \param perm an array specifying permutation of the dimensions
+    /// permutes the axes using permutation \c p={p[0],p[1],...} specified in the preimage ("from") convention;
+    /// for example, after this call \c lobound()[p[i]] will return the value originally
+    /// returned by \c lobound()[i]
+    /// \param perm a sequence specifying from-permutation of the axes
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal,
@@ -1213,9 +1216,10 @@ namespace btas {
 
     /// Permutes a Range
 
-    /// permutes the axes using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned
-    /// {lb[0], lb[1], ... }, after this call \c lobound() will return {lb[p[0]], lb[p[1]], ...} .
-    /// \param perm an array specifying permutation of the axes
+    /// permutes the axes using permutation \c p={p[0],p[1],...} specified in the preimage ("from") convention;
+    /// for example, after this call \c lobound()[p[i]] will return the value originally
+    /// returned by \c lobound()[i]
+    /// \param perm an initializer list specifying from-permutation of the axes
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal,
