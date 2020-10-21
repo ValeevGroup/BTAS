@@ -420,8 +420,45 @@ namespace btas {
       return false;
     }
 
+    bool conv(Tensor & Bl, Tensor & Br){
+      Tensor PS;
+      contract(1.0, Bl, {1,2,3}, Br, {1,4,5}, 0.0, PS, {2,3,4,5});
+      Tensor diff = reference - PS;
+      auto normResidual = 0.0;
+      for(auto & i : diff) normResidual += i * i;
+
+      double fit = 1 - (normResidual / normT_);
+      double fitChange = abs(fitOld_ - fit);
+      fitOld_ = fit;
+      if(verbose_) {
+        std::cout << fit << "\t" << fitChange << std::endl;
+      }
+      if(fitChange < tol_) {
+        converged_num++;
+        if(converged_num == 2){
+          iter_ = 0;
+          converged_num = 0;
+          final_fit_ = fitOld_;
+          fitOld_ = -1.0;
+          return true;
+        }
+      }
+
+      ++iter_;
+      return false;
+    }
     void set_norm(double normT){
       normT_ = normT;
+    }
+
+    double norm_facs(std::vector<Tensor> & btas_factors,
+            std::vector<Tensor> ata= std::vector<Tensor>()){
+      if(!ata.empty())
+        V = ata;
+      return norm(btas_factors);
+    }
+    void set_reference(Tensor ref){
+      reference  = ref;
     }
 
     void set_MtKRP(Tensor & MtKRP){
@@ -451,6 +488,7 @@ namespace btas {
     Tensor MtKRP_;
     bool verbose_ = false;
     std::vector<Tensor> V;
+    Tensor reference;
 
     double norm(const std::vector<Tensor> &btas_factors) {
       ind_t rank = btas_factors[0].extent(1);
