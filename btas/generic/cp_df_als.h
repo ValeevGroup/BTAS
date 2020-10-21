@@ -23,6 +23,7 @@
 #include <btas/generic/converge_class.h>
 #include <btas/generic/rals_helper.h>
 #include <btas/generic/reconstruct.h>
+#include <btas/generic/cp_als.h>
 
 namespace btas{
 
@@ -231,6 +232,58 @@ namespace btas{
       return epsilon;
     }
 
+    double compute_cp3_init(ind_t rank, ConvClass converge_test, size_t max_als,
+            bool fast_pI = true, bool calculate_epsilon = false, bool direct = true){
+      double epsilon = 0.0;
+      {
+        FitCheck<Tensor> fit(1e-2);
+        fit.verbose(true);
+        auto nrm = [](Tensor &a) {
+          auto norm = 0.0;
+          for (auto &i: a) norm += i * i;
+          return sqrt(norm);
+        };
+        fit.set_norm(nrm(tensor_ref_left));
+        CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
+        auto cur_dim = tensor_ref_left.rank();
+        CP3.compute_rank_random(rank, fit, 100, true);
+        auto Al = CP3.get_factor_matrices();
+        auto & a = Al[1], & lam = A[cur_dim];
+        for (ind_t r = 0; r < rank; r++) {
+          btas::scal(a.extent(0),
+                     lam(r),
+                     std::begin(a) + r, rank);
+        }
+        A.push_back(a);
+        A.push_back(Al[2]);
+      }
+      {
+        FitCheck<Tensor> fit(1e-2);
+        fit.verbose(true);
+        auto nrm = [](Tensor &a) {
+          auto norm = 0.0;
+          for (auto &i: a) norm += i * i;
+          return sqrt(norm);
+        };
+        fit.set_norm(nrm(tensor_ref_right));
+        CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
+        auto cur_dim = tensor_ref_right.rank();
+        CP3.compute_rank_random(rank, fit, 100, true);
+        auto Al = CP3.get_factor_matrices();
+        auto & a = Al[1], & lam = A[cur_dim];
+        for (ind_t r = 0; r < rank; r++) {
+          btas::scal(a.extent(0),
+                     lam(r),
+                     std::begin(a) + r, rank);
+        }
+        A.push_back(a);
+        A.push_back(Al[2]);
+      }
+
+      ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
+
+      return epsilon;
+    }
   protected:
     Tensor &tensor_ref_left;        // Left connected tensor
     Tensor &tensor_ref_right;       // Right connected tensor
