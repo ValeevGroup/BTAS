@@ -245,16 +245,10 @@ namespace btas{
         };
         fit.set_norm(nrm(tensor_ref_left));
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
-        auto cur_dim = tensor_ref_left.rank();
         CP3.compute_rank_random(rank, fit, 100, true);
         auto Al = CP3.get_factor_matrices();
-        auto & a = Al[1], & lam = A[cur_dim];
-        for (ind_t r = 0; r < rank; r++) {
-          btas::scal(a.extent(0),
-                     lam(r),
-                     std::begin(a) + r, rank);
-        }
-        A.push_back(a);
+        auto cur_dim = Al.size() - 1;
+        A.push_back(Al[1]);
         A.push_back(Al[2]);
       }
       {
@@ -270,14 +264,9 @@ namespace btas{
         auto cur_dim = tensor_ref_right.rank();
         CP3.compute_rank_random(rank, fit, 100, true);
         auto Al = CP3.get_factor_matrices();
-        auto & a = Al[1], & lam = A[cur_dim];
-        for (ind_t r = 0; r < rank; r++) {
-          btas::scal(a.extent(0),
-                     lam(r),
-                     std::begin(a) + r, rank);
-        }
-        A.push_back(a);
+        A.push_back(Al[1]);
         A.push_back(Al[2]);
+        A.push_back(Al[3]);
       }
 
       ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
