@@ -1181,12 +1181,22 @@ namespace btas {
                           std::rbegin(r2_extent));
     }
 
+    /// Tests whether a range is contiguous, i.e. whether its ordinal values form a contiguous range
+
+    /// \param range a Range
+    /// \return true if \p range is contiguous
+    template <CBLAS_ORDER _Order,
+        typename _Index,
+        typename _Ordinal>
+    inline bool is_contiguous(const RangeNd<_Order, _Index, _Ordinal>& range) {
+      return range.ordinal().contiguous();
+    }
+
     /// Permutes a Range
 
-    /// permutes the axes using permutation \c p={p[0],p[1],...} specified in the preimage ("from") convention;
-    /// for example, after this call \c lobound()[p[i]] will return the value originally
-    /// returned by \c lobound()[i]
-    /// \param perm a sequence specifying from-permutation of the axes
+    /// permutes the dimensions using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned
+    /// {lb[0], lb[1], ... }, after this call \c lobound() will return {lb[p[0]], lb[p[1]], ...}.
+    /// \param perm an array specifying permutation of the dimensions
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal,
@@ -1216,10 +1226,9 @@ namespace btas {
 
     /// Permutes a Range
 
-    /// permutes the axes using permutation \c p={p[0],p[1],...} specified in the preimage ("from") convention;
-    /// for example, after this call \c lobound()[p[i]] will return the value originally
-    /// returned by \c lobound()[i]
-    /// \param perm an initializer list specifying from-permutation of the axes
+    /// permutes the axes using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned
+    /// {lb[0], lb[1], ... }, after this call \c lobound() will return {lb[p[0]], lb[p[1]], ...} .
+    /// \param perm an array specifying permutation of the axes
     template <CBLAS_ORDER _Order,
               typename _Index,
               typename _Ordinal,

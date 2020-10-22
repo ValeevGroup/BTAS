@@ -17,7 +17,7 @@ template<typename _T, class _TensorA, class _TensorB, class _TensorC,
 void contract_211(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index<_UA>& aA, const _TensorB& B, const btas::DEFAULT::index<_UB>& aB,
                   const _T& beta, _TensorC& C, const btas::DEFAULT::index<_UC>& aC, const bool conjgA, const bool conjgB) {
   assert(aA.size() == 2 && aB.size() == 1 && aC.size() == 1);
-  assert(A.range().ordinal().contiguous() && B.range().ordinal().contiguous() && C.range().ordinal().contiguous());
+  assert(is_contiguous(A.range()) && is_contiguous(B.range()) && is_contiguous(C.range()));
   if (conjgB) throw std::logic_error("complex conjugation of 1-index tensors is not considered in contract_211");
 
   const bool notrans = aB[0] == aA[1];
@@ -36,7 +36,7 @@ void contract_222(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index
                   const _T& beta, _TensorC& C, const btas::DEFAULT::index<_UC>& aC, const bool conjgA, const bool conjgB) {
   // TODO we do not consider complex matrices yet.
   assert(aA.size() == 2 && aB.size() == 2 && aC.size() == 2);
-  assert(A.range().ordinal().contiguous() && B.range().ordinal().contiguous() && C.range().ordinal().contiguous());
+  assert(is_contiguous(A.range()) && is_contiguous(B.range()) && is_contiguous(C.range()));
   if (std::find(aA.begin(), aA.end(), aC.front()) != aA.end()) {
     // then multiply A * B -> C
     const bool notransA = aA.front() == aC.front();
@@ -65,10 +65,10 @@ template<typename _T, class _TensorA, class _TensorB, class _TensorC,
 void contract_323(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index<_UA>& aA, const _TensorB& B, const btas::DEFAULT::index<_UB>& aB,
                   const _T& beta, _TensorC& C, const btas::DEFAULT::index<_UC>& aC, const bool conjgA, const bool conjgB) {
   assert(aA.size() == 3 && aB.size() == 2 && aC.size() == 3);
-  assert(A.range().ordinal().contiguous() && B.range().ordinal().contiguous() && C.range().ordinal().contiguous());
+  assert(is_contiguous(A.range()) && is_contiguous(B.range()) && is_contiguous(C.range()));
   if (conjgA) throw std::logic_error("complex conjugation of 3-index tensors is not considered in contract_323");
 
-  // TODO this function is limited to special cases where one of three indices of A will be replaced in C. Permuation is not considered so far.
+  // TODO this function is limited to special cases where one of three indices of A will be replaced in C. Permutation is not considered so far.
   // first idenfity which indices to be rotated
   int irot = -1;
   for (int i = 0; i != 3; ++i)
@@ -128,7 +128,7 @@ template<typename _T, class _TensorA, class _TensorB, class _TensorC,
 void contract_332(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index<_UA>& aA, const _TensorB& B, const btas::DEFAULT::index<_UB>& aB,
                   const _T& beta, _TensorC& C, const btas::DEFAULT::index<_UC>& aC, const bool conjgA, const bool conjgB) {
   assert(aA.size() == 3 && aB.size() == 3 && aC.size() == 2);
-  assert(A.range().ordinal().contiguous() && B.range().ordinal().contiguous() && C.range().ordinal().contiguous());
+  assert(is_contiguous(A.range()) && is_contiguous(B.range()) && is_contiguous(C.range()));
 
   const bool back2  = aA[0] == aB[0] && aA[1] == aB[1];
   const bool front2 = aA[1] == aB[1] && aA[2] == aB[2];
