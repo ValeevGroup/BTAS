@@ -545,7 +545,7 @@ void gemm (
    // get extents
    auto extentA = extent(A);
    auto extentB = extent(B);
-   auto extentC = extent(C); // if C is empty, this gives { }, will need to allocate
+   typename _TensorC::range_type::extent_type extentC = extent(C); // if C is empty, this gives { }, will need to allocate
 
    size_type Msize = 0; // Rows count of C
    size_type Nsize = 0; // Cols count of C
