@@ -181,7 +181,10 @@ namespace btas {
       /// This constructor will allocate memory for \c range.area() elements. Each element
       /// will be initialized as:
       /// \code
-      /// for(int i =Range An input Range type.
+      ///   for(auto&& idx: range)
+      ///     (*this)[idx] = op(*(it++));
+      /// \endcode
+      /// \tparam Range An input Range type.
       /// \tparam InIter An input iterator type.
       /// \tparam Op A unary operation type
       /// \param range the input range type
