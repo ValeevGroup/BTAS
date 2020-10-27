@@ -374,7 +374,7 @@ namespace btas {
     /// \param[in] btas_factors Current set of factor matrices
     bool operator()(const std::vector<Tensor> &btas_factors) {
       if (normT_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
-      auto n = btas_factors.size() - 2;
+      auto n = btas_factors.size() - 3;
       ord_t size = btas_factors[n].size();
       ind_t rank = btas_factors[n].extent(1);
       Tensor temp(btas_factors[n + 1].range());
@@ -391,7 +391,7 @@ namespace btas {
       }
 
       size = temp.size();
-      ptr_A = btas_factors[n+1].data();
+      ptr_A = btas_factors[n+2].data();
       double iprod = 0.0;
       for (ord_t i = 0; i < size; ++i) {
         iprod += *(ptr_temp + i) * *(ptr_A + i);
@@ -493,40 +493,34 @@ namespace btas {
 
     double norm(const std::vector<Tensor> &btas_factors) {
       ind_t rank = btas_factors[0].extent(1);
-      auto n = btas_factors.size() - 1;
-      Tensor coeffMat;
-      contract(1.0, btas_factors[0], {1,2}, btas_factors[3], {1,3}, 0.0, coeffMat, {2,3});
-      auto &temp = btas_factors[n];
-      ger(1.0, temp, temp, coeffMat);
-
-      auto rank2 = rank * (ord_t) rank;
+      ord_t rank2 = rank * (ord_t) rank;
+      Tensor Wl = V[1], Wr = V[4];
       {
-        Tensor LHS = V[1], temp;
-        auto *ptr_coeff = LHS.data();
-        auto *ptr_temp = V[2].data();
-        for (ord_t j = 0; j < rank2; ++j) {
-          *(ptr_coeff + j) *= *(ptr_temp + j);
+        Tensor lam1, lam2;
+        auto &l = btas_factors[6], &m = btas_factors[7];
+        ger(1.0, l, l, lam1);
+        ger(1.0, m, m, lam2);
+        auto *ptrWl = Wl.data(), *ptrWr = Wr.data(),
+        * ptrB = V[2].data(), * ptrD = V[5].data(),
+        * ptrl1 = lam1.data(), * ptrl2 = lam2.data();
+        for(auto r = 0; r < rank2; ++r){
+          *(ptrWl + r) *= *(ptrB + r) * *(ptrl1 + r);
+          *(ptrWr + r) *= *(ptrD + r) * *(ptrl2 + r);
         }
-        contract(1.0, LHS, {1,2}, coeffMat, {2,3}, 0.0, temp, {1,3});
-        contract(1.0, coeffMat, {1,2}, temp, {1,3}, 0.0, LHS, {2,3});
-        coeffMat = LHS;
       }
       {
-        Tensor RHS = V[4], temp;
-        auto *ptr_coeff = RHS.data();
-        auto *ptr_temp = V[2].data();
-        for (ord_t j = 0; j < rank2; ++j) {
-          *(ptr_coeff + j) *= *(ptr_temp + j);
-        }
-        contract(1.0, RHS, {1,2}, coeffMat, {2,3}, 0.0, temp, {1,3});
-        coeffMat = temp;
+        Tensor WX;
+        contract(1.0, Wl, {1,2}, V[0], {2,3}, 0.0, WX, {1,3});
+        contract(1.0, V[0], {1,2}, WX, {2,3}, 0.0, Wl, {1,3});
       }
 
       auto nrm = 0.0;
-      for(auto & i: coeffMat){
-        nrm += i;
+      auto * ptr_Wl = Wl.data(), * ptr_Wr = Wr.data();
+      for(ord_t r = 0; r < rank2; ++r){
+        nrm += *(ptr_Wl + r) * *(ptr_Wr + r);
       }
-      return sqrt(abs(nrm));
+
+      return sqrt(nrm);
     }
   };
 } //namespace btas
