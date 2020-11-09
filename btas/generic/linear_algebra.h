@@ -158,7 +158,7 @@ namespace btas{
     ord_t lambda_length = lambda.size();
     ind_t smallest_mode_A = (A.extent(0) < A.extent(1) ? A.extent(0) : A.extent(1));
     if (lambda_length < smallest_mode_A) {
-      BTAS_EXCEPTION("Volume of lambda must be greater than or equal to the largest mode of A");
+      lambda = Tensor(smallest_mode_A);
     }
 
     auto info = hereig( blas::Layout::RowMajor, lapack::Job::Vec, 
