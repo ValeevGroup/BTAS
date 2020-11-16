@@ -319,6 +319,10 @@ namespace btas {
       return final_fit_;
     }
 
+    double get_norm(std::vector<Tensor> & btas_array){
+      return norm(btas_array);
+    }
+
   private:
     double tol_;
     double fitOld_ = -1.0;
