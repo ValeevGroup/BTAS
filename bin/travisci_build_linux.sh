@@ -40,7 +40,7 @@ cd ${BUILD_PREFIX}
 
 
 ########## build blaspp + lapackpp    ##########
-icl_install_prefix=$PWD/icl_install
+export icl_install_prefix=$PWD/icl_install
 git clone https://dbwy@bitbucket.org/icl/blaspp.git
 git clone https://dbwy@bitbucket.org/icl/lapackpp.git
 

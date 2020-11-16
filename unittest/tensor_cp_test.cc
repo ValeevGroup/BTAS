@@ -1,4 +1,3 @@
-#ifdef BTAS_HAS_CBLAS
 #include <btas/btas.h>
 #include <btas/generic/converge_class.h>
 #include "../unittest/test.h"
@@ -84,6 +83,7 @@ TEST_CASE("CP")
               A1.compute_rank(5, conv, 1, false, 0, 100, false, false, true);
       CHECK((diff - results(0,0)) <= epsilon);
     }
+#if 0
     SECTION("ALS MODE = 3, Finite error"){
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
@@ -160,7 +160,9 @@ TEST_CASE("CP")
       double diff = A1. compress_compute_rand(1, conv, 0, 2, 5, true, false, 100, false);
       CHECK((diff - results(11,0)) <= epsilon);
     }
+#endif
   }
+#if 0
   // RALS tests
   {
     SECTION("RALS MODE = 3, Finite rank"){
@@ -330,5 +332,5 @@ TEST_CASE("CP")
       CHECK((diff - results(35,0)) <= epsilon);
     }
   }
+#endif
 }
-#endif //BTAS_HAS_CBLAS
