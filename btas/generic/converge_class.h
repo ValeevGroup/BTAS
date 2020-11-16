@@ -319,6 +319,10 @@ namespace btas {
       return final_fit_;
     }
 
+    double get_norm(std::vector<Tensor> & btas_array){
+      return norm(btas_array);
+    }
+
   private:
     double tol_;
     double fitOld_ = -1.0;
@@ -422,11 +426,12 @@ namespace btas {
 
     bool conv(Tensor & Bl, Tensor & Br){
       Tensor PS;
-      contract(1.0, Bl, {1,2,3}, Br, {1,4,5}, 0.0, PS, {2,3,4,5});
+      contract(1.0, Bl, {1,2,4}, Br, {1,3,5}, 0.0, PS, {2,3,4,5});
       Tensor diff = reference - PS;
       auto normResidual = 0.0;
       for(auto & i : diff) normResidual += i * i;
 
+      normResidual = sqrt(normResidual);
       double fit = 1 - (normResidual / normT_);
       double fitChange = abs(fitOld_ - fit);
       fitOld_ = fit;
