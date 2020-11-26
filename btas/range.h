@@ -1080,6 +1080,7 @@ namespace btas {
         const static blas::Layout order = _Order;
         typedef _Index index_type;
         typedef typename _Ordinal::value_type ordinal_type;
+        constexpr static const bool is_general_layout = true;
     };
 
     using Range = RangeNd<>;
@@ -1178,6 +1179,17 @@ namespace btas {
       else
         return std::equal(std::cbegin(r1_extent), std::cend(r1_extent),
                           std::rbegin(r2_extent));
+    }
+
+    /// Tests whether a range is contiguous, i.e. whether its ordinal values form a contiguous range
+
+    /// \param range a Range
+    /// \return true if \p range is contiguous
+    template <blas::Layout _Order,
+        typename _Index,
+        typename _Ordinal>
+    inline bool is_contiguous(const RangeNd<_Order, _Index, _Ordinal>& range) {
+      return range.ordinal().contiguous();
     }
 
     /// Permutes a Range

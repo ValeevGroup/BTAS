@@ -76,6 +76,7 @@ TEST_CASE("CP")
 
   // ALS tests
   {
+#if 0
     SECTION("ALS MODE = 3, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
@@ -83,7 +84,6 @@ TEST_CASE("CP")
               A1.compute_rank(5, conv, 1, false, 0, 100, false, false, true);
       CHECK((diff - results(0,0)) <= epsilon);
     }
-#if 0
     SECTION("ALS MODE = 3, Finite error"){
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);

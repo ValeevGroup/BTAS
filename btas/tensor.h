@@ -739,9 +739,9 @@ namespace btas {
   bool operator==(const _Tensor1& t1, const _Tensor2& t2) {
       using std::cbegin;
       using std::cend;
-      if (t1.range().order == t2.range().order &&
-          t1.range().ordinal().contiguous() &&
-          t2.range().ordinal().contiguous()) // plain Tensor
+      if (btas::range_traits<std::decay_t<decltype(t1.range())>>::order == btas::range_traits<std::decay_t<decltype(t2.range())>>::order &&
+          is_contiguous(t1.range()) &&
+          is_contiguous(t2.range())) // plain Tensor
         return congruent(t1.range(), t2.range()) && std::equal(cbegin(t1.storage()),
                                                                cend(t1.storage()),
                                                                cbegin(t2.storage()));
