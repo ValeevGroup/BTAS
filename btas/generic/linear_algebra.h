@@ -223,7 +223,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
 
 #ifndef BTAS_HAS_BLAS_LAPACK
     BTAS_EXCEPTION("pseudoInverse required BLAS/LAPACK bindings to be enabled: -DBTAS_USE_BLAS_LAPACK=ON");
-#else
+#else // BTAS_HAS_BLAS_LAPACK
 
     using ind_t = typename Tensor::range_type::index_type::value_type;
     if (A.rank() > 2) {
@@ -259,7 +259,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
       if (s(i) > lr_thresh)
         s_inv(i, i) = 1 / s(i);
       else
-        s_inv(i, i) = s(i);
+        s_inv(i, i) = 0;
     }
     s.resize(Range{Range1{row}, Range1{col}});
 
