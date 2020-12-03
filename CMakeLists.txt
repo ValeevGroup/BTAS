@@ -138,8 +138,28 @@ add_custom_target(External-btas)
 #  target_link_libraries(BTAS INTERFACE ${LAPACKE_LIBRARIES} ${CBLAS_LIBRARIES})
 #endif(BTAS_USE_CBLAS_LAPACKE)
 
-find_package( blaspp   REQUIRED )
-find_package( lapackpp REQUIRED )
+include(FetchContent)
+
+find_package( blaspp QUIET )
+if( NOT blaspp_FOUND )
+  FetchContent_Declare( blaspp
+    GIT_REPOSITORY https://bitbucket.org/icl/blaspp.git 
+  )
+  
+  FetchContent_MakeAvailable( blaspp )
+endif()
+
+
+find_package( OpenMP QUIET ) #XXX Open LAPACKPP issue for this...
+find_package( lapackpp QUIET )
+if( NOT lapackpp_FOUND )
+  FetchContent_Declare( lapackpp
+    GIT_REPOSITORY https://bitbucket.org/icl/lapackpp.git 
+  )
+  
+  FetchContent_MakeAvailable( lapackpp )
+endif()
+
 target_link_libraries( BTAS INTERFACE blaspp lapackpp )
 
 include(external/boost.cmake)

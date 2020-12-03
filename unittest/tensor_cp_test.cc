@@ -162,6 +162,7 @@ TEST_CASE("CP")
     }
       
   }
+#if 0
   // RALS tests
   {
     SECTION("RALS MODE = 3, Finite rank"){
@@ -331,4 +332,5 @@ TEST_CASE("CP")
       CHECK((diff - results(35,0)) <= epsilon);
     }
   }
+#endif
 }
