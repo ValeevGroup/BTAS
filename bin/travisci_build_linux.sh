@@ -39,20 +39,20 @@ cd ${BUILD_PREFIX}
 #cd ..
 
 
-########## build blaspp + lapackpp    ##########
-export icl_install_prefix=$PWD/icl_install
-git clone https://dbwy@bitbucket.org/icl/blaspp.git
-git clone https://dbwy@bitbucket.org/icl/lapackpp.git
-
-mkdir -p blaspp/build && cd blaspp/build
-cmake .. -DCMAKE_INSTALL_PREFIX=${icl_install} -Dbuild_tests=OFF
-make -j2 install
-
-
-mkdir -p lapackpp/build && cd lapackpp/build
-cmake .. -DCMAKE_INSTALL_PREFIX=${icl_install} -DBUILD_LAPACKPP_TESTS=OFF
-make -j2 install
-cd ../..
+########### build blaspp + lapackpp    ##########
+#export icl_install_prefix=$PWD/icl_install
+#git clone https://dbwy@bitbucket.org/icl/blaspp.git
+#git clone https://dbwy@bitbucket.org/icl/lapackpp.git
+#
+#mkdir -p blaspp/build && cd blaspp/build
+#cmake .. -DCMAKE_INSTALL_PREFIX=${icl_install} -Dbuild_tests=OFF
+#make -j2 install
+#
+#
+#mkdir -p lapackpp/build && cd lapackpp/build
+#cmake .. -DCMAKE_INSTALL_PREFIX=${icl_install} -DBUILD_LAPACKPP_TESTS=OFF
+#make -j2 install
+#cd ../..
 
 
 ########## test without blas+lapack   ##########
