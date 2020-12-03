@@ -76,7 +76,6 @@ TEST_CASE("CP")
 
   // ALS tests
   {
-#if 0
     SECTION("ALS MODE = 3, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
@@ -134,6 +133,7 @@ TEST_CASE("CP")
       double diff = A1.compress_compute_rand(3, conv, 0, 2, 1, true, false, 20, true);
       CHECK((diff - results(7,0)) <= epsilon);
     }
+
     SECTION("ALS MODE = 5, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
@@ -160,9 +160,8 @@ TEST_CASE("CP")
       double diff = A1. compress_compute_rand(1, conv, 0, 2, 5, true, false, 100, false);
       CHECK((diff - results(11,0)) <= epsilon);
     }
-#endif
+      
   }
-#if 0
   // RALS tests
   {
     SECTION("RALS MODE = 3, Finite rank"){
@@ -332,5 +331,4 @@ TEST_CASE("CP")
       CHECK((diff - results(35,0)) <= epsilon);
     }
   }
-#endif
 }

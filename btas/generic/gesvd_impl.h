@@ -14,6 +14,7 @@
 #include <btas/generic/numeric_type.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
 #include <btas/generic/blas_lapack_delegator.h>
+#include <btas/generic/lapack_extensions.hpp>
 
 namespace btas {
 
@@ -62,15 +63,8 @@ template<> struct gesvd_impl<true>
      using value_type = typename std::iterator_traits<_IteratorA>::value_type;
      using real_type  = real_type_t<value_type>;
 
-     // LAPACKPP only works for ColMajor, so we actually perform the SVD on
-     // A**T if RowMajor
-
-     const bool needU       = jobu  != lapack::Job::NoVec;
-     const bool needVt      = jobvt != lapack::Job::NoVec;
-     const bool needVectors = needU or needVt;
-
-     const bool fullU     = jobu  == lapack::Job::AllVec;
-     const bool fullVt    = jobvt == lapack::Job::AllVec;
+     const bool needU     = jobu  != lapack::Job::NoVec;
+     const bool needVt    = jobvt != lapack::Job::NoVec;
      const bool inplaceU  = jobu  == lapack::Job::OverwriteVec;
      const bool inplaceVt = jobvt == lapack::Job::OverwriteVec;
 
@@ -88,68 +82,10 @@ template<> struct gesvd_impl<true>
 
      real_type* S = static_cast<real_type*> (&(*itrS));
 
-     // Singular values are invaraint to transposition, so it doesn't
-     // matter if we run through the col major code if we done need them
-     if( order == blas::Layout::ColMajor or !needVectors ) {
+     auto info = gesvd( jobu, jobvt, Msize, Nsize, A, LDA, S, U, LDU, Vt, LDVt );
 
-       std::cout << "IN LAPACKPP GESVD IMPL (ColMajor)" << std::endl;
-       lapack::gesvd( jobvt, jobu, Msize, Nsize, A, LDA, S, U, LDU, Vt, LDVt );
-
-     } else {
-
-       const auto Ksize     = std::min( Msize, Nsize );
-
-       size_t rm_rows_A  = Msize;     
-       size_t rm_cols_A  = Nsize;
-       size_t rm_rows_U  = Msize;
-       size_t rm_cols_U  = fullU  ? Msize : Ksize;
-       size_t rm_rows_Vt = fullVt ? Nsize : Ksize;
-       size_t rm_cols_Vt = Nsize;
-
-       // This is the volume of storage we have
-       size_t volA  = LDA  * rm_rows_A;
-       size_t volU  = LDU  * rm_rows_U;
-       size_t volVt = LDVt * rm_rows_Vt;
-
-
-       // A = U(A) * S(A) * V(A)**H ===> A**T = CONJ(V(A)) * S(A) * U(A)**T
-       
-       // Run SVD with U <-> VT swapped
-       size_t cm_rows_A  = rm_cols_A;
-       size_t cm_cols_A  = rm_rows_A;
-       size_t cm_rows_U  = rm_cols_Vt;
-       size_t cm_cols_U  = rm_rows_Vt;
-       size_t cm_rows_Vt = rm_cols_U;
-       size_t cm_cols_Vt = rm_rows_U;
-
-       // Check if U with fit in the memory space of VT and <->
-       value_type* U_use  = Vt;
-       value_type* Vt_use = U;
-
-#if 0 // Pretty sure this isn't needed
-       value_type* U_local = nullptr, Vt_local = nullptr;
-
-       size_t req_szVt = cm_cols_Vt * cm_rows_Vt;
-       size_t req_szU  = cm_cols_U  * cm_rows_U;
-
-       std::allocator<value_type> allocator;
-       if( needU and (not inplaceU) and volVt < req_szU ) {
-         U_local = allocator.allocate( req_szU );
-         U_use   = U_local;
-       }
-
-       if( needVt and (not inplaceVt) and volU < req_szVt ) {
-         Vt_local = allocator.allocate( req_szVt );
-         Vt_use   = Vt_local;
-       }
-#endif
-
-       std::cout << "IN LAPACKPP GESVD IMPL (RowMajor)" << std::endl;
-       lapack::gesvd( jobu, jobvt, cm_rows_A, cm_cols_A, A, cm_rows_A,
-                      S, U_use, cm_rows_U, Vt_use, cm_rows_Vt );
-     }
  
-     
+     if( info ) BTAS_EXCEPTION("SVD Failed");     
 
      
    }

@@ -231,6 +231,8 @@ namespace btas {
 
 
 
+  template <typename T>
+  inline constexpr bool is_complex_type_v = not std::is_same_v< T, real_type_t<T> >;
 
 
 

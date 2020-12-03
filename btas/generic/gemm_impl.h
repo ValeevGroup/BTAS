@@ -265,7 +265,7 @@ template<> struct gemm_impl<true>
       using b_ptr_type = const b_value_type*;
       using c_ptr_type =       c_value_type*;
 
-      std::cout << "IN BLASPP GEMM IMPL" << std::endl;
+      //std::cout << "IN BLASPP GEMM IMPL" << std::endl;
       blas::gemm( order, transA, transB, Msize, Nsize, Ksize, alpha,
                   static_cast<a_ptr_type>(&(*itrA)), LDA,
                   static_cast<b_ptr_type>(&(*itrB)), LDB,

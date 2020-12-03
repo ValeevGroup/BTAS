@@ -51,7 +51,7 @@ template<> struct axpy_impl<true>
             _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY,
       blas_lapack_impl_tag)
    { 
-     std::cout << "IN BLASPP AXPY IMPL" << std::endl;
+     //std::cout << "IN BLASPP AXPY IMPL" << std::endl;
      blas::axpy( Nsize, alpha, static_cast<const _T*>(&(*itrX)), incX, 
                                static_cast<_T*>(&(*itrY)),       incY );
    }

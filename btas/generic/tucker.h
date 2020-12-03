@@ -4,6 +4,7 @@
 #include <btas/generic/core_contract.h>
 #include <btas/generic/flatten.h>
 #include <btas/generic/contract.h>
+#include <btas/generic/lapack_extensions.hpp>
 
 #include <cstdlib>
 
@@ -42,14 +43,10 @@ void tucker_compression(Tensor &A, double epsilon_svd,
     gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flat, flat, 0.0, S);
 
     // Calculate SVD of smaller object.
-#ifdef BTAS_HAS_LAPACKE
-    auto info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'L', R, S.data(), R,
-                              lambda.data());
-    if (info)
-    BTAS_EXCEPTION("Error in computing the tucker SVD");
-#else
-    BTAS_EXCEPTION("Tucker decomposition requires LAPACKE");
-#endif
+    // XXX DBWY Why not SVD here?
+    auto info = hereig( blas::Layout::RowMajor, lapack::Job::Vec, 
+                        lapack::Uplo::Lower, R, S.data(), R, lambda.data() );
+    if (info) BTAS_EXCEPTION("Error in computing the tucker SVD");
 
     // Find the truncation rank based on the threshold.
     ind_t rank = 0;

@@ -5,6 +5,7 @@
 #ifndef BTAS_LINEAR_ALGEBRA_H
 #define BTAS_LINEAR_ALGEBRA_H
 #include <btas/error.h>
+#include <btas/generic/lapack_extensions.hpp>
 
 namespace btas{
 /// Computes L of the LU decomposition of tensor \c A
@@ -15,20 +16,18 @@ namespace btas{
     using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
-#ifndef BTAS_HAS_LAPACKE
-    BTAS_EXCEPTION("Using this function requires LAPACKE");
-#else //BTAS_HAS_LAPACKE
 
     if (A.rank() > 2) {
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
     }
 
-    btas::Tensor<lapack_int> piv(std::min(A.extent(0), A.extent(1)));
     Tensor L(A.range());
     Tensor P(A.extent(0), A.extent(0));
     P.fill(0.0);
     L.fill(0.0);
 
+#if 0
+    btas::Tensor<lapack_int> piv(std::min(A.extent(0), A.extent(1)));
     // LAPACKE LU decomposition gives back dense L and U to be
     // restored into lower and upper triangular form, and a pivoting
     // matrix for L
@@ -40,6 +39,15 @@ namespace btas{
     if (info < 0) {
       BTAS_EXCEPTION("LU_decomp: LAPACKE_dgetrf received an invalid input parameter");
     }
+#else
+    btas::Tensor<int64_t> piv(std::min(A.extent(0), A.extent(1)));
+    auto info = getrf( blas::Layout::RowMajor, A.extent(0), A.extent(1),
+                       A.data(), A.extent(1), piv.data() );
+    if( info < 0) {
+      BTAS_EXCEPTION("LU_decomp: GETRF had an illegal arg");
+    }
+#endif
+
 
     // This means that part of the LU is singular which may cause a problem in
     // ones QR decomposition but LU can be computed fine.
@@ -89,8 +97,7 @@ namespace btas{
     }
 
     // contracting the pivoting matrix with L to put in correct order
-    gemm(CblasNoTrans, CblasNoTrans, 1.0, P, L, 0.0, A);
-#endif // BTAS_HAS_LAPACKE
+    gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, P, L, 0.0, A);
   }
 
 /// Computes the QR decomposition of matrix \c A
@@ -100,16 +107,13 @@ namespace btas{
 
   template <typename Tensor> bool QR_decomp(Tensor &A) {
 
-#ifndef BTAS_HAS_LAPACKE
-    BTAS_EXCEPTION("Using this function requires LAPACKE");
-#else //BTAS_HAS_LAPACKE
-
     using ind_t = typename Tensor::range_type::index_type::value_type;
 
     if (A.rank() > 2) {
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
     }
 
+#if 0
     ind_t Qm = A.extent(0);
     ind_t Qn = A.extent(1);
     Tensor B(1, std::min(Qm, Qn));
@@ -134,7 +138,12 @@ namespace btas{
     } else {
       return false;
     }
-#endif // BTAS_HAS_LAPACKE
+#else
+
+    return !householder_qr_genq( blas::Layout::RowMajor, A.extent(0), A.extent(1),
+                                 A.data(), A.extent(1) ); 
+
+#endif
   }
 
 /// Computes the inverse of a matrix \c A using a pivoted LU decomposition
@@ -144,14 +153,11 @@ namespace btas{
   template <typename Tensor>
   bool Inverse_Matrix(Tensor & A){
 
-#ifndef BTAS_HAS_LAPACKE
-    BTAS_EXCEPTION("Using LU matrix inversion requires LAPACKE");
-#else //BTAS_HAS_LAPACKE
-
     if(A.rank() > 2){
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
     }
 
+#if 0
     btas::Tensor<lapack_int> piv(std::min(A.extent(0), A.extent(1)));
     piv.fill(0);
 
@@ -170,7 +176,15 @@ namespace btas{
       return false;
     }
     return true;
-#endif // BTAS_HAS_LAPACKE
+#else
+
+    if( A.extent(0) != A.extent(1) ) {
+      BTAS_EXCEPTION("Can only invert square matrices.");
+    }
+
+    return !lu_inverse( blas::Layout::RowMajor, A.extent(0), A.data(), A.extent(0) );
+
+#endif
   }
 
 /// Computes the eigenvalue decomposition of a matrix \c A and
@@ -181,9 +195,7 @@ namespace btas{
 ///  matrix \c A
   template <typename Tensor>
   void eigenvalue_decomp(Tensor & A, Tensor & lambda) {
-#ifndef BTAS_HAS_LAPACKE
-    BTAS_EXCEPTION("Using eigenvalue decomposition requires LAPACKE");
-#else //BTAS_HAS_LAPACKE
+
     using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
@@ -196,10 +208,17 @@ namespace btas{
       BTAS_EXCEPTION("Volume of lambda must be greater than or equal to the largest mode of A");
     }
 
+#if 0
     auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', smallest_mode_A,
                               A.data(), smallest_mode_A, lambda.data());
+#else
+    auto info = hereig( blas::Layout::RowMajor, lapack::Job::Vec, 
+                        lapack::Uplo::Upper, smallest_mode_A, A.data(),
+                        smallest_mode_A, lambda.data() );
+#endif
+    // XXX DBWY: Why not compute the SVD here?
     if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
-#endif // BTAS_HAS_LAPACKE
+
   }
 
   /// Solving Ax = B using a Cholesky decomposition
@@ -212,15 +231,13 @@ namespace btas{
   /// \return bool true if inversion was successful false if failed.
 template <typename Tensor>
 bool cholesky_inverse(Tensor & A, Tensor & B) {
-#ifndef BTAS_HAS_LAPACKE
-    BTAS_EXCEPTION("Cholesky inverse function requires LAPACKE");
-#else //BTAS_HAS_LAPACKE
     using ind_t = typename Tensor::range_type::index_type::value_type;
     // This method computes the inverse quickly for a square matrix
     // based on MATLAB's implementation of A / B operator.
     ind_t rank = B.extent(1);
     ind_t LDB = B.extent(0);
 
+#if 0
     btas::Tensor<lapack_int, DEFAULT::range, varray <lapack_int> > piv(rank);
     piv.fill(0);
     auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, A.data(), rank, piv.data(), B.data(), rank);
@@ -231,7 +248,12 @@ bool cholesky_inverse(Tensor & A, Tensor & B) {
       std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
       return false;
     }
-#endif //BTAS_HAS_LAPACKE
+#else
+    // XXX DBWY Col Major?
+    // XXX DBWY GESV not POSV?
+    return !gesv( blas::Layout::ColMajor, rank, LDB, A.data(), rank, B.data(), 
+                  rank );
+#endif
 }
 
 /// SVD referencing code from
@@ -243,9 +265,6 @@ bool cholesky_inverse(Tensor & A, Tensor & B) {
 /// \return \f$ A^{\dagger} \f$ The pseudoinverse of the matrix A.
 template <typename Tensor>
 Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
-#ifndef BTAS_HAS_LAPACKE
-    BTAS_EXCEPTION("Computing the pseudoinverses requires LAPACKE");
-#else //BTAS_HAS_LAPACKE
 
     using ind_t = typename Tensor::range_type::index_type::value_type;
     if (A.rank() > 2) {
@@ -258,10 +277,10 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
     if (fast_pI) {
       Tensor temp(col, col), inv(col, row);
       // compute V^{\dag} = (A^T A) ^{-1} A^T
-      gemm(CblasTrans, CblasNoTrans, 1.0, A, A, 0.0, temp);
+      gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A, A, 0.0, temp);
       fast_pI = Inverse_Matrix(temp);
       if (fast_pI) {
-        gemm(CblasNoTrans, CblasTrans, 1.0, temp, A, 0.0, inv);
+        gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, temp, A, 0.0, inv);
         return inv;
       } else {
         std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
@@ -271,7 +290,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
     Tensor U(Range{Range1{row}, Range1{row}});
     Tensor Vt(Range{Range1{col}, Range1{col}});
 
-    gesvd('A', 'A', A, s, U, Vt);
+    gesvd(lapack::Job::AllVec, lapack::Job::AllVec, A, s, U, Vt);
 
     // Inverse the Singular values with threshold 1e-13 = 0
     double lr_thresh = 1e-13;
@@ -287,11 +306,11 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
 
     // Compute the matrix A^-1 from the inverted singular values and the U and
     // V^T provided by the SVD
-    gemm(CblasNoTrans, CblasNoTrans, 1.0, U, s_inv, 0.0, s);
-    gemm(CblasNoTrans, CblasNoTrans, 1.0, s, Vt, 0.0, U);
+    gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, U, s_inv, 0.0, s);
+    gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, s, Vt, 0.0, U);
 
     return U;
-#endif // BTAS_HAS_LAPACKE
+                          
   }
 
 } // namespace btas
