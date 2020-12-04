@@ -160,9 +160,7 @@ TEST_CASE("CP")
       double diff = A1. compress_compute_rand(1, conv, 0, 2, 5, true, false, 100, false);
       CHECK((diff - results(11,0)) <= epsilon);
     }
-      
   }
-#if 1
   // RALS tests
   {
     SECTION("RALS MODE = 3, Finite rank"){
@@ -178,6 +176,7 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
       CHECK((diff - results(13,0)) <= epsilon);
     }
+#if 0
     SECTION("RALS MODE = 3, Tucker + CP"){
       auto d = D3;
       CP_RALS<tensor, conv_class> A1(d);
@@ -247,7 +246,9 @@ TEST_CASE("CP")
       double diff = A1.compress_compute_rand(1, conv, 0, 2, 5, true, false, 100, true);
       CHECK((diff - results(23,0)) <= epsilon);
     }
+#endif
   }
+#if 0
   // CP-DF-ALS tests
   {
     SECTION("DF-ALS MODE = 3, Finite rank"){
@@ -287,6 +288,8 @@ TEST_CASE("CP")
       CHECK((diff - results(29,0)) <= epsilon);
     }
   }
+#endif
+#if 0
   // coupled ALS test
   {
     SECTION("COUPLED-ALS MODE = 3, Finite rank"){

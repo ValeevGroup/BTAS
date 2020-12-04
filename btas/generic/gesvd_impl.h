@@ -82,7 +82,7 @@ template<> struct gesvd_impl<true>
 
      real_type* S = static_cast<real_type*> (&(*itrS));
 
-     auto info = gesvd( jobu, jobvt, Msize, Nsize, A, LDA, S, U, LDU, Vt, LDVt );
+     auto info = gesvd( order, jobu, jobvt, Msize, Nsize, A, LDA, S, U, LDU, Vt, LDVt );
 
  
      if( info ) BTAS_EXCEPTION("SVD Failed");     
