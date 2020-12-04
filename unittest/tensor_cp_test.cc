@@ -162,7 +162,7 @@ TEST_CASE("CP")
     }
       
   }
-#if 0
+#if 1
   // RALS tests
   {
     SECTION("RALS MODE = 3, Finite rank"){
