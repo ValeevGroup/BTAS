@@ -16,7 +16,7 @@ template <typename T, typename Alloc = std::allocator<T>>
 int64_t getrf( blas::Layout order, int64_t M, int64_t N, T* A, int64_t LDA,
                int64_t* IPIV, Alloc alloc = Alloc() ) {
 
-  std::cout << "IN GETRF IMPL" << std::endl;
+  //std::cout << "IN GETRF IMPL" << std::endl;
   if( order == blas::Layout::ColMajor ) {
     return lapack::getrf( M, N, A, LDA, IPIV );
   } else {
@@ -44,7 +44,7 @@ int64_t gesv( blas::Layout order, int64_t N, int64_t NRHS, T* A, int64_t LDA,
               T* B, int64_t LDB, Alloc alloc = Alloc(),
               IntAlloc int_alloc = IntAlloc() ) {
 
-  std::cout << "IN GESV IMPL" << std::endl;
+  //std::cout << "IN GESV IMPL" << std::endl;
   // Allocate IPIV
   auto* IPIV = int_alloc.allocate(N);
 
@@ -77,7 +77,7 @@ int64_t gesvd( blas::Layout order, lapack::Job jobu, lapack::Job jobvt,
                int64_t M, int64_t N, T* A, int64_t LDA, real_type_t<T>* S, 
                T* U, int64_t LDU, T* VT, int64_t LDVT ) {
 
-  std::cout << "IN GESVD IMPL" << std::endl;
+  //std::cout << "IN GESVD IMPL" << std::endl;
   // Col major, no changes
   if( order == blas::Layout::ColMajor ) {
 
@@ -97,7 +97,7 @@ template <typename T, typename Alloc = std::allocator<T>>
 int64_t householder_qr_genq( blas::Layout order, int64_t M, int64_t N, T* A,
                              int64_t LDA, Alloc alloc = Alloc() ) {
 
-  std::cout << "IN QR IMPL" << std::endl;
+  //std::cout << "IN QR IMPL" << std::endl;
   // Allocate temp storage for TAU factors
   const int64_t K = std::min(M,N);
   auto* TAU = alloc.allocate( K );
@@ -148,7 +148,7 @@ int64_t lu_inverse( blas::Layout order, int64_t N, T* A, int64_t LDA,
                     Alloc alloc = Alloc(), 
                     IntAlloc int_alloc = IntAlloc() ) {
 
-  std::cout << "IN LU INV IMPL" << std::endl;
+  //std::cout << "IN LU INV IMPL" << std::endl;
   auto* A_use = A;
   int64_t LDA_use = LDA;
 
@@ -189,7 +189,7 @@ int64_t hereig( blas::Layout order, lapack::Job jobz, lapack::Uplo uplo,
                 int64_t N, T* A, int64_t LDA, real_type_t<T>* W,
                 Alloc alloc = Alloc() ) {
 
-  std::cout << "IN HEREIG IMPL" << std::endl;
+  //std::cout << "IN HEREIG IMPL" << std::endl;
   // If row major, Swap uplo
   if( order == blas::Layout::RowMajor ) {
 

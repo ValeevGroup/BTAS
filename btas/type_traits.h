@@ -2,6 +2,7 @@
 #define __BTAS_TYPE_TRAITS_H 1
 
 #include <type_traits>
+#include <complex>
 
 // C++20 extensions
 // TODO: CPP guard if compiling with C++20
