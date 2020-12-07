@@ -64,6 +64,7 @@ template<> struct ger_impl<true>
       }
    }
 
+#ifdef BTAS_HAS_BLAS_LAPACK
    template<typename _T, class _IteratorX, class _IteratorY, class _IteratorA>
    static void call_impl (
       const blas::Layout& order,
@@ -85,6 +86,7 @@ template<> struct ger_impl<true>
                  static_cast<const _T*>(&(*itrY)), incY,
                  static_cast<      _T*>(&*(itrA)), LDA );
    }
+#endif
 
    template<typename _T, class _IteratorX, class _IteratorY, class _IteratorA>
    static void call (

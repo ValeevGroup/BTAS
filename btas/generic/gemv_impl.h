@@ -133,6 +133,7 @@ template<> struct gemv_impl<true>
       }
    }
 
+#ifdef BTAS_HAS_BLAS_LAPACK
    template<typename _T, class _IteratorA, class _IteratorX, class _IteratorY>
    static void call_impl (
       const blas::Layout& order,
@@ -158,6 +159,7 @@ template<> struct gemv_impl<true>
                  static_cast<      _T*>(&(*itrY)), incY );
                 
    }
+#endif
 
    template<typename _T, class _IteratorA, class _IteratorX, class _IteratorY>
    static void call (

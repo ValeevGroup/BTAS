@@ -40,9 +40,11 @@ template<> struct gesvd_impl<true>
       const unsigned long& LDVt,
       generic_impl_tag)
    {
-      assert(false); // gesvd_impl<true> for a generic iterator type has not yet been implemented.
+      BTAS_EXCEPTION("GESVD Does not have a Generic Implementation");
    }
 
+
+#ifdef BTAS_HAS_BLAS_LAPACK
    template<class _IteratorA, class _IteratorS, class _IteratorU, class _IteratorVt>
    static void call_impl (
       const blas::Layout& order,
@@ -89,6 +91,7 @@ template<> struct gesvd_impl<true>
 
      
    }
+#endif
 
    template<class _IteratorA, class _IteratorS, class _IteratorU, class _IteratorVt>
    static void call (

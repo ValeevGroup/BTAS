@@ -13,6 +13,10 @@ namespace btas{
 /// The L of an LU decomposition of \c A.
 
   template <typename Tensor> void LU_decomp(Tensor &A) {
+
+#ifndef BTAS_HAS_BLAS_LAPACK
+    BTAS_EXCEPTION("LU_decomp required BLAS/LAPACK bindings to be enabled: -DBTAS_USE_BLAS_LAPACK=ON");
+#else
     using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
@@ -83,6 +87,7 @@ namespace btas{
 
     // contracting the pivoting matrix with L to put in correct order
     gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, P, L, 0.0, A);
+#endif
   }
 
 /// Computes the QR decomposition of matrix \c A
@@ -91,6 +96,10 @@ namespace btas{
 /// \return bool true if QR was successful false if failed.
 
   template <typename Tensor> bool QR_decomp(Tensor &A) {
+
+#ifndef BTAS_HAS_BLAS_LAPACK
+    BTAS_EXCEPTION("QR_decomp required BLAS/LAPACK bindings to be enabled: -DBTAS_USE_BLAS_LAPACK=ON");
+#else
 
     using ind_t = typename Tensor::range_type::index_type::value_type;
 
@@ -101,7 +110,7 @@ namespace btas{
 
     return !householder_qr_genq( blas::Layout::RowMajor, A.extent(0), A.extent(1),
                                  A.data(), A.extent(1) ); 
-
+#endif
   }
 
 /// Computes the inverse of a matrix \c A using a pivoted LU decomposition
@@ -111,6 +120,9 @@ namespace btas{
   template <typename Tensor>
   bool Inverse_Matrix(Tensor & A){
 
+#ifndef BTAS_HAS_BLAS_LAPACK
+    BTAS_EXCEPTION("INVERSE_MATRIX required BLAS/LAPACK bindings to be enabled: -DBTAS_USE_BLAS_LAPACK=ON");
+#else
     if(A.rank() > 2){
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
     }
@@ -121,7 +133,7 @@ namespace btas{
     }
 
     return !lu_inverse( blas::Layout::RowMajor, A.extent(0), A.data(), A.extent(0) );
-
+#endif
   }
 
 /// Computes the eigenvalue decomposition of a matrix \c A and
@@ -132,6 +144,10 @@ namespace btas{
 ///  matrix \c A
   template <typename Tensor>
   void eigenvalue_decomp(Tensor & A, Tensor & lambda) {
+
+#ifndef BTAS_HAS_BLAS_LAPACK
+    BTAS_EXCEPTION("eigenvalue_decomp required BLAS/LAPACK bindings to be enabled: -DBTAS_USE_BLAS_LAPACK=ON");
+#else
 
     using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
@@ -149,6 +165,7 @@ namespace btas{
                         lapack::Uplo::Upper, smallest_mode_A, A.data(),
                         smallest_mode_A, lambda.data() );
     if (info) BTAS_EXCEPTION("Error in computing the Eigenvalue decomposition");
+#endif
 
   }
 
@@ -162,6 +179,11 @@ namespace btas{
   /// \return bool true if inversion was successful false if failed.
 template <typename Tensor>
 bool cholesky_inverse(Tensor & A, Tensor & B) {
+
+#ifndef BTAS_HAS_BLAS_LAPACK
+    BTAS_EXCEPTION("cholesky_inverse required BLAS/LAPACK bindings to be enabled: -DBTAS_USE_BLAS_LAPACK=ON");
+#else
+
     using ind_t = typename Tensor::range_type::index_type::value_type;
     // This method computes the inverse quickly for a square matrix
     // based on MATLAB's implementation of A / B operator.
@@ -185,6 +207,8 @@ bool cholesky_inverse(Tensor & A, Tensor & B) {
     return !gesv( blas::Layout::ColMajor, rank, LDB, A.data(), rank, B.data(), 
                   rank );
 #endif
+
+#endif
 }
 
 /// SVD referencing code from
@@ -196,6 +220,10 @@ bool cholesky_inverse(Tensor & A, Tensor & B) {
 /// \return \f$ A^{\dagger} \f$ The pseudoinverse of the matrix A.
 template <typename Tensor>
 Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
+
+#ifndef BTAS_HAS_BLAS_LAPACK
+    BTAS_EXCEPTION("pseudoInverse required BLAS/LAPACK bindings to be enabled: -DBTAS_USE_BLAS_LAPACK=ON");
+#else
 
     using ind_t = typename Tensor::range_type::index_type::value_type;
     if (A.rank() > 2) {
@@ -242,6 +270,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
 
     return U;
                           
+#endif
   }
 
 } // namespace btas

@@ -1,3 +1,4 @@
+#ifdef BTAS_HAS_BLAS_LAPACK
 #include <btas/btas.h>
 #include <btas/generic/converge_class.h>
 #include "../unittest/test.h"
@@ -366,3 +367,4 @@ TEST_CASE("CP")
   }
       
 }
+#endif

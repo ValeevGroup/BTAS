@@ -4,8 +4,12 @@
 
 namespace btas {
 
-struct blas_lapack_impl_tag {};
 struct generic_impl_tag     {};
+
+
+#ifdef BTAS_HAS_BLAS_LAPACK
+
+struct blas_lapack_impl_tag {};
 
 template <typename... _Iterators>
 struct blas_lapack_impl_delegator {
@@ -14,6 +18,15 @@ struct blas_lapack_impl_delegator {
                         blas_lapack_impl_tag,
                         generic_impl_tag >;
 };
+
+#else
+
+template <typename... _Iterators>
+struct blas_lapack_impl_delegator {
+  using tag_type = generic_impl_tag;
+};
+
+#endif
 
 
 template <typename... _Iterators>

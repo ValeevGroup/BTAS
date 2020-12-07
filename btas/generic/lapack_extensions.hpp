@@ -5,6 +5,8 @@
 #ifndef BTAS_LAPACK_EXTENSIONS_H
 #define BTAS_LAPACK_EXTENSIONS_H 1
 
+#ifdef BTAS_HAS_BLAS_LAPACK
+
 #include <blas.hh>   // BLASPP
 #include <lapack.hh> // LAPACKPP
 #include <btas/generic/transpose.h> // Transpose
@@ -233,4 +235,7 @@ int64_t hereig( blas::Layout order, lapack::Job jobz, lapack::Uplo uplo,
 }
 
 }
+
+#endif // BLAS_LAPACK
+
 #endif

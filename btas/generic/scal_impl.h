@@ -36,6 +36,7 @@ template<> struct scal_impl<true>
       }
    }
 
+#ifdef BTAS_HAS_BLAS_LAPACK
    template<typename _T, class _IteratorX>
    static void call_impl (
       const unsigned long& Nsize,
@@ -46,6 +47,7 @@ template<> struct scal_impl<true>
      //std::cout << "IN BLASPP SCAL IMPL" << std::endl;
      blas::scal( Nsize, alpha, static_cast<_T*>(&(*itrX)), incX );
    }
+#endif
 
    template<typename _T, class _IteratorX>
    static void call (

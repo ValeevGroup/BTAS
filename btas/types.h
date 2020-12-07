@@ -150,8 +150,48 @@ namespace btas {
 
 #endif
 
+#ifdef BTAS_HAS_BLAS_LAPACK
+
 #include <blas.hh>
 #include <lapack.hh>
+
+#else
+
+namespace blas {
+
+enum class Layout : char {
+  RowMajor = 'R',
+  ColMajor = 'C'
+};
+
+enum class Op : char {
+  NoTrans   = 'N',
+  Trans     = 'T',
+  ConjTrans = 'C'
+};
+
+enum class Uplo : char {
+  Upper = 'U',
+  Lower = 'L'
+};
+
+}
+
+namespace lapack {
+
+enum class Job : char {
+  Vec          = 'V',
+  NoVec        = 'N', 
+  AllVec       = 'A',
+  OverwriteVec = 'O'
+};
+
+typedef blas::Uplo Uplo;
+
+
+}
+
+#endif
 
 namespace btas {
 

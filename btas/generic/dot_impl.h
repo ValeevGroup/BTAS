@@ -91,7 +91,7 @@ struct dotc_impl<true> {
       generic_impl_tag)
   {
 
-      auto val = (*itrX) * (*itrY);
+      auto val = impl::conj(*itrX) * (*itrY);
       itrX += incX;
       itrY += incY;
       for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)
@@ -102,6 +102,7 @@ struct dotc_impl<true> {
 
   }
 
+#ifdef BTAS_HAS_BLAS_LAPACK
   template<class _IteratorX, class _IteratorY>
   static auto call_impl (
       const unsigned long& Nsize,
@@ -126,6 +127,7 @@ struct dotc_impl<true> {
                                static_cast<y_ptr_type>(&(*itrY)), incY );
 
   }
+#endif
 
   template<class _IteratorX, class _IteratorY>
   static auto call (
@@ -157,12 +159,13 @@ struct dotu_impl<true> {
       itrY += incY;
       for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)
       {
-         val += conj(*itrX) * (*itrY);
+         val += (*itrX) * (*itrY);
       }
       return val;
 
   }
 
+#ifdef BTAS_HAS_BLAS_LAPACK
   template<class _IteratorX, class _IteratorY>
   static auto call_impl (
       const unsigned long& Nsize,
@@ -186,6 +189,7 @@ struct dotu_impl<true> {
                                 static_cast<y_ptr_type>(&(*itrY)), incY );
 
   }
+#endif
 
   template<class _IteratorX, class _IteratorY>
   static auto call (

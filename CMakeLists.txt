@@ -21,6 +21,8 @@ add_feature_info(ASSERT_THROWS BTAS_ASSERT_THROWS "BTAS_ASSERT(x) will throw if 
 #add_feature_info(USE_CBLAS_LAPACKE BTAS_USE_CBLAS_LAPACKE "Will use BLAS and LAPACK linear algebra libraries via their CBLAS and LAPACKE interfaces")
 #redefaultable_option(BTAS_ENABLE_MKL "Whether to look for Intel MKL" ON)
 #add_feature_info(ENABLE_MKL BTAS_ENABLE_MKL "Will look for Intel MKL library")
+redefaultable_option(BTAS_USE_BLAS_LAPACK "Whether to enable BLAS+LAPACK bindings via BLASPP+LAPACKPP" ON)
+add_feature_info(USE_BLAS_LAPACK BTAS_USE_BLAS_LAPACK "Will use BLAS and LAPACK linear algebra distributions via their BLAS++/LAPACK++ interfaces" )
 
 set(TARGET_MAX_INDEX_RANK 6 CACHE STRING "Determines the rank for which the default BTAS index type will use stack (default: 6); this requires Boost.Container")
 add_feature_info("TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK}" TRUE "default BTAS index type will use stack for rank<=${TARGET_MAX_INDEX_RANK}")
@@ -138,6 +140,8 @@ add_custom_target(External-btas)
 #  target_link_libraries(BTAS INTERFACE ${LAPACKE_LIBRARIES} ${CBLAS_LIBRARIES})
 #endif(BTAS_USE_CBLAS_LAPACKE)
 
+if( BTAS_USE_BLAS_LAPACK )
+
 include(FetchContent)
 
 find_package( blaspp QUIET )
@@ -163,6 +167,7 @@ if( NOT lapackpp_FOUND )
 endif()
 
 target_link_libraries( BTAS INTERFACE blaspp lapackpp )
+target_compile_definitions( BTAS INTERFACE -DBTAS_HAS_BLAS_LAPACK=1 )
 
 
 # Check if BLAS/LAPACK is MKL
@@ -178,6 +183,8 @@ else()
   message( STATUS "BTAS DOES NOT HAVE MKL!" )
 endif()
 cmake_pop_check_state()
+
+endif()
 
 include(external/boost.cmake)
 

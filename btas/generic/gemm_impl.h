@@ -233,7 +233,7 @@ template<> struct gemm_impl<true>
    }
 
 
-
+#ifdef BTAS_HAS_BLAS_LAPACK
    template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
    static void call_impl (
       const blas::Layout& order,
@@ -272,6 +272,7 @@ template<> struct gemm_impl<true>
                   beta,
                   static_cast<c_ptr_type>(&(*itrC)), LDC );
     }
+#endif
 
    template<typename _T, class _IteratorA, class _IteratorB, class _IteratorC>
    static void call (
