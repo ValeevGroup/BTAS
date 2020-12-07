@@ -125,9 +125,6 @@ namespace btas{
     /// tensor
     /// \param[in] ndim number of modes in the reference tensor.
     CP(size_t dims) : num_ALS(0) {
-#if not defined(BTAS_HAS_LAPACKE)
-      BTAS_EXCEPTION_MESSAGE(__FILE__, __LINE__, "CP decompositions requires LAPACKE");
-#endif
       ndim = dims;
     }
 

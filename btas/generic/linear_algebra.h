@@ -26,27 +26,12 @@ namespace btas{
     P.fill(0.0);
     L.fill(0.0);
 
-#if 0
-    btas::Tensor<lapack_int> piv(std::min(A.extent(0), A.extent(1)));
-    // LAPACKE LU decomposition gives back dense L and U to be
-    // restored into lower and upper triangular form, and a pivoting
-    // matrix for L
-    auto info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, A.extent(0), A.extent(1),
-                               A.data(), A.extent(1), piv.data());
-
-    // This means there was a problem with the LU that must be dealt with,
-    // The decomposition cannot be continued.
-    if (info < 0) {
-      BTAS_EXCEPTION("LU_decomp: LAPACKE_dgetrf received an invalid input parameter");
-    }
-#else
     btas::Tensor<int64_t> piv(std::min(A.extent(0), A.extent(1)));
     auto info = getrf( blas::Layout::RowMajor, A.extent(0), A.extent(1),
                        A.data(), A.extent(1), piv.data() );
     if( info < 0) {
       BTAS_EXCEPTION("LU_decomp: GETRF had an illegal arg");
     }
-#endif
 
 
     // This means that part of the LU is singular which may cause a problem in
@@ -86,7 +71,7 @@ namespace btas{
     for (ind_t i = 0; i < piv.extent(0); i++)
       P(piv(i), i) = 1;
 
-    // Use the output of LAPACKE to make a lower triangular matrix, L
+    // Use the output of LAPACK to make a lower triangular matrix, L
     // TODO Make this more efficient using pointer arithmetic
     for (ord_t i = 0; i < L.extent(0); i++) {
       for (ord_t j = 0; j < i && j < L.extent(1); j++) {
@@ -110,40 +95,13 @@ namespace btas{
     using ind_t = typename Tensor::range_type::index_type::value_type;
 
     if (A.rank() > 2) {
-      BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
+      BTAS_EXCEPTION("Tensor rank > 2. Can only QR decompose matrices.");
     }
 
-#if 0
-    ind_t Qm = A.extent(0);
-    ind_t Qn = A.extent(1);
-    Tensor B(1, std::min(Qm, Qn));
-
-    // LAPACKE doesn't directly calculate Q. Must first call this function to
-    // generate precursors to Q
-    auto info = LAPACKE_dgeqrf(LAPACK_ROW_MAJOR, A.extent(0), A.extent(1),
-                               A.data(), A.extent(1), B.data());
-
-    if (info == 0) {
-      // This function generates Q.
-      info = LAPACKE_dorgqr(LAPACK_ROW_MAJOR, Qm, Qn, Qn, A.data(), A.extent(1),
-                            B.data());
-
-      // If there was some problem generating Q, i.e. it is singular, the
-      // randomized decompsoition will fail.  There is an exception thrown if
-      // there is a problem to stop the randomized decomposition
-      if (info != 0) {
-        return false;
-      }
-      return true;
-    } else {
-      return false;
-    }
-#else
 
     return !householder_qr_genq( blas::Layout::RowMajor, A.extent(0), A.extent(1),
                                  A.data(), A.extent(1) ); 
 
-#endif
   }
 
 /// Computes the inverse of a matrix \c A using a pivoted LU decomposition
@@ -157,26 +115,6 @@ namespace btas{
       BTAS_EXCEPTION("Tensor rank > 2. Can only invert matrices.");
     }
 
-#if 0
-    btas::Tensor<lapack_int> piv(std::min(A.extent(0), A.extent(1)));
-    piv.fill(0);
-
-    // LAPACKE LU decomposition gives back dense L and U to be
-    // restored into lower and upper triangular form, and a pivoting
-    // matrix for L
-    auto info = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, A.extent(0), A.extent(1),
-                               A.data(), A.extent(1), piv.data());
-    if(info != 0){
-      A = Tensor();
-      return false;
-    }
-    info = LAPACKE_dgetri(CblasRowMajor, A.extent(0), A.data(), A.extent(0), piv.data());
-    if(info != 0){
-      A = Tensor();
-      return false;
-    }
-    return true;
-#else
 
     if( A.extent(0) != A.extent(1) ) {
       BTAS_EXCEPTION("Can only invert square matrices.");
@@ -184,7 +122,6 @@ namespace btas{
 
     return !lu_inverse( blas::Layout::RowMajor, A.extent(0), A.data(), A.extent(0) );
 
-#endif
   }
 
 /// Computes the eigenvalue decomposition of a matrix \c A and
@@ -208,16 +145,10 @@ namespace btas{
       BTAS_EXCEPTION("Volume of lambda must be greater than or equal to the largest mode of A");
     }
 
-#if 0
-    auto info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', smallest_mode_A,
-                              A.data(), smallest_mode_A, lambda.data());
-#else
     auto info = hereig( blas::Layout::RowMajor, lapack::Job::Vec, 
                         lapack::Uplo::Upper, smallest_mode_A, A.data(),
                         smallest_mode_A, lambda.data() );
-#endif
-    // XXX DBWY: Why not compute the SVD here?
-    if (info) BTAS_EXCEPTION("Error in computing the SVD initial guess");
+    if (info) BTAS_EXCEPTION("Error in computing the Eigenvalue decomposition");
 
   }
 

@@ -144,6 +144,7 @@ find_package( blaspp QUIET )
 if( NOT blaspp_FOUND )
   FetchContent_Declare( blaspp
     GIT_REPOSITORY https://bitbucket.org/icl/blaspp.git 
+    GIT_TAG        9097d6b61468e9e8899d0aed49af0371ca4fff1d
   )
   
   FetchContent_MakeAvailable( blaspp )
@@ -155,12 +156,28 @@ find_package( lapackpp QUIET )
 if( NOT lapackpp_FOUND )
   FetchContent_Declare( lapackpp
     GIT_REPOSITORY https://bitbucket.org/icl/lapackpp.git 
+    GIT_TAG        213d13e584a8cb3bf0e7caf5d1d40cd10f4254ae
   )
   
   FetchContent_MakeAvailable( lapackpp )
 endif()
 
 target_link_libraries( BTAS INTERFACE blaspp lapackpp )
+
+
+# Check if BLAS/LAPACK is MKL
+set( BTAS_HAS_MKL )
+include( CheckFunctionExists )
+cmake_push_check_state( RESET )
+set( CMAKE_REQUIRED_LIBRARIES "${blaspp_libraries}" m )
+check_function_exists( mkl_dimatcopy  BTAS_HAS_MKL )
+if( BTAS_HAS_MKL )
+  message( STATUS "BTAS HAS MKL!" )
+  target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_INTEL_MKL=1)
+else()
+  message( STATUS "BTAS DOES NOT HAVE MKL!" )
+endif()
+cmake_pop_check_state()
 
 include(external/boost.cmake)
 
