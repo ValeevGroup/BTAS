@@ -10,9 +10,6 @@ namespace btas {
   void transpose( int64_t M, int64_t N, const T* A, int64_t LDA, 
                   T* B, int64_t LDB ) {
 
-  std::cout << "IN TRANSPOSE" << std::endl;
-  std::cout << BTAS_HAS_INTEL_MKL << std::endl;
-
 #ifdef BTAS_HAS_INTEL_MKL
   omatcopy( 'C', 'T', M, N, T(1.), A, LDA, B, LDB );
 #else

@@ -31,8 +31,6 @@ void omatcopy( char ORDERING, char TRANS, MKL_INT M, MKL_INT N,
                std::type_identity_t<T> SCAL, const T* A, MKL_INT LDA,
                T* B, MKL_INT LDB ) {
 
-  std::cout << "IN MKL OMATCOPY" << std::endl;
-
   if constexpr ( std::is_same_v<T, float > )
     mkl_somatcopy( ORDERING, TRANS, M, N, T(SCAL), A, LDA, B, LDB );
   else if constexpr ( std::is_same_v<T, double > )
