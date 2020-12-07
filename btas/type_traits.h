@@ -14,6 +14,14 @@ namespace std {
 
   template< class T>
   using remove_cvref_t = typename remove_cvref<T>::type;
+
+  template< class T >
+  struct type_identity {
+    using type = T;
+  };
+
+  template< class T >
+  using type_identity_t = typename type_identity<T>::type;
 }
 
 namespace btas {
