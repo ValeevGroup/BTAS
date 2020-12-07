@@ -8,6 +8,9 @@
 
 #include <libgen.h>
 
+#define BTAS_ENABLE_TUCKER_CP_UT 0
+#define BTAS_ENABLE_RANDOM_CP_UT 0
+
 const std::string __dirname = dirname(strdup(__FILE__));
 
 TEST_CASE("CP")
@@ -89,6 +92,7 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
       CHECK(std::abs(diff - results(1,0)) <= epsilon);
     }
+#if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("ALS MODE = 3, Tucker + CP"){
       auto d = D3;
       CP_ALS<tensor, conv_class> A1(d);
@@ -97,6 +101,8 @@ TEST_CASE("CP")
               A1.compress_compute_tucker(0.1, conv, 5, true, false, 100, true);
       CHECK(std::abs(diff - results(2,0)) <= epsilon);
     }
+#endif
+#if BTAS_ENABLE_RANDOM_CP_UT
     SECTION("ALS MODE = 3, Random + CP"){
       auto d = D3;
       CP_ALS<tensor, conv_class> A1(d);
@@ -105,6 +111,7 @@ TEST_CASE("CP")
               A1.compress_compute_rand(2, conv, 0, 2, 5, true, false, 100, true);
       CHECK(std::abs(diff - results(3,0)) <= epsilon);
     }
+#endif
 
     SECTION("ALS MODE = 4, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D4);
@@ -119,6 +126,7 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
       CHECK(std::abs(diff - results(5,0)) <= epsilon);
     }
+#if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("ALS MODE = 4, Tucker + CP"){
       auto d = D4;
       CP_ALS<tensor, conv_class> A1(d);
@@ -126,6 +134,8 @@ TEST_CASE("CP")
       double diff = A1.compress_compute_tucker(0.1, conv, 5, true, false, 1e4, true);
       CHECK(std::abs(diff - results(6,0)) <= epsilon);
     }
+#endif
+#if BTAS_ENABLE_RANDOM_CP_UT
     SECTION("ALS MODE = 4, Random + CP"){
       auto d = D4;
       CP_ALS<tensor, conv_class> A1(d);
@@ -133,6 +143,7 @@ TEST_CASE("CP")
       double diff = A1.compress_compute_rand(3, conv, 0, 2, 1, true, false, 20, true);
       CHECK(std::abs(diff - results(7,0)) <= epsilon);
     }
+#endif
 
     SECTION("ALS MODE = 5, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D5);
@@ -146,6 +157,7 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 10, 200);
       CHECK(std::abs(diff - results(9,0)) <= epsilon);
     }
+#if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("ALS MODE = 5, Tucker + CP"){
       auto d = D5;
       CP_ALS<tensor, conv_class> A1(d);
@@ -153,6 +165,8 @@ TEST_CASE("CP")
       double diff = A1.compress_compute_tucker(0.1, conv, 5, true, false, 100, true);
       CHECK(std::abs(diff - results(10,0)) <= epsilon);
     }
+#endif
+#if BTAS_ENABLE_RANDOM_CP_UT
     SECTION("ALS MODE = 5, Random + CP"){
       auto d = D5;
       CP_ALS<tensor, conv_class> A1(d);
@@ -160,6 +174,7 @@ TEST_CASE("CP")
       double diff = A1. compress_compute_rand(1, conv, 0, 2, 5, true, false, 100, false);
       CHECK(std::abs(diff - results(11,0)) <= epsilon);
     }
+#endif
   }
   // RALS tests
   {
@@ -176,7 +191,7 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
       CHECK(std::abs(diff - results(13,0)) <= epsilon);
     }
-#if 0
+#if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("RALS MODE = 3, Tucker + CP"){
       auto d = D3;
       CP_RALS<tensor, conv_class> A1(d);
@@ -185,6 +200,8 @@ TEST_CASE("CP")
               A1.compress_compute_tucker(0.1, conv, 5, true, false, 100, true);
       CHECK(std::abs(diff - results(14,0)) <= epsilon);
     }
+#endif
+#if BTAS_ENABLE_RANDOM_CP_UT
     SECTION("RALS MODE = 3, Random + CP"){
       auto d = D3;
       CP_RALS<tensor, conv_class> A1(d);
@@ -193,6 +210,7 @@ TEST_CASE("CP")
               A1.compress_compute_rand(2, conv, 0, 2, 5, true, false, 100, true);
       CHECK(std::abs(diff - results(15,0)) <= epsilon);
     }
+#endif
     SECTION("RALS MODE = 4, Finite rank"){
       CP_RALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);
@@ -206,6 +224,7 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 100);
       CHECK(std::abs(diff - results(17,0)) <= epsilon);
     }
+#if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("RALS MODE = 4, Tucker + CP"){
       auto d = D4;
       CP_RALS<tensor, conv_class> A1(d);
@@ -213,6 +232,8 @@ TEST_CASE("CP")
       double diff = A1.compress_compute_tucker(0.1, conv, 5, true, false, 100, true);
       CHECK(std::abs(diff - results(18,0)) <= epsilon);
     }
+#endif
+#if BTAS_ENABLE_RANDOM_CP_UT
     SECTION("RALS MODE = 4, Random + CP"){
       auto d = D4;
       CP_RALS<tensor, conv_class> A1(d);
@@ -220,6 +241,7 @@ TEST_CASE("CP")
       double diff = A1.compress_compute_rand(3, conv, 0, 2, 1, true, false, 20, true);
       CHECK(std::abs(diff - results(19,0)) <= epsilon);
     }
+#endif
     SECTION("RALS MODE = 5, Finite rank"){
       CP_RALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
@@ -232,6 +254,7 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 20);
       CHECK(std::abs(diff - results(21,0)) <= epsilon);
     }
+#if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("RALS MODE = 5, Tucker + CP"){
       auto d = D5;
       CP_RALS<tensor, conv_class> A1(d);
@@ -239,6 +262,8 @@ TEST_CASE("CP")
       double diff = A1.compress_compute_tucker(0.1, conv, 5, true, false, 100, true);
       CHECK(std::abs(diff - results(22,0)) <= epsilon);
     }
+#endif
+#if BTAS_ENABLE_RANDOM_CP_UT
     SECTION("RALS MODE = 5, Random + CP"){
       auto d = D5;
       CP_RALS<tensor, conv_class> A1(d);
@@ -248,7 +273,8 @@ TEST_CASE("CP")
     }
 #endif
   }
-#if 0
+
+     
   // CP-DF-ALS tests
   {
     SECTION("DF-ALS MODE = 3, Finite rank"){
@@ -288,8 +314,7 @@ TEST_CASE("CP")
       CHECK(std::abs(diff - results(29,0)) <= epsilon);
     }
   }
-#endif
-#if 0
+
   // coupled ALS test
   {
     SECTION("COUPLED-ALS MODE = 3, Finite rank"){
@@ -335,5 +360,5 @@ TEST_CASE("CP")
       CHECK(std::abs(diff - results(35,0)) <= epsilon);
     }
   }
-#endif
+      
 }
