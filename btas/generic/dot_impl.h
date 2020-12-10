@@ -120,8 +120,6 @@ struct dotc_impl<true> {
       using x_ptr_type = const x_value_type*;
       using y_ptr_type = const y_value_type*;
 
-      //std::cout << "IN BLASPP DOTC IMPL" << std::endl;
-
       // XXX: DOTC == DOT in BLASPP
       return blas::dot( Nsize, static_cast<x_ptr_type>(&(*itrX)), incX,
                                static_cast<y_ptr_type>(&(*itrY)), incY );
@@ -182,8 +180,6 @@ struct dotu_impl<true> {
 
       using x_ptr_type = const x_value_type*;
       using y_ptr_type = const y_value_type*;
-
-      //std::cout << "IN BLASPP DOTU IMPL" << std::endl;
 
       return blas::dotu( Nsize, static_cast<x_ptr_type>(&(*itrX)), incX,
                                 static_cast<y_ptr_type>(&(*itrY)), incY );

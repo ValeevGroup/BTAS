@@ -151,7 +151,6 @@ template<> struct gemv_impl<true>
       blas_lapack_impl_tag)
    {
 
-     //std::cout << "IN BLASPP GEMV IMPL" << std::endl;
      blas::gemv( order, transA, Msize, Nsize, alpha,
                  static_cast<const _T*>(&(*itrA)), LDA,
                  static_cast<const _T*>(&(*itrX)), incX,

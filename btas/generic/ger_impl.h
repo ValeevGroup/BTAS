@@ -80,8 +80,7 @@ template<> struct ger_impl<true>
       blas_lapack_impl_tag)
    {
 
-     //std::cout << "IN BLASPP GER IMPL" << std::endl;
-     blas::geru( order, Msize, Nsize, alpha, 
+     blas::geru( order, Msize, Nsize, alpha,
                  static_cast<const _T*>(&(*itrX)), incX,
                  static_cast<const _T*>(&(*itrY)), incY,
                  static_cast<      _T*>(&*(itrA)), LDA );

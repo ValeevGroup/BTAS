@@ -19,7 +19,7 @@ redefaultable_option(BTAS_BUILD_UNITTEST "Whether to build unit tests" OFF)
 add_feature_info(BUILD_UNITTEST BTAS_BUILD_UNITTEST "Will build unit tests")
 redefaultable_option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw; enable if BTAS_BUILD_UNITTEST=ON" ${BTAS_BUILD_UNITTEST})
 add_feature_info(ASSERT_THROWS BTAS_ASSERT_THROWS "BTAS_ASSERT(x) will throw if x is false, and not be affected by NDEBUG")
-redefaultable_option(BTAS_USE_BLAS_LAPACK "Whether to enable BLAS+LAPACK bindings via BLASPP+LAPACKPP" ON)
+redefaultable_option(BTAS_USE_BLAS_LAPACK "Whether to enable BLAS/LAPACK bindings via BLAS++/LAPACK++" ON)
 add_feature_info(USE_BLAS_LAPACK BTAS_USE_BLAS_LAPACK "Will use BLAS and LAPACK linear algebra distributions via their BLAS++/LAPACK++ interfaces" )
 
 set(TARGET_MAX_INDEX_RANK 6 CACHE STRING "Determines the rank for which the default BTAS index type will use stack (default: 6); this requires Boost.Container")
