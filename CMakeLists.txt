@@ -13,6 +13,8 @@ include(CMakePackageConfigHelpers)
 include(AddCustomTargetSubproject)
 
 # Configure options
+redefaultable_option(BTAS_BUILD_DEPS_FROM_SOURCE "Whether to build missing dependencies from source" OFF)
+add_feature_info(BUILD_DEPS_FROM_SOURCE BTAS_BUILD_DEPS_FROM_SOURCE "Will build missing dependencies from source")
 redefaultable_option(BTAS_BUILD_UNITTEST "Whether to build unit tests" OFF)
 add_feature_info(BUILD_UNITTEST BTAS_BUILD_UNITTEST "Will build unit tests")
 redefaultable_option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw; enable if BTAS_BUILD_UNITTEST=ON" OFF)
