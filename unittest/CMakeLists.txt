@@ -17,10 +17,8 @@ target_include_directories(${executable} PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 target_link_libraries(${executable} BTAS)
-#append_flags(CMAKE_EXE_LINKER_FLAGS "${BLAS_LINKER_FLAGS}")
 
 # Add targets
-add_dependencies(${executable} External-btas)
 add_dependencies(check-btas ${executable})
 
 # Add a test

@@ -15,12 +15,8 @@ include(AddCustomTargetSubproject)
 # Configure options
 redefaultable_option(BTAS_BUILD_UNITTEST "Whether to build unit tests" OFF)
 add_feature_info(BUILD_UNITTEST BTAS_BUILD_UNITTEST "Will build unit tests")
-redefaultable_option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw; enable if BTAS_BUILD_UNITTEST=ON" OFF)
+redefaultable_option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw; enable if BTAS_BUILD_UNITTEST=ON" ${BTAS_BUILD_UNITTEST})
 add_feature_info(ASSERT_THROWS BTAS_ASSERT_THROWS "BTAS_ASSERT(x) will throw if x is false, and not be affected by NDEBUG")
-#redefaultable_option(BTAS_USE_CBLAS_LAPACKE "Whether to use BLAS+LAPACK via CBLAS+LAPACKE" ON)
-#add_feature_info(USE_CBLAS_LAPACKE BTAS_USE_CBLAS_LAPACKE "Will use BLAS and LAPACK linear algebra libraries via their CBLAS and LAPACKE interfaces")
-#redefaultable_option(BTAS_ENABLE_MKL "Whether to look for Intel MKL" ON)
-#add_feature_info(ENABLE_MKL BTAS_ENABLE_MKL "Will look for Intel MKL library")
 redefaultable_option(BTAS_USE_BLAS_LAPACK "Whether to enable BLAS+LAPACK bindings via BLASPP+LAPACKPP" ON)
 add_feature_info(USE_BLAS_LAPACK BTAS_USE_BLAS_LAPACK "Will use BLAS and LAPACK linear algebra distributions via their BLAS++/LAPACK++ interfaces" )
 
@@ -118,46 +114,25 @@ install(DIRECTORY btas
 ##########################
 # external dependencies
 ##########################
-add_custom_target(External-btas)
-
-#if (BTAS_USE_CBLAS_LAPACKE)
-#  find_package(CBLAS REQUIRED)
-#  find_package(LAPACKE REQUIRED)
-#  target_compile_definitions(BTAS INTERFACE -DBTAS_CBLAS_HEADER="${CBLAS_INCLUDE_FILE}" -DBTAS_LAPACKE_HEADER="${LAPACKE_INCLUDE_FILE}" -DBTAS_HAS_CBLAS=1 -DBTAS_HAS_LAPACKE=1)
-#  message(STATUS "** CBLAS_LIBRARIES = ${CBLAS_LIBRARIES}")
-#  message(STATUS "** CBLAS_INCLUDE_DIR = ${CBLAS_INCLUDE_DIR}")
-#  message(STATUS "** CBLAS_INCLUDE_FILE = ${CBLAS_INCLUDE_FILE}")
-#  message(STATUS "** LAPACKE_LIBRARIES = ${LAPACKE_LIBRARIES}")
-#  message(STATUS "** LAPACKE_INCLUDE_DIR = ${LAPACKE_INCLUDE_DIR}")
-#  message(STATUS "** LAPACKE_INCLUDE_FILE = ${LAPACKE_INCLUDE_FILE}")
-#  target_include_directories(BTAS INTERFACE ${CBLAS_INCLUDE_DIR} ${LAPACKE_INCLUDE_DIR})
-#  if (MKL_FOUND)
-#    target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_INTEL_MKL=1)
-#    if (MKL_ILP64)
-#      target_compile_definitions(BTAS INTERFACE -DMKL_ILP64=1)
-#    endif(MKL_ILP64)
-#  endif(MKL_FOUND)
-#  target_link_libraries(BTAS INTERFACE ${LAPACKE_LIBRARIES} ${CBLAS_LIBRARIES})
-#endif(BTAS_USE_CBLAS_LAPACKE)
-
+# BLAS++ / LAPACK++
 if( BTAS_USE_BLAS_LAPACK )
 
 include(FetchContent)
 
 find_package( blaspp QUIET )
-if( NOT blaspp_FOUND )
+if(NOT TARGET blaspp)
   FetchContent_Declare( blaspp
     GIT_REPOSITORY https://bitbucket.org/icl/blaspp.git 
     GIT_TAG        9097d6b61468e9e8899d0aed49af0371ca4fff1d
   )
-  
+
   FetchContent_MakeAvailable( blaspp )
 endif()
 
 
 find_package( OpenMP QUIET ) #XXX Open LAPACKPP issue for this...
 find_package( lapackpp QUIET )
-if( NOT lapackpp_FOUND )
+if(NOT TARGET lapackpp)
   FetchContent_Declare( lapackpp
     GIT_REPOSITORY https://bitbucket.org/icl/lapackpp.git 
     GIT_TAG        213d13e584a8cb3bf0e7caf5d1d40cd10f4254ae
@@ -169,7 +144,6 @@ endif()
 target_link_libraries( BTAS INTERFACE blaspp lapackpp )
 target_compile_definitions( BTAS INTERFACE -DBTAS_HAS_BLAS_LAPACK=1 )
 
-
 # Check if BLAS/LAPACK is MKL
 set( BTAS_HAS_MKL )
 include( CheckFunctionExists )
@@ -177,14 +151,11 @@ cmake_push_check_state( RESET )
 set( CMAKE_REQUIRED_LIBRARIES "${blaspp_libraries}" m )
 check_function_exists( mkl_dimatcopy  BTAS_HAS_MKL )
 if( BTAS_HAS_MKL )
-  message( STATUS "BTAS HAS MKL!" )
   target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_INTEL_MKL=1)
-else()
-  message( STATUS "BTAS DOES NOT HAVE MKL!" )
-endif()
+endif(BTAS_HAS_MKL)
 cmake_pop_check_state()
 
-endif()
+endif(BTAS_USE_BLAS_LAPACK)
 
 include(external/boost.cmake)
 
