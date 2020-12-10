@@ -1,19 +1,29 @@
 Description
 ===========
 
-Basic Tensor Algebra Subroutines (BTAS) is a C++ headers-only library for tensor algebra. BTAS is a reference implementation of Tensor Working Group concept spec.
+Basic Tensor Algebra Subroutines (BTAS) is a C++ library for tensor algebra. BTAS is a reference implementation of Tensor Working Group concept spec. The library can be optionally used header-only at the cost of much lower performance for most operations.
 
 Prerequisites
 =============
 
 * C++17 compiler
+* CMake
 * Boost C++ libraries
   - Iterator
-  - (optional) Container for fast small vectors
-  - (optional) Serialization for serialization (not header-only)
-* (optional) CBLAS+LAPACKe libraries for optimized operations
-* (optional) CMake to build and run unit tests
+  - (optional, but recommended) Container for fast small vectors
+  - (optional) Serialization for serialization (non-header-only)
+* (optional, but recommended) BLAS+LAPACK libraries and their CBLAS/LAPACKe C++ APIs for optimized operations (non-header-only)
 
-To compile unit tests in the source directory:
+Building and Installing
+=======================
+TL;DR version
 * cmake .
 * make check
+
+## useful CMake variables
+- `CMAKE_CXX_COMPILER` -- specifies the C++ compiler (by default CMake will look for the C++ compiler in `PATH`)
+- `BTAS_USE_CBLAS_LAPACKE` -- specifies whether to enable the use of BLAS/LAPACK via the CBLAS/LAPACKe APIs; the default is `ON`
+- `BTAS_ENABLE_MKL` -- specifies whether to look for Intel MKL; the default is `ON`
+- `BTAS_BUILD_DEPS_FROM_SOURCE` -- specifies whetther to enable building the missing dependencies (Boost) from source; the default is `OFF`
+- `BTAS_BUILD_UNITTEST` -- specifies whether to build unit tests; the default is `OFF`
+- `TARGET_MAX_INDEX_RANK` -- specifies the rank for which the default BTAS index type will use stack; the default is `6`

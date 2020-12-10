@@ -13,22 +13,40 @@ if (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
   cmake_minimum_required(VERSION 3.11.0)
   find_package(Boost CONFIG OPTIONAL_COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
   if (NOT TARGET Boost::boost)
-    find_package(Boost REQUIRED OPTIONAL_COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
-    set(Boost_USE_CONFIG FALSE)
+    find_package(Boost OPTIONAL_COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
+    if (TARGET Boost::boost)
+      set(Boost_USE_CONFIG FALSE)
+    endif(TARGET Boost::boost)
   else()
     set(Boost_USE_CONFIG TRUE)
   endif()
 endif (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
 
-# Perform a compile check with Boost
-list(APPEND CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIRS})
-list(APPEND CMAKE_REQUIRED_LIBRARIES ${Boost_LIBRARIES})
-target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BOOST_ITERATOR=1)
-if (Boost_CONTAINER_FOUND)
-  target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BOOST_CONTAINER=1 -DBTAS_TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK})
-endif()
+# if Boost not found, and BTAS_BUILD_DEPS_FROM_SOURCE=ON, use FetchContent to build it
+if (NOT TARGET Boost::boost)
+  if (BTAS_BUILD_DEPS_FROM_SOURCE)
+    include(FindOrFetchBoost)
+    set(BTAS_BUILT_BOOST_FROM_SOURCE 1)
+  else(BTAS_BUILD_DEPS_FROM_SOURCE)
+    message(FATAL_ERROR "Boost is a required prerequisite of BTAS, but not found; install Boost or set BTAS_BUILD_DEPS_FROM_SOURCE=ON to obtain from source")
+  endif(BTAS_BUILD_DEPS_FROM_SOURCE)
+endif (NOT TARGET Boost::boost)
 
-set(_btas_boostcheck_source "
+# make BTAS depend on Boost
+set(Boost_LIBRARIES Boost::boost)
+if (TARGET Boost::serialization)
+  list(APPEND Boost_LIBRARIES Boost::serialization)
+endif (TARGET Boost::serialization)
+target_link_libraries(BTAS INTERFACE ${Boost_LIBRARIES})
+
+# If building unit tests, perform a compile check with Boost
+# this is only possible, though, if did not build Boost from source,
+# since only imported targets can be used in CMAKE_REQUIRED_LIBRARIES
+if (BTAS_BUILD_UNITTEST AND NOT BTAS_BUILT_BOOST_FROM_SOURCE)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES ${Boost_LIBRARIES})
+  target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BOOST_ITERATOR=1 -DBTAS_HAS_BOOST_CONTAINER=1 -DBTAS_TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK})
+
+  set(_btas_boostcheck_source "
     #define BOOST_TEST_MAIN main_tester
     #include <boost/test/included/unit_test.hpp>
 
@@ -90,21 +108,19 @@ set(_btas_boostcheck_source "
     }
     #endif  // BTAS_HAS_BOOST_CONTAINER
     ")
-if (CMAKE_CROSSCOMPILING)
-  include(CheckCXXSourceCompiles)
-  check_cxx_source_compiles("${_btas_boostcheck_source}" BOOST_COMPILES_AND_RUNS)
-else(CMAKE_CROSSCOMPILING)
-  include(CheckCXXSourceRuns)
-  check_cxx_source_runs("${_btas_boostcheck_source}" BOOST_COMPILES_AND_RUNS)
-endif(CMAKE_CROSSCOMPILING)
+  if (CMAKE_CROSSCOMPILING)
+    include(CheckCXXSourceCompiles)
+    check_cxx_source_compiles("${_btas_boostcheck_source}" BOOST_COMPILES_AND_RUNS)
+  else(CMAKE_CROSSCOMPILING)
+    include(CheckCXXSourceRuns)
+    check_cxx_source_runs("${_btas_boostcheck_source}" BOOST_COMPILES_AND_RUNS)
+  endif(CMAKE_CROSSCOMPILING)
 
-if (BOOST_COMPILES_AND_RUNS)
+  if (BOOST_COMPILES_AND_RUNS)
     target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BOOST_SERIALIZATION=1)
-else ()
-  message(STATUS "Boost found at ${BOOST_ROOT}, but could not compile and/or run test program")
-  message(WARNING "To obtain usable Boost, use your system package manager (HomeBrew, apt, etc.) OR download at www.boost.org and compile (unpacking alone is not enough)")
-  message(WARNING "** !! due to missing Boost.Serialization the corresponding unit tests will be disabled !!")
-endif(BOOST_COMPILES_AND_RUNS)
-
-target_include_directories(BTAS INTERFACE ${Boost_INCLUDE_DIRS})
-target_link_libraries(BTAS INTERFACE ${Boost_LIBRARIES})
+  else ()
+    message(STATUS "Boost found at ${BOOST_ROOT}, but could not compile and/or run test program")
+    message(WARNING "To obtain usable Boost, use your system package manager (HomeBrew, apt, etc.) OR download at www.boost.org and compile (unpacking alone is not enough)")
+    message(WARNING "** !! due to missing Boost.Serialization the corresponding unit tests will be disabled !!")
+  endif(BOOST_COMPILES_AND_RUNS)
+endif(BTAS_BUILD_UNITTEST AND NOT BTAS_BUILT_BOOST_FROM_SOURCE)
