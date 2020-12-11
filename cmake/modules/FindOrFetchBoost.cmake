@@ -1,5 +1,6 @@
 if (NOT TARGET Boost::boost)
   include (FetchContent)
+  cmake_minimum_required (VERSION 3.14.0)  # for FetchContent_MakeAvailable
 
   FetchContent_Declare(
           CMAKEBOOST
