@@ -5,7 +5,7 @@
 # to run bash in the image: docker run -it btas-travis-debug bash -l
 # see docker-travis.md for further instructions
 # N.B. relevant locations:
-#   - source dir: /home/travis/build/BTAS/BTAS (TRAVIS_BUILD_DIR env in Travis jobs)
+#   - source dir: /home/travis/build/ValeevGroup/BTAS (TRAVIS_BUILD_DIR env in Travis jobs)
 #   - build dir: /home/travis/_build
 #   - install dir: /home/travis/_install
 
@@ -26,7 +26,7 @@ apt-get -yq update >> ~/apt-get-update.log
 apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-6 g++-7 g++-8 libboost-dev libboost-serialization-dev libblas-dev liblapack-dev liblapacke-dev intel-mkl-2019.4-070 clang-7 clang-8 clang-9 cmake cmake-data
 mkdir -p ${TRAVIS_BUILD_TOPDIR}
 cd ${TRAVIS_BUILD_TOPDIR}
-git clone https://github.com/BTAS/BTAS.git ${TRAVIS_BUILD_TOPDIR}/BTAS/BTAS
+git clone https://github.com/ValeevGroup/BTAS.git ${TRAVIS_BUILD_TOPDIR}/ValeevGroup/BTAS
 END
 chmod +x $setup
 
@@ -38,7 +38,7 @@ cat > $build << END
 cd /home/travis/_build
 export BUILD_PREFIX=/home/travis/_build
 export INSTALL_PREFIX=/home/travis/_install
-export TRAVIS_BUILD_DIR=${TRAVIS_BUILD_TOPDIR}/BTAS/BTAS
+export TRAVIS_BUILD_DIR=${TRAVIS_BUILD_TOPDIR}/ValeevGroup/BTAS
 ./travisci_build_linux.sh
 END
 chmod +x $build
