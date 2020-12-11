@@ -146,7 +146,7 @@ if(NOT TARGET lapackpp)
 endif()
 
 target_link_libraries( BTAS INTERFACE blaspp lapackpp )
-target_compile_definitions( BTAS INTERFACE -DBTAS_HAS_BLAS_LAPACK=1 )
+target_compile_definitions( BTAS INTERFACE -DBTAS_HAS_BLAS_LAPACK=1 -DLAPACK_COMPLEX_CPP=1 )
 
 # Check if BLAS/LAPACK is MKL
 set( BTAS_HAS_MKL )
