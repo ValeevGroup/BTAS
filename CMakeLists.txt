@@ -123,6 +123,7 @@ include(FetchContent)
 
 find_package( blaspp QUIET )
 if(NOT TARGET blaspp)
+  cmake_minimum_required (VERSION 3.14.0)  # for FetchContent_MakeAvailable
   FetchContent_Declare( blaspp
     GIT_REPOSITORY https://bitbucket.org/icl/blaspp.git 
     GIT_TAG        9097d6b61468e9e8899d0aed49af0371ca4fff1d
@@ -135,6 +136,7 @@ endif()
 find_package( OpenMP QUIET ) #XXX Open LAPACKPP issue for this...
 find_package( lapackpp QUIET )
 if(NOT TARGET lapackpp)
+  cmake_minimum_required (VERSION 3.14.0)  # for FetchContent_MakeAvailable
   FetchContent_Declare( lapackpp
     GIT_REPOSITORY https://bitbucket.org/icl/lapackpp.git 
     GIT_TAG        213d13e584a8cb3bf0e7caf5d1d40cd10f4254ae
