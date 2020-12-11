@@ -39,7 +39,7 @@ cd /home/travis/_build
 export BUILD_PREFIX=/home/travis/_build
 export INSTALL_PREFIX=/home/travis/_install
 export TRAVIS_BUILD_DIR=${TRAVIS_BUILD_TOPDIR}/ValeevGroup/BTAS
-./travisci_build_linux.sh
+${TRAVIS_BUILD_TOPDIR}/ValeevGroup/mpqc/bin/build-linux.sh
 END
 chmod +x $build
 
@@ -64,7 +64,6 @@ RUN /home/travis/_build/$setup
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # copy travis scripts
-ADD travisci_build_linux.sh /home/travis/_build/travisci_build_linux.sh
 ADD $build /home/travis/_build/$build
 END
 
