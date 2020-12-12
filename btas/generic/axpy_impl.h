@@ -8,11 +8,16 @@
 #include <btas/tensor.h>
 #include <btas/tensor_traits.h>
 #include <btas/types.h>
+#include <btas/type_traits.h>
 
 #include <btas/generic/numeric_type.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
+#include <btas/generic/blas_lapack_delegator.h>
+
 
 namespace btas {
+
+
 
 //  ================================================================================================
 
@@ -22,62 +27,49 @@ template<bool _Finalize> struct axpy_impl { };
 /// Case that alpha is trivially multipliable to elements
 template<> struct axpy_impl<true>
 {
+
    template<typename _T, class _IteratorX, class _IteratorY>
-   static void call (
+   static void call_impl (
       const unsigned long& Nsize,
       const _T& alpha,
-            _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
-            _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY,
+      generic_impl_tag)
    {
+
       for (unsigned long i = 0; i < Nsize; ++i, itrX += incX, itrY += incY)
       {
          (*itrY) += alpha * (*itrX);
       }
    }
 
-#ifdef BTAS_HAS_CBLAS
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, float>::value>::type>
-   static void call (
+#ifdef BTAS_HAS_BLAS_LAPACK
+   template<typename _T, class _IteratorX, class _IteratorY>
+   static void call_impl (
       const unsigned long& Nsize,
       const _T& alpha,
-      const float* itrX, const typename std::iterator_traits<float*>::difference_type& incX,
-            float* itrY, const typename std::iterator_traits<float*>::difference_type& incY)
-   {
-      cblas_saxpy(Nsize, alpha, itrX, incX, itrY, incY);
-   }
-
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, double>::value>::type>
-   static void call (
-      const unsigned long& Nsize,
-      const _T& alpha,
-      const double* itrX, const typename std::iterator_traits<double*>::difference_type& incX,
-            double* itrY, const typename std::iterator_traits<double*>::difference_type& incY)
-   {
-      cblas_daxpy(Nsize, alpha, itrX, incX, itrY, incY);
-   }
-
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<float>>::value>::type>
-   static void call (
-      const unsigned long& Nsize,
-      const _T& alpha,
-      const std::complex<float>* itrX, const typename std::iterator_traits<std::complex<float>*>::difference_type& incX,
-            std::complex<float>* itrY, const typename std::iterator_traits<std::complex<float>*>::difference_type& incY)
-   {
-      const lapack_complex_float alphac(std::move(alpha));
-      cblas_caxpy(Nsize, to_lapack_cptr(&alphac), to_lapack_cptr(itrX), incX, to_lapack_cptr(itrY), incY);
-   }
-
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<double>>::value>::type>
-   static void call (
-      const unsigned long& Nsize,
-      const _T& alpha,
-      const std::complex<double>* itrX, const typename std::iterator_traits<std::complex<double>*>::difference_type& incX,
-            std::complex<double>* itrY, const typename std::iterator_traits<std::complex<double>*>::difference_type& incY)
-   {
-      const lapack_complex_double alphac(std::move(alpha));
-      cblas_zaxpy(Nsize, to_lapack_zptr(&alphac), to_lapack_zptr(itrX), incX, to_lapack_zptr(itrY), incY);
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY,
+      blas_lapack_impl_tag)
+   { 
+     blas::axpy( Nsize, alpha, static_cast<const _T*>(&(*itrX)), incX, 
+                               static_cast<_T*>(&(*itrY)),       incY );
    }
 #endif
+
+   template<typename _T, class _IteratorX, class _IteratorY>
+   static void call (
+      const unsigned long& Nsize,
+      const _T& alpha,
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY)
+   {
+
+     call_impl( Nsize, alpha, itrX, incX, itrY, incY, 
+                blas_lapack_impl_t<_IteratorX,_IteratorY>() );
+
+   }
+
 };
 
 /// Case that alpha is multiplied recursively by AXPY
@@ -88,8 +80,8 @@ template<> struct axpy_impl<false>
    static void call (
       const unsigned long& Nsize,
       const _T& alpha,
-            _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
-            _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY)
    {
       for (unsigned long i = 0; i < Nsize; ++i, itrX += incX, itrY += incY)
       {
@@ -105,15 +97,15 @@ template<typename _T, class _IteratorX, class _IteratorY>
 void axpy (
    const unsigned long& Nsize,
    const _T& alpha,
-         _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
-         _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY)
 {
    typedef std::iterator_traits<_IteratorX> __traits_X;
    typedef std::iterator_traits<_IteratorY> __traits_Y;
 
    static_assert(std::is_same<typename __traits_X::value_type, typename __traits_Y::value_type>::value, "value type of Y must be the same as that of X");
-   static_assert(std::is_same<typename __traits_X::iterator_category, std::random_access_iterator_tag>::value, "iterator X must be a random access iterator");
-   static_assert(std::is_same<typename __traits_Y::iterator_category, std::random_access_iterator_tag>::value, "iterator Y must be a random access iterator");
+   static_assert(is_random_access_iterator_v<_IteratorX>, "iterator X must be a random access iterator");
+   static_assert(is_random_access_iterator_v<_IteratorY>, "iterator Y must be a random access iterator");
 
    typedef typename __traits_X::value_type __value_X;
    typedef typename std::conditional<std::is_convertible<_T, __value_X>::value, __value_X, _T>::type __alpha;

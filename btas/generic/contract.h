@@ -178,15 +178,15 @@ void contract(
    }
    else if(rank(A) == k)
    {
-      gemv(CblasTrans,   alpha, *__refB, *__refA, beta, *__refC);
+      gemv(blas::Op::Trans,   alpha, *__refB, *__refA, beta, *__refC);
    }
    else if(rank(B) == k)
    {
-      gemv(CblasNoTrans, alpha, *__refA, *__refB, beta, *__refC);
+      gemv(blas::Op::NoTrans, alpha, *__refA, *__refB, beta, *__refC);
    }
    else
    {
-      gemm(CblasNoTrans, CblasNoTrans, alpha, *__refA, *__refB, beta, *__refC);
+      gemm(blas::Op::NoTrans, blas::Op::NoTrans, alpha, *__refA, *__refB, beta, *__refC);
    }
 
    // permute back

@@ -21,18 +21,18 @@ namespace btas {
   /// It maps the index to its ordinal value. It also knows whether
   /// the map is contiguous (i.e. whether adjacent indices have adjacent ordinal
   /// values).
-  template <CBLAS_ORDER _Order,
+  template <blas::Layout _Order,
             typename _Index>
   class BoxOrdinal {
     public:
       static_assert(btas::is_index<_Index>::value, "BoxOrdinal<_Index> instantiated but _Index does not meet the TWG.Index concept");
 
       typedef _Index index_type;
-      const static CBLAS_ORDER order = _Order;
+      const static blas::Layout order = _Order;
       typedef int64_t value_type;
       typedef typename btas::replace_value_type<_Index,value_type>::type stride_type;    ///< stride type
 
-      template <CBLAS_ORDER _O,
+      template <blas::Layout _O,
                 typename _I
                >
       friend class BoxOrdinal;
@@ -76,7 +76,7 @@ namespace btas {
         contiguous_ (other.contiguous_) {
       }
 
-      template <CBLAS_ORDER _O,
+      template <blas::Layout _O,
                 typename _I,
                 class = typename std::enable_if<btas::is_index<_I>::value>
                >
@@ -180,7 +180,7 @@ namespace btas {
         stride_ = array_adaptor<stride_type>::construct(n);
 
         // Compute range data
-        if (order == CblasRowMajor) {
+        if (order == blas::Layout::RowMajor) {
           for(typename std::make_signed<decltype(n)>::type i = n - 1;
               i >= 0; --i) {
             stride_[i] = volume;
@@ -226,7 +226,7 @@ namespace btas {
 
         // Compute offset and check whether contiguous
         contiguous_ = true;
-        if (order == CblasRowMajor) {
+        if (order == blas::Layout::RowMajor) {
           for(typename std::make_signed<decltype(n)>::type i = n - 1;
               i >= 0; --i) {
             contiguous_ &= (volume == stride_[i]);
@@ -268,7 +268,7 @@ namespace btas {
   /// for example, after this call \c stride()[p[i]] will return the value originally
   /// returned by \c stride()[i]
   /// \param perm a sequence specifying from-permutation of the axes
-  template <CBLAS_ORDER _Order,
+  template <blas::Layout _Order,
             typename _Index,
             typename AxisPermutation,
             class = typename std::enable_if<btas::is_index<AxisPermutation>::value>::type>
@@ -298,7 +298,7 @@ namespace btas {
   /// \param os The output stream that will be used to print \c r
   /// \param r The range to be printed
   /// \return A reference to the output stream
-  template <CBLAS_ORDER _Order,
+  template <blas::Layout _Order,
             typename _Index>
   std::ostream& operator<<(std::ostream& os, const BoxOrdinal<_Order,_Index>& ord) {
     array_adaptor<typename BoxOrdinal<_Order,_Index>::stride_type>::print(ord.stride(), os);

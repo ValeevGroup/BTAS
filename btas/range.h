@@ -269,12 +269,12 @@ namespace btas {
     }
 
     /// convenient to iterate over dimensions according to \c Order
-    template <CBLAS_ORDER Order = CblasRowMajor>
+    template <blas::Layout Order = blas::Layout::RowMajor>
     Range1
     dim_range(size_t ndim) {
-      if (Order == CblasRowMajor)
+      if (Order == blas::Layout::RowMajor)
         return Range1(ndim-1,-1,-1);
-      if (Order == CblasColMajor)
+      if (Order == blas::Layout::ColMajor)
         return Range1(0,ndim,1);
       assert(false); // unreachable
       return Range1();
@@ -285,7 +285,7 @@ namespace btas {
 
     /**
      * BaseRangeNd defines a box in the index space, and the iteration order on it.
-     * The iteration order depends on the CBLAS_ORDER parameter (ordering of dimensions).
+     * The iteration order depends on the blas::Layout parameter (ordering of dimensions).
      * It implements most of the \ref sec_TWG_Range_Concept_Range_Box "TWG.BoxRange" concept, except it does
      * not define ordinals.
      *
@@ -296,7 +296,7 @@ namespace btas {
     class BaseRangeNd {
     public:
 
-      const static CBLAS_ORDER order = range_traits<_Derived>::order;
+      const static blas::Layout order = range_traits<_Derived>::order;
       typedef typename range_traits<_Derived>::index_type index_type; ///< index type
       typedef typename std::make_unsigned<index_type>::type extent_type;    ///< Range extent type
       typedef std::size_t size_type; ///< Size type
@@ -682,7 +682,7 @@ namespace btas {
 
     /// RangeNd extends BaseRangeNd to compute ordinals, as specified by \c _Ordinal .
     /// It conforms to the \ref sec_TWG_Range_Concept_Range_Box "TWG.BoxRange" concept.
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal
              >
@@ -695,7 +695,7 @@ namespace btas {
       typedef RangeNd this_type;
       typedef _Index index_type; ///< index type
       typedef typename _Index::value_type index1_type; ///< 1-index type
-      const static CBLAS_ORDER order = _Order;
+      const static blas::Layout order = _Order;
 
       typedef typename _Ordinal::value_type ordinal_type; ///< Ordinal value type
 
@@ -709,7 +709,7 @@ namespace btas {
 
       typedef BaseRangeNd< RangeNd<_Order, _Index, _Ordinal> > base_type; ///< Parent type
       friend class BaseRangeNd< RangeNd<_Order, _Index, _Ordinal> >;
-      template <CBLAS_ORDER _O,
+      template <blas::Layout _O,
                 typename _I,
                 typename _Ord>
       friend class RangeNd;
@@ -895,7 +895,7 @@ namespace btas {
       }
 
       /// copy constructor from another instantiation of Range
-      template <CBLAS_ORDER _O,
+      template <blas::Layout _O,
                 typename _I,
                 typename _Ord>
       RangeNd (const RangeNd<_O,_I,_Ord>& x) :
@@ -1073,11 +1073,11 @@ namespace btas {
     };
 
     /// Range Traits
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal>
     struct range_traits<RangeNd<_Order, _Index, _Ordinal> > {
-        const static CBLAS_ORDER order = _Order;
+        const static blas::Layout order = _Order;
         typedef _Index index_type;
         typedef typename _Ordinal::value_type ordinal_type;
         constexpr static const bool is_general_layout = true;
@@ -1090,7 +1090,7 @@ namespace btas {
     /// \param os The output stream that will be used to print \c r
     /// \param r The range to be printed
     /// \return A reference to the output stream
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal>
     std::ostream& operator<<(std::ostream& os, const RangeNd<_Order,_Index, _Ordinal>& r) {
@@ -1098,13 +1098,13 @@ namespace btas {
       array_adaptor<_Index>::print(r.lobound(), os);
       os << ",";
       array_adaptor<_Index>::print(r.upbound(), os);
-      os << ")_" << (_Order == CblasRowMajor ? "R" : "C");
+      os << ")_" << (_Order == blas::Layout::RowMajor ? "R" : "C");
       os << ":" << r.ordinal();
       return os;
     }
 
     /// swaps the contents of \c r0 with \c r1
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal
              >
@@ -1118,7 +1118,7 @@ namespace btas {
     /// \param r2 The second range to be compared
     /// \return \c true when \c r1 represents the same range as \c r2, otherwise
     /// \c false.
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal
              >
@@ -1132,7 +1132,7 @@ namespace btas {
     /// \param r2 The second range to be compared
     /// \return \c true when \c r1 does not represent the same range as \c r2,
     /// otherwise \c false.
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal
              >
@@ -1159,10 +1159,10 @@ namespace btas {
     /// \param r2 a RangeNd<_Order2,_Index2,_Ordinal2> object
     /// \return \c true when \c r1 and \c r2 have same extents, otherwise \c false
     /// \note To compare also lobound (except when the ranges have diffferent Order) use Range::operator==()
-    template <CBLAS_ORDER _Order1,
+    template <blas::Layout _Order1,
               typename _Index1,
               typename _Ordinal1,
-              CBLAS_ORDER _Order2,
+              blas::Layout _Order2,
               typename _Index2,
               typename _Ordinal2
              >
@@ -1185,7 +1185,7 @@ namespace btas {
 
     /// \param range a Range
     /// \return true if \p range is contiguous
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
         typename _Index,
         typename _Ordinal>
     inline bool is_contiguous(const RangeNd<_Order, _Index, _Ordinal>& range) {
@@ -1197,7 +1197,7 @@ namespace btas {
     /// permutes the dimensions using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned
     /// {lb[0], lb[1], ... }, after this call \c lobound() will return {lb[p[0]], lb[p[1]], ...}.
     /// \param perm an array specifying permutation of the dimensions
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal,
               typename AxisPermutation,
@@ -1229,7 +1229,7 @@ namespace btas {
     /// permutes the axes using permutation \c p = {p[0], p[1], ... }; for example, if \c lobound() initially returned
     /// {lb[0], lb[1], ... }, after this call \c lobound() will return {lb[p[0]], lb[p[1]], ...} .
     /// \param perm an array specifying permutation of the axes
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal,
               typename T>
@@ -1251,7 +1251,7 @@ namespace btas {
     /// {n+1,n+1,n+1,...}
     /// {n+2,n+2,n+2,...}
     /// up to \c upbound()
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal>
     RangeNd<_Order, _Index>
@@ -1262,7 +1262,7 @@ namespace btas {
       index_value stride = 1,
                   prod_extents = 1,
                   extent = r.upbound()[0];
-      const auto dr = _Order == CblasRowMajor ? Range1(r.rank()-1,0,-1)
+      const auto dr = _Order == blas::Layout::RowMajor ? Range1(r.rank()-1,0,-1)
                                               : Range1(0,r.rank()-1,1);
       for(const auto i : dr)
         {
@@ -1280,7 +1280,7 @@ namespace btas {
     /// Groups the indices from [istart,iend) not including iend.
     /// If the original indices have extents e1,e2,e3,... the grouped index
     /// will have extent e1*e2*e3*...
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal>
     RangeNd<_Order, _Index,_Ordinal>
@@ -1319,7 +1319,7 @@ namespace btas {
       return RangeNd<_Order,_Index,_Ordinal>(lobound,upbound);
       }
 
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal>
     RangeNd<_Order, _Index,_Ordinal>
@@ -1342,7 +1342,7 @@ namespace btas {
     /// std::vector<std::size_t> inds = { 0, 2 };
     /// tie(T,inds)(i,j) = T(i,j,i)
     ///
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal,
               typename ArrayType>
@@ -1377,9 +1377,9 @@ namespace btas {
       lobound[ti] = tbegin;
       upbound[ti] = tend;
 
-      const auto dr = (_Order == CblasRowMajor) ? Range1(r.rank()-1,-1,-1)
+      const auto dr = (_Order == blas::Layout::RowMajor) ? Range1(r.rank()-1,-1,-1)
                                                 : Range1(0,r.rank(),1);
-      const auto nr = (_Order == CblasRowMajor) ? Range1(newr-1,-1,-1)
+      const auto nr = (_Order == blas::Layout::RowMajor) ? Range1(newr-1,-1,-1)
                                                 : Range1(0,newr,1);
       index_value prod_extents = 1;
       auto it = nr.begin();
@@ -1412,7 +1412,7 @@ namespace btas {
     ///
     /// tieIndex wrapper taking a variadic list of integers
     ///
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal,
               typename... _args>
@@ -1427,7 +1427,7 @@ namespace btas {
         }
 
 
-    template <CBLAS_ORDER _Order,
+    template <blas::Layout _Order,
               typename _Index,
               typename _Ordinal>
     class boxrange_iteration_order< btas::RangeNd<_Order, _Index, _Ordinal> > {
@@ -1436,7 +1436,7 @@ namespace btas {
               other = boxrange_iteration_order<void>::other,
               column_major = boxrange_iteration_order<void>::column_major};
 
-        static constexpr int value = (_Order == CblasRowMajor) ? row_major : column_major;
+        static constexpr int value = (_Order == blas::Layout::RowMajor) ? row_major : column_major;
     };
 }  // namespace btas
 
@@ -1458,12 +1458,12 @@ namespace boost {
 namespace serialization {
 
   /// boost serialization
-  template<class Archive, CBLAS_ORDER _Order,
+  template<class Archive, blas::Layout _Order,
            typename _Index, typename _Ordinal>
   void serialize(Archive& ar, btas::RangeNd<_Order, _Index, _Ordinal>& t, const unsigned int version) {
     boost::serialization::split_free(ar, t, version);
   }
-  template<class Archive, CBLAS_ORDER _Order,
+  template<class Archive, blas::Layout _Order,
            typename _Index, typename _Ordinal>
   void save(Archive& ar, const btas::RangeNd<_Order, _Index, _Ordinal>& t, const unsigned int version) {
     auto lobound = t.lobound();
@@ -1471,7 +1471,7 @@ namespace serialization {
     auto ordinal = t.ordinal();
     ar << BOOST_SERIALIZATION_NVP(lobound) << BOOST_SERIALIZATION_NVP(upbound) << BOOST_SERIALIZATION_NVP(ordinal);
   }
-  template<class Archive, CBLAS_ORDER _Order,
+  template<class Archive, blas::Layout _Order,
            typename _Index, typename _Ordinal>
   void load(Archive& ar, btas::RangeNd<_Order, _Index, _Ordinal>& t, const unsigned int version) {
     typedef typename btas::BaseRangeNd<btas::RangeNd<_Order, _Index, _Ordinal>>::index_type index_type;

@@ -80,7 +80,7 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
 
       // Project The random matrix onto the flatten reference tensor
       Tensor Y(An.extent(0), rank);
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, An, G, 0.0, Y);
+      gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, An, G, 0.0, Y);
 
     // Start power iteration
       for (size_t j = 0; j < powerit; j++) {
@@ -90,13 +90,13 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
 
         // Find the L of an LU decomposition of the L above (called Y) projected
         // onto the flattened reference tensor
-        gemm(CblasTrans, CblasNoTrans, 1.0, An, Y, 0.0, Z);
+        gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, An, Y, 0.0, Z);
         LU_decomp(Z);
 
         // Project the second L from above (called Z) onto the flattened reference
       // tensor and start power iteration over again.
       Y.resize(Range{Range1{An.extent(0)}, Range1{Z.extent(1)}});
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, An, Z, 0.0, Y);
+      gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, An, Z, 0.0, Y);
     }
 
     // Compute the QR from Y above.  If the QR is non-singular push it into

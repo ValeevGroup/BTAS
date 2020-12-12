@@ -9,9 +9,11 @@
 #include <btas/tensor_traits.h>
 #include <btas/types.h>
 #include <btas/array_adaptor.h>
+#include <btas/type_traits.h>
 
 #include <btas/generic/numeric_type.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
+#include <btas/generic/blas_lapack_delegator.h>
 
 namespace btas {
 
@@ -21,20 +23,21 @@ template<> struct ger_impl<true>
 {
    /// Performs GER operation
    template<typename _T, class _IteratorX, class _IteratorY, class _IteratorA>
-   static void call (
-      const CBLAS_ORDER& order,
+   static void call_impl (
+      const blas::Layout& order,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const _T& alpha,
             _IteratorX itrX,
-      const typename std::iterator_traits<_IteratorX>::difference_type& incX,
+      const iterator_difference_t<_IteratorX>& incX,
             _IteratorY itrY,
-      const typename std::iterator_traits<_IteratorY>::difference_type& incY,
+      const iterator_difference_t<_IteratorY>& incY,
             _IteratorA itrA,
-      const unsigned long& LDA)
+      const unsigned long& LDA,
+      generic_impl_tag)
    {
       // RowMajor
-      if (order == CblasRowMajor)
+      if (order == blas::Layout::RowMajor)
       {
          auto itrY_save = itrY;
          for (size_type i = 0; i < Msize; ++i, ++itrX)
@@ -61,77 +64,47 @@ template<> struct ger_impl<true>
       }
    }
 
-#ifdef BTAS_HAS_CBLAS
-
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, float>::value>::type>
-   static void call (
-      const CBLAS_ORDER& order,
+#ifdef BTAS_HAS_BLAS_LAPACK
+   template<typename _T, class _IteratorX, class _IteratorY, class _IteratorA>
+   static void call_impl (
+      const blas::Layout& order,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const _T& alpha,
-      const float* itrX,
-      const typename std::iterator_traits<float*>::difference_type& incX,
-      const float* itrY,
-      const typename std::iterator_traits<float*>::difference_type& incY,
-            float* itrA,
-      const unsigned long& LDA)
+            _IteratorX itrX,
+      const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY,
+      const iterator_difference_t<_IteratorY>& incY,
+            _IteratorA itrA,
+      const unsigned long& LDA,
+      blas_lapack_impl_tag)
    {
-      cblas_sger(order, Msize, Nsize, alpha, itrX, incX, itrY, incY, itrA, LDA);
-   }
 
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, double>::value>::type>
+     blas::geru( order, Msize, Nsize, alpha,
+                 static_cast<const _T*>(&(*itrX)), incX,
+                 static_cast<const _T*>(&(*itrY)), incY,
+                 static_cast<      _T*>(&*(itrA)), LDA );
+   }
+#endif
+
+   template<typename _T, class _IteratorX, class _IteratorY, class _IteratorA>
    static void call (
-      const CBLAS_ORDER& order,
+      const blas::Layout& order,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const _T& alpha,
-      const double* itrX,
-      const typename std::iterator_traits<double*>::difference_type& incX,
-      const double* itrY,
-      const typename std::iterator_traits<double*>::difference_type& incY,
-            double* itrA,
+            _IteratorX itrX,
+      const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY,
+      const iterator_difference_t<_IteratorY>& incY,
+            _IteratorA itrA,
       const unsigned long& LDA)
    {
-      cblas_dger(order, Msize, Nsize, alpha, itrX, incX, itrY, incY, itrA, LDA);
-   }
 
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<float>>::value>::type>
-   static void call (
-      const CBLAS_ORDER& order,
-      const unsigned long& Msize,
-      const unsigned long& Nsize,
-      const _T& alpha,
-      const std::complex<float>* itrX,
-      const typename std::iterator_traits<std::complex<float>*>::difference_type& incX,
-      const std::complex<float>* itrY,
-      const typename std::iterator_traits<std::complex<float>*>::difference_type& incY,
-            std::complex<float>* itrA,
-      const unsigned long& LDA)
-   {
-      // FIXME: implement cgerc and cgeru separately.
-      const lapack_complex_float alphac = to_lapack_val(std::move(alpha));
-      cblas_cgeru(order, Msize, Nsize, &alphac, to_lapack_cptr(itrX), incX, to_lapack_cptr(itrY), incY, to_lapack_cptr(itrA), LDA);
-   }
+     call_impl( order, Msize, Nsize, alpha, itrX, incX, itrY, incY, itrA, LDA,
+                blas_lapack_impl_t<_IteratorX, _IteratorY, _IteratorA>() );
 
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<double>>::value>::type>
-   static void call (
-      const CBLAS_ORDER& order,
-      const unsigned long& Msize,
-      const unsigned long& Nsize,
-      const _T& alpha,
-      const std::complex<double>* itrX,
-      const typename std::iterator_traits<std::complex<double>*>::difference_type& incX,
-      const std::complex<double>* itrY,
-      const typename std::iterator_traits<std::complex<double>*>::difference_type& incY,
-            std::complex<double>* itrA,
-      const unsigned long& LDA)
-   {
-      // FIXME: implement zgerc and zgeru separately.
-      const lapack_complex_double alphac = to_lapack_val(std::move(alpha));
-      cblas_zgeru(order, Msize, Nsize, &alphac, to_lapack_zptr(itrX), incX, to_lapack_zptr(itrY), incY, to_lapack_zptr(itrA), LDA);
    }
-
-#endif // BTAS_HAS_CBLAS
 
 };
 
@@ -140,19 +113,19 @@ template<> struct ger_impl<false>
    /// GER implementation
    template<typename _T, class _IteratorX, class _IteratorY, class _IteratorA>
    static void call (
-      const CBLAS_ORDER& order,
+      const blas::Layout& order,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const _T& alpha,
             _IteratorX itrX,
-      const typename std::iterator_traits<_IteratorX>::difference_type& incX,
+      const iterator_difference_t<_IteratorX>& incX,
             _IteratorY itrY,
-      const typename std::iterator_traits<_IteratorY>::difference_type& incY,
+      const iterator_difference_t<_IteratorY>& incY,
             _IteratorA itrA,
       const unsigned long& LDA)
    {
       // RowMajor
-      if (order == CblasRowMajor)
+      if (order == blas::Layout::RowMajor)
       {
          auto itrY_save = itrY;
          for (size_type i = 0; i < Msize; ++i, ++itrX)
@@ -186,14 +159,14 @@ template<> struct ger_impl<false>
 /// Generic implementation of BLAS GER in terms of C++ iterator
 template<typename _T, class _IteratorX, class _IteratorY, class _IteratorA>
 void ger (
-   const CBLAS_ORDER& order,
+   const blas::Layout& order,
    const unsigned long& Msize,
    const unsigned long& Nsize,
    const _T& alpha,
          _IteratorX itrX,
-   const typename std::iterator_traits<_IteratorX>::difference_type& incX,
+   const iterator_difference_t<_IteratorX>& incX,
          _IteratorY itrY,
-   const typename std::iterator_traits<_IteratorY>::difference_type& incY,
+   const iterator_difference_t<_IteratorY>& incY,
          _IteratorA itrA,
    const unsigned long& LDA)
 {
@@ -247,8 +220,8 @@ void ger (
     static_assert(boxtensor_storage_order<_TensorX>::value == boxtensor_storage_order<_TensorA>::value &&
                   boxtensor_storage_order<_TensorY>::value == boxtensor_storage_order<_TensorA>::value,
                   "btas::ger does not support mixed storage order");
-    const CBLAS_ORDER order = boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorA>::row_major ?
-                              CblasRowMajor : CblasColMajor;
+    const blas::Layout order = boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorA>::row_major ?
+                              blas::Layout::RowMajor : blas::Layout::ColMajor;
 
    if (X.empty() || Y.empty())
    {
@@ -274,7 +247,7 @@ void ger (
 
    size_type Msize = std::accumulate(std::begin(extentX), std::end(extentX), 1ul, std::multiplies<size_type>());
    size_type Nsize = std::accumulate(std::begin(extentY), std::end(extentY), 1ul, std::multiplies<size_type>());
-   size_type LDA   = (order == CblasRowMajor) ? Nsize : Msize;
+   size_type LDA   = (order == blas::Layout::RowMajor) ? Nsize : Msize;
 
    std::copy_n(std::begin(extentX), rankX, std::begin(extentA));
    std::copy_n(std::begin(extentY), rankY, std::begin(extentA)+rankX);

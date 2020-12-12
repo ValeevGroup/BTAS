@@ -32,25 +32,6 @@ matrix:
   fast_finish: true
   include:
     - compiler: gcc
-      env: GCC_VERSION=6 BUILD_TYPE=Debug
-      addons:
-        apt:
-          packages:
-            - *base_packages
-            - *netlib_packages
-            - g++-6
-    - compiler: gcc
-      env: GCC_VERSION=6 BUILD_TYPE=Release
-      addons:
-        apt:
-          sources:
-            - sourceline: 'deb https://apt.repos.intel.com/mkl all main'
-              key_url: 'https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB'
-          packages:
-            - *base_packages
-            - g++-6
-            - intel-mkl-2019.4-070
-    - compiler: gcc
       env: GCC_VERSION=7 BUILD_TYPE=Debug
       addons:
         apt:
@@ -67,6 +48,7 @@ matrix:
               key_url: 'https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB'
           packages:
             - *base_packages
+            - *netlib_packages
             - g++-7
             - intel-mkl-2019.4-070
     - compiler: gcc
@@ -86,6 +68,7 @@ matrix:
               key_url: 'https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB'
           packages:
             - *base_packages
+            - *netlib_packages
             - g++-8
             - intel-mkl-2019.4-070
     - compiler: gcc
@@ -108,6 +91,7 @@ matrix:
               key_url: 'https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB'
           packages:
             - *base_packages
+            - *netlib_packages
             - g++-9
             - intel-mkl-2019.4-070
     - compiler: clang
@@ -133,6 +117,7 @@ matrix:
               key_url: 'https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB'
           packages:
             - *base_packages
+            - *netlib_packages
             - g++-8
             - clang-7
             - libc++-7-dev
@@ -193,6 +178,7 @@ matrix:
               key_url: 'https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB'
           packages:
             - *base_packages
+            - *netlib_packages
             - g++-8
             - gfortran-8
             - clang-9

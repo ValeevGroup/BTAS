@@ -78,6 +78,9 @@ namespace btas {
 
       ///@}
 
+      /// numeric type
+      typedef typename numeric_type<value_type>::type numeric_type;
+
     private:
       struct Enabler {};
 
@@ -768,7 +771,7 @@ namespace btas {
   /// Tensor with const number of dimensions
   template <typename _T,
             size_t _N,
-            CBLAS_ORDER _Order = CblasRowMajor,
+            blas::Layout _Order = blas::Layout::RowMajor,
             class _Storage = btas::DEFAULT::storage<_T>,
             class = typename std::enable_if<std::is_same<_T, typename _Storage::value_type>::value>::type
            >

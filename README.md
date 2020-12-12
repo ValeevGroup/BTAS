@@ -12,7 +12,7 @@ Prerequisites
   - Iterator
   - (optional, but recommended) Container for fast small vectors
   - (optional) Serialization for serialization (non-header-only)
-* (optional, but recommended) BLAS+LAPACK libraries and their CBLAS/LAPACKe C++ APIs for optimized operations (non-header-only)
+* (optional, but recommended) BLAS+LAPACK libraries and their BLAS++/LAPACK++ C++ APIs for optimized operations (non-header-only)
 
 Building and Installing
 =======================
@@ -22,8 +22,7 @@ TL;DR version
 
 ## useful CMake variables
 - `CMAKE_CXX_COMPILER` -- specifies the C++ compiler (by default CMake will look for the C++ compiler in `PATH`)
-- `BTAS_USE_CBLAS_LAPACKE` -- specifies whether to enable the use of BLAS/LAPACK via the CBLAS/LAPACKe APIs; the default is `ON`
-- `BTAS_ENABLE_MKL` -- specifies whether to look for Intel MKL; the default is `ON`
+- `BTAS_USE_BLAS_LAPACK` -- specifies whether to enable the use of BLAS/LAPACK via the BLAS++/LAPACK++ APIs; the default is `ON`
 - `BTAS_BUILD_DEPS_FROM_SOURCE` -- specifies whetther to enable building the missing dependencies (Boost) from source; the default is `OFF`
 - `BTAS_BUILD_UNITTEST` -- specifies whether to build unit tests; the default is `OFF`
 - `TARGET_MAX_INDEX_RANK` -- specifies the rank for which the default BTAS index type will use stack; the default is `6`

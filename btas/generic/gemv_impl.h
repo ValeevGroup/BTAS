@@ -24,9 +24,9 @@ template<> struct gemv_impl<true>
 {
    /// GEMV implementation
    template<typename _T, class _IteratorA, class _IteratorX, class _IteratorY>
-   static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
+   static void call_impl (
+      const blas::Layout& order,
+      const blas::Op& transA,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const _T& alpha,
@@ -36,24 +36,25 @@ template<> struct gemv_impl<true>
       const typename std::iterator_traits<_IteratorX>::difference_type& incX,
       const _T& beta,
             _IteratorY itrY,
-      const typename std::iterator_traits<_IteratorY>::difference_type& incY)
+      const typename std::iterator_traits<_IteratorY>::difference_type& incY,
+      generic_impl_tag)
    {
       if (beta == NumericType<_T>::zero())
       {
         auto itrY_tmp = itrY;
-        for(size_t i=0; i!=(transA == CblasNoTrans?Msize:Nsize); ++i, itrY_tmp+=incY)
+        for(size_t i=0; i!=(transA == blas::Op::NoTrans?Msize:Nsize); ++i, itrY_tmp+=incY)
           *itrY_tmp = NumericType<typename std::iterator_traits<_IteratorY>::value_type>::zero();
       }
       else if (beta != NumericType<_T>::one())
       {
-         if (transA == CblasNoTrans)
+         if (transA == blas::Op::NoTrans)
             scal (Msize, beta, itrY, incY);
          else
             scal (Nsize, beta, itrY, incY);
       }
 
       // A:NoTrans RowMajor
-      if      (transA == CblasNoTrans && order == CblasRowMajor)
+      if      (transA == blas::Op::NoTrans && order == blas::Layout::RowMajor)
       {
          auto itrX_save = itrX;
          for (size_type i = 0; i < Msize; ++i, ++itrY)
@@ -66,7 +67,7 @@ template<> struct gemv_impl<true>
          }
       }
       // A:Trans RowMajor
-      else if (transA == CblasTrans && order == CblasRowMajor)
+      else if (transA == blas::Op::Trans && order == blas::Layout::RowMajor)
       {
          auto itrY_save = itrY;
          for (size_type i = 0; i < Msize; ++i, ++itrX)
@@ -79,7 +80,7 @@ template<> struct gemv_impl<true>
          }
       }
       // A:ConjTrans RowMajor
-      else if (transA == CblasConjTrans && order == CblasRowMajor)
+      else if (transA == blas::Op::ConjTrans && order == blas::Layout::RowMajor)
       {
          auto itrY_save = itrY;
          for (size_type i = 0; i < Msize; ++i, ++itrX)
@@ -92,7 +93,7 @@ template<> struct gemv_impl<true>
          }
       }
       // A:NoTrans ColMajor
-      else if (transA == CblasNoTrans && order == CblasColMajor)
+      else if (transA == blas::Op::NoTrans && order == blas::Layout::ColMajor)
       {
          auto itrY_save = itrY;
          for (size_type i = 0; i < Nsize; ++i, ++itrX)
@@ -105,7 +106,7 @@ template<> struct gemv_impl<true>
          }
       }
       // A:Trans ColMajor
-      else if (transA == CblasTrans && order == CblasColMajor)
+      else if (transA == blas::Op::Trans && order == blas::Layout::ColMajor)
       {
          auto itrX_save = itrX;
          for (size_type i = 0; i < Nsize; ++i, ++itrY)
@@ -118,7 +119,7 @@ template<> struct gemv_impl<true>
          }
       }
       // A:ConjTrans ColMajor
-      else if (transA == CblasConjTrans && order == CblasColMajor)
+      else if (transA == blas::Op::ConjTrans && order == blas::Layout::ColMajor)
       {
          auto itrX_save = itrX;
          for (size_type i = 0; i < Nsize; ++i, ++itrY)
@@ -132,86 +133,52 @@ template<> struct gemv_impl<true>
       }
    }
 
-#ifdef BTAS_HAS_CBLAS
-
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, float>::value>::type>
-   static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
+#ifdef BTAS_HAS_BLAS_LAPACK
+   template<typename _T, class _IteratorA, class _IteratorX, class _IteratorY>
+   static void call_impl (
+      const blas::Layout& order,
+      const blas::Op& transA,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const _T& alpha,
-      const float* itrA,
+            _IteratorA itrA,
       const unsigned long& LDA,
-      const float* itrX,
-      const typename std::iterator_traits<float*>::difference_type& incX,
+            _IteratorX itrX,
+      const typename std::iterator_traits<_IteratorX>::difference_type& incX,
       const _T& beta,
-            float* itrY,
-      const typename std::iterator_traits<float*>::difference_type& incY)
+            _IteratorY itrY,
+      const typename std::iterator_traits<_IteratorY>::difference_type& incY,
+      blas_lapack_impl_tag)
    {
-      cblas_sgemv(order, transA, Msize, Nsize, alpha, itrA, LDA, itrX, incX, beta, itrY, incY);
-   }
 
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, double>::value>::type>
+     blas::gemv( order, transA, Msize, Nsize, alpha,
+                 static_cast<const _T*>(&(*itrA)), LDA,
+                 static_cast<const _T*>(&(*itrX)), incX,
+                 beta,
+                 static_cast<      _T*>(&(*itrY)), incY );
+                
+   }
+#endif
+
+   template<typename _T, class _IteratorA, class _IteratorX, class _IteratorY>
    static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
+      const blas::Layout& order,
+      const blas::Op& transA,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const _T& alpha,
-      const double* itrA,
+            _IteratorA itrA,
       const unsigned long& LDA,
-      const double* itrX,
-      const typename std::iterator_traits<double*>::difference_type& incX,
+            _IteratorX itrX,
+      const typename std::iterator_traits<_IteratorX>::difference_type& incX,
       const _T& beta,
-            double* itrY,
-      const typename std::iterator_traits<double*>::difference_type& incY)
+            _IteratorY itrY,
+      const typename std::iterator_traits<_IteratorY>::difference_type& incY )
    {
-      cblas_dgemv(order, transA, Msize, Nsize, alpha, itrA, LDA, itrX, incX, beta, itrY, incY);
+     call_impl( order, transA, Msize, Nsize, alpha, itrA, LDA, itrX, incX,
+                beta, itrY, incY, 
+                blas_lapack_impl_t<_IteratorA, _IteratorX, _IteratorY>() );
    }
-
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<float>>::value>::type>
-   static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
-      const unsigned long& Msize,
-      const unsigned long& Nsize,
-      const _T& alpha,
-      const std::complex<float>* itrA,
-      const unsigned long& LDA,
-      const std::complex<float>* itrX,
-      const typename std::iterator_traits<std::complex<float>*>::difference_type& incX,
-      const _T& beta,
-            std::complex<float>* itrY,
-      const typename std::iterator_traits<std::complex<float>*>::difference_type& incY)
-   {
-      const lapack_complex_float alphac = to_lapack_val(std::move(alpha));
-      const lapack_complex_float betac  = to_lapack_val(std::move(beta));
-      cblas_cgemv(order, transA, Msize, Nsize, &alphac, to_lapack_cptr(itrA), LDA, to_lapack_cptr(itrX), incX, &betac, to_lapack_cptr(itrY), incY);
-   }
-
-   template <typename _T, class = typename std::enable_if<std::is_convertible<_T, std::complex<double>>::value>::type>
-   static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
-      const unsigned long& Msize,
-      const unsigned long& Nsize,
-      const _T& alpha,
-      const std::complex<double>* itrA,
-      const unsigned long& LDA,
-      const std::complex<double>* itrX,
-      const typename std::iterator_traits<std::complex<double>*>::difference_type& incX,
-      const _T& beta,
-            std::complex<double>* itrY,
-      const typename std::iterator_traits<std::complex<double>*>::difference_type& incY)
-   {
-      const lapack_complex_double alphac = to_lapack_val(std::move(alpha));
-      const lapack_complex_double betac  = to_lapack_val(std::move(beta));
-      cblas_zgemv(order, transA, Msize, Nsize, &alphac, to_lapack_zptr(itrA), LDA, to_lapack_zptr(itrX), incX, &betac, to_lapack_zptr(itrY), incY);
-   }
-
-#endif // BTAS_HAS_CBLAS
-
 };
 
 template<> struct gemv_impl<false>
@@ -219,8 +186,8 @@ template<> struct gemv_impl<false>
    /// GEMV implementation
    template<typename _T, class _IteratorA, class _IteratorX, class _IteratorY>
    static void call (
-      const CBLAS_ORDER& order,
-      const CBLAS_TRANSPOSE& transA,
+      const blas::Layout& order,
+      const blas::Op& transA,
       const unsigned long& Msize,
       const unsigned long& Nsize,
       const _T& alpha,
@@ -233,7 +200,7 @@ template<> struct gemv_impl<false>
       const typename std::iterator_traits<_IteratorY>::difference_type& incY)
    {
       // A:NoTrans RowMajor
-      if      (transA == CblasNoTrans && order == CblasRowMajor)
+      if      (transA == blas::Op::NoTrans && order == blas::Layout::RowMajor)
       {
          auto itrX_save = itrX;
          for (size_type i = 0; i < Msize; ++i, ++itrY)
@@ -246,7 +213,7 @@ template<> struct gemv_impl<false>
          }
       }
       // A:Trans RowMajor
-      else if (transA != CblasNoTrans && order == CblasRowMajor)
+      else if (transA != blas::Op::NoTrans && order == blas::Layout::RowMajor)
       {
          auto itrY_save = itrY;
          for (size_type i = 0; i < Msize; ++i, ++itrX)
@@ -259,7 +226,7 @@ template<> struct gemv_impl<false>
          }
       }
       // A:NoTrans ColMajor
-      else if (transA == CblasNoTrans && order == CblasColMajor)
+      else if (transA == blas::Op::NoTrans && order == blas::Layout::ColMajor)
       {
          auto itrY_save = itrY;
          for (size_type i = 0; i < Nsize; ++i, ++itrX)
@@ -272,7 +239,7 @@ template<> struct gemv_impl<false>
          }
       }
       // A:Trans ColMajor
-      else if (transA != CblasNoTrans && order == CblasColMajor)
+      else if (transA != blas::Op::NoTrans && order == blas::Layout::ColMajor)
       {
          auto itrX_save = itrX;
          for (size_type i = 0; i < Nsize; ++i, ++itrY)
@@ -293,8 +260,8 @@ template<> struct gemv_impl<false>
 /// Generic implementation of BLAS GEMV in terms of C++ iterator
 template<typename _T, class _IteratorA, class _IteratorX, class _IteratorY>
 void gemv (
-   const CBLAS_ORDER& order,
-   const CBLAS_TRANSPOSE& transA,
+   const blas::Layout& order,
+   const blas::Op& transA,
    const unsigned long& Msize,
    const unsigned long& Nsize,
    const _T& alpha,
@@ -334,8 +301,8 @@ void gemv (
 //  ================================================================================================
 
 /// Generic interface of BLAS-GEMV
-/// \param order storage order of tensor in matrix view (CblasRowMajor, CblasColMajor)
-/// \param transA transpose directive for tensor A (CblasNoTrans, CblasTrans, CblasConjTrans)
+/// \param order storage order of tensor in matrix view (blas::Layout::RowMajor, blas::Layout::ColMajor)
+/// \param transA transpose directive for tensor A (blas::Op::NoTrans, blas::Op::Trans, blas::Op::ConjTrans)
 /// \param alpha scalar value to be multiplied to A * X
 /// \param A input tensor
 /// \param X input tensor
@@ -352,7 +319,7 @@ template<
    >::type
 >
 void gemv (
-   const CBLAS_TRANSPOSE& transA,
+   const blas::Op& transA,
    const _T& alpha,
    const _TensorA& A,
    const _TensorX& X,
@@ -362,8 +329,8 @@ void gemv (
     static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorY>::value &&
                   boxtensor_storage_order<_TensorX>::value == boxtensor_storage_order<_TensorY>::value,
                   "btas::gemm does not support mixed storage order");
-    const CBLAS_ORDER order = boxtensor_storage_order<_TensorY>::value == boxtensor_storage_order<_TensorY>::row_major ?
-                              CblasRowMajor : CblasColMajor;
+    const blas::Layout order = boxtensor_storage_order<_TensorY>::value == boxtensor_storage_order<_TensorY>::row_major ?
+                              blas::Layout::RowMajor : blas::Layout::ColMajor;
 
    if (A.empty() || X.empty())
    {
@@ -371,7 +338,7 @@ void gemv (
       return;
    }
 
-   assert(not ((transA == CblasConjTrans ) && std::is_fundamental<typename _TensorA::value_type>::value));
+   assert(not ((transA == blas::Op::ConjTrans ) && std::is_fundamental<typename _TensorA::value_type>::value));
 
    // get contraction rank
    const size_type rankX = rank(X);
@@ -388,7 +355,7 @@ void gemv (
    size_type LDA = 0; // Leading dims of A
 
    // to minimize forks by if?
-   if (transA == CblasNoTrans)
+   if (transA == blas::Op::NoTrans)
    {
       Msize = std::accumulate(std::begin(extentA), std::begin(extentA)+rankY, 1ul, std::multiplies<size_type>());
       Nsize = std::accumulate(std::begin(extentA)+rankY, std::end(extentA),   1ul, std::multiplies<size_type>());
@@ -409,7 +376,7 @@ void gemv (
 
 // LDA = std::accumulate(std::begin(extentA)+rankY, std::end(extentA),   1ul, std::multiplies<size_type>());
 
-   if(order == CblasRowMajor)
+   if(order == blas::Layout::RowMajor)
    {
       LDA = Nsize;
    }

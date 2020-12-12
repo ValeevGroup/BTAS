@@ -88,7 +88,7 @@ TEST_CASE("Tensor and TensorView Functions")
             CHECK(T1(i0+1,i0+1,i0+1) == Tvd(i0+1));
 
 
-        RangeNd<CblasColMajor> rc({1,1,1},{3,3,4});
+        RangeNd<blas::Layout::ColMajor> rc({1,1,1},{3,3,4});
         DTensor Tc1(rc);
         fillEls(Tc1);
         DTensor Tcd=btas::diag(T1);
@@ -152,7 +152,7 @@ TEST_CASE("Tensor and TensorView Functions")
         }
     SECTION("Flatten Col Major")
         {
-        RangeNd<CblasColMajor> rc({1,1,1},{3,3,4});
+        RangeNd<blas::Layout::ColMajor> rc({1,1,1},{3,3,4});
         DTensor T1(rc);
         fillEls(T1);
         DTensor Tg=btas::flatten(T1);

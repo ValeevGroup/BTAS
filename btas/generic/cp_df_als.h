@@ -309,7 +309,7 @@ namespace btas{
           tensor_ref_right.resize(Range{Range1{tensor_ref_right.extent(0)},Range1{trRsize}});
 
           // matrix multiplication
-          gemm(CblasTrans, CblasNoTrans, 1.0, tensor_ref_left, tensor_ref_right, 0.0, tensor_ref);
+          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, tensor_ref_left, tensor_ref_right, 0.0, tensor_ref);
 
           // Resize tensor_ref's back to original dimensions
           tensor_ref_left.resize(TRLrange);
@@ -338,7 +338,7 @@ namespace btas{
             Tensor S(R, R), lambda(R);
 
             // Contract refrence tensor to make it square matrix of mode i
-            gemm(CblasNoTrans, CblasTrans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
+            gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
 
             // Find the Singular vectors of the matrix using eigenvalue decomposition
             eigenvalue_decomp(S, lambda);
@@ -617,7 +617,7 @@ namespace btas{
           tensor_ref.resize(Range{Range1{sizeCurr / contract_size}, Range1{contract_size}});
 
           // Contract out the last dimension
-          gemm(CblasNoTrans, CblasNoTrans, 1.0, tensor_ref, A[contract_dim_inter], 0.0, contract_tensor);
+          gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, tensor_ref, A[contract_dim_inter], 0.0, contract_tensor);
           // Resize tensor_ref back to original size
           tensor_ref.resize(R);
 
@@ -677,7 +677,7 @@ namespace btas{
           // resize tensor_ref to remove connecting dimension
           tensor_ref.resize(Range{Range1{tensor_ref.extent(0)},Range1{LH_size}});
 
-          gemm(CblasTrans, CblasNoTrans, 1.0, tensor_ref, K, 0.0, leftTimesRight);
+          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, tensor_ref, K, 0.0, leftTimesRight);
           // resize tensor_ref back to original dimensions
           tensor_ref.resize(R);
 

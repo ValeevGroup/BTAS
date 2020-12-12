@@ -10,37 +10,211 @@
 
 #include <btas/generic/numeric_type.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
+#include <btas/generic/blas_lapack_delegator.h>
 
 namespace btas {
 
-template<typename _T>
-struct __dot_result_type {
-   typedef typename __dot_result_type<typename _T::value_type>::type type;
+namespace detail {
+
+template <typename... _Ts>
+struct dot_return_type;
+
+template <typename _T, typename... Tail>
+struct dot_return_type<_T, Tail...> {
+private:
+  using tail_type = typename dot_return_type<Tail...>::type;
+public:
+  using type = decltype( std::declval<_T>() * std::declval<tail_type>() );
 };
 
-template<> struct __dot_result_type<float> { typedef float type; };
+template <typename _T>
+struct dot_return_type<_T> {
+  using type = _T; 
+};
 
-template<> struct __dot_result_type<double> { typedef double type; };
+template <typename... _Ts>
+using dot_return_type_t = typename dot_return_type<_Ts...>::type;
 
-template<> struct __dot_result_type<std::complex<float>> { typedef std::complex<float> type; };
 
-template<> struct __dot_result_type<std::complex<double>> { typedef std::complex<double> type; };
+/*
+template <typename... _Tensors>
+struct tensor_all_scalar_values;
 
-//  ================================================================================================
+template <typename Head, typename... Tail>
+struct tensor_all_scalar_values< Head, Tail... > {
+private:
+  static constexpr bool head_value = tensor_all_scalar_values<Head   >::value;
+  static constexpr bool tail_value = tensor_all_scalar_values<Tail...>::value;
+public:
+  static constexpr bool value = head_value and tail_value; 
+};
 
-/// Dot with conjugation for general case
-template<typename _T>
-struct dotc_impl
-{
-   typedef typename __dot_result_type<_T>::type return_type;
+template <typename _Tensor>
+struct tensor_all_scalar_values< _Tensor > {
+  static constexpr bool value = is_scalar_arithmetic_v< typename _Tensor::value_type >;
+};
 
-   template<class _IteratorX, class _IteratorY>
-   static return_type call (
+template <typename = void, typename... _Tensors>
+struct tensor_dot_return_type;
+
+template <typename... _Tensors>
+struct tensor_dot_return_type< std::enable_if_t<tensor_all_scalar_values<_Tensors...>::value>, _Tensors... > {
+  using type = dot_return_type_t<typename _Tensors::value_type...>;
+};
+
+template <typename... _Tensors>
+struct tensor_dot_return_type< std::enable_if_t<not tensor_all_scalar_values<_Tensors...>::value>, _Tensors... > {
+  using type = dot_return_type_t<typename _Tensors::value_type::value_type...>;
+};
+
+template <typename... _Tensors>
+using tensor_dot_return_type_t = typename tensor_dot_return_type<_Tensors...>::type;
+*/
+}
+
+template <bool _IsFinal>
+struct dotc_impl;
+template <bool _IsFinal>
+struct dotu_impl;
+
+
+
+// Finalized DOTC impl
+template <>
+struct dotc_impl<true> {
+
+  template<class _IteratorX, class _IteratorY>
+  static auto call_impl (
       const unsigned long& Nsize,
-            _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
-            _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
-   {
-      return_type val = dotc(*itrX, *itrY);
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY,
+      generic_impl_tag)
+  {
+
+      auto val = impl::conj(*itrX) * (*itrY);
+      itrX += incX;
+      itrY += incY;
+      for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)
+      {
+         val += impl::conj(*itrX) * (*itrY);
+      }
+      return val;
+
+  }
+
+#ifdef BTAS_HAS_BLAS_LAPACK
+  template<class _IteratorX, class _IteratorY>
+  static auto call_impl (
+      const unsigned long& Nsize,
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY,
+      blas_lapack_impl_tag)
+  {
+
+      using x_traits = std::iterator_traits<_IteratorX>;
+      using y_traits = std::iterator_traits<_IteratorY>;
+
+      using x_value_type = typename x_traits::value_type;
+      using y_value_type = typename y_traits::value_type;
+
+      using x_ptr_type = const x_value_type*;
+      using y_ptr_type = const y_value_type*;
+
+      // XXX: DOTC == DOT in BLASPP
+      return blas::dot( Nsize, static_cast<x_ptr_type>(&(*itrX)), incX,
+                               static_cast<y_ptr_type>(&(*itrY)), incY );
+
+  }
+#endif
+
+  template<class _IteratorX, class _IteratorY>
+  static auto call (
+      const unsigned long& Nsize,
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY )
+  {
+      return call_impl( Nsize, itrX, incX, itrY, incY, 
+                        blas_lapack_impl_t<_IteratorX,_IteratorY>() );
+  }
+
+};
+
+
+// Finalized DOTU impl
+template <>
+struct dotu_impl<true> {
+
+  template<class _IteratorX, class _IteratorY>
+  static auto call_impl (
+      const unsigned long& Nsize,
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY,
+      generic_impl_tag)
+  {
+
+      auto val = (*itrX) * (*itrY);
+      itrX += incX;
+      itrY += incY;
+      for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)
+      {
+         val += (*itrX) * (*itrY);
+      }
+      return val;
+
+  }
+
+#ifdef BTAS_HAS_BLAS_LAPACK
+  template<class _IteratorX, class _IteratorY>
+  static auto call_impl (
+      const unsigned long& Nsize,
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY,
+      blas_lapack_impl_tag)
+  {
+
+      using x_traits = std::iterator_traits<_IteratorX>;
+      using y_traits = std::iterator_traits<_IteratorY>;
+
+      using x_value_type = typename x_traits::value_type;
+      using y_value_type = typename y_traits::value_type;
+
+      using x_ptr_type = const x_value_type*;
+      using y_ptr_type = const y_value_type*;
+
+      return blas::dotu( Nsize, static_cast<x_ptr_type>(&(*itrX)), incX,
+                                static_cast<y_ptr_type>(&(*itrY)), incY );
+
+  }
+#endif
+
+  template<class _IteratorX, class _IteratorY>
+  static auto call (
+      const unsigned long& Nsize,
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY )
+  {
+      return call_impl( Nsize, itrX, incX, itrY, incY, 
+                        blas_lapack_impl_t<_IteratorX,_IteratorY>() );
+  }
+
+};
+
+
+
+
+/// Unfinalized DOTC impl
+template <>
+struct dotc_impl<false>
+{
+
+  template<class _IteratorX, class _IteratorY>
+  static auto call (
+      const unsigned long& Nsize,
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY )
+  {
+      auto val = dotc( *itrX, *itrY );
+
       itrX += incX;
       itrY += incY;
       for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)
@@ -48,222 +222,77 @@ struct dotc_impl
          val += dotc(*itrX, *itrY);
       }
       return val;
-   }
+  }
+
+
 };
 
-/// Dot without conjugation for general case
-template<typename _T>
-struct dotu_impl
+/// Unfinalized DOTU impl
+template <>
+struct dotu_impl<false>
 {
-   typedef typename __dot_result_type<_T>::type return_type;
 
-   template<class _IteratorX, class _IteratorY>
-   static return_type call (
+  template<class _IteratorX, class _IteratorY>
+  static auto call (
       const unsigned long& Nsize,
-            _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
-            _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
-   {
-      // redirect to dotc, otherwise must be specialized
-      return dotc_impl<_T>::call(Nsize, itrX, incX, itrY, incY);
-   }
-};
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY )
+  {
+      auto val = dotu( *itrX, *itrY );
 
-template<>
-struct dotc_impl<float>
-{
-   typedef float return_type;
-
-   static return_type call (
-      const unsigned long& Nsize,
-      const float* itrX, const typename std::iterator_traits<float*>::difference_type& incX,
-      const float* itrY, const typename std::iterator_traits<float*>::difference_type& incY)
-   {
-#ifdef BTAS_HAS_CBLAS
-      return cblas_sdot(Nsize, itrX, incX, itrY, incY);
-#else
-      return_type val = (*itrX) * (*itrY);
       itrX += incX;
       itrY += incY;
       for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)
       {
-         val += (*itrX) * (*itrY);
+         val += dotu(*itrX, *itrY);
       }
       return val;
-#endif
-   }
-};
+  }
 
-template<>
-struct dotc_impl<double>
-{
-   typedef double return_type;
 
-   static return_type call (
-      const unsigned long& Nsize,
-      const double* itrX, const typename std::iterator_traits<double*>::difference_type& incX,
-      const double* itrY, const typename std::iterator_traits<double*>::difference_type& incY)
-   {
-#ifdef BTAS_HAS_CBLAS
-      return cblas_ddot(Nsize, itrX, incX, itrY, incY);
-#else
-      return_type val = (*itrX) * (*itrY);
-      itrX += incX;
-      itrY += incY;
-      for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)
-      {
-         val += (*itrX) * (*itrY);
-      }
-      return val;
-#endif
-   }
-};
-
-template<>
-struct dotc_impl<std::complex<float>>
-{
-   typedef lapack_complex_float return_type;
-
-   static return_type call (
-      const unsigned long& Nsize,
-      const std::complex<float>* itrX, const typename std::iterator_traits<std::complex<float>*>::difference_type& incX,
-      const std::complex<float>* itrY, const typename std::iterator_traits<std::complex<float>*>::difference_type& incY)
-   {
-      return_type val;
-#ifdef BTAS_HAS_CBLAS
-      cblas_cdotc_sub(Nsize, to_lapack_cptr(itrX), incX, to_lapack_cptr(itrY), incY, &val);
-#else
-      val = std::conj(*itrX) * (*itrY);
-      itrX += incX;
-      itrY += incY;
-      for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)
-      {
-         val += std::conj(*itrX) * (*itrY);
-      }
-#endif
-      return val;
-   }
-};
-
-template<>
-struct dotu_impl<std::complex<float>>
-{
-   typedef lapack_complex_float return_type;
-
-   static return_type call (
-      const unsigned long& Nsize,
-      const std::complex<float>* itrX, const typename std::iterator_traits<std::complex<float>*>::difference_type& incX,
-      const std::complex<float>* itrY, const typename std::iterator_traits<std::complex<float>*>::difference_type& incY)
-   {
-      return_type val;
-#ifdef BTAS_HAS_CBLAS
-      cblas_cdotu_sub(Nsize, to_lapack_cptr(itrX), incX, to_lapack_cptr(itrY), incY, &val);
-#else
-      val = (*itrX) * (*itrY);
-      itrX += incX;
-      itrY += incY;
-      for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)
-      {
-         val += *itrX * (*itrY);
-      }
-#endif
-      return val;
-   }
-};
-
-template<>
-struct dotc_impl<std::complex<double>>
-{
-   typedef lapack_complex_double return_type;
-
-   static return_type call (
-      const unsigned long& Nsize,
-      const std::complex<double>* itrX, const typename std::iterator_traits<std::complex<double>*>::difference_type& incX,
-      const std::complex<double>* itrY, const typename std::iterator_traits<std::complex<double>*>::difference_type& incY)
-   {
-      return_type val;
-#ifdef BTAS_HAS_CBLAS
-      cblas_zdotc_sub(Nsize, to_lapack_zptr(itrX), incX, to_lapack_zptr(itrY), incY, &val);
-#else
-      val = std::conj(*itrX) * (*itrY);
-      itrX += incX;
-      itrY += incY;
-      for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)
-      {
-         val += std::conj(*itrX) * (*itrY);
-      }
-#endif
-      return val;
-   }
-};
-
-template<>
-struct dotu_impl<std::complex<double>>
-{
-   typedef lapack_complex_double return_type;
-
-   static return_type call (
-      const unsigned long& Nsize,
-      const std::complex<double>* itrX, const typename std::iterator_traits<std::complex<double>*>::difference_type& incX,
-      const std::complex<double>* itrY, const typename std::iterator_traits<std::complex<double>*>::difference_type& incY)
-   {
-      return_type val;
-#ifdef BTAS_HAS_CBLAS
-      cblas_zdotu_sub(Nsize, to_lapack_zptr(itrX), incX, to_lapack_zptr(itrY), incY, &val);
-#else
-      val = (*itrX) * (*itrY);
-      itrX += incX;
-      itrY += incY;
-      for (unsigned long i = 1; i < Nsize; ++i, itrX += incX, itrY += incY)
-      {
-         val += *itrX * (*itrY);
-      }
-#endif
-      return val;
-   }
 };
 
 //  ================================================================================================
 
 /// Generic implementation of BLAS DOT in terms of C++ iterator
 template<class _IteratorX, class _IteratorY>
-typename __dot_result_type<typename std::iterator_traits<_IteratorX>::value_type>::type
-dotc (
+auto dotc (
    const unsigned long& Nsize,
-         _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
-         _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY )
 {
    typedef std::iterator_traits<_IteratorX> __traits_X;
    typedef std::iterator_traits<_IteratorY> __traits_Y;
 
    static_assert(std::is_same<typename __traits_X::value_type, typename __traits_Y::value_type>::value, "value type of Y must be the same as that of X");
-   static_assert(std::is_same<typename __traits_X::iterator_category, std::random_access_iterator_tag>::value, "iterator X must be a random access iterator");
-   static_assert(std::is_same<typename __traits_Y::iterator_category, std::random_access_iterator_tag>::value, "iterator Y must be a random access iterator");
+   static_assert(is_random_access_iterator_v<_IteratorX>, "iterator X must be a random access iterator");
+   static_assert(is_random_access_iterator_v<_IteratorY>, "iterator Y must be a random access iterator");
 
-   return from_lapack_val(dotc_impl<typename __traits_X::value_type>::call(Nsize, itrX, incX, itrY, incY));
+   constexpr bool value_is_scalar = is_scalar_arithmetic_v< typename __traits_X::value_type>;
+   return dotc_impl<value_is_scalar>::call(Nsize, itrX, incX, itrY, incY);
 }
 
 /// Generic implementation of BLAS DOT in terms of C++ iterator
 template<class _IteratorX, class _IteratorY>
-typename __dot_result_type<typename std::iterator_traits<_IteratorX>::value_type>::type
-dotu (
+auto dotu (
    const unsigned long& Nsize,
-         _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
-         _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
+            _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
+            _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY )
 {
    typedef std::iterator_traits<_IteratorX> __traits_X;
    typedef std::iterator_traits<_IteratorY> __traits_Y;
 
    static_assert(std::is_same<typename __traits_X::value_type, typename __traits_Y::value_type>::value, "value type of Y must be the same as that of X");
-   static_assert(std::is_same<typename __traits_X::iterator_category, std::random_access_iterator_tag>::value, "iterator X must be a random access iterator");
-   static_assert(std::is_same<typename __traits_Y::iterator_category, std::random_access_iterator_tag>::value, "iterator Y must be a random access iterator");
+   static_assert(is_random_access_iterator_v<_IteratorX>, "iterator X must be a random access iterator");
+   static_assert(is_random_access_iterator_v<_IteratorY>, "iterator Y must be a random access iterator");
 
-   return from_lapack_val(dotu_impl<typename __traits_X::value_type>::call(Nsize, itrX, incX, itrY, incY));
+   constexpr bool value_is_scalar = is_scalar_arithmetic_v< typename __traits_X::value_type>;
+   return dotu_impl<value_is_scalar>::call(Nsize, itrX, incX, itrY, incY);
 }
 
 /// Generic implementation of BLAS DOT in terms of C++ iterator
 template<class _IteratorX, class _IteratorY>
-typename __dot_result_type<typename std::iterator_traits<_IteratorX>::value_type>::type
-dot (
+auto dot (
    const unsigned long& Nsize,
          _IteratorX itrX, const typename std::iterator_traits<_IteratorX>::difference_type& incX,
          _IteratorY itrY, const typename std::iterator_traits<_IteratorY>::difference_type& incY)
@@ -282,7 +311,7 @@ template<
       is_tensor<_TensorY>::value
    >::type
 >
-typename __dot_result_type<typename _TensorX::value_type>::type
+detail::dot_return_type_t< typename _TensorX::numeric_type, typename _TensorY::numeric_type >
 dotc (const _TensorX& X, const _TensorY& Y)
 {
    typedef typename _TensorX::value_type value_type;
@@ -308,7 +337,7 @@ template<
       is_tensor<_TensorY>::value
    >::type
 >
-typename __dot_result_type<typename _TensorX::value_type>::type
+detail::dot_return_type_t< typename _TensorX::numeric_type, typename _TensorY::numeric_type >
 dotu (const _TensorX& X, const _TensorY& Y)
 {
    typedef typename _TensorX::value_type value_type;
@@ -334,8 +363,7 @@ template<
       is_tensor<_TensorY>::value
    >::type
 >
-typename __dot_result_type<typename _TensorX::value_type>::type
-dot (const _TensorX& X, const _TensorY& Y)
+auto dot (const _TensorX& X, const _TensorY& Y)
 {
    return dotc(X, Y);
 }

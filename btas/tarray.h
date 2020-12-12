@@ -8,7 +8,7 @@ namespace btas {
   /// Fixed-rank version of TArray
   template<typename _T,
            unsigned long _N,
-           CBLAS_ORDER _Order = CblasRowMajor,
+           blas::Layout _Order = blas::Layout::RowMajor,
            class _Container = DEFAULT::storage<_T>>
   using TArray = Tensor<_T, RangeNd<_Order, std::array<long, _N> >, _Container >;
 

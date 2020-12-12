@@ -276,7 +276,7 @@ public:
       // scale factor matrices
       for (size_t i = 0; i < ndim; i++) {
         Tensor tt(transforms[i].extent(0), A[i].extent(1));
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, transforms[i], A[i], 0.0, tt);
+        gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, transforms[i], A[i], 0.0, tt);
         A[i] = tt;
       }
 
@@ -334,7 +334,7 @@ public:
       // scale factor matrices
       for (size_t i = 0; i < ndim; i++) {
         Tensor tt(transforms[i].extent(0), A[i].extent(1));
-        gemm(CblasNoTrans, CblasNoTrans, 1.0, transforms[i], A[i], 0.0, tt);
+        gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, transforms[i], A[i], 0.0, tt);
         A[i] = tt;
       }
 
@@ -408,7 +408,7 @@ public:
           Tensor S(R, R), lambda(R);
 
           // Contract refrence tensor to make it square matrix of mode i
-          gemm(CblasNoTrans, CblasTrans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
+          gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
 
           // Find the Singular vectors of the matrix using eigenvalue decomposition
           eigenvalue_decomp(S, lambda);
@@ -692,7 +692,7 @@ public:
 
       // without MKL program cannot perform the swapping algorithm, must compute
       // flattened intermediate
-      gemm(CblasNoTrans, CblasNoTrans, 1.0, flatten(tensor_ref, n), generate_KRP(n, rank, true), 0.0, temp);
+      gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, flatten(tensor_ref, n), generate_KRP(n, rank, true), 0.0, temp);
 #endif
       {
         auto LamA = A[n];
@@ -768,7 +768,7 @@ public:
               Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
-      gemm((last_dim ? CblasTrans : CblasNoTrans), CblasNoTrans, 1.0, tensor_ref, A[contract_dim], 0.0, temp);
+      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, 1.0, tensor_ref, A[contract_dim], 0.0, temp);
 
       // Resize tensor_ref
       tensor_ref.resize(R);
