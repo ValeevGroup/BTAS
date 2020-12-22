@@ -463,8 +463,8 @@ void gemm (
 //  ================================================================================================
 
 /// Generic implementation of BLAS-GEMM
-/// \param transA transpose directive for tensor \param a (CblasNoTrans, CblasTrans, CblasConjTrans)
-/// \param transB transpose directive for tensor \param b (CblasNoTrans, CblasTrans, CblasConjTrans)
+/// \param transA transpose directive for tensor \p a (blas::Op)
+/// \param transB transpose directive for tensor \p b (blas::Op)
 /// \param alpha scalar value to be multiplied to \param a * \param b
 /// \param a input tensor
 /// \param b input tensor

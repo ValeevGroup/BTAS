@@ -23,9 +23,9 @@ void contract_211(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index
   const bool notrans = aB[0] == aA[1];
   if (notrans && conjgA) throw std::logic_error("contract_211 not sure what to do");
 
-  auto cA = notrans ? CblasNoTrans : (conjgA ? CblasConjTrans : CblasTrans);
+  auto cA = notrans ? blas::Op::NoTrans : (conjgA ? blas::Op::ConjTrans : blas::Op::Trans);
   assert((notrans && aA[0] == aC[0]) || (aB[0] == aA[0] && aA[1] == aC[0]));
-  gemv_impl<true>::call(CblasColMajor, cA, A.extent(0), A.extent(1), alpha, &*A.begin(), A.extent(0), &*B.begin(), 1, beta, &*C.begin(), 1);
+  gemv_impl<true>::call(blas::Layout::ColMajor, cA, A.extent(0), A.extent(1), alpha, &*A.begin(), A.extent(0), &*B.begin(), 1, beta, &*C.begin(), 1);
 }
 
 
@@ -44,14 +44,14 @@ void contract_222(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index
     if (notransA && conjgA) throw std::logic_error("contract_211 not sure what to do (A)");
     if (notransB && conjgB) throw std::logic_error("contract_211 not sure what to do (B)");
 
-    const auto   cA     = notransA ? CblasNoTrans : (conjgA ? CblasConjTrans : CblasTrans);
+    const auto   cA     = notransA ? blas::Op::NoTrans : (conjgA ? blas::Op::ConjTrans : blas::Op::Trans);
     const size_t condim = notransA ? A.extent(1) : A.extent(0);
     assert(std::find(aB.begin(), aB.end(), aC.back()) != aB.end());
 
-    const auto   cB     = notransB ? CblasNoTrans : (conjgB ? CblasConjTrans : CblasTrans);
+    const auto   cB     = notransB ? blas::Op::NoTrans : (conjgB ? blas::Op::ConjTrans : blas::Op::Trans);
     assert((notransA ? aA.back() : aA.front()) == (notransB ? aB.front() : aB.back()));
 
-    gemm_impl<true>::call(CblasColMajor, cA, cB, C.extent(0), C.extent(1), condim,
+    gemm_impl<true>::call(blas::Layout::ColMajor, cA, cB, C.extent(0), C.extent(1), condim,
                           alpha, &*A.begin(), A.extent(0), &*B.begin(), B.extent(0), beta, &*C.begin(), C.extent(0));
   } else {
     contract_222(alpha, B, aB, A, aA, beta, C, aC, conjgB, conjgA);
@@ -84,11 +84,11 @@ void contract_323(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index
     assert(notrans || aB.front() == aA.front());
     if (notrans && conjgB) throw std::logic_error("contract_323 irot = 0 not sure what to do");
 
-    const auto cA = CblasNoTrans;
-    const auto cB = notrans ? CblasNoTrans : (conjgB ? CblasConjTrans : CblasTrans);
+    const auto cA = blas::Op::NoTrans;
+    const auto cB = notrans ? blas::Op::NoTrans : (conjgB ? blas::Op::ConjTrans : blas::Op::Trans);
     assert(notrans ? B.extent(1) : B.extent(0) == A.extent(0));
 
-    gemm_impl<true>::call(CblasColMajor, cB, cA, C.extent(0), C.extent(1)*C.extent(2), A.extent(0),
+    gemm_impl<true>::call(blas::Layout::ColMajor, cB, cA, C.extent(0), C.extent(1)*C.extent(2), A.extent(0),
                           alpha, &*B.begin(), B.extent(0), &*A.begin(), A.extent(0), beta, &*C.begin(), C.extent(0));
   } else if (irot == 1) {
     // in this case we loop over the last index of A
@@ -96,14 +96,14 @@ void contract_323(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index
     assert(notrans || aB.back() == aA[1]);
     if (notrans && conjgB) throw std::logic_error("contract_323 irot = 1 not sure what to do");
 
-    const auto cA = CblasNoTrans;
-    const auto cB = notrans ? CblasNoTrans : (conjgB ? CblasConjTrans : CblasTrans);
+    const auto cA = blas::Op::NoTrans;
+    const auto cB = notrans ? blas::Op::NoTrans : (conjgB ? blas::Op::ConjTrans : blas::Op::Trans);
     assert(notrans ? B.extent(0) : B.extent(1) == A.extent(1));
     const size_t ablock = A.extent(0)*A.extent(1);
     const size_t cblock = C.extent(0)*C.extent(1);
 
     for (int i = 0; i != A.extent(2); ++i)
-      gemm_impl<true>::call(CblasColMajor, cA, cB, C.extent(0), C.extent(1), A.extent(1),
+      gemm_impl<true>::call(blas::Layout::ColMajor, cA, cB, C.extent(0), C.extent(1), A.extent(1),
                             alpha, &*A.begin()+i*ablock, A.extent(0), &*B.begin(), B.extent(0), beta, &*C.begin()+i*cblock, C.extent(0));
   } else if (irot == 2) {
     // in this case multiply from back
@@ -111,10 +111,10 @@ void contract_323(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index
     assert(notrans || aB.back() == aA[2]);
     if (notrans && conjgB) throw std::logic_error("contract_323 irot = 2 not sure what to do");
 
-    const auto cA = CblasNoTrans;
-    const auto cB = notrans ? CblasNoTrans : (conjgB ? CblasConjTrans : CblasTrans);
+    const auto cA = blas::Op::NoTrans;
+    const auto cB = notrans ? blas::Op::NoTrans : (conjgB ? blas::Op::ConjTrans : blas::Op::Trans);
     assert(notrans ? B.extent(0) : B.extent(1) == A.extent(2));
-    gemm_impl<true>::call(CblasColMajor, cA, cB, C.extent(0)*C.extent(1), C.extent(2), A.extent(2),
+    gemm_impl<true>::call(blas::Layout::ColMajor, cA, cB, C.extent(0)*C.extent(1), C.extent(2), A.extent(2),
                           alpha, &*A.begin(), A.extent(0)*A.extent(1), &*B.begin(), B.extent(0), beta, &*C.begin(), C.extent(0)*C.extent(1));
   } else {
     assert(false);
@@ -139,12 +139,12 @@ void contract_332(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index
     if (!swap) {
       assert(A.extent(0)*A.extent(1) == B.extent(0)*B.extent(1) && A.extent(2) == C.extent(0) && B.extent(2) == C.extent(1));
       assert(!conjgB);
-      gemm_impl<true>::call(CblasColMajor, conjgA ? CblasConjTrans : CblasTrans, CblasNoTrans, C.extent(0), C.extent(1), A.extent(0)*A.extent(1),
+      gemm_impl<true>::call(blas::Layout::ColMajor, conjgA ? blas::Op::ConjTrans : blas::Op::Trans, blas::Op::NoTrans, C.extent(0), C.extent(1), A.extent(0)*A.extent(1),
                             alpha, &*A.begin(), A.extent(0)*A.extent(1), &*B.begin(), B.extent(0)*B.extent(1), beta, &*C.begin(), C.extent(0));
     } else {
       assert(A.extent(0)*A.extent(1) == B.extent(0)*B.extent(1) && B.extent(2) == C.extent(0) && A.extent(2) == C.extent(1));
       assert(!conjgA);
-      gemm_impl<true>::call(CblasColMajor, conjgB ? CblasConjTrans : CblasTrans, CblasNoTrans, C.extent(0), C.extent(1), A.extent(0)*A.extent(1),
+      gemm_impl<true>::call(blas::Layout::ColMajor, conjgB ? blas::Op::ConjTrans : blas::Op::Trans, blas::Op::NoTrans, C.extent(0), C.extent(1), A.extent(0)*A.extent(1),
                             alpha, &*B.begin(), B.extent(0)*B.extent(1), &*A.begin(), A.extent(0)*A.extent(1), beta, &*C.begin(), C.extent(0));
     }
   } else if (front2) {
@@ -153,12 +153,12 @@ void contract_332(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index
     if (!swap) {
       assert(A.extent(1)*A.extent(2) == B.extent(1)*B.extent(2) && A.extent(0) == C.extent(0) && B.extent(0) == C.extent(1));
       assert(!conjgA);
-      gemm_impl<true>::call(CblasColMajor, CblasNoTrans, conjgB ? CblasConjTrans : CblasTrans, C.extent(0), C.extent(1), A.extent(1)*A.extent(2),
+      gemm_impl<true>::call(blas::Layout::ColMajor, blas::Op::NoTrans, conjgB ? blas::Op::ConjTrans : blas::Op::Trans, C.extent(0), C.extent(1), A.extent(1)*A.extent(2),
                             alpha, &*A.begin(), A.extent(0), &*B.begin(), B.extent(0), beta, &*C.begin(), C.extent(0));
     } else {
       assert(A.extent(1)*A.extent(2) == B.extent(1)*B.extent(2) && B.extent(0) == C.extent(0) && A.extent(0) == C.extent(1));
       assert(!conjgB);
-      gemm_impl<true>::call(CblasColMajor, CblasNoTrans, conjgA ? CblasConjTrans : CblasTrans, C.extent(0), C.extent(1), A.extent(1)*A.extent(2),
+      gemm_impl<true>::call(blas::Layout::ColMajor, blas::Op::NoTrans, conjgA ? blas::Op::ConjTrans : blas::Op::Trans, C.extent(0), C.extent(1), A.extent(1)*A.extent(2),
                             alpha, &*B.begin(), B.extent(0), &*A.begin(), A.extent(0), beta, &*C.begin(), C.extent(0));
     }
   } else if (mid2) {
@@ -171,13 +171,13 @@ void contract_332(const _T& alpha, const _TensorA& A, const btas::DEFAULT::index
       assert(A.extent(0) == B.extent(0) && A.extent(2) == B.extent(2) && A.extent(1) == C.extent(0) && B.extent(1) == C.extent(1));
       assert(!conjgB);
       for (int i = 0; i != A.extent(2); ++i)
-        gemm_impl<true>::call(CblasColMajor, conjgA ? CblasConjTrans : CblasTrans, CblasNoTrans, C.extent(0), C.extent(1), A.extent(0),
+        gemm_impl<true>::call(blas::Layout::ColMajor, conjgA ? blas::Op::ConjTrans : blas::Op::Trans, blas::Op::NoTrans, C.extent(0), C.extent(1), A.extent(0),
                               alpha, &*A.begin()+i*ablock, A.extent(0), &*B.begin()+i*bblock, B.extent(0), static_cast<_T>(1.0), &*C.begin(), C.extent(0));
     } else {
       assert(A.extent(0) == B.extent(0) && A.extent(2) == B.extent(2) && B.extent(1) == C.extent(0) && A.extent(1) == C.extent(1));
       assert(!conjgA);
       for (int i = 0; i != A.extent(2); ++i)
-        gemm_impl<true>::call(CblasColMajor, conjgB ? CblasConjTrans : CblasTrans, CblasNoTrans, C.extent(0), C.extent(1), A.extent(0),
+        gemm_impl<true>::call(blas::Layout::ColMajor, conjgB ? blas::Op::ConjTrans : blas::Op::Trans, blas::Op::NoTrans, C.extent(0), C.extent(1), A.extent(0),
                               alpha, &*B.begin()+i*bblock, B.extent(0), &*A.begin()+i*ablock, A.extent(0), static_cast<_T>(1.0), &*C.begin(), C.extent(0));
     }
   } else
@@ -193,9 +193,9 @@ template<
         is_tensor<_TensorA>::value &
             is_tensor<_TensorB>::value &
             is_tensor<_TensorC>::value &
-            (_TensorA::range_type::order == CblasColMajor) & //checking if A, B, and C are all Colomn major
-            (_TensorB::range_type::order == CblasColMajor) & //checking if A, B, and C are all Colomn major
-            (_TensorC::range_type::order == CblasColMajor) & //checking if A, B, and C are all Colomn major
+            (_TensorA::range_type::order == blas::Layout::ColMajor) & //checking if A, B, and C are all Colomn major
+            (_TensorB::range_type::order == blas::Layout::ColMajor) & //checking if A, B, and C are all Colomn major
+            (_TensorC::range_type::order == blas::Layout::ColMajor) & //checking if A, B, and C are all Colomn major
             std::is_same<typename std::remove_cv<typename _TensorA::value_type>::type, typename std::remove_cv<typename _TensorB::value_type>::type>::value &
             std::is_same<typename std::remove_cv<typename _TensorA::value_type>::type, typename std::remove_cv<typename _TensorC::value_type>::type>::value &
             (std::is_same<typename std::remove_cv<typename _TensorA::value_type>::type, double>::value
@@ -241,9 +241,9 @@ template<
     is_tensor<_TensorA>::value &
     is_tensor<_TensorB>::value &
     is_tensor<_TensorC>::value &
-    (_TensorA::range_type::order == CblasColMajor) & //checking if A, B, and C are all Colomn major
-    (_TensorB::range_type::order == CblasColMajor) & //checking if A, B, and C are all Colomn major
-    (_TensorC::range_type::order == CblasColMajor) & //checking if A, B, and C are all Colomn major
+    (_TensorA::range_type::order == blas::Layout::ColMajor) & //checking if A, B, and C are all Colomn major
+    (_TensorB::range_type::order == blas::Layout::ColMajor) & //checking if A, B, and C are all Colomn major
+    (_TensorC::range_type::order == blas::Layout::ColMajor) & //checking if A, B, and C are all Colomn major
     std::is_same<typename std::remove_cv<typename _TensorA::value_type>::type, typename std::remove_cv<typename _TensorB::value_type>::type>::value &
     std::is_same<typename std::remove_cv<typename _TensorA::value_type>::type, typename std::remove_cv<typename _TensorC::value_type>::type>::value &
     (std::is_same<typename std::remove_cv<typename _TensorA::value_type>::type, double>::value

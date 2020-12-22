@@ -191,8 +191,8 @@ void gesvd (
 //  ================================================================================================
 
 /// Generic interface of BLAS-GESVD
-/// \param order storage order of tensor in matrix view (blas::Layout::RowMajor, blas::Layout::ColMajor)
-/// \param transA transpose directive for tensor A (CblasNoTrans, CblasTrans, CblasConjTrans)
+/// \param order storage order of tensor in matrix view (blas::Layout)
+/// \param transA transpose directive for tensor \p A (blas::Op)
 /// \param alpha scalar value to be multiplied to A * X
 /// \param A input tensor
 /// \param X input tensor
