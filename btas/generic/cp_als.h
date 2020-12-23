@@ -327,7 +327,6 @@ namespace btas{
     Tensor &tensor_ref;         // Tensor to be decomposed
     ord_t size;                   // Total number of elements
     bool factors_set = false;   // Are the factors preset (not implemented yet).
-    std::vector<Tensor> V, grad, direction;
 
     /// Creates an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
@@ -705,8 +704,7 @@ namespace btas{
     /// return if computing the inverse in this was was successful
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
 
-    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test,
-            bool compute_grad = false) {
+    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {
 
       // Determine if n is the last mode, if it is first contract with first mode
       // and transpose the product
@@ -845,172 +843,15 @@ namespace btas{
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       detail::set_MtKRP(converge_test, temp);
-      if(compute_grad){
-        Tensor W(rank, rank);
-        ord_t rank2 = rank * (ord_t) rank;
-        auto * ptr = W.data();
-        for(auto i = 0; i < ndim; ++i){
-          if(i == n ) continue;
-          auto * ptr_v = V[i].data();
-          for(ord_t r = 0; r < rank2; ++r) *(ptr + r) *= *(ptr_v + r);
-        }
-        {
-          Tensor temp;
-          contract(1.0, A[n], {1,2}, W, {2,3}, 0.0, temp, {1,3});
-          W = temp;
-        }
-        grad[n] = an - W;
-      }
+
       // Temp is then rewritten with unnormalized new A[n] matrix
       this->pseudoinverse_helper(n, fast_pI, matlab, temp);
 
       // Normalize the columns of the new factor matrix and update
       this->normCol(temp);
       A[n] = temp;
-      contract(1.0, temp, {1,2}, temp, {1,3}, 0.0, V[n], {2,3});
     }
 
-    void nl_step(ind_t rank, ConvClass & converge_test, bool & converged) {
-      // ** right now the residual is only first order contributions
-      std::vector<Tensor> Apk;
-      ord_t rank2 = rank * (ord_t) rank;
-
-      // Form the Hessian times the direction tensor
-      // Makes use of symmetry of the hessian and stores as
-      // same size as factor matrices
-      {
-        // Start with the diagonal elements of the hessian
-        for (auto i = 0; i < ndim; ++i) {
-          Tensor &p = direction[i];
-          Tensor W(rank, rank), temp;
-          W.fill(0.0);
-          for (auto k = 0; k < ndim; ++k) {
-            if (k == i) continue;
-            auto *ptr = W.data(), * v_ptr = V[k].data();
-            for (ord_t r = 0; r < rank2; ++r) *(ptr + r) *= *(v_ptr + r);
-          }
-
-          contract(1.0, p, {1, 2}, W, {2, 3}, 0.0, temp, {1, 3});
-          Apk.push_back(temp);
-        }
-
-        // Move onto the non-diagonal elements
-        for (auto i = 0; i < ndim; ++i) {
-          for (auto j = i + 1; j < ndim; ++j) {
-            // form the grammian (W)
-            Tensor W (rank, rank);
-            W.fill(0.0);
-            for (auto k = 0; k < ndim; ++k) {
-              if( k == i || k == j ) continue;
-              auto *ptr = W.data(), *Vptr = V[k].data();
-              for (ord_t r = 0; r < rank2; ++r) *(ptr + r) *= *(Vptr + r);
-            }
-            // contract the j dimension with the jth factor matrix and
-            // factor it into the grammian
-            {
-              Tensor AijPj = W, bjpj;
-              contract(1.0, A[j], {1,2}, direction[j], {1,3}, 0.0, bjpj, {2,3});
-              auto * ptr_aj = AijPj.data(), * ptr = bjpj.data();
-              for(ord_t r = 0; r < rank2; ++r) *(ptr_aj + r) *= *(ptr + r);
-              contract(1.0, A[i], {1,2}, AijPj, {2,3}, 0.0, Apk[i], {1,3});
-            }
-            // Same thing for the I dimension
-            {
-              Tensor AjiPi = W, aipi;
-              contract(1.0, A[i], {1,2}, direction[i], {1,3}, 0.0, aipi, {2,3});
-              auto * ptr_bi = AjiPi.data(), * ptr = aipi.data();
-              for(ord_t r = 0; r < rank2; ++r) *(ptr_bi + r) *= *(ptr + r);
-              contract(1.0, A[j], {1,2}, AjiPi, {2,3}, 0.0, Apk[j], {1,3});
-            }
-          }
-        }
-      }
-
-      Tensor rTr, rTr_updated(rank, rank);
-      rTr_updated.fill(0.0);
-      Tensor alpha = form_alpha(rank, Apk, rTr);
-      double r_norm = 0.0;
-      for(auto i = 0; i < ndim; ++i){
-        auto & new_residual = grad[i];
-        contract(1.0, direction[i], {1,2}, alpha, {2,3}, 1.0, A[i], {1,3});
-        contract(1.0, Apk[i], {1,2}, alpha, {2,3}, -1.0, new_residual, {1,3});
-        auto nrm = 0.0;
-        for(auto & i : new_residual) nrm += i * i;
-        r_norm += sqrt(nrm);
-
-        contract(1.0, new_residual, {1,2}, new_residual, {1,3}, 1.0, rTr_updated, {2,3});
-      }
-
-      std::cout << "r_norm : " << r_norm << std::endl;
-      if(r_norm < 1e-8) converged = true;
-
-      auto C =  cholesky_inverse(rTr, rTr_updated);
-      if(!C) BTAS_EXCEPTION("C failed");
-      for(auto i = 0; i < ndim; ++i){
-        Tensor pk1;
-        auto & dir = direction[i];
-        contract(1.0, dir, {1,2}, rTr_updated, {2,3} ,0.0, pk1, {1,3});
-        dir = grad[i] + pk1;
-      }
-    }
-
-    Tensor form_alpha(ind_t rank, const std::vector<Tensor> & Apk, Tensor & rTr){
-      Tensor pTAp;
-      contract(1.0, direction[0], {1,2}, Apk[0], {1,3}, 0.0, pTAp, {2,3});
-      contract(1.0, grad[0], {1,2}, grad[0], {1,3}, 0.0, rTr, {2,3});
-
-      for(auto i = 1; i < ndim; ++i){
-        contract(1.0, grad[i], {1,2}, grad[i], {1,3}, 1.0, rTr, {2,3});
-        contract(1.0, direction[i], {1,2}, Apk[i], {1,3}, 1.0, pTAp, {2,3});
-      }
-
-      auto C = cholesky_inverse(pTAp, rTr);
-      if(!C) BTAS_EXCEPTION("Failed to make alpha") ;
-      return rTr;
-    }
-
-    /*
-    void accurate_update(size_t n, ind_t rank, ConvClass & converge_test){
-      auto i = (n == 0 ? 1 : 0);
-      Tensor an;
-      std::vector<size_t> tref_list, krp_list, final_list;
-      final_list.push_back(n);final_list.push_back(ndim+1);
-      krp_list.push_back(i);
-      auto KRP = A[i];
-      ++i;
-      for(; i < ndim; ++i){
-        if(i == n) continue;
-        krp_list.push_back(i);
-        Tensor temp;
-        khatri_rao_product(KRP, A[i], temp);
-        KRP = temp;
-      }
-      krp_list.push_back(ndim + 1);
-      for(i = 0; i < ndim; ++i)
-        tref_list.push_back(i);
-      auto fast = false;
-      std::vector<ind_t> range;
-      for(auto & i : krp_list) {
-        if( i == ndim + 1)
-          range.push_back(rank);
-        else
-          range.push_back(tensor_ref.extent(i));
-      }
-      {
-        auto temp = KRP;
-        temp.resize(range);
-        Tensor MtKRP;
-        contract(1.0, tensor_ref, tref_list, temp, krp_list, 0.0, MtKRP, final_list);
-        detail::set_MtKRP(converge_test, MtKRP);
-      }
-      auto inv = pseudoInverse(KRP,  fast);
-      inv.resize(range);
-      contract(1.0, tensor_ref, tref_list, inv, krp_list, 0.0, an, final_list);
-
-      this->normCol(an);
-      A[n] = an;
-    }
-    */
   };
 
 } //namespace btas
