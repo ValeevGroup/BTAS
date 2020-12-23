@@ -405,6 +405,7 @@ namespace btas{
   protected:
     size_t num_ALS;                      // Number of ALS iterations
     std::vector<Tensor> A;            // Factor matrices
+    std::vector<Tensor> AtA;
     size_t ndim;                         // Modes in the reference tensor
     std::vector<size_t> symmetries;      // Symmetries of the reference tensor
 
@@ -465,19 +466,29 @@ namespace btas{
       Tensor V(rank, rank);
       V.fill(1.0);
       auto *V_ptr = V.data();
-      Tensor lhs_prod(rank, rank);
-      for (size_t i = 0; i < ndim; ++i) {
-        if (i != n) {
-          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
-          const auto *lhs_ptr = lhs_prod.data();
-          for (ord_t j = 0; j < rank2; j++)
-            *(V_ptr + j) *= *(lhs_ptr + j);
+      if(AtA.empty()) {
+        Tensor lhs_prod(rank, rank);
+        for (size_t i = 0; i < ndim; ++i) {
+          if (i != n) {
+            gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
+            const auto *lhs_ptr = lhs_prod.data();
+            for (ord_t j = 0; j < rank2; j++)
+              *(V_ptr + j) *= *(lhs_ptr + j);
+          }
+        }
+      } else{
+        for(size_t i = 0; i < ndim; ++i){
+          if (i != n) {
+            auto *ptrA = AtA[i].data();
+            for (ord_t r = 0; r < rank2; ++r)
+              *(V_ptr + r) *= *(ptrA + r);
+          }
         }
       }
 
-      ord_t j_times_rank = 0;
-      for (ind_t j = 0; j < rank; ++j, j_times_rank+=rank) {
-        *(V_ptr + j_times_rank + j) += lambda;
+      ord_t r_times_rank = 0;
+      for (ind_t r = 0; r < rank; ++r, r_times_rank += rank) {
+        *(V_ptr + r_times_rank + r) += lambda;
       }
 
       return V;
