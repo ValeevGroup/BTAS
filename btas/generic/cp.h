@@ -503,21 +503,25 @@ namespace btas{
 
     Tensor normCol(size_t factor) {
       if (factor >= ndim) BTAS_EXCEPTION("Factor is out of range");
-      ind_t rank = A[factor].extent(1);
-      ord_t size = A[factor].size();
+      auto & a = A[factor];
+      ind_t rank = a.extent(1),
+        Nsize = a.extent(0);
+      ord_t size = a.size();
       Tensor lambda(rank);
       lambda.fill(0.0);
-      auto A_ptr = A[factor].data();
+      auto A_ptr = a.data();
       auto lam_ptr = lambda.data();
       for (ord_t i = 0; i < size; ++i) {
         *(lam_ptr + i % rank) += *(A_ptr + i) * *(A_ptr + i);
       }
+
       for (ind_t col = 0; col < rank; ++col) {
-        *(lam_ptr + col) = sqrt(*(lam_ptr + col));
+        auto val = sqrt(*(lam_ptr + col));
+        *(lam_ptr + col) = val;
+        val = (val < 1e-12 ? 0 : 1/val);
+        btas::scal(Nsize, val, (A_ptr + col), rank);
       }
-      for (ord_t i = 0; i < size; ++i) {
-        *(A_ptr + i) /= *(lam_ptr + i % rank);
-      }
+
       return lambda;
     }
 
@@ -529,7 +533,8 @@ namespace btas{
 
     void normCol(Tensor &Mat) {
       if (Mat.rank() > 2) BTAS_EXCEPTION("normCol with rank > 2 not yet supported");
-      ind_t rank = Mat.extent(1);
+      ind_t rank = Mat.extent(1),
+              Nsize = Mat.extent(0);
       ord_t size = Mat.size();
       A[ndim].fill(0.0);
       auto Mat_ptr = Mat.data();
@@ -537,16 +542,14 @@ namespace btas{
       for (ord_t i = 0; i < size; ++i) {
         *(A_ptr + i % rank) += *(Mat_ptr + i) * *(Mat_ptr + i);
       }
-      for (ind_t i = 0; i < rank; ++i) {
-        *(A_ptr + i) = sqrt(*(A_ptr + i));
-      }
-      for (ord_t i = 0; i < size; ++i) {
-        if (*(A_ptr + i % rank) > 1e-12)
-          *(Mat_ptr + i) /= *(A_ptr + i % rank);
-        else
-          *(Mat_ptr + i) = 0;
 
+      for (ind_t i = 0; i < rank; ++i) {
+        auto val = sqrt(*(A_ptr + i));
+        *(A_ptr + i) = val;
+        val = (val < 1e-12 ? 0.0 : 1 / val);
+        btas::scal(Nsize, val, (Mat_ptr + i), rank);
       }
+
     }
 
     /// \param[in] Mat Calculates the 2-norm of the matrix mat
