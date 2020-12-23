@@ -87,6 +87,7 @@ namespace btas{
     using CP<Tensor,ConvClass>::symmetries;
     using typename CP<Tensor,ConvClass>::ind_t;
     using typename CP<Tensor,ConvClass>::ord_t;
+    using CP<Tensor,ConvClass>::AtA;
 
     /// Create a CP ALS object, child class of the CP object
     /// that stores the reference tensor.
@@ -581,7 +582,11 @@ namespace btas{
       // intermediate
       bool is_converged = false;
       bool matlab = fast_pI;
-      //std::cout << "count\tfit\tFit Change" << std::endl;
+      AtA = std::vector<Tensor>(ndim);
+      for(size_t i = 0; i < ndim; ++i){
+        auto & a_mat = A[i];
+        contract(1.0, a_mat, {1,2}, a_mat, {1,3}, 0.0, AtA[i], {2,3});
+      }
       while (count < max_als && !is_converged) {
         count++;
         this->num_ALS++;
@@ -594,10 +599,10 @@ namespace btas{
           } else {
             update_w_KRP(i, rank, fast_pI, matlab, converge_test);
           }
+          auto & ai = A[i];
+          contract(1.0, ai, {1,2}, ai, {1,3}, 0.0, AtA[i], {2,3});
         }
-        //std::cout << count << "\t";
         is_converged = converge_test(A);
-        //T *= 0.6;
       }
 
       // Checks loss function if required
