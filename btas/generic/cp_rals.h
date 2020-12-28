@@ -26,7 +26,7 @@
 #include <mkl_trans.h>
 #endif
 
-namespace btas{
+namespace btas {
   /** \brief Computes the Canonical Product (CP) decomposition of an order-N
     tensor using regularized alternating least squares (RALS).
 
@@ -37,7 +37,7 @@ namespace btas{
 
    \warning this code takes a non-const reference \c tensor_ref but does
    not modify the values. This is a result of API (reshape needs non-const tensor)
-   
+
     Synopsis:
     \code
     // Constructors
@@ -92,26 +92,24 @@ namespace btas{
                                         // CP factor matrices
     \endcode
   */
-  template <typename Tensor, class ConvClass = NormCheck <Tensor> >
-  class CP_RALS : public CP<Tensor, ConvClass>
-        {
-public:
-    using CP<Tensor,ConvClass>::A;
-    using CP<Tensor,ConvClass>::ndim;
-    using CP<Tensor,ConvClass>::normCol;
-    using CP<Tensor,ConvClass>::generate_KRP;
-    using CP<Tensor,ConvClass>::generate_V;
-    using CP<Tensor,ConvClass>::norm;
-    using CP<Tensor,ConvClass>::symmetries;
-    using typename CP<Tensor,ConvClass>::ind_t;
-    using typename CP<Tensor,ConvClass>::ord_t;
+  template <typename Tensor, class ConvClass = NormCheck<Tensor> >
+  class CP_RALS : public CP<Tensor, ConvClass> {
+   public:
+    using CP<Tensor, ConvClass>::A;
+    using CP<Tensor, ConvClass>::ndim;
+    using CP<Tensor, ConvClass>::normCol;
+    using CP<Tensor, ConvClass>::generate_KRP;
+    using CP<Tensor, ConvClass>::generate_V;
+    using CP<Tensor, ConvClass>::norm;
+    using CP<Tensor, ConvClass>::symmetries;
+    using typename CP<Tensor, ConvClass>::ind_t;
+    using typename CP<Tensor, ConvClass>::ord_t;
 
     /// Create a CP ALS object, child class of the CP object
     /// that stores the reference tensor.
     /// Reference tensor has no symmetries.
     /// \param[in] tensor the reference tensor to be decomposed.
-    CP_RALS(Tensor& tensor): CP<Tensor,ConvClass>(tensor.rank()), tensor_ref(tensor),
-            size(tensor.size()){
+    CP_RALS(Tensor &tensor) : CP<Tensor, ConvClass>(tensor.rank()), tensor_ref(tensor), size(tensor.size()) {
       for (size_t i = 0; i < ndim; ++i) {
         symmetries.push_back(i);
       }
@@ -126,14 +124,13 @@ public:
     /// symmetries of {0,1,1,3}
     /// \param[in] tensor the reference tensor to be decomposed.
     /// \param[in] symms the symmetries of the reference tensor.
-    CP_RALS(Tensor &tensor, std::vector<size_t> &symms) : CP<Tensor, ConvClass>(tensor.rank()),
-                                                          tensor_ref(tensor), size(tensor.size()){
+    CP_RALS(Tensor &tensor, std::vector<size_t> &symms)
+        : CP<Tensor, ConvClass>(tensor.rank()), tensor_ref(tensor), size(tensor.size()) {
       symmetries = symms;
       if (symmetries.size() > ndim) BTAS_EXCEPTION("Too many symmetries provided")
       for (size_t i = 0; i < ndim; ++i) {
         if (symmetries[i] > i) BTAS_EXCEPTION("Symmetries should always refer to factors at earlier positions");
       }
-
     }
 
     ~CP_RALS() = default;
@@ -159,8 +156,8 @@ public:
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_PALS(std::vector <ConvClass> &converge_list, double RankStep = 0.5, size_t panels = 4,
-            int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
+    double compute_PALS(std::vector<ConvClass> &converge_list, double RankStep = 0.5, size_t panels = 4,
+                        int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
                         bool direct = true) override {
       if (RankStep <= 0) BTAS_EXCEPTION("Panel step size cannot be less than or equal to zero");
       double epsilon = -1.0;
@@ -178,7 +175,7 @@ public:
         if (count == 0) {
           build(max_dim, converge_test, direct, max_als, calculate_epsilon, 1, epsilon, true, max_dim, fast_pI);
         }
-          // All other panels build the rank buy RankStep variable
+        // All other panels build the rank buy RankStep variable
         else {
           // Always deal with the first matrix push new factors to the end of A
           // Kick out the first factor when it is replaced.
@@ -205,7 +202,7 @@ public:
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
               std::uniform_real_distribution<> distribution(-1.0, 1.0);
-              for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
+              for (auto iter = new_view.begin(); iter != new_view.end(); ++iter) {
                 *(iter) = distribution(generator);
               }
             }
@@ -226,10 +223,9 @@ public:
         }
         count++;
       }
-      //std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
+      // std::cout << "Number of ALS iterations was " << this->num_ALS << std::endl;
       return epsilon;
     }
-
 
     /// \brief Computes an approximate core tensor using
     /// Tucker decomposition, e.g.
@@ -260,9 +256,8 @@ public:
     /// \returns 2-norm error, \f$ \epsilon \f$,
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
     ///  ConvClass != FitCheck.
-    double compress_compute_tucker(double tcutSVD, ConvClass &converge_test, ind_t rank = 0,
-                                   bool direct = true, bool calculate_epsilon = false, double max_als = 1e4,
-                                   bool fast_pI = false) {
+    double compress_compute_tucker(double tcutSVD, ConvClass &converge_test, ind_t rank = 0, bool direct = true,
+                                   bool calculate_epsilon = false, double max_als = 1e4, bool fast_pI = false) {
       // Tensor compression
       std::vector<Tensor> transforms;
       tucker_compression(tensor_ref, tcutSVD, transforms);
@@ -271,7 +266,6 @@ public:
 
       // CP decomposition
       epsilon = this->compute_rank_random(rank, converge_test, max_als, fast_pI, calculate_epsilon, direct);
-
 
       // scale factor matrices
       for (size_t i = 0; i < ndim; i++) {
@@ -318,12 +312,10 @@ public:
     /// \returns 2-norm error, \f$ \epsilon \f$,
     /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
     ///  ConvClass != FitCheck.
-    double
-    compress_compute_rand(ind_t desired_compression_rank, ConvClass &converge_test, long oversampl = 10,
-                          size_t powerit = 2,
-                          ind_t rank = 0, bool direct = true, bool calculate_epsilon = false,
-                          double max_als = 1e5, bool fast_pI = false) {
-      std::vector <Tensor> transforms;
+    double compress_compute_rand(ind_t desired_compression_rank, ConvClass &converge_test, long oversampl = 10,
+                                 size_t powerit = 2, ind_t rank = 0, bool direct = true, bool calculate_epsilon = false,
+                                 double max_als = 1e5, bool fast_pI = false) {
+      std::vector<Tensor> transforms;
       randomized_decomposition(tensor_ref, transforms, desired_compression_rank, oversampl, powerit);
       size = tensor_ref.size();
       double epsilon = -1.0;
@@ -341,10 +333,10 @@ public:
       return epsilon;
     }
 
-  protected:
-    ord_t size;                   // number of elements in tensor_ref
-    Tensor &tensor_ref;        // Tensor to be decomposed
-    RALSHelper <Tensor> helper;  // Helper object to compute regularized steps
+   protected:
+    ord_t size;                 // number of elements in tensor_ref
+    Tensor &tensor_ref;         // Tensor to be decomposed
+    RALSHelper<Tensor> helper;  // Helper object to compute regularized steps
 
     /// Creates an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
@@ -370,9 +362,8 @@ public:
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
 
-    void build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
-               ind_t step, double &epsilon,
-               bool SVD_initial_guess, ind_t SVD_rank, bool &fast_pI) override {
+    void build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon, ind_t step,
+               double &epsilon, bool SVD_initial_guess, ind_t SVD_rank, bool &fast_pI) override {
       // If its the first time into build and SVD_initial_guess
       // build and optimize the initial guess based on the left
       // singular vectors of the reference tensor.
@@ -417,11 +408,11 @@ public:
           // values
           lambda = Tensor(R, SVD_rank);
           lambda.fill(0.0);
-          auto lower_bound = {0,0};
+          auto lower_bound = {0, 0};
           auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
           auto view = make_view(S.range().slice(lower_bound, upper_bound), S.storage());
           auto l_iter = lambda.begin();
-          for(auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter){
+          for (auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter) {
             *(l_iter) = *(iter);
           }
 
@@ -431,7 +422,7 @@ public:
         std::mt19937 generator(random_seed_accessor());
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         std::uniform_real_distribution<> distribution(-1.0, 1.0);
-        for(auto& i: modes_w_dim_LT_svd) {
+        for (auto &i : modes_w_dim_LT_svd) {
           ind_t R = tensor_ref.extent(i), zero = 0;
           auto lower_bound = {zero, R};
           auto upper_bound = {R, SVD_rank};
@@ -449,8 +440,7 @@ public:
           // normalize the columns of matrices that were set
           // i.e. not symmetric to another mode.
           auto tmp = symmetries[i];
-          if (tmp == i)
-            this->normCol(A[i]);
+          if (tmp == i) this->normCol(A[i]);
           // Then make sure the summetric modes are set here
           A[i] = A[tmp];
         }
@@ -473,18 +463,18 @@ public:
           if (i == 0) {
             Tensor a(Range{tensor_ref.range().range(j), Range1{rank_new}});
             a.fill(rand());
-//            std::mt19937 generator(random_seed_accessor());
-//            std::uniform_real_distribution<> distribution(-1.0, 1.0);
-//            for(auto iter = a.begin(); iter != a.end(); ++iter) {
-//              *(iter) = distribution(generator);
-//            }
+            //            std::mt19937 generator(random_seed_accessor());
+            //            std::uniform_real_distribution<> distribution(-1.0, 1.0);
+            //            for(auto iter = a.begin(); iter != a.end(); ++iter) {
+            //              *(iter) = distribution(generator);
+            //            }
             A.push_back(a);
             this->normCol(j);
           }
 
-            // If the factor matrices have memory allocated, rebuild each matrix
-            // with new column dimension col_dimension_old + skip
-            // fill the new columns with random numbers and normalize the columns
+          // If the factor matrices have memory allocated, rebuild each matrix
+          // with new column dimension col_dimension_old + skip
+          // fill the new columns with random numbers and normalize the columns
           else {
             ind_t row_extent = A[0].extent(0), rank_old = A[0].extent(1), zero = 0;
             Tensor b(Range{A[0].range().range(0), Range1{rank_new}});
@@ -493,7 +483,7 @@ public:
               auto lower_old = {zero, zero}, upper_old = {row_extent, rank_old};
               auto old_view = make_view(b.range().slice(lower_old, upper_old), b.storage());
               auto A_itr = A[0].begin();
-              for(auto iter = old_view.begin(); iter != old_view.end(); ++iter, ++A_itr){
+              for (auto iter = old_view.begin(); iter != old_view.end(); ++iter, ++A_itr) {
                 *(iter) = *(A_itr);
               }
             }
@@ -503,14 +493,14 @@ public:
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
               std::mt19937 generator(random_seed_accessor());
               std::uniform_real_distribution<> distribution(-1.0, 1.0);
-              for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
+              for (auto iter = new_view.begin(); iter != new_view.end(); ++iter) {
                 *(iter) = distribution(generator);
               }
             }
 
             A.erase(A.begin());
             A.push_back(b);
-            if(j == ndim - 1){
+            if (j == ndim - 1) {
               A.erase(A.begin());
             }
           }
@@ -525,7 +515,7 @@ public:
         ALS(rank_new, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
       auto factors_set = false;
-      if(factors_set && ! opt_in_for_loop){
+      if (factors_set && !opt_in_for_loop) {
         helper = RALSHelper<Tensor>(A);
         ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
@@ -550,9 +540,8 @@ public:
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als,
-                      bool calculate_epsilon, double &epsilon,
-                      bool &fast_pI) override {
+    void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
+                      double &epsilon, bool &fast_pI) override {
       std::mt19937 generator(random_seed_accessor());
       std::uniform_real_distribution<> distribution(-1.0, 1.0);
       for (size_t i = 0; i < this->ndim; ++i) {
@@ -595,8 +584,8 @@ public:
     /// error between the exact and approximated reference tensor
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
 
-    void ALS(ind_t rank, ConvClass &converge_test, bool dir, ind_t max_als, bool calculate_epsilon,
-             double &epsilon, bool &fast_pI) {
+    void ALS(ind_t rank, ConvClass &converge_test, bool dir, ind_t max_als, bool calculate_epsilon, double &epsilon,
+             bool &fast_pI) {
       size_t count = 0;
 
       double s = 0.0;
@@ -609,7 +598,7 @@ public:
       // intermediate
       bool is_converged = false;
       bool matlab = fast_pI;
-      while(count < max_als && !is_converged){
+      while (count < max_als && !is_converged) {
         count++;
         this->num_ALS++;
         for (size_t i = 0; i < ndim; i++) {
@@ -634,7 +623,7 @@ public:
         if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
           detail::get_fit(converge_test, epsilon);
           epsilon = 1 - epsilon;
-        } else{
+        } else {
           epsilon = this->norm(this->reconstruct() - tensor_ref);
         }
       }
@@ -651,8 +640,8 @@ public:
     /// \param[in] lambda regularization parameter
     /// \param[in, out] s regularization step size, returns updated stepsize based on ALS iteration
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
-    void update_w_KRP(size_t n, ind_t rank, bool &fast_pI, bool &matlab,
-                      double lambda, double &s, ConvClass &converge_test) {
+    void update_w_KRP(size_t n, ind_t rank, bool &fast_pI, bool &matlab, double lambda, double &s,
+                      ConvClass &converge_test) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -700,7 +689,7 @@ public:
         temp += LamA;
       }
 
-      if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+      if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
         converge_test.set_MtKRP(temp);
       }
       // contract the product from above with the pseudoinverse of the Hadamard
@@ -739,9 +728,7 @@ public:
     /// \param[in] lambda regularization parameter
     /// \param[in, out] s regularization step size, returns updated stepsize based on ALS iteration
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
-    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, double lambda, double &s,
-                ConvClass &converge_test) {
-
+    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, double lambda, double &s, ConvClass &converge_test) {
       // Determine if n is the last mode, if it is first contract with first mode
       // and transpose the product
       bool last_dim = n == ndim - 1;
@@ -763,12 +750,13 @@ public:
 
       // Resize the tensor which will store the product of tensor_ref and the first factor matrix
       Tensor temp = Tensor(size / tensor_ref.extent(contract_dim), rank);
-      tensor_ref.resize(Range{
-              Range1{last_dim ? tensor_ref.extent(contract_dim) : size / tensor_ref.extent(contract_dim)},
-              Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
+      tensor_ref.resize(
+          Range{Range1{last_dim ? tensor_ref.extent(contract_dim) : size / tensor_ref.extent(contract_dim)},
+                Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
-      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, 1.0, tensor_ref, A[contract_dim], 0.0, temp);
+      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, 1.0, tensor_ref, A[contract_dim], 0.0,
+           temp);
 
       // Resize tensor_ref
       tensor_ref.resize(R);
@@ -780,15 +768,15 @@ public:
       // if n == ndim - 1, my contract_dim = 0. The gemm transposes to make rank = ndim - 1, so I
       // move the pointer that preserves the last dimension to n = ndim -2.
       // In all cases I want to walk through the orders in tensor_ref backward so contract_dim = ndim - 2
-      n = last_dim ? ndim - 2: n;
+      n = last_dim ? ndim - 2 : n;
       contract_dim = ndim - 2;
 
       while (contract_dim > 0) {
         // Now temp is three index object where temp has size
         // (size of tensor_ref/product of dimension contracted, dimension to be
         // contracted, rank)
-        temp.resize(Range{Range1{LH_size / dimensions[contract_dim]}, Range1{dimensions[contract_dim]},
-                          Range1{pseudo_rank}});
+        temp.resize(
+            Range{Range1{LH_size / dimensions[contract_dim]}, Range1{dimensions[contract_dim]}, Range1{pseudo_rank}});
         Tensor contract_tensor(Range{Range1{temp.extent(0)}, Range1{temp.extent(2)}});
         contract_tensor.fill(0.0);
         // If the middle dimension is the mode not being contracted, I will move
@@ -800,8 +788,8 @@ public:
           pseudo_rank *= offset_dim;
         }
 
-          // If the code hasn't hit the mode of interest yet, it will contract
-          // over the middle dimension and sum over the rank.
+        // If the code hasn't hit the mode of interest yet, it will contract
+        // over the middle dimension and sum over the rank.
         else if (contract_dim > n) {
           ord_t i_times_rank = 0, i_times_idx2_rank = 0;
           for (ind_t i = 0; i < idx1; i++, i_times_rank += rank) {
@@ -819,8 +807,8 @@ public:
           temp = contract_tensor;
         }
 
-          // If the code has passed the mode of interest, it will contract over
-          // the middle dimension and sum over rank * mode n dimension
+        // If the code has passed the mode of interest, it will contract over
+        // the middle dimension and sum over rank * mode n dimension
         else {
           ord_t i_times_rank = 0, i_times_idx2_rank = 0;
           for (ind_t i = 0; i < idx1; i++, i_times_rank += pseudo_rank) {
@@ -873,14 +861,14 @@ public:
         temp = contract_tensor;
       }
 
-      n = last_dim ? ndim - 1: n;
+      n = last_dim ? ndim - 1 : n;
       auto LamA = A[n];
       scal(lambda, LamA);
       temp += LamA;
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
 
-      if(typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
+      if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
         converge_test.set_MtKRP(temp);
       }
 
@@ -894,7 +882,6 @@ public:
 
       A[n] = temp;
     }
-
   };
 
 } // namespace btas
