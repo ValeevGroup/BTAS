@@ -24,25 +24,27 @@ namespace btas {
     auto ndim = A.rank();
 
     double norm2 = dot(A, A);
-    // norm2 *= norm2;
-    std::vector<size_t> A_modes;
+    auto threshold = epsilon_svd * epsilon_svd * norm2 / ndim;
+    std::vector<size_t> first, second, final;
     for (size_t i = 0; i < ndim; ++i) {
-      A_modes.push_back(i);
+      first.push_back(i);
+      second.push_back(i);
     }
+    final.push_back(0); final.push_back(ndim);
+    auto ptr_second = second.begin(), ptr_final = final.begin();
+    for (size_t i = 0; i < ndim; ++i, ++ptr_second) {
+      Tensor S;
 
-    for (size_t i = 0; i < ndim; i++) {
-      // Determine the threshold epsilon_SVD.
-      auto flat = flatten(A, i);
-      auto threshold = epsilon_svd * epsilon_svd * norm2 / ndim;
+      *(ptr_second) = ndim;
+      *(ptr_final) = i;
+      contract(1.0, A, first, A, second, 0.0, S, final);
+      *(ptr_second) = i;
 
-      ind_t R = flat.extent(0);
-      Tensor S(R, R), lambda(R, 1);
+      ind_t R = S.extent(0);
+      Tensor lambda(R, 1);
 
-      // Contract A_n^T A_n to reduce the dimension of the SVD object to I_n X I_n
-      gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flat, flat, 0.0, S);
-
-      // Calculate SVD of smaller object.
-      // XXX DBWY Why not SVD here?
+      // Calculate the left singular vector of the flattened tensor
+      // which is equivalent to the eigenvector of Flat \times Flat^T
       auto info = hereig(blas::Layout::RowMajor, lapack::Job::Vec, lapack::Uplo::Lower, R, S.data(), R, lambda.data());
       if (info) BTAS_EXCEPTION("Error in computing the tucker SVD");
 
@@ -65,31 +67,29 @@ namespace btas {
       transforms.push_back(lambda);
     }
 
-    for (size_t i = 0; i < ndim; ++i) {
+    // Make the second (the transformation modes)
+    // order 2 and temp order N
+    {
+      auto temp = final;
+      final = second;
+      second = temp;
+    }
+    ptr_second = second.begin();
+    ptr_final = final.begin();
+    for (size_t i = 0; i < ndim; ++i, ++ptr_final) {
       auto &lambda = transforms[i];
       ind_t kept_evecs = lambda.extent(1);
 #ifdef BTAS_HAS_INTEL_MKL
       // Contract the factor matrix with the reference tensor, A.
       core_contract(A, lambda, i);
 #else
-      std::vector<size_t> contract_modes;
-      contract_modes.push_back(i);
-      contract_modes.push_back(ndim);
-      std::vector<size_t> final_modes;
-      std::vector<size_t> final_dims;
-      for (size_t j = 0; j < ndim; ++j) {
-        if (j == i) {
-          final_modes.push_back(ndim);
-          final_dims.push_back(kept_evecs);
-        } else {
-          final_modes.push_back(j);
-          final_dims.push_back(A.extent(j));
-        }
-      }
-      btas::Range final_range(final_dims);
-      Tensor final(final_range);
-      btas::contract(1.0, A, A_modes, lambda, contract_modes, 0.0, final, final_modes);
-      A = final;
+      Tensor rotated;
+      // This multiplies by the transpose so later all I need to do is multiply by non-transpose
+      second[0] = i; second[1] = ndim;
+      *(ptr_final) = ndim;
+      btas::contract(1.0, lambda, second, A, first, 0.0, rotated, final);
+      *(ptr_final) = i;
+      A = rotated;
 #endif  // BTAS_HAS_INTEL_MKL
     }
   }
