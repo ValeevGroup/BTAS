@@ -78,7 +78,6 @@ namespace btas {
     ptr_final = final.begin();
     for (size_t i = 0; i < ndim; ++i, ++ptr_final) {
       auto &lambda = transforms[i];
-      ind_t kept_evecs = lambda.extent(1);
 #ifdef BTAS_HAS_INTEL_MKL
       // Contract the factor matrix with the reference tensor, A.
       core_contract(A, lambda, i);
