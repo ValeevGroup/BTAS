@@ -116,51 +116,7 @@ install(DIRECTORY btas
 ##########################
 # external dependencies
 ##########################
-# BLAS++ / LAPACK++
-if( BTAS_USE_BLAS_LAPACK )
-
-include(FetchContent)
-
-find_package( blaspp QUIET )
-if(NOT TARGET blaspp)
-  cmake_minimum_required (VERSION 3.14.0)  # for FetchContent_MakeAvailable
-  FetchContent_Declare( blaspp
-    GIT_REPOSITORY https://bitbucket.org/icl/blaspp.git 
-    GIT_TAG        9097d6b61468e9e8899d0aed49af0371ca4fff1d
-  )
-
-  FetchContent_MakeAvailable( blaspp )
-endif()
-
-
-find_package( OpenMP QUIET ) #XXX Open LAPACKPP issue for this...
-find_package( lapackpp QUIET )
-if(NOT TARGET lapackpp)
-  cmake_minimum_required (VERSION 3.14.0)  # for FetchContent_MakeAvailable
-  FetchContent_Declare( lapackpp
-    GIT_REPOSITORY https://bitbucket.org/icl/lapackpp.git 
-    GIT_TAG        213d13e584a8cb3bf0e7caf5d1d40cd10f4254ae
-  )
-  
-  FetchContent_MakeAvailable( lapackpp )
-endif()
-
-target_link_libraries( BTAS INTERFACE blaspp lapackpp )
-target_compile_definitions( BTAS INTERFACE -DBTAS_HAS_BLAS_LAPACK=1 -DLAPACK_COMPLEX_CPP=1 )
-
-# Check if BLAS/LAPACK is MKL
-set( BTAS_HAS_MKL )
-include( CheckFunctionExists )
-cmake_push_check_state( RESET )
-set( CMAKE_REQUIRED_LIBRARIES "${blaspp_libraries}" m )
-check_function_exists( mkl_dimatcopy  BTAS_HAS_MKL )
-if( BTAS_HAS_MKL )
-  target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_INTEL_MKL=1)
-endif(BTAS_HAS_MKL)
-cmake_pop_check_state()
-
-endif(BTAS_USE_BLAS_LAPACK)
-
+include(FindOrFetchLinalgPP)
 include(external/boost.cmake)
 
 ##########################
