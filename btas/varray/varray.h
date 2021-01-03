@@ -1,6 +1,8 @@
 #ifndef __BTAS_VARRAY_H
 #define __BTAS_VARRAY_H 1
 
+#include <btas/fwd.h>
+
 #include <algorithm>
 #include <cassert>
 #include <btas/serialization.h>
@@ -15,7 +17,7 @@ namespace btas {
 
 /// variable size array class without capacity info
 template <typename _T,
-          typename _Allocator = std::allocator<_T> >
+          typename _Allocator>
 class varray : private _Allocator {
 public:
 

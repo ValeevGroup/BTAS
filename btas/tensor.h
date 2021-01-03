@@ -1,6 +1,8 @@
 #ifndef __BTAS_TENSOR_H
 #define __BTAS_TENSOR_H 1
 
+#include <btas/fwd.h>
+
 #include <cassert>
 #include <algorithm>
 #include <functional>
