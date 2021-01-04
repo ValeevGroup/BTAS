@@ -74,7 +74,6 @@ namespace btas {
       epsilon = t.get_fit();
       return;
     }
-  }//namespace detail
 
     // Setting V's where V = A[n]^T A[n]
     // this means I dont have to recompute these contractions as much.
