@@ -831,6 +831,7 @@ namespace btas {
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       detail::set_MtKRP(converge_test, temp);
+
       // Temp is then rewritten with unnormalized new A[n] matrix
       this->pseudoinverse_helper(n, fast_pI, matlab, temp);
 

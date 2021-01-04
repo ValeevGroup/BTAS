@@ -48,6 +48,10 @@ namespace btas {
     void set_MtKRPR(CoupledFitCheck<Tensor> &t, Tensor &tensor) {
       t.set_MtKRPR(tensor);
     }
+    template <typename Tensor>
+    void set_MtKRP(FitCheckDF<Tensor> &t, Tensor &tensor) {
+      t.set_MtKRP(tensor);
+    }
 
     // Functions that can get the fit \|X - \hat{X}\|_F where
     // \hat{X} is the CP approximation (epsilon), if
@@ -70,14 +74,7 @@ namespace btas {
       epsilon = t.get_fit();
       return;
     }
-<<<<<<< HEAD
   }//namespace detail
-=======
-    template <typename Tensor>
-    void get_fit(FitCheckDF<Tensor> &t, double &epsilon) {
-      epsilon = t.get_fit();
-      return;
-    }
 
     // Setting V's where V = A[n]^T A[n]
     // this means I dont have to recompute these contractions as much.
@@ -92,7 +89,6 @@ namespace btas {
       return;
     }
   }  // namespace detail
->>>>>>> b9bdf5a... Formatting with pre-commit hooks
 
   /** \brief Base class to compute the Canonical Product (CP) decomposition of an order-N
     tensor.
