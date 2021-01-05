@@ -233,7 +233,26 @@ namespace btas {
       return epsilon;
     }
 
-    double compute_cp3_init(ind_t rank, ConvClass converge_test, size_t max_als, bool fast_pI = true,
+    /// \brief Computes decomposition of the order-N tensor \c tensor
+    /// with rank = \c rank by first CP decomposing the component tensors
+    /// \c tensor_ref_left and \c tensor_ref_right then uses the
+    /// optimized factor matrices as initial guess to the compound decomposition.
+
+    /// \param[in] rank Rank of the CP decomposition.
+    /// \param[in, out] converge_test Tests to see if ALS is converged, holds the value of fit.
+    /// \param[in]
+    /// max_als Max number of iterations allowed to converge the ALS approximation default = 1e4
+    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// default = true
+    /// \param[in]
+    /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{\rm exact} -
+    /// T_{\rm approx}|| = \epsilon. \f$ Default = false.
+    /// \param[in] direct Should the CP decomposition be computed without
+    /// calculating the Khatri-Rao product? Default = true.
+    /// \returns 2-norm
+    /// error between exact and approximate tensor, -1 if calculate_epsilon =
+    /// false && ConvClass != FitCheck.
+    double compute_comp_init(ind_t rank, ConvClass converge_test, size_t max_als, bool fast_pI = true,
                             bool calculate_epsilon = false, bool direct = true) {
       double epsilon = 0.0;
       {
