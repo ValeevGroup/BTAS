@@ -354,12 +354,11 @@ namespace btas {
               } else {
                 a = Tensor(Range{tensor_ref_right.range().range(j - ndimL + 2), Range1{rank_new}});
               }
-              //              std::mt19937 generator(random_seed_accessor());
-              //              std::uniform_real_distribution<> distribution(-1.0, 1.0);
-              //              for(auto iter = a.begin(); iter != a.end(); ++iter) {
-              //                *(iter) = distribution(generator);
-              //              }
-              a.fill(rand());
+              std::mt19937 generator(random_seed_accessor());
+              std::uniform_real_distribution<> distribution(-1.0, 1.0);
+              for(auto iter = a.begin(); iter != a.end(); ++iter) {
+                *(iter) = distribution(generator);
+              }
               A.push_back(a);
               normCol(j);
             }
