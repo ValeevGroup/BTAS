@@ -591,7 +591,7 @@ namespace btas {
           auto &ai = A[i];
           contract(1.0, ai, {1, 2}, ai, {1, 3}, 0.0, AtA[i], {2, 3});
         }
-        is_converged = converge_test(A);
+        is_converged = converge_test(A, AtA);
       }
 
       // Checks loss function if required
