@@ -141,7 +141,9 @@ namespace btas {
     /// the number of iterations and the number of dimensions of the original
     /// tensor
     /// \param[in] ndim number of modes in the reference tensor.
-    CP(size_t dims) : num_ALS(0) { ndim = dims; }
+    CP(size_t dims) : num_ALS(0), ndim(dims) {
+
+    }
 
     ~CP() = default;
 
