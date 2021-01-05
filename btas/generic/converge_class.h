@@ -84,7 +84,7 @@ namespace btas {
     ~FitCheck() = default;
 
     /// Function to check convergence of the ALS problem
-    /// convergence when \f$ \|T - \hat{T}^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
+    /// convergence when \f$ 1 - \frac{\|X-full(M)\|}{\|X\|} \leq \epsilon\f$
     /// \param[in] btas_factors Current set of factor matrices
     /// \param[in] V Partial grammian matrices (rank x rank matricies from \f$ V^{i} = A^{iT} A^{i} \f$
     /// default = std::vector<Tensor>();
@@ -138,18 +138,31 @@ namespace btas {
       return false;
     }
 
+    /// Set the norm of the reference tensor T
+    /// \param[in] normT Norm of the reference tensor;
     void set_norm(double normT){
       normT_ = normT;
     }
 
+    /// Set the current iteration's matricized tensor times KRP
+    /// \f$ MtKRP = X_{n} * A^{1} \odot A^{2} \odot \dots \odot A^{n-1} \odot A^{n+1} \odot  \dots \odot A^{N} \f$
+    /// Where N is the number of modes in the reference tensor X and \f$X_{n} \f$ is the nth mode
+    /// matricization of X.
+    /// \param[in] MtKRP matricized reference tensor times KRP
     void set_MtKRP(Tensor & MtKRP){
       MtKRP_ = MtKRP;
     }
 
+    /// Returns the fit of the CP approximation, \f$ 1 - \frac{\|X - full{M}\|}{\|T\|} \f$
+    /// from the previous () operator call.
+    /// Where \f$ \hat{T} \f$ is the CP approximation of T
+    /// \returns fit of the CP approximation
     double get_fit(){
       return final_fit_;
     }
 
+    /// Option to print fit and change in fit in the () operator call
+    /// \param[in] verb bool which turns off/on fit printing.
     void verbose(bool verb) {
       verbose_ = verb;
     }
@@ -319,19 +332,36 @@ namespace btas {
       return false;
     }
 
+    /// Set the norm of the reference tensors Tleft and Tright.
+    /// \param[in] normTL Norm of the left reference tensor
+    /// \param[in] normTR Norm of the right reference tensor
     void set_norm(double normTL, double normTR){
       normTL_ = normTL;
       normTR_ = normTR;
     }
 
+    /// Set the current iteration's matricized tensor times KRP
+    /// \f$ MtKRP = T_{n} * A^{1} \odot A^{2} \odot \dots \odot A^{n-1} \odot A^{n+1} \odot  \dots \odot A^{N} \f$
+    /// Where N is the number of modes in the left reference tensor Tleft \f$T_{n} \f$ is the nth mode
+    /// matricization of Tleft.
+    /// \param[in] MtKRPl matricized left reference tensor times KRP
     void set_MtKRPL(Tensor & MtKRPL){
       MtKRPL_ = MtKRPL;
     }
 
+    /// Set the current iteration's matricized tensor times KRP
+    /// \f$ MtKRP = T_{n} * A^{1} \odot A^{2} \odot \dots \odot A^{n-1} \odot A^{n+1} \odot  \dots \odot A^{N} \f$
+    /// Where N is the number of modes in the right reference tensor Tright \f$T_{n} \f$ is the nth mode
+    /// matricization of Tright.
+    /// \param[in] MtKRPr matricized right reference tensor times KRP
     void set_MtKRPR(Tensor & MtKRPR){
       MtKRPR_ = MtKRPR;
     }
 
+    /// Returns the fit of the CP approximation, \f$ 1 - \frac{\|T - \hat{T}\|}{\|T\|} \f$
+    /// from the previous () operator call
+    /// Where \f$ T = Tleft^T Tright \f$ and \f$ \hat{T} \f$ is the CP approximation of T
+    /// \returns fit of the CP approximation
     double get_fit(){
       return final_fit_;
     }
