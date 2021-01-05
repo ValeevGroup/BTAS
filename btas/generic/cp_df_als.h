@@ -286,6 +286,7 @@ namespace btas {
 
       ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
 
+      detail::get_fit(converge_test, epsilon);
       return epsilon;
     }
 
