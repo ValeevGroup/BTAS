@@ -176,7 +176,7 @@ namespace btas {
     /// false && ConvClass != FitCheck.
 
     double compute_rank(ind_t rank, ConvClass &converge_test, ind_t step = 1, bool SVD_initial_guess = false,
-                        ind_t SVD_rank = 0, ind_t max_als = 1e4, bool fast_pI = false, bool calculate_epsilon = false,
+                        ind_t SVD_rank = 0, ind_t max_als = 1e4, bool fast_pI = true, bool calculate_epsilon = false,
                         bool direct = true) {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       if (SVD_initial_guess && SVD_rank > rank) BTAS_EXCEPTION("Initial guess is larger than the desired CP rank");
@@ -208,7 +208,7 @@ namespace btas {
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_rank_random(ind_t rank, ConvClass &converge_test, ind_t max_als = 1e4, bool fast_pI = false,
+    double compute_rank_random(ind_t rank, ConvClass &converge_test, ind_t max_als = 1e4, bool fast_pI = true,
                                bool calculate_epsilon = false, bool direct = true) {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       double epsilon = -1.0;
@@ -248,7 +248,7 @@ namespace btas {
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
     double compute_error(ConvClass &converge_test, double tcutCP = 1e-2, ind_t step = 1, ind_t max_rank = 1e5,
-                         bool SVD_initial_guess = false, ind_t SVD_rank = 0, ind_t max_als = 1e4, bool fast_pI = false,
+                         bool SVD_initial_guess = false, ind_t SVD_rank = 0, ind_t max_als = 1e4, bool fast_pI = true,
                          bool direct = true) {
       ind_t rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
       double epsilon = tcutCP + 1;
@@ -291,7 +291,7 @@ namespace btas {
     /// false && ConvClass != FitCheck.
     double compute_geometric(ind_t desired_rank, ConvClass &converge_test, ind_t geometric_step = 2,
                              bool SVD_initial_guess = false, ind_t SVD_rank = 0, ind_t max_als = 1e4,
-                             bool fast_pI = false, bool calculate_epsilon = false, bool direct = true) {
+                             bool fast_pI = true, bool calculate_epsilon = false, bool direct = true) {
       if (geometric_step <= 0) {
         BTAS_EXCEPTION("The step size must be larger than 0");
       }
@@ -337,7 +337,7 @@ namespace btas {
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
     virtual double compute_PALS(std::vector<ConvClass> &converge_list, double RankStep = 0.5, size_t panels = 4,
-                                int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
+                                int max_als = 20, bool fast_pI = true, bool calculate_epsilon = false,
                                 bool direct = true) = 0;
 
     /// returns the rank \c rank optimized factor matrices
