@@ -140,7 +140,7 @@ namespace btas {
     /// Create a generic CP object that stores the factor matrices,
     /// the number of iterations and the number of dimensions of the original
     /// tensor
-    /// \param[in] ndim number of modes in the reference tensor.
+    /// \param[in] dims number of modes in the reference tensor.
     CP(size_t dims) : num_ALS(0), ndim(dims) {
 
     }
@@ -236,7 +236,7 @@ namespace btas {
     /// approximated with left singular values? default = false
     /// \param[in] SVD_rank if \c
     /// SVD_initial_guess is true specify the rank of the initial guess such that
-    /// SVD_rank <= rank. default = true
+    /// SVD_rank <= rank. default = 0
     /// \param[in] max_als Max number of iterations allowed to converge the ALS
     /// approximation default = 1e4
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
@@ -275,7 +275,7 @@ namespace btas {
     /// approximated with left singular values? default = false
     /// \param[in] SVD_rank if \c
     /// SVD_initial_guess is true specify the rank of the initial guess such that
-    /// SVD_rank <= rank. default = true
+    /// SVD_rank <= rank. default = 0
     /// \param[in] max_als Max number of iterations allowed to
     /// converge the ALS approximation. default = 1e4
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
