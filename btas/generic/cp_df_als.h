@@ -278,7 +278,7 @@ namespace btas {
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
         CP3.compute_rank_random(rank, fit, 100, true);
         auto Ar = CP3.get_factor_matrices();
-        auto cur_dim = tensor_ref_right.rank();
+        auto cur_dim = Ar.size();
         for(size_t i = 1; i < cur_dim; ++i){
           A.push_back(Ar[i]);
         }
