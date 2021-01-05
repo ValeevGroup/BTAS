@@ -53,7 +53,7 @@ TEST_CASE("CP")
   }
   in5.close();
 
-  tensor results(36, 1);
+  tensor results(40, 1);
   std::ifstream res(__dirname + "/cp_test_results.txt");
   CHECK(res.is_open());
   for (auto &i : results) {
@@ -277,7 +277,7 @@ TEST_CASE("CP")
 #endif
   }
 
-     
+
   // CP-DF-ALS tests
   {
     SECTION("DF-ALS MODE = 3, Finite rank"){
@@ -302,13 +302,13 @@ TEST_CASE("CP")
       CP_DF_ALS<tensor,conv_class> A1(D4,D4);
       conv.set_norm(norm42);
       double diff = A1.compute_rank(5,conv);
-      CHECK(std::abs(diff - results(26,0)) <= epsilon);
+      CHECK(std::abs(diff - results(27,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 4, Finite error"){
       CP_DF_ALS<tensor,conv_class>A1(D4,D4);
       conv.set_norm(norm42);
       double diff = A1.compute_error(conv, 1e-2, 1, 20);
-      CHECK(std::abs(diff - results(27,0)) <= epsilon);
+      CHECK(std::abs(diff - results(28,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 4, component decompsoition"){
       CP_DF_ALS<tensor,conv_class>A1(D4,D4);
@@ -320,13 +320,13 @@ TEST_CASE("CP")
       CP_DF_ALS<tensor,conv_class> A1(D5,D5);
       conv.set_norm(norm52);
       double diff = A1.compute_rank(5,conv);
-      CHECK(std::abs(diff - results(28,0)) <= epsilon);
+      CHECK(std::abs(diff - results(30,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 5, Finite error"){
       CP_DF_ALS<tensor,conv_class>A1(D5,D5);
       conv.set_norm(norm52);
       double diff = A1.compute_error(conv, 1e-2, 1, 20);
-      CHECK(std::abs(diff - results(29,0)) <= epsilon);
+      CHECK(std::abs(diff - results(31,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 5, Component decomposition"){
       CP_DF_ALS<tensor,conv_class>A1(D5,D5);
