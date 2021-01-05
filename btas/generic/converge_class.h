@@ -114,7 +114,7 @@ namespace btas {
         iprod += *(ptr_temp + i) * *(ptr_A + i);
       }
 
-      double normFactors = norm(btas_factors);
+      double normFactors = norm(btas_factors, V);
       double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * iprod));
       double fit = 1 - (normResidual / normT_);
 
@@ -177,12 +177,22 @@ namespace btas {
 
       auto rank2 = rank * (ord_t) rank;
       Tensor temp(rank, rank);
-      for (size_t i = 0; i < n; ++i) {
-        gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
-        auto *ptr_coeff = coeffMat.data();
-        auto *ptr_temp = temp.data();
-        for (ord_t j = 0; j < rank2; ++j) {
-          *(ptr_coeff + j) *= *(ptr_temp + j);
+
+      auto *ptr_coeff = coeffMat.data();
+      if(V.empty()) {
+        for (size_t i = 0; i < n; ++i) {
+          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
+          auto *ptr_temp = temp.data();
+          for (ord_t j = 0; j < rank2; ++j) {
+            *(ptr_coeff + j) *= *(ptr_temp + j);
+          }
+        }
+      } else{
+        for(size_t i = 0; i < n; ++i) {
+          auto *ptr_V = V[i].data();
+          for(ord_t j = 0; j < rank2; ++j){
+            *(ptr_coeff + j) *= *(ptr_V + j);
+          }
         }
       }
 
