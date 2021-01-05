@@ -48,10 +48,6 @@ namespace btas {
     void set_MtKRPR(CoupledFitCheck<Tensor> &t, Tensor &tensor) {
       t.set_MtKRPR(tensor);
     }
-    template <typename Tensor>
-    void set_MtKRP(FitCheckDF<Tensor> &t, Tensor &tensor) {
-      t.set_MtKRP(tensor);
-    }
 
     // Functions that can get the fit \|X - \hat{X}\|_F where
     // \hat{X} is the CP approximation (epsilon), if
@@ -72,19 +68,6 @@ namespace btas {
     template <typename Tensor>
     void get_fit(CoupledFitCheck<Tensor> &t, double &epsilon) {
       epsilon = t.get_fit();
-      return;
-    }
-
-    // Setting V's where V = A[n]^T A[n]
-    // this means I dont have to recompute these contractions as much.
-    template <typename T, typename Tensor>
-    void set_V(T &t, std::vector<Tensor> &ata) {
-      return;
-    }
-
-    template <typename Tensor>
-    void set_V(FitCheckDF<Tensor> &t, std::vector<Tensor> &ata) {
-      t.set_V(ata);
       return;
     }
   }  // namespace detail
