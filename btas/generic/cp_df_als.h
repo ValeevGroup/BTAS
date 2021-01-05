@@ -252,7 +252,7 @@ namespace btas {
     /// \returns 2-norm
     /// error between exact and approximate tensor, -1 if calculate_epsilon =
     /// false && ConvClass != FitCheck.
-    double compute_comp_init(ind_t rank, ConvClass converge_test, size_t max_als, bool fast_pI = true,
+    double compute_comp_init(ind_t rank, ConvClass converge_test, size_t max_als = 1e4, bool fast_pI = true,
                             bool calculate_epsilon = false, bool direct = true) {
       double epsilon = 0.0;
       auto nrm = [](Tensor &a) {
