@@ -255,38 +255,33 @@ namespace btas {
     double compute_comp_init(ind_t rank, ConvClass converge_test, size_t max_als, bool fast_pI = true,
                             bool calculate_epsilon = false, bool direct = true) {
       double epsilon = 0.0;
+      auto nrm = [](Tensor &a) {
+        auto norm = 0.0;
+        for (auto &i : a) norm += i * i;
+        return sqrt(norm);
+      };
+
       {
         FitCheck<Tensor> fit(1e-2);
-        fit.verbose(true);
-        auto nrm = [](Tensor &a) {
-          auto norm = 0.0;
-          for (auto &i : a) norm += i * i;
-          return sqrt(norm);
-        };
         fit.set_norm(nrm(tensor_ref_left));
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
         CP3.compute_rank_random(rank, fit, 100, true);
         auto Al = CP3.get_factor_matrices();
         auto cur_dim = Al.size() - 1;
-        A.push_back(Al[1]);
-        A.push_back(Al[2]);
+        for(size_t i = 1; i < cur_dim; ++i){
+          A.push_back(Al[i]);
+        }
       }
       {
         FitCheck<Tensor> fit(1e-2);
-        fit.verbose(true);
-        auto nrm = [](Tensor &a) {
-          auto norm = 0.0;
-          for (auto &i : a) norm += i * i;
-          return sqrt(norm);
-        };
         fit.set_norm(nrm(tensor_ref_right));
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
-        auto cur_dim = tensor_ref_right.rank();
         CP3.compute_rank_random(rank, fit, 100, true);
-        auto Al = CP3.get_factor_matrices();
-        A.push_back(Al[1]);
-        A.push_back(Al[2]);
-        A.push_back(Al[3]);
+        auto Ar = CP3.get_factor_matrices();
+        auto cur_dim = tensor_ref_right.rank();
+        for(size_t i = 1; i < cur_dim; ++i){
+          A.push_back(Ar[i]);
+        }
       }
 
       ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
