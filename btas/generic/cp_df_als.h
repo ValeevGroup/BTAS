@@ -409,95 +409,129 @@ namespace btas {
       }
     }
 
-    void make_svd_guess(ind_t SVD_rank) {
-      // easier to do this part by constructing tensor_ref
-      // This is an N^5 step but it is only done once so it shouldn't be that expensive.
-      // once the code is working this step can be reduced to N^4 (though it might be less accurate that way)
-      // it is something to test.
-      // Must reconstruct with matrix multiplication so
-      // get size of product of dimensions (not connecting) for left and right side
-      // Also need tensor dimensions to resize tensor_ref after contraction
-      std::vector<ord_t> TRdims(ndim);
-      ord_t trLsize = 1.0, trRsize = 1.0;
-      for (size_t i = 1; i < ndimL; ++i) {
-        ord_t dim = tensor_ref_left.extent(i);
-        TRdims[i - 1] = dim;
-        trLsize *= dim;
-      }
-      for (size_t i = 1; i < ndimR; ++i) {
-        ord_t dim = tensor_ref_right.extent(i);
-        // i = 1 must take it to 0; then add left dimensions; then subtract 1 for connecting dimension
-        TRdims[i + ndimR - 2] = dim;
-        trRsize *= dim;
-      }
+    void make_svd_guess(ind_t SVD_rank){
+      std::vector<size_t> left_modes, right_modes, result_modes, modes_w_dim_LT_svd;
+      // Look through and find modes where I need to add extra columns
 
-      // Make TR with correct L/R size
-      Tensor tensor_ref(trLsize, trRsize);
-
-      // save ranges for after contraction to resize
-      auto TRLrange = tensor_ref_left.range();
-      auto TRRrange = tensor_ref_right.range();
-
-      // resize tensors to matrices
-      tensor_ref_left.resize(Range{Range1{tensor_ref_left.extent(0)}, Range1{trLsize}});
-      tensor_ref_right.resize(Range{Range1{tensor_ref_right.extent(0)}, Range1{trRsize}});
-
-      // matrix multiplication
-      gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, tensor_ref_left, tensor_ref_right, 0.0, tensor_ref);
-
-      // Resize tensor_ref's back to original dimensions
-      tensor_ref_left.resize(TRLrange);
-      tensor_ref_right.resize(TRRrange);
-      tensor_ref.resize(TRdims);
-
-      std::vector<int> modes_w_dim_LT_svd;
-      A = std::vector<Tensor>(ndim);
-
-      // Determine which factor matrices one can fill using SVD initial guess
-      for (size_t i = 0; i < ndim; i++) {
-        if (tensor_ref.extent(i) < SVD_rank) {
-          modes_w_dim_LT_svd.push_back(i);
+      {
+        for (size_t i = 1; i < ndimL; i++) {
+          if (tensor_ref_left.extent(i) < SVD_rank) {
+            modes_w_dim_LT_svd.push_back(i - 1);
+          }
+        }
+        for (size_t i = 1; i < ndimR; i++) {
+          if (tensor_ref_right.extent(i) < SVD_rank) {
+            modes_w_dim_LT_svd.push_back(i + ndimL - 2);
+          }
         }
       }
 
-      // Fill all factor matrices with their singular vectors,
-      // because we contract X X^T (where X is reference tensor) to make finding
-      // singular vectors an eigenvalue problem some factor matrices will not be
-      // full rank;
-      A[0] = Tensor(tensor_ref.extent(0), SVD_rank);
-      A[0].fill(0.0);
+      Tensor XXp, contracted;
 
-      for (size_t i = 0; i < ndim; i++) {
-        ind_t R = tensor_ref.extent(i);
-        Tensor S(R, R), lambda(R);
-
-        // Contract refrence tensor to make it square matrix of mode i
-        gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
-
-        // Find the Singular vectors of the matrix using eigenvalue decomposition
-        eigenvalue_decomp(S, lambda);
-
-        // Fill a factor matrix with the singular vectors with the largest corresponding singular
-        // values
-        lambda = Tensor(R, SVD_rank);
-        lambda.fill(0.0);
-        auto lower_bound = {0, 0};
-        auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
-        auto view = make_view(S.range().slice(lower_bound, upper_bound), S.storage());
-        auto l_iter = lambda.begin();
-        for (auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter) {
-          *(l_iter) = *(iter);
+      // Compute tensor_ref_right^T tensor_ref_right to keep the coupling dimension.
+      // then contract with left hand side
+      {
+        for (size_t i = 0; i < ndimR; ++i) {
+          left_modes.push_back(i);
+          right_modes.push_back(i);
         }
-
-        A[i] = lambda;
+        right_modes[0] = ndimR;
+        result_modes.push_back(0);
+        result_modes.push_back(ndimR);
+        contract(1.0, tensor_ref_right, left_modes, tensor_ref_right, right_modes, 0.0, XXp, result_modes);
+        left_modes.clear(); right_modes.clear();
+        for (size_t i = 0; i < ndimL; i++) {
+          left_modes.push_back(i);
+          right_modes.push_back(i);
+        }
+        right_modes[0] = ndim + 3;
+        result_modes[1] = ndim + 3;
+        contract(1.0, XXp, result_modes, tensor_ref_left, left_modes, 0.0, contracted, right_modes);
+        right_modes[0] = 0;
       }
 
-      // srand(3);
+      // Compute the SVD tile for factors of tensor_ref_left
+      {
+        auto ptrr = right_modes.begin() + 1, ptrf = result_modes.begin();
+        for (size_t i = 1; i < ndimL; ++i, ++ptrr) {
+          Tensor tucker;
+          *(ptrr) = ndim + 3;
+          *(ptrf) = i;
+          contract(1.0, contracted, left_modes, tensor_ref_left, right_modes, 0.0, tucker, result_modes);
+          *(ptrr) = i;
+
+          auto R = tucker.extent(0);
+          Tensor lambda(R);
+          // Find the Singular vectors of the matrix using eigenvalue decomposition
+          eigenvalue_decomp(tucker, lambda);
+
+          // Fill a factor matrix with the singular vectors with the largest corresponding singular
+          // values
+          lambda = Tensor(R, SVD_rank);
+          lambda.fill(0.0);
+          auto lower_bound = {0, 0};
+          auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
+          auto view = make_view(tucker.range().slice(lower_bound, upper_bound), tucker.storage());
+          auto l_iter = lambda.begin();
+          for (auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter) {
+            *(l_iter) = *(iter);
+          }
+
+          A.push_back(lambda);
+        }
+      }
+
+      // compute tensor_ref_left^T tensor_ref_left to keep coupling dimension.
+      // then contract with RHS
+      {
+        right_modes[0] = ndim + 3;
+        result_modes[0] = 0;
+        contract(1.0, tensor_ref_left, left_modes, tensor_ref_left, right_modes, 0.0, XXp, result_modes);
+        left_modes.clear(); right_modes.clear();
+        for (size_t i = 0; i < ndimR; ++i) {
+          left_modes.push_back(i);
+          right_modes.push_back(i);
+        }
+
+        right_modes[0] = ndim + 3;
+        result_modes[1] = ndim + 3;
+        contract(1.0, XXp, result_modes, tensor_ref_right, left_modes, 0.0, contracted, right_modes);
+        right_modes[0] = 0;
+
+        auto ptrr = right_modes.begin() + 1, ptrf = result_modes.begin();
+        for (size_t i = 1; i < ndimR; ++i, ++ptrr) {
+          Tensor tucker;
+          *(ptrr) = ndim + 3;
+          *(ptrf) = i;
+          contract(1.0, contracted, left_modes, tensor_ref_right, right_modes, 0.0, tucker, result_modes);
+          *(ptrr) = i;
+
+          auto R = tucker.extent(0);
+          Tensor lambda(R);
+          // Find the Singular vectors of the matrix using eigenvalue decomposition
+          eigenvalue_decomp(tucker, lambda);
+
+          // Fill a factor matrix with the singular vectors with the largest corresponding singular
+          // values
+          lambda = Tensor(R, SVD_rank);
+          lambda.fill(0.0);
+          auto lower_bound = {0, 0};
+          auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
+          auto view = make_view(tucker.range().slice(lower_bound, upper_bound), tucker.storage());
+          auto l_iter = lambda.begin();
+          for (auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter) {
+            *(l_iter) = *(iter);
+          }
+
+          A.push_back(lambda);
+        }
+      }
+
       std::mt19937 generator(random_seed_accessor());
       std::uniform_real_distribution<> distribution(-1.0, 1.0);
       // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
       for (auto &i : modes_w_dim_LT_svd) {
-        ind_t R = tensor_ref.extent(i), zero = 0;
+        ind_t R = A[i].extent(0), zero = 0;
         auto lower_bound = {zero, R};
         auto upper_bound = {R, SVD_rank};
         auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
