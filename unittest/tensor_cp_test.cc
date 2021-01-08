@@ -307,7 +307,8 @@ TEST_CASE("CP")
     SECTION("DF-ALS MODE = 4, Finite error"){
       CP_DF_ALS<tensor,conv_class>A1(D4,D4);
       conv.set_norm(norm42);
-      double diff = A1.compute_error(conv, 1e-2, 1, 20);
+      double diff = A1.compute_error(conv, 1e-2, 1, 5, false, 0,
+                                     100, false, true);
       CHECK(std::abs(diff - results(28,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 4, component decompsoition"){
@@ -319,13 +320,15 @@ TEST_CASE("CP")
     SECTION("DF-ALS MODE = 5, Finite rank"){
       CP_DF_ALS<tensor,conv_class> A1(D5,D5);
       conv.set_norm(norm52);
-      double diff = A1.compute_rank(5,conv);
+      double diff = A1.compute_rank(5,conv, 1, true, 5,
+                                    100, false, true);
       CHECK(std::abs(diff - results(30,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 5, Finite error"){
       CP_DF_ALS<tensor,conv_class>A1(D5,D5);
       conv.set_norm(norm52);
-      double diff = A1.compute_error(conv, 1e-2, 1, 20);
+      double diff = A1.compute_error(conv, 1e-2, 1, 2,false,0,
+                                     100, false, true);
       CHECK(std::abs(diff - results(31,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 5, Component decomposition"){
