@@ -136,9 +136,9 @@ namespace btas {
     /// T_{\rm approx}|| = \epsilon. \f$ Default = false.
     /// \param[in] direct Should the CP decomposition be computed without
     /// calculating the Khatri-Rao product? Default = true.
-    /// \returns 2-norm
-    /// error between exact and approximate tensor, -1 if calculate_epsilon =
-    /// false && ConvClass != FitCheck.
+    /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
+    /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
+    /// else return -1
 
     double compute_PALS(std::vector<ConvClass> &converge_list, double RankStep = 0.5, size_t panels = 4,
                         int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
@@ -231,16 +231,16 @@ namespace btas {
     /// \param[in] direct The CP decomposition be computed
     /// without calculating the Khatri-Rao product? Default = true.
     /// \param[in]
-    /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{exact} -
-    /// T_{approx}|| = \epsilon \f$ . Default = false.
+    /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{\rm exact} -
+    /// T_{\rm approx}|| = \epsilon \f$ . Default = false.
     /// \param[in] max_als If CP decomposition is to finite
     /// error, max_als is the highest rank approximation computed before giving up
     /// on CP-ALS. Default = 1e4.
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// default = false
-    /// \returns 2-norm error, \f$ \epsilon \f$,
-    /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
-    ///  ConvClass != FitCheck.
+    /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
+    /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
+    /// else return -1
     double compress_compute_tucker(double tcutSVD, ConvClass &converge_test, ind_t rank = 0, bool direct = true,
                                    bool calculate_epsilon = false, ind_t max_als = 1e4, bool fast_pI = false) {
       // Tensor compression
@@ -294,9 +294,9 @@ namespace btas {
     /// giving up on CP-ALS. Default = 1e5.
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// default = false
-    /// \returns 2-norm error, \f$ \epsilon \f$,
-    /// between exact and approximate tensor, -1.0 if calculate_epsilon = false &&
-    ///  ConvClass != FitCheck.
+    /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
+    /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
+    /// else return -1
     double compress_compute_rand(ind_t desired_compression_rank, ConvClass &converge_test, long oversampl = 10,
                                  size_t powerit = 2, ind_t rank = 0, bool direct = true, bool calculate_epsilon = false,
                                  ind_t max_als = 1e5, bool fast_pI = false) {
@@ -343,7 +343,8 @@ namespace btas {
     /// error between the exact and approximated reference tensor
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// return if \c fast_pI was successful
 
     void build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon, ind_t step,
                double &epsilon, bool SVD_initial_guess, ind_t SVD_rank, bool &fast_pI) override {
@@ -518,7 +519,8 @@ namespace btas {
     /// error between the exact and approximated reference tensor
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// return if fast_pI was successful.
     void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
                       double &epsilon, bool &fast_pI) override {
       std::mt19937 generator(random_seed_accessor());
@@ -560,7 +562,8 @@ namespace btas {
     /// single rank converged. Default = 0.1.
     /// \param[in, out] epsilon The 2-norm
     /// error between the exact and approximated reference tensor
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// return in \c fast_pI was successful
 
     void ALS(ind_t rank, ConvClass &converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon,
              bool &fast_pI) {
@@ -614,6 +617,7 @@ namespace btas {
     /// iteration factor matrix
     /// \param[in, out] matlab If \c fast_pI = true then try to solve VA = B instead of taking pseudoinverse
     /// in the same manner that matlab would compute the inverse.
+    /// return if matlab was successful.
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
     void update_w_KRP(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {
       Tensor temp(A[n].extent(0), rank);
@@ -685,11 +689,12 @@ namespace btas {
 
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    /// return if computing the fast_pI was successful.
+    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// return if computing the \c fast_pI was successful.
     /// \param[in, out] matlab If \c fast_pI = true then try to solve VA = B instead of taking pseudoinverse
-    /// in the same manner that matlab would compute the inverse.
-    /// return if computing the inverse in this was was successful
+    /// in the same manner that matlab would compute the inverse. If this fails, variable will be manually
+    /// set to false and SVD will be used.
+    /// return if \c matlab was successful
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
 
     void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {

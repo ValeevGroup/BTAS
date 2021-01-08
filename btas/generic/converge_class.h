@@ -84,7 +84,7 @@ namespace btas {
     ~FitCheck() = default;
 
     /// Function to check convergence of the ALS problem
-    /// convergence when \f$ 1 - \frac{\|X-full(M)\|}{\|X\|} \leq \epsilon\f$
+    /// convergence when \f$ 1 - \frac{\|X-full(M)\|}{\|X\|} \leq \epsilon \f$
     /// \param[in] btas_factors Current set of factor matrices
     /// \param[in] V Partial grammian matrices (rank x rank matricies from \f$ V^{i} = A^{iT} A^{i} \f$
     /// default = std::vector<Tensor>();
@@ -240,7 +240,7 @@ namespace btas {
     ~CoupledFitCheck() = default;
 
     /// Function to check convergence of the ALS problem
-    /// convergence when \f$ \|T - \hat{T}^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
+    /// convergence when \f$ \|T - \frac{\hat{T}^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
     /// \param[in] btas_factors Current set of factor matrices
     bool operator () (const std::vector<Tensor> & btas_factors) {
       if (normTR_ < 0 || normTL_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
@@ -360,7 +360,7 @@ namespace btas {
 
     /// Returns the fit of the CP approximation, \f$ 1 - \frac{\|T - \hat{T}\|}{\|T\|} \f$
     /// from the previous () operator call
-    /// Where \f$ T = Tleft^T Tright \f$ and \f$ \hat{T} \f$ is the CP approximation of T
+    /// Where \f$ T = T_{left}^T  T_{right} \f$ and \f$ \hat{T} \f$ is the CP approximation of T
     /// \returns fit of the CP approximation
     double get_fit(){
       return final_fit_;

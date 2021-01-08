@@ -154,9 +154,9 @@ namespace btas {
     /// T_{\rm approx}|| = \epsilon. \f$ Default = false.
     /// \param[in] direct Should the CP decomposition be computed without
     /// calculating the Khatri-Rao product? Default = true.
-    /// \returns 2-norm
-    /// error between exact and approximate tensor, -1 if calculate_epsilon =
-    /// false && ConvClass != FitCheck.
+    /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
+    /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
+    /// else return -1
 
     double compute_rank(ind_t rank, ConvClass &converge_test, ind_t step = 1, bool SVD_initial_guess = false,
                         ind_t SVD_rank = 0, ind_t max_als = 1e4, bool fast_pI = true, bool calculate_epsilon = false,
@@ -188,9 +188,9 @@ namespace btas {
     /// T_{\rm approx}|| = \epsilon. \f$ Default = false.
     /// \param[in] direct Should the CP decomposition be computed without
     /// calculating the Khatri-Rao product? Default = true.
-    /// \returns 2-norm
-    /// error between exact and approximate tensor, -1 if calculate_epsilon =
-    /// false && ConvClass != FitCheck.
+    /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
+    /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
+    /// else return -1
     double compute_rank_random(ind_t rank, ConvClass &converge_test, ind_t max_als = 1e4, bool fast_pI = true,
                                bool calculate_epsilon = false, bool direct = true) {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
@@ -205,7 +205,7 @@ namespace btas {
 
     /// Computes the decomposition of the order-N tensor \c tensor
     /// to \f$ rank \leq \f$ \c max_als such that
-    /// \f[ || T_{exact} - T_{approx}||_F = \epsilon \leq tcutCP \f]
+    /// \f[ || T_{\rm exact} - T_{\rm approx}||_F = \epsilon \leq tcutCP \f]
     /// with rank incrementing by \c step.
 
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
@@ -227,9 +227,9 @@ namespace btas {
     /// \param[in] direct Should the
     /// CP decomposition be computed without calculating the
     /// Khatri-Rao product? Default = true.
-    /// \returns 2-norm
-    /// error between exact and approximate tensor, -1 if calculate_epsilon =
-    /// false && ConvClass != FitCheck.
+    /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
+    /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
+    /// else return -1
     double compute_error(ConvClass &converge_test, double tcutCP = 1e-2, ind_t step = 1, ind_t max_rank = 1e5,
                          bool SVD_initial_guess = false, ind_t SVD_rank = 0, ind_t max_als = 1e4, bool fast_pI = true,
                          bool direct = true) {
@@ -264,14 +264,14 @@ namespace btas {
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// default = true
     /// \param[in] calculate_epsilon Should the
-    /// 2-norm error be calculated \f$ ||T_{exact} - T_{approx}|| = \epsilon \f$.
+    /// 2-norm error be calculated \f$ ||T_{\rm exact} - T_{\rm approx}|| = \epsilon \f$.
     /// Default = false.
     /// \param[in] direct Should the CP
     /// decomposition be computed without calculating the Khatri-Rao product?
     /// Default = true.
-    /// \returns 2-norm
-    /// error between exact and approximate tensor, -1 if calculate_epsilon =
-    /// false && ConvClass != FitCheck.
+    /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
+    /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
+    /// else return -1
     double compute_geometric(ind_t desired_rank, ConvClass &converge_test, ind_t geometric_step = 2,
                              bool SVD_initial_guess = false, ind_t SVD_rank = 0, ind_t max_als = 1e4,
                              bool fast_pI = true, bool calculate_epsilon = false, bool direct = true) {
@@ -316,9 +316,9 @@ namespace btas {
     /// T_{\rm approx}|| = \epsilon. \f$ Default = false.
     /// \param[in] direct Should the CP decomposition be computed without
     /// calculating the Khatri-Rao product? Default = true.
-    /// \returns 2-norm
-    /// error between exact and approximate tensor, -1 if calculate_epsilon =
-    /// false && ConvClass != FitCheck.
+    /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
+    /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
+    /// else return -1
     virtual double compute_PALS(std::vector<ConvClass> &converge_list, double RankStep = 0.5, size_t panels = 4,
                                 int max_als = 20, bool fast_pI = true, bool calculate_epsilon = false,
                                 bool direct = true) = 0;
@@ -405,7 +405,8 @@ namespace btas {
     /// error between the exact and approximated reference tensor
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// return if \c fast_pI was successful.
     virtual void build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
                        ind_t step, double &epsilon, bool SVD_initial_guess, ind_t SVD_rank, bool &fast_pI) = 0;
 
@@ -424,7 +425,8 @@ namespace btas {
     /// error between the exact and approximated reference tensor
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// return if \c fast_pI was successful
     virtual void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
                               double &epsilon, bool &fast_pI) = 0;
 
@@ -570,7 +572,8 @@ namespace btas {
 
     /// \param[in] mode_of_A The mode being optimized used to compute hadamard LHS (V) of ALS problem (Vx = B)
     /// \param[in,out] fast_pI If true, try to compute the pseudo inverse via fast LU decomposition, else use SVD;
-    ///                on return reports whether the fast route was used.
+    ///                on return reports whether the fast route was used. If \c fast_pI fails, variable will be set
+    ///                 to false and SVD will be used.
     /// \param[in, out] cholesky If true, try to solve the linear equation Vx = B (the ALS problem)
     ///                using a Cholesky decomposition (lapacke subroutine) on return reports if
     ///                inversion was successful.
