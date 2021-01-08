@@ -409,6 +409,15 @@ namespace btas {
       }
     }
 
+    /// Generate the SVD initial guess of the super tensor
+    /// without ever generating the super tensor using
+    /// the HOSVD method. Here one flattens the tensor along
+    /// the nth way then isolates that way by computing
+    /// \f$ H_{n} = T^T_{n} T_{n} \f$ then computes the eigenvalue
+    /// decomposition of H which provides the right singular vectors of \f$ T_n \f$
+
+    /// \param[in] SVD_rank Initial guess rank, if SVD_rank is greater than the
+    /// dimension of a mode, the factor matrix will be padded with random vectors.
     void make_svd_guess(ind_t SVD_rank){
       std::vector<size_t> left_modes, right_modes, result_modes, modes_w_dim_LT_svd;
       // Look through and find modes where I need to add extra columns
