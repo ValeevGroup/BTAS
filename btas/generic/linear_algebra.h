@@ -190,23 +190,12 @@ bool cholesky_inverse(Tensor & A, Tensor & B) {
     ind_t rank = B.extent(1);
     ind_t LDB = B.extent(0);
 
-#if 0
-    btas::Tensor<lapack_int, DEFAULT::range, varray <lapack_int> > piv(rank);
-    piv.fill(0);
-    auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, A.data(), rank, piv.data(), B.data(), rank);
-    if (info == 0) {
-      return true;
-    } else {
-      // If inverse fails resort to the pseudoinverse
-      std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
-      return false;
-    }
-#else
-    // XXX DBWY Col Major?
+    // XXX DBWY Col Major? // Column major here because we are solving XA = B, not AX = B
+    // But as you point out below, A is symmetric positive semi-definite so Row major should
+    // give the same results
     // XXX DBWY GESV not POSV?
     return !gesv( blas::Layout::ColMajor, rank, LDB, A.data(), rank, B.data(), 
                   rank );
-#endif
 
 #endif
 }
@@ -217,6 +206,8 @@ bool cholesky_inverse(Tensor & A, Tensor & B) {
 /// https://arxiv.org/pdf/0804.4809.pdf
 
 /// \param[in] A In: A reference to the matrix to be inverted.
+/// \param[in,out] fast_pI Should a faster version of the pseudoinverse be used?
+/// return if \c fast_pI was successful
 /// \return \f$ A^{\dagger} \f$ The pseudoinverse of the matrix A.
 template <typename Tensor>
 Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
