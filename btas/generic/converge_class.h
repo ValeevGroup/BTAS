@@ -77,16 +77,19 @@ namespace btas {
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     /// constructor for the base convergence test object
-    /// \param[in] tol tolerance for ALS convergence
+    /// \param[in] tol tolerance for ALS convergence default = 1e-4
     explicit FitCheck(double tol = 1e-4): tol_(tol){
     }
 
     ~FitCheck() = default;
 
     /// Function to check convergence of the ALS problem
-    /// convergence when \f$ \|T - \hat{T}^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
+    /// convergence when \f$ 1 - \frac{\|X-full(M)\|}{\|X\|} \leq \epsilon \f$
     /// \param[in] btas_factors Current set of factor matrices
-    bool operator()(const std::vector<Tensor> &btas_factors) {
+    /// \param[in] V Partial grammian matrices (rank x rank matricies from \f$ V^{i} = A^{iT} A^{i} \f$
+    /// default = std::vector<Tensor>();
+    bool operator()(const std::vector<Tensor> &btas_factors,
+                    const std::vector<Tensor> & V = std::vector<Tensor>()) {
       if (normT_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
       auto n = btas_factors.size() - 2;
       ord_t size = btas_factors[n].size();
@@ -111,7 +114,7 @@ namespace btas {
         iprod += *(ptr_temp + i) * *(ptr_A + i);
       }
 
-      double normFactors = norm(btas_factors);
+      double normFactors = norm(btas_factors, V);
       double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * iprod));
       double fit = 1 - (normResidual / normT_);
 
@@ -135,18 +138,31 @@ namespace btas {
       return false;
     }
 
+    /// Set the norm of the reference tensor T
+    /// \param[in] normT Norm of the reference tensor;
     void set_norm(double normT){
       normT_ = normT;
     }
 
+    /// Set the current iteration's matricized tensor times KRP
+    /// \f$ MtKRP = X_{n} * A^{1} \odot A^{2} \odot \dots \odot A^{n-1} \odot A^{n+1} \odot  \dots \odot A^{N} \f$
+    /// Where N is the number of modes in the reference tensor X and \f$X_{n} \f$ is the nth mode
+    /// matricization of X.
+    /// \param[in] MtKRP matricized reference tensor times KRP
     void set_MtKRP(Tensor & MtKRP){
       MtKRP_ = MtKRP;
     }
 
+    /// Returns the fit of the CP approximation, \f$ 1 - \frac{\|X - full{M}\|}{\|T\|} \f$
+    /// from the previous () operator call.
+    /// Where \f$ \hat{T} \f$ is the CP approximation of T
+    /// \returns fit of the CP approximation
     double get_fit(){
       return final_fit_;
     }
 
+    /// Option to print fit and change in fit in the () operator call
+    /// \param[in] verb bool which turns off/on fit printing.
     void verbose(bool verb) {
       verbose_ = verb;
     }
@@ -161,7 +177,11 @@ namespace btas {
     Tensor MtKRP_;
     bool verbose_ = false;
 
-    double norm(const std::vector<Tensor> &btas_factors) {
+    /// Function to compute the L2 norm of a tensors computed from the \c btas_factors
+    /// \param[in] btas_factors Current set of factor matrices
+    /// \param[in] V Partial grammian matrices (rank x rank matricies from \f$ V^{i} = A^{iT} A^{i} \f$
+    double norm(const std::vector<Tensor> &btas_factors,
+                const std::vector<Tensor> & V) {
       ind_t rank = btas_factors[0].extent(1);
       auto n = btas_factors.size() - 1;
       Tensor coeffMat;
@@ -170,12 +190,22 @@ namespace btas {
 
       auto rank2 = rank * (ord_t) rank;
       Tensor temp(rank, rank);
-      for (size_t i = 0; i < n; ++i) {
-        gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
-        auto *ptr_coeff = coeffMat.data();
-        auto *ptr_temp = temp.data();
-        for (ord_t j = 0; j < rank2; ++j) {
-          *(ptr_coeff + j) *= *(ptr_temp + j);
+
+      auto *ptr_coeff = coeffMat.data();
+      if(V.empty()) {
+        for (size_t i = 0; i < n; ++i) {
+          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
+          auto *ptr_temp = temp.data();
+          for (ord_t j = 0; j < rank2; ++j) {
+            *(ptr_coeff + j) *= *(ptr_temp + j);
+          }
+        }
+      } else{
+        for(size_t i = 0; i < n; ++i) {
+          auto *ptr_V = V[i].data();
+          for(ord_t j = 0; j < rank2; ++j){
+            *(ptr_coeff + j) *= *(ptr_V + j);
+          }
         }
       }
 
@@ -210,7 +240,7 @@ namespace btas {
     ~CoupledFitCheck() = default;
 
     /// Function to check convergence of the ALS problem
-    /// convergence when \f$ \|T - \hat{T}^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
+    /// convergence when \f$ \|T - \frac{\hat{T}^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
     /// \param[in] btas_factors Current set of factor matrices
     bool operator () (const std::vector<Tensor> & btas_factors) {
       if (normTR_ < 0 || normTL_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
@@ -302,21 +332,44 @@ namespace btas {
       return false;
     }
 
+    /// Set the norm of the reference tensors Tleft and Tright.
+    /// \param[in] normTL Norm of the left reference tensor
+    /// \param[in] normTR Norm of the right reference tensor
     void set_norm(double normTL, double normTR){
       normTL_ = normTL;
       normTR_ = normTR;
     }
 
+    /// Set the current iteration's matricized tensor times KRP
+    /// \f$ MtKRP = T_{n} * A^{1} \odot A^{2} \odot \dots \odot A^{n-1} \odot A^{n+1} \odot  \dots \odot A^{N} \f$
+    /// Where N is the number of modes in the left reference tensor Tleft \f$T_{n} \f$ is the nth mode
+    /// matricization of Tleft.
+    /// \param[in] MtKRPl matricized left reference tensor times KRP
     void set_MtKRPL(Tensor & MtKRPL){
       MtKRPL_ = MtKRPL;
     }
 
+    /// Set the current iteration's matricized tensor times KRP
+    /// \f$ MtKRP = T_{n} * A^{1} \odot A^{2} \odot \dots \odot A^{n-1} \odot A^{n+1} \odot  \dots \odot A^{N} \f$
+    /// Where N is the number of modes in the right reference tensor Tright \f$T_{n} \f$ is the nth mode
+    /// matricization of Tright.
+    /// \param[in] MtKRPr matricized right reference tensor times KRP
     void set_MtKRPR(Tensor & MtKRPR){
       MtKRPR_ = MtKRPR;
     }
 
+    /// Returns the fit of the CP approximation, \f$ 1 - \frac{\|T - \hat{T}\|}{\|T\|} \f$
+    /// from the previous () operator call
+    /// Where \f$ T = T_{left}^T  T_{right} \f$ and \f$ \hat{T} \f$ is the CP approximation of T
+    /// \returns fit of the CP approximation
     double get_fit(){
       return final_fit_;
+    }
+
+    // returns the L2 norm of of the tensor generated by the CP
+    // factor matrices.
+    double get_norm(const std::vector<Tensor> & btas_array){
+      return norm(btas_array);
     }
 
   private:
@@ -328,6 +381,9 @@ namespace btas {
     Tensor MtKRPL_, MtKRPR_;
     size_t ndimL_;
 
+    /// Function to compute the L2 norm of a tensors computed from the \c btas_factors
+    /// \param[in] btas_factors Current set of factor matrices
+    /// \param[in] V Partial grammian matrices (rank x rank matricies from \f$ V^{i} = A^{iT} A^{i} \f$
     double norm(const std::vector<Tensor> & btas_factors) {
       ord_t rank = btas_factors[0].extent(1);
       auto n = btas_factors.size() - 1;

@@ -28,9 +28,9 @@
 namespace btas{
 
   /** \brief Computes the Canonical Product (CP) decomposition of two order-N
-    tensors using the loss function $f = \|B - \hat{B}\| + \|Z - \hat{Z}\|$
-    where $B$ and $Z$ have a coupled dimension $B \in \mathbb{R}^{X \times \dots}$
-    and $Z \in \mathbb{R}^{X \times \dots}$ and thus share a factor matrix
+    tensors using the loss function \f$ = \|B - \hat{B}\| + \|Z - \hat{Z}\| \f$
+    where \f$ B \f$ and \f$ Z \f$ have a coupled dimension \f$ B \in \bf{R}^{X \times \dots} \f$
+    and \f$ Z \in \bf{R}^{X \times \dots} \f$ and thus share a factor matrix
     Decomposition optimization will use alternating least squares (ALS).
 
    \warning this code takes a non-const reference \c tensor_ref but does
@@ -73,7 +73,7 @@ namespace btas{
     A.get_factor_matrices()             // Returns a vector of factor matrices, if
                                         // they have been computed
 
-    A.reconstruct()                     // Returns the tensor $T$ computed using the
+    A.reconstruct()                     // Returns the tensor T computed using the
                                         // CP factor matrices
     \endcode
   */
@@ -93,8 +93,8 @@ namespace btas{
     /// Create a COUPLED CP ALS object, child class of the CP object
     /// that stores the reference tensors.
     /// Reference tensor has no symmetries.
-    /// \param[in] left the reference tensor, $B$ to be decomposed.
-    /// \param[in] right the reference tensor, $Z$ to be decomposed.
+    /// \param[in] left the reference tensor, \f$ B\ f$ to be decomposed.
+    /// \param[in] right the reference tensor, \f$ Z \f$ to be decomposed.
     COUPLED_CP_ALS(Tensor& left, Tensor& right) :
             CP<Tensor, ConvClass>(left.rank() + right.rank() - 1),
             tensor_ref_left(left), tensor_ref_right(right), ndimL(left.rank())
@@ -111,8 +111,8 @@ namespace btas{
     /// are set equal to lower mode indices (a 4th order tensor,
     /// where the second & third modes are equal would have a
     /// symmetries of {0,1,1,3}
-    /// \param[in] left the reference tensor, $B$ to be decomposed.
-    /// \param[in] right the reference tensor, $Z$ to be decomposed.
+    /// \param[in] left the reference tensor, \f$ B \f$ to be decomposed.
+    /// \param[in] right the reference tensor, \f$ Z \f$ to be decomposed.
     /// \param[in] symms the symmetries of the reference tensor.
     COUPLED_CP_ALS(Tensor &left, Tensor &right, std::vector<size_t> &symms) :
             CP<Tensor, ConvClass>(left.rank() + right.rank()),
@@ -144,9 +144,9 @@ namespace btas{
     /// T_{\rm approx}|| = \epsilon. \f$ Default = false.
     /// \param[in] direct Should the CP decomposition be computed without
     /// calculating the Khatri-Rao product? Default = true.
-    /// \returns 2-norm
-    /// error between exact and approximate tensor, -1 if calculate_epsilon =
-    /// false && ConvClass != FitCheck.
+    /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
+    /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
+    /// else return -1
     double compute_PALS(std::vector<ConvClass> &converge_list, double RankStep = 0.5, size_t panels = 4,
                         int max_als = 20, bool fast_pI = false, bool calculate_epsilon = false,
                         bool direct = true) override {
@@ -180,7 +180,8 @@ namespace btas{
     /// error between the exact and approximated reference tensor
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// return if \c fast_pI was sucessful.
     // TODO make use of symmetries in this function
     void build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als,
                bool calculate_epsilon,
@@ -348,7 +349,8 @@ namespace btas{
     /// error between the exact and approximated reference tensor
     /// \param[in] SVD_initial_guess build inital guess from left singular vectors
     /// \param[in] SVD_rank rank of the initial guess using left singular vector
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// return if \c fast_pI was sucessful
     void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als,
                       bool calculate_epsilon, double &epsilon,
                       bool &fast_pI) override {
@@ -364,13 +366,14 @@ namespace btas{
     /// error, max_als is the highest rank approximation computed before giving up
     /// on CP-ALS. Default = 1e5.
     /// \param[in] calculate_epsilon Should the 2-norm
-    /// error be calculated ||T_exact - T_approx|| = epsilon.
+    /// error be calculated \f$ ||T_{\rm exact} - T_{\rm approx}|| = \epsilon \f$.
     /// \param[in] tcutALS
     /// How small difference in factor matrices must be to consider ALS of a
     /// single rank converged. Default = 0.1.
     /// \param[in, out] epsilon The 2-norm
     /// error between the exact and approximated reference tensor
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// return if \c fast_pI was successful.
     void
     ALS(ind_t rank, ConvClass &converge_test, bool dir, unsigned int max_als, bool calculate_epsilon,
         double &epsilon, bool &fast_pI) {
@@ -408,11 +411,11 @@ namespace btas{
 
     /// \param[in] n The mode being optimized, all other modes held constant
     /// \param[in] rank The current rank, column dimension of the factor matrices
-    /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
+    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// return if computing the fast_pI was successful.
     /// \param[in, out] matlab If \c fast_pI = true then try to solve VA = B instead of taking pseudoinverse
     /// in the same manner that matlab would compute the inverse.
-    /// return if computing the inverse in this was was successful
+    /// return if \matlab was successful
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
     void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {
       if (n == 0) {

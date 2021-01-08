@@ -53,7 +53,7 @@ TEST_CASE("CP")
   }
   in5.close();
 
-  tensor results(36, 1);
+  tensor results(40, 1);
   std::ifstream res(__dirname + "/cp_test_results.txt");
   CHECK(res.is_open());
   for (auto &i : results) {
@@ -277,7 +277,7 @@ TEST_CASE("CP")
 #endif
   }
 
-     
+
   // CP-DF-ALS tests
   {
     SECTION("DF-ALS MODE = 3, Finite rank"){
@@ -292,32 +292,53 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 20);
       CHECK(std::abs(diff - results(25,0)) <= epsilon);
     }
-#if 0
+    SECTION("DF-ALS MODE = 3, component decomposition"){
+      CP_DF_ALS<tensor, conv_class> A1(D3, D3);
+      conv.set_norm(norm32);
+      double diff = A1.compute_comp_init(5, conv, 20 );
+      CHECK(std::abs(diff - results(26,0)) <= epsilon);
+    }
      SECTION("DF-ALS MODE = 4, Finite rank"){
       CP_DF_ALS<tensor,conv_class> A1(D4,D4);
       conv.set_norm(norm42);
       double diff = A1.compute_rank(5,conv);
-      CHECK(std::abs(diff - results(26,0)) <= epsilon);
+      CHECK(std::abs(diff - results(27,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 4, Finite error"){
       CP_DF_ALS<tensor,conv_class>A1(D4,D4);
       conv.set_norm(norm42);
-      double diff = A1.compute_error(conv, 1e-2, 1, 20);
-      CHECK(std::abs(diff - results(27,0)) <= epsilon);
+      double diff = A1.compute_error(conv, 1e-2, 1, 5, false, 0,
+                                     100, false, true);
+      CHECK(std::abs(diff - results(28,0)) <= epsilon);
+    }
+    SECTION("DF-ALS MODE = 4, component decompsoition"){
+      CP_DF_ALS<tensor,conv_class>A1(D4,D4);
+      conv.set_norm(norm42);
+      double diff = A1.compute_comp_init(5, conv, 20);
+      CHECK(std::abs(diff - results(29,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 5, Finite rank"){
       CP_DF_ALS<tensor,conv_class> A1(D5,D5);
       conv.set_norm(norm52);
-      double diff = A1.compute_rank(5,conv);
-      CHECK(std::abs(diff - results(28,0)) <= epsilon);
+      double diff = A1.compute_rank(5,conv, 1, true, 5,
+                                    100, false, true);
+      CHECK(std::abs(diff - results(30,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 5, Finite error"){
       CP_DF_ALS<tensor,conv_class>A1(D5,D5);
       conv.set_norm(norm52);
-      double diff = A1.compute_error(conv, 1e-2, 1, 20);
-      CHECK(std::abs(diff - results(29,0)) <= epsilon);
+      double diff = A1.compute_error(conv, 1e-2, 1, 2,false,0,
+                                     100, false, true);
+      CHECK(std::abs(diff - results(31,0)) <= epsilon);
     }
-#endif
+    SECTION("DF-ALS MODE = 5, Component decomposition"){
+      CP_DF_ALS<tensor,conv_class>A1(D5,D5);
+      conv.set_norm(norm52);
+      double diff = A1.compute_comp_init(5, conv, 20);
+      CHECK(std::abs(diff - results(32,0)) <= epsilon);
+
+    }
+
   }
 
   // coupled ALS test
@@ -327,42 +348,42 @@ TEST_CASE("CP")
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D3, D3);
       conv_coupled.set_norm(norm3, norm3);
       double diff = A1.compute_rank(5, conv_coupled);
-      CHECK(std::abs(diff - results(30,0)) <= epsilon);
+      CHECK(std::abs(diff - results(33,0)) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 3, Finite error"){
       conv_class_coupled conv_coupled(3, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D3, D3);
       conv_coupled.set_norm(norm3, norm3);
       double diff = A1.compute_error(conv_coupled, 1e-2, 1, 20);
-      CHECK(std::abs(diff - results(31,0)) <= epsilon);
+      CHECK(std::abs(diff - results(34,0)) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 4, Finite rank"){
       conv_class_coupled conv_coupled(4, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D4, D4);
       conv_coupled.set_norm(norm4, norm4);
       double diff = A1.compute_rank(5,conv_coupled);
-      CHECK(std::abs(diff - results(32,0)) <= epsilon);
+      CHECK(std::abs(diff - results(35,0)) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 4, Finite error"){
       conv_class_coupled conv_coupled(4, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D4, D4);
       conv_coupled.set_norm(norm4, norm4);
       double diff = A1.compute_error(conv_coupled, 1e-2, 1, 20);
-      CHECK(std::abs(diff - results(33,0)) <= epsilon);
+      CHECK(std::abs(diff - results(36,0)) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 5, Finite rank"){
       conv_class_coupled conv_coupled(5, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D5, D5);
       conv_coupled.set_norm(norm5, norm5);
       double diff = A1.compute_rank(5,conv_coupled);
-      CHECK(std::abs(diff - results(34,0)) <= epsilon);
+      CHECK(std::abs(diff - results(37,0)) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 5, Finite error"){
       conv_class_coupled conv_coupled(5, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D5, D5);
       conv_coupled.set_norm(norm5, norm5);
       double diff = A1.compute_error(conv_coupled, 1e-2, 1, 20);
-      CHECK(std::abs(diff - results(35,0)) <= epsilon);
+      CHECK(std::abs(diff - results(38,0)) <= epsilon);
     }
   }
       

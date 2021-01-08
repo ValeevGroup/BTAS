@@ -158,7 +158,7 @@ namespace btas{
     ord_t lambda_length = lambda.size();
     ind_t smallest_mode_A = (A.extent(0) < A.extent(1) ? A.extent(0) : A.extent(1));
     if (lambda_length < smallest_mode_A) {
-      BTAS_EXCEPTION("Volume of lambda must be greater than or equal to the largest mode of A");
+      lambda = Tensor(smallest_mode_A);
     }
 
     auto info = hereig( blas::Layout::RowMajor, lapack::Job::Vec, 
@@ -190,23 +190,12 @@ bool cholesky_inverse(Tensor & A, Tensor & B) {
     ind_t rank = B.extent(1);
     ind_t LDB = B.extent(0);
 
-#if 0
-    btas::Tensor<lapack_int, DEFAULT::range, varray <lapack_int> > piv(rank);
-    piv.fill(0);
-    auto info = LAPACKE_dgesv(CblasColMajor, rank, LDB, A.data(), rank, piv.data(), B.data(), rank);
-    if (info == 0) {
-      return true;
-    } else {
-      // If inverse fails resort to the pseudoinverse
-      std::cout << "Matlab square inverse failed revert to fast inverse" << std::endl;
-      return false;
-    }
-#else
-    // XXX DBWY Col Major?
+    // XXX DBWY Col Major? // Column major here because we are solving XA = B, not AX = B
+    // But as you point out below, A is symmetric positive semi-definite so Row major should
+    // give the same results
     // XXX DBWY GESV not POSV?
     return !gesv( blas::Layout::ColMajor, rank, LDB, A.data(), rank, B.data(), 
                   rank );
-#endif
 
 #endif
 }
@@ -217,13 +206,15 @@ bool cholesky_inverse(Tensor & A, Tensor & B) {
 /// https://arxiv.org/pdf/0804.4809.pdf
 
 /// \param[in] A In: A reference to the matrix to be inverted.
+/// \param[in,out] fast_pI Should a faster version of the pseudoinverse be used?
+/// return if \c fast_pI was successful
 /// \return \f$ A^{\dagger} \f$ The pseudoinverse of the matrix A.
 template <typename Tensor>
 Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
 
 #ifndef BTAS_HAS_BLAS_LAPACK
     BTAS_EXCEPTION("pseudoInverse required BLAS/LAPACK bindings to be enabled: -DBTAS_USE_BLAS_LAPACK=ON");
-#else
+#else // BTAS_HAS_BLAS_LAPACK
 
     using ind_t = typename Tensor::range_type::index_type::value_type;
     if (A.rank() > 2) {
@@ -259,7 +250,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
       if (s(i) > lr_thresh)
         s_inv(i, i) = 1 / s(i);
       else
-        s_inv(i, i) = s(i);
+        s_inv(i, i) = 0;
     }
     s.resize(Range{Range1{row}, Range1{col}});
 
