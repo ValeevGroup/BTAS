@@ -70,7 +70,7 @@ if( BTAS_USE_BLAS_LAPACK )
         set(_mkl_include "${_mklroot}/include")
       elseif(EXISTS "/usr/include/mkl") # ubuntu package
         set(_mkl_include "/usr/include/mkl")
-      endif(EXISTS)
+      endif()
       if (_mkl_include AND EXISTS "${_mkl_include}")
         target_include_directories(blaspp_headers INTERFACE "${_mkl_include}")
       endif(_mkl_include AND EXISTS "${_mkl_include}")
