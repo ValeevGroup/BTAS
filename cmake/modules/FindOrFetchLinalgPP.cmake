@@ -4,8 +4,11 @@ if( BTAS_USE_BLAS_LAPACK )
   include(FetchContent)
 
   if(NOT TARGET blaspp)
-    find_package( blaspp QUIET )
-    if(NOT TARGET blaspp)
+    find_package( blaspp QUIET CONFIG )
+
+    if (TARGET blaspp)
+      message(STATUS "Found blaspp CONFIG at ${blaspp_CONFIG}")
+    else (TARGET blaspp)
       cmake_minimum_required (VERSION 3.14.0)  # for FetchContent_MakeAvailable
       FetchContent_Declare( blaspp
             GIT_REPOSITORY https://bitbucket.org/icl/blaspp.git
@@ -13,13 +16,18 @@ if( BTAS_USE_BLAS_LAPACK )
             )
 
       FetchContent_MakeAvailable( blaspp )
-    endif(NOT TARGET blaspp)
+
+      # set blaspp_CONFIG to the install location so that we know where to find it
+      set(blaspp_CONFIG ${CMAKE_INSTALL_PREFIX}/lib/blaspp/blasppConfig.cmake)
+    endif(TARGET blaspp)
   endif(NOT TARGET blaspp)
 
   if(NOT TARGET lapackpp)
     find_package( OpenMP QUIET ) #XXX Open LAPACKPP issue for this...
-    find_package( lapackpp QUIET )
-    if(NOT TARGET lapackpp)
+    find_package( lapackpp QUIET CONFIG )
+    if(TARGET lapackpp )
+      message(STATUS "Found lapackpp CONFIG at ${lapackpp_CONFIG}")
+    else (TARGET lapackpp )
       cmake_minimum_required (VERSION 3.14.0)  # for FetchContent_MakeAvailable
       FetchContent_Declare( lapackpp
             GIT_REPOSITORY https://bitbucket.org/icl/lapackpp.git
@@ -27,7 +35,10 @@ if( BTAS_USE_BLAS_LAPACK )
             )
 
       FetchContent_MakeAvailable( lapackpp )
-    endif(NOT TARGET lapackpp)
+
+      # set lapackpp_CONFIG to the install location so that we know where to find it
+      set(lapackpp_CONFIG ${CMAKE_INSTALL_PREFIX}/lib/lapackpp/lapackppConfig.cmake)
+    endif(TARGET lapackpp)
   endif(NOT TARGET lapackpp)
 
   target_link_libraries( BTAS INTERFACE blaspp lapackpp )
