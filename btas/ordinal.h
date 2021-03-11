@@ -307,4 +307,32 @@ namespace btas {
 
 } // namespace btas
 
+// serialization to/fro MADNESS archive (github.com/m-a-d-n-e-s-s/madness)
+namespace madness {
+  namespace archive {
+
+    template <class Archive, blas::Layout _Order, typename _Index>
+    struct ArchiveLoadImpl<Archive, btas::BoxOrdinal<_Order, _Index>> {
+      static inline void load(const Archive& ar,
+                              btas::BoxOrdinal<_Order, _Index>& o) {
+        typename btas::BoxOrdinal<_Order, _Index>::stride_type stride{};
+        typename btas::BoxOrdinal<_Order, _Index>::value_type offset{};
+        bool cont{};
+        ar& stride& offset& cont;
+        o = btas::BoxOrdinal<_Order, _Index>(std::move(stride), std::move(offset),
+                                             std::move(cont));
+      }
+    };
+
+    template <class Archive, blas::Layout _Order, typename _Index>
+    struct ArchiveStoreImpl<Archive, btas::BoxOrdinal<_Order, _Index>> {
+      static inline void store(const Archive& ar,
+                               const btas::BoxOrdinal<_Order, _Index>& o) {
+        ar& o.stride() & o.offset() & o.contiguous();
+      }
+    };
+
+  }  // namespace archive
+}  // namespace madness
+
 #endif /* BTAS_ORDINAL_H_ */

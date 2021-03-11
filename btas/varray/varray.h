@@ -434,6 +434,31 @@ namespace boost {
 } // namespace boost
 #endif  // BTAS_HAS_BOOST_SERIALIZATION
 
+// serialization to/fro MADNESS archive (github.com/m-a-d-n-e-s-s/madness)
+namespace madness {
+  namespace archive {
+
+    template <class Archive, typename T>
+    struct ArchiveLoadImpl<Archive, btas::varray<T>> {
+      static inline void load(const Archive& ar, btas::varray<T>& x) {
+        typename btas::varray<T>::size_type n{};
+        ar& n;
+        x.resize(n);
+        for (typename btas::varray<T>::value_type& xi : x) ar& xi;
+      }
+    };
+
+    template <class Archive, typename T>
+    struct ArchiveStoreImpl<Archive, btas::varray<T>> {
+      static inline void store(const Archive& ar, const btas::varray<T>& x) {
+        ar& x.size();
+        for (const typename btas::varray<T>::value_type& xi : x) ar& xi;
+      }
+    };
+
+  }  // namespace archive
+}  // namespace madness
+
 template <typename T>
 inline bool operator== (const btas::varray<T>& a,
                         const btas::varray<T>& b) {
