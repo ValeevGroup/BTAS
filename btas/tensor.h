@@ -3,22 +3,17 @@
 
 #include <btas/fwd.h>
 
+#include <btas/tensor_traits.h>
+#include <btas/tensorview.h>
+#include <btas/type_traits.h>
+#include <btas/array_adaptor.h>
+#include <btas/serialization.h>
+
 #include <cassert>
 #include <algorithm>
 #include <functional>
 #include <type_traits>
 #include <vector>
-
-#include <btas/btas_fwd.h>
-#include <btas/tensor_traits.h>
-#include <btas/tensorview.h>
-#include <btas/type_traits.h>
-#include <btas/array_adaptor.h>
-
-#ifdef BTAS_HAS_BOOST_SERIALIZATION
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/vector.hpp>
-#endif  // BTAS_HAS_BOOST_SERIALIZATION
 
 namespace btas {
 

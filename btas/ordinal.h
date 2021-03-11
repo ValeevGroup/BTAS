@@ -8,12 +8,15 @@
 #ifndef BTAS_ORDINAL_H_
 #define BTAS_ORDINAL_H_
 
-#include <cassert>
+#include <btas/fwd.h>
 
 #include <btas/types.h>
 #include <btas/defaults.h>
 #include <btas/array_adaptor.h>
 #include <btas/index_traits.h>
+#include <btas/serialization.h>
+
+#include <cassert>
 
 namespace btas {
 
