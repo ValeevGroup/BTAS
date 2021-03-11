@@ -8,14 +8,15 @@
 #ifndef BTAS_RANGE_H_
 #define BTAS_RANGE_H_
 
+#include <btas/fwd.h>
+
+#include <btas/serialization.h>
+
 #include <algorithm>
 #include <functional>
 #include <initializer_list>
 #include <numeric>
 #include <vector>
-
-#include <btas/features.h>
-#include <btas/btas_fwd.h>
 
 #ifndef BTAS_HAS_BOOST_ITERATOR
 #error \

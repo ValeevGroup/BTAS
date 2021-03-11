@@ -3,8 +3,6 @@
 
 #include <btas/fwd.h>
 
-#include <algorithm>
-#include <cassert>
 #include <btas/serialization.h>
 
 #ifdef BTAS_HAS_BOOST_SERIALIZATION
@@ -12,6 +10,9 @@
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/collection_size_type.hpp>
 #endif  // BTAS_HAS_BOOST_SERIALIZATION
+
+#include <algorithm>
+#include <cassert>
 
 namespace btas {
 

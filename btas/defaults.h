@@ -10,6 +10,8 @@
 
 #include <btas/features.h>
 
+#include <vector>
+
 #ifdef BTAS_HAS_BOOST_CONTAINER
 #include <boost/container/container_fwd.hpp>
 #else
