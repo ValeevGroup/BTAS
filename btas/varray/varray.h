@@ -108,8 +108,10 @@ private:
    };
    _M_impl data_;
 
-   allocator_type& alloc() { return static_cast<allocator_type&>(*this); }
-   const allocator_type& alloc() const { return static_cast<const allocator_type&>(*this); }
+   [[deprecated("use varray::get_allocator()")]] allocator_type& alloc() { return static_cast<allocator_type&>(*this); }
+   [[deprecated("use varray::get_allocator()")]] const allocator_type& alloc() const { return static_cast<const allocator_type&>(*this); }
+
+   constexpr allocator_type get_allocator() const noexcept { return static_cast<const allocator_type&>(*this); }
 
 #ifdef BTAS_HAS_BOOST_SERIALIZATION
    friend class boost::serialization::access;
@@ -343,14 +345,14 @@ public:
   private:
 
    void allocate(size_type n) {
-     assert(n <= allocator_traits::max_size(alloc()));
-     data_._M_start = allocator_traits::allocate(alloc(), n);
+     assert(n <= allocator_traits::max_size(get_allocator_reference()));
+     data_._M_start = allocator_traits::allocate(get_allocator_reference(), n);
      data_._M_finish = data_._M_start + n;
    }
 
    void deallocate() {
      if (!data_.empty())
-       allocator_traits::deallocate(alloc(), data_._M_start, data_.size());
+       allocator_traits::deallocate(get_allocator_reference(), data_._M_start, data_.size());
      data_._M_start = data_._M_finish = nullptr;
    }
 
@@ -360,7 +362,7 @@ public:
      auto ptr = data_._M_start;
        do
        {
-           allocator_traits::construct(alloc(), ptr);
+           allocator_traits::construct(get_allocator_reference(), ptr);
            ++ptr;
            --n;
        } while (n > 0);
@@ -372,7 +374,7 @@ public:
      auto ptr = data_._M_start;
      do
      {
-       allocator_traits::construct(alloc(), ptr, x);
+       allocator_traits::construct(get_allocator_reference(), ptr, x);
        ++ptr;
        --n;
      } while (n > 0);
@@ -383,10 +385,13 @@ public:
    construct(const InputIterator& begin, const InputIterator& end) {
      auto ptr = data_._M_start;
      for(auto i = begin; i != end; ++i) {
-       allocator_traits::construct(alloc(), ptr, *i);
+       allocator_traits::construct(get_allocator_reference(), ptr, *i);
        ++ptr;
      }
    }
+
+    allocator_type& get_allocator_reference() { return static_cast<allocator_type&>(*this); }
+    const allocator_type& get_allocator_reference() const { return static_cast<const allocator_type&>(*this); }
 };
 
 template <typename T>
