@@ -267,10 +267,10 @@ namespace btas {
         fit.verbose(true);
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
         CP3.compute_rank_random(rank, fit, 100, true);
-        init_factors = CP3.get_factor_matrices();
-        auto cur_dim = init_factors.size() - 1;
+        init_factors_left = CP3.get_factor_matrices();
+        auto cur_dim = init_factors_left.size() - 1;
         for(size_t i = 1; i < cur_dim; ++i){
-          A.push_back(init_factors[i]);
+          A.push_back(init_factors_left[i]);
         }
       }
       {
@@ -278,10 +278,10 @@ namespace btas {
         fit.set_norm(nrm(tensor_ref_right));
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
         CP3.compute_rank_random(rank, fit, 100, true);
-        auto Ar = CP3.get_factor_matrices();
-        auto cur_dim = Ar.size();
+        init_factors_right = CP3.get_factor_matrices();
+        auto cur_dim = init_factors_right.size();
         for(size_t i = 1; i < cur_dim; ++i){
-          A.push_back(Ar[i]);
+          A.push_back(init_factors_right[i]);
         }
       }
 
@@ -291,8 +291,8 @@ namespace btas {
       return epsilon;
     }
 
-    std::vector<Tensor> get_init_factors(){
-      return init_factors;
+    std::tuple<std::vector<Tensor>, std::vector<Tensor>> get_init_factors(){
+      return std::make_tuple(init_factors_left, init_factors_right);
     }
    protected:
     Tensor &tensor_ref_left;   // Left connected tensor
@@ -302,7 +302,8 @@ namespace btas {
     bool lastLeft = false;
     Tensor leftTimesRight;
     std::vector<size_t> dims;
-    std::vector<Tensor> init_factors;
+    std::vector<Tensor> init_factors_left;
+    std::vector<Tensor> init_factors_right;
 
     /// Creates an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
