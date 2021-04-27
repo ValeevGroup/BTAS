@@ -253,7 +253,7 @@ namespace btas {
     /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
     /// else return -1
     double compute_comp_init(ind_t rank, ConvClass converge_test, size_t max_als = 1e4, bool fast_pI = true,
-                            bool calculate_epsilon = false, bool direct = true) {
+                            bool calculate_epsilon = false, bool direct = true, double cp3_precision = 1e-2) {
       double epsilon = 0.0;
       auto nrm = [](Tensor &a) {
         auto norm = 0.0;
@@ -262,7 +262,7 @@ namespace btas {
       };
 
       {
-        FitCheck<Tensor> fit(5e-3);
+        FitCheck<Tensor> fit(cp3_precision);
         fit.set_norm(nrm(tensor_ref_left));
         fit.verbose(true);
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
@@ -274,7 +274,7 @@ namespace btas {
         }
       }
       {
-        FitCheck<Tensor> fit(1e-2);
+        FitCheck<Tensor> fit(cp3_precision);
         fit.set_norm(nrm(tensor_ref_right));
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
         CP3.compute_rank_random(rank, fit, 100, true);
