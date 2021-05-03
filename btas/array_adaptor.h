@@ -350,4 +350,30 @@ namespace boost {
 } // namespace boost
 #endif
 
+namespace madness {
+  namespace archive {
+
+    template <class Archive, typename T, std::size_t N, typename A>
+    struct ArchiveLoadImpl<Archive, boost::container::small_vector<T, N, A>> {
+      static inline void load(const Archive& ar,
+                              boost::container::small_vector<T, N, A>& x) {
+        std::size_t n{};
+        ar& n;
+        x.resize(n);
+        for (auto& xi : x) ar& xi;
+      }
+    };
+
+    template <class Archive, typename T, std::size_t N, typename A>
+    struct ArchiveStoreImpl<Archive, boost::container::small_vector<T, N, A>> {
+      static inline void store(const Archive& ar,
+                               const boost::container::small_vector<T, N, A>& x) {
+        ar& x.size();
+        for (const auto& xi : x) ar& xi;
+      }
+    };
+
+  }  // namespace archive
+}  // namespace madness
+
 #endif /* __BTAS_ARRAYADAPTOR_H_ */

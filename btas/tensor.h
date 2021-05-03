@@ -3,22 +3,17 @@
 
 #include <btas/fwd.h>
 
+#include <btas/tensor_traits.h>
+#include <btas/tensorview.h>
+#include <btas/type_traits.h>
+#include <btas/array_adaptor.h>
+#include <btas/serialization.h>
+
 #include <cassert>
 #include <algorithm>
 #include <functional>
 #include <type_traits>
 #include <vector>
-
-#include <btas/btas_fwd.h>
-#include <btas/tensor_traits.h>
-#include <btas/tensorview.h>
-#include <btas/type_traits.h>
-#include <btas/array_adaptor.h>
-
-#ifdef BTAS_HAS_BOOST_SERIALIZATION
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/vector.hpp>
-#endif  // BTAS_HAS_BOOST_SERIALIZATION
 
 namespace btas {
 
@@ -819,5 +814,31 @@ namespace boost {
   } // namespace serialization
 } // namespace boost
 #endif  // BTAS_HAS_BOOST_SERIALIZATION
+
+// serialization to/fro MADNESS archive (github.com/m-a-d-n-e-s-s/madness)
+namespace madness {
+  namespace archive {
+
+    template <class Archive, typename _T, class _Range, class _Store>
+    struct ArchiveLoadImpl<Archive, btas::Tensor<_T, _Range, _Store>> {
+      static inline void load(const Archive& ar,
+                              btas::Tensor<_T, _Range, _Store>& t) {
+        _Range range{};
+        _Store store{};
+        ar& range& store;
+        t = btas::Tensor<_T, _Range, _Store>(std::move(range), std::move(store));
+      }
+    };
+
+    template <class Archive, typename _T, class _Range, class _Store>
+    struct ArchiveStoreImpl<Archive, btas::Tensor<_T, _Range, _Store>> {
+      static inline void store(const Archive& ar,
+                               const btas::Tensor<_T, _Range, _Store>& t) {
+        ar& t.range() & t.storage();
+      }
+    };
+
+  }  // namespace archive
+}  // namespace madness
 
 #endif // __BTAS_TENSOR_H

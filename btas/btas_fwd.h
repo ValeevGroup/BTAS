@@ -6,6 +6,7 @@
 #define BTAS_BTAS_FWD_H
 
 #include <iosfwd>
+#include <memory> // std::allocator
 
 #include <btas/types.h>
 #include <btas/defaults.h>
@@ -44,7 +45,7 @@ namespace btas {
     std::ostream& operator<<(std::ostream&, const RangeNd<_Order,_Index, _Ordinal>&);
 
 
-        namespace DEFAULT {
+    namespace DEFAULT {
         using range = btas::RangeNd<>;
     }  // namespace DEFAULT
 
@@ -68,6 +69,9 @@ namespace btas {
             class _Storage = btas::DEFAULT::storage<_T>>
     std::ostream& operator<<(std::ostream&, const Tensor<_T,_Range, _Storage>&);
 
+    template <typename _T,
+      typename _Allocator = std::allocator<_T> >
+    class varray;
 }
 
 #endif //BTAS_BTAS_FWD_H

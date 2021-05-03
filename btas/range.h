@@ -8,14 +8,15 @@
 #ifndef BTAS_RANGE_H_
 #define BTAS_RANGE_H_
 
+#include <btas/fwd.h>
+
+#include <btas/serialization.h>
+
 #include <algorithm>
 #include <functional>
 #include <initializer_list>
 #include <numeric>
 #include <vector>
-
-#include <btas/features.h>
-#include <btas/btas_fwd.h>
 
 #ifndef BTAS_HAS_BOOST_ITERATOR
 #error \
@@ -1484,5 +1485,36 @@ namespace serialization {
 }
 }
 #endif
+
+// serialization to/fro MADNESS archive (github.com/m-a-d-n-e-s-s/madness)
+namespace madness {
+  namespace archive {
+
+    template <class Archive, blas::Layout _Order, typename _Index,
+        typename _Ordinal>
+    struct ArchiveLoadImpl<Archive, btas::RangeNd<_Order, _Index, _Ordinal>> {
+      static inline void load(const Archive& ar,
+                              btas::RangeNd<_Order, _Index, _Ordinal>& r) {
+        typedef typename btas::BaseRangeNd<
+            btas::RangeNd<_Order, _Index, _Ordinal>>::index_type index_type;
+        index_type lobound{}, upbound{};
+        _Ordinal ordinal{};
+        ar& lobound& upbound& ordinal;
+        r = btas::RangeNd<_Order, _Index, _Ordinal>(
+            std::move(lobound), std::move(upbound), std::move(ordinal));
+      }
+    };
+
+    template <class Archive, blas::Layout _Order, typename _Index,
+        typename _Ordinal>
+    struct ArchiveStoreImpl<Archive, btas::RangeNd<_Order, _Index, _Ordinal>> {
+      static inline void store(const Archive& ar,
+                               const btas::RangeNd<_Order, _Index, _Ordinal>& r) {
+        ar& r.lobound() & r.upbound() & r.ordinal();
+      }
+    };
+
+  }  // namespace archive
+}  // namespace madness
 
 #endif /* BTAS_RANGE_H_ */
