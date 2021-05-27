@@ -1,10 +1,10 @@
 #ifndef BTAS_TUCKER_DECOMP_H
 #define BTAS_TUCKER_DECOMP_H
 
+#include <btas/generic/contract.h>
 #include <btas/generic/core_contract.h>
 #include <btas/generic/flatten.h>
-#include <btas/generic/contract.h>
-#include <btas/generic/lapack_extensions.hpp>
+#include <btas/generic/lapack_extensions.h>
 
 #include <cstdlib>
 
