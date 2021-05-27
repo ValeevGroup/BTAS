@@ -21,17 +21,17 @@ namespace boost { namespace serialization {
 #endif  // BTAS_HAS_BOOST_SERIALIZATION
 
 ////// MADNESS serialization
-
+#if __has_include(<madness/world/type_traits.h>)
+# include <madness/world/type_traits.h>
+#else  // __has_include(<madness/world/type_traits.h>)
 namespace madness::archive {
-  template <class Archive, class T>
-  struct ArchiveLoadImpl;
-  template <class Archive, class T>
-  struct ArchiveStoreImpl;
-
-  template <typename Archive>
-  struct is_output_archive;
-  template <typename Archive>
-  struct is_input_archive;
+    template <typename Archive, typename T, typename Enabler = void>
+    struct ArchiveSerializeImpl;
+    template <class Archive, class T, typename Enabler = void>
+    struct ArchiveLoadImpl;
+    template <class Archive, class T, typename Enabler = void>
+    struct ArchiveStoreImpl;
 }  // namespace madness::archive
+#endif  // __has_include(<madness/world/type_traits.h>)
 
 #endif
