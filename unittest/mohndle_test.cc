@@ -13,6 +13,8 @@ template <typename T, typename Enabler = void>
 constexpr inline bool storage_is_movable = true;
 template <typename T, std::size_t N>
 constexpr inline bool storage_is_movable<std::array<T, N>> = false;
+template <typename T, std::size_t N>
+constexpr inline bool storage_is_movable<const std::array<T, N>> = false;
 
 TEST_CASE("mohndle")
 {

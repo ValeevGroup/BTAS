@@ -83,18 +83,31 @@ namespace btas {
     const Storage* get() const {
       return std::visit(
           [](auto&& v) -> const Storage* {
-            using v_t = std::decay_t<decltype(v)>;
+            using v_t = std::remove_reference_t<decltype(v)>;
             if constexpr (std::is_same_v<v_t, Storage>) {
+              return &v;
+            } else if constexpr (std::is_same_v<v_t, Storage const>) {
               return &v;
             } else if constexpr (std::is_same_v<v_t, std::reference_wrapper<Storage>>) {
               return &(v.get());
+            } else if constexpr (std::is_same_v<v_t, std::reference_wrapper<Storage> const>) {
+              return &(v.get());
             } else if constexpr (std::is_same_v<v_t, Storage*>) {
+              assert(v);
+              return v;
+            } else if constexpr (std::is_same_v<v_t, Storage* const>) {
               assert(v);
               return v;
             } else if constexpr (std::is_same_v<v_t, std::unique_ptr<Storage>>) {
               assert(v);
               return v.get();
+            } else if constexpr (std::is_same_v<v_t, std::unique_ptr<Storage> const>) {
+              assert(v);
+              return v.get();
             } else if constexpr (std::is_same_v<v_t, std::shared_ptr<Storage>>) {
+              assert(v);
+              return v.get();
+            } else if constexpr (std::is_same_v<v_t, std::shared_ptr<Storage> const>) {
               assert(v);
               return v.get();
             } else
@@ -102,7 +115,7 @@ namespace btas {
           },
           this->base());
     }
-    Storage* get() { return const_cast<Storage*>(this->get()); }
+    Storage* get() { return const_cast<Storage*>(const_cast<const mohndle*>(this)->get()); }
 
    private:
     auto& base() { return static_cast<base_type&>(*this); }
