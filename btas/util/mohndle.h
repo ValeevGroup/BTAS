@@ -100,18 +100,23 @@ namespace btas {
             } else
               abort();
           },
-          *this);
+          this->base());
     }
-    Storage* get() { return const_cast<Storage*>(const_cast<const mohndle&>(*this).get()); }
+    Storage* get() { return const_cast<Storage*>(this->get()); }
+
+   private:
+    auto& base() { return static_cast<base_type&>(*this); }
+    const auto& base() const { return static_cast<const base_type&>(*this); }
+
+    template <typename Storage_, typename>
+    friend void swap(mohndle<Storage_>& first, mohndle<Storage_>& second);
   };
 
   template <typename Storage, typename = std::enable_if_t<!std::is_const_v<Storage>>>
   void swap(mohndle<Storage>& first, mohndle<Storage>& second) {
     using std::swap;
-    swap(static_cast<typename mohndle<Storage>::base_type&>(first),
-         static_cast<typename mohndle<Storage>::base_type&>(second));
+    swap(first.base(), second.base());
   }
-
 }
 
 #endif  // BTAS_UTIL_MOHNDLE_H
