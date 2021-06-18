@@ -353,6 +353,12 @@ namespace boost {
 namespace madness {
   namespace archive {
 
+    // Forward declarations
+    template <class>
+    class archive_array;
+    template <class T>
+    inline archive_array<T> wrap(const T*, unsigned int);
+
     template <class Archive, typename T, std::size_t N, typename A>
     struct ArchiveLoadImpl<Archive, boost::container::small_vector<T, N, A>> {
       static inline void load(const Archive& ar,
@@ -360,7 +366,7 @@ namespace madness {
         std::size_t n{};
         ar& n;
         x.resize(n);
-        for (auto& xi : x) ar& xi;
+        ar & madness::archive::wrap(x.data(),n);
       }
     };
 
@@ -368,8 +374,7 @@ namespace madness {
     struct ArchiveStoreImpl<Archive, boost::container::small_vector<T, N, A>> {
       static inline void store(const Archive& ar,
                                const boost::container::small_vector<T, N, A>& x) {
-        ar& x.size();
-        for (const auto& xi : x) ar& xi;
+        ar& x.size() & madness::archive::wrap(x.data(), x.size());
       }
     };
 

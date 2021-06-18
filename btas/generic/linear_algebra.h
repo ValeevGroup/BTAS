@@ -5,7 +5,7 @@
 #ifndef BTAS_LINEAR_ALGEBRA_H
 #define BTAS_LINEAR_ALGEBRA_H
 #include <btas/error.h>
-#include <btas/generic/lapack_extensions.hpp>
+#include <btas/generic/lapack_extensions.h>
 
 namespace btas{
 /// Computes L of the LU decomposition of tensor \c A
