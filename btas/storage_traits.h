@@ -73,7 +73,7 @@ namespace btas {
       typedef typename _Storage::const_iterator const_iterator;
   };
 
-  /// test _Storage conforms the TWG.Storage concept
+  /// test if _Storage conforms to the TWG.Storage concept
   /// in addition to Storage, check extent() member and extent_type
   template<class _Storage>
   class is_storage {

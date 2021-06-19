@@ -6,22 +6,40 @@
 #define BTAS_UTIL_MOHNDLE_H
 
 #include <btas/storage_traits.h>
+#include <btas/array_adaptor.h>
+
+#include <btas/serialization.h>
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
+# include <boost/serialization/unique_ptr.hpp>
+# include <boost/serialization/shared_ptr.hpp>
+#endif
 
 #include <variant>
 #include <functional>
 
 namespace btas {
 
-  /// @brief `mohndle` = Maybe Owning HaNDLE
+  /// describes handle types that can be used for default/direct construction of mohndle
+  enum class Handle {
+    invalid,
+    value,
+    unique_ptr,
+    shared_ptr,
+    ptr
+  };
 
+  /// @brief Maybe Owning HaNDLE (`mohndle`) to @c Storage
+
+  /// @tparam Storage a type that meets the TWG.Storage concept
+  /// @tparam DefaultHandle the handle type to use when default constructing, or constructing storage object directly from a pack
   /// Enacpsulates a value, a reference, or a pointer to (bare, unique, or shared) to a contiguous storage
-  template <typename Storage, typename = std::enable_if_t<is_storage<Storage>::value>>
+  template <typename Storage, Handle DefaultHandle = Handle::invalid, typename = std::enable_if_t<is_storage<Storage>::value>>
   struct mohndle : std::variant<std::monostate, Storage, std::unique_ptr<Storage>, std::shared_ptr<Storage>,
-                                  std::reference_wrapper<Storage>, Storage*> {
+                                std::reference_wrapper<Storage>, Storage*> {
     using base_type = std::variant<std::monostate, Storage, std::unique_ptr<Storage>, std::shared_ptr<Storage>,
                                    std::reference_wrapper<Storage>, Storage*>;
 
-    using base_type::base_type;
+    //using base_type::base_type;
 
     typedef typename storage_traits<Storage>::value_type value_type;
     typedef typename storage_traits<Storage>::pointer pointer;
@@ -34,14 +52,48 @@ namespace btas {
     typedef typename storage_traits<Storage>::iterator iterator;
     typedef typename storage_traits<Storage>::const_iterator const_iterator;
 
-    template <typename Arg>
-    explicit mohndle(Arg&& arg) : base_type(std::forward<Arg>(arg)) {}
-    mohndle() = default;
-    mohndle(const mohndle&) = default;
+    /// constructs mohndle from a handle
+
+    /// @param handle a handle object
+    template <typename Handle, typename = std::enable_if_t<std::is_constructible_v<base_type,Handle&&>>>
+    explicit mohndle(Handle&& handle) : base_type(std::forward<Handle>(handle)) {}
+
+    mohndle(const mohndle& other) : base_type(std::visit(
+          [](auto&& v) -> base_type {
+            using v_t = std::remove_reference_t<decltype(v)>;
+            if constexpr (std::is_same_v<v_t, Storage> || std::is_same_v<v_t, Storage const> || std::is_same_v<v_t, std::reference_wrapper<Storage>> || std::is_same_v<v_t, std::reference_wrapper<Storage> const> || std::is_same_v<v_t, Storage*> || std::is_same_v<v_t, Storage* const> || std::is_same_v<v_t, std::shared_ptr<Storage>> || std::is_same_v<v_t, std::shared_ptr<Storage> const>) {
+              return v;
+            } else if constexpr (std::is_same_v<v_t, std::unique_ptr<Storage>> || std::is_same_v<v_t, std::unique_ptr<Storage> const>) {
+              return std::make_unique<Storage>(*(v.get()));
+            } else
+              abort();
+          },
+          other.base())) {}
+
     mohndle(mohndle&&) = default;
-    mohndle& operator=(const mohndle&) = default;
+
+    mohndle& operator=(const mohndle& other) {
+      std::swap(this->base(), mohndle(other).base());
+      return *this;
+    }
+
     mohndle& operator=(mohndle&&) = default;
     ~mohndle() = default;
+
+    /// constructs a mohndle of type given by DefaultHandle directly from zero or more arguments
+    template <typename ... Args, typename = std::enable_if_t<std::is_constructible_v<Storage, Args&&...>>>
+    explicit mohndle(Args&& ... args) {
+      if constexpr (DefaultHandle == Handle::value)
+        this->base().template emplace<Storage>(std::forward<Args>(args)...);
+      else if constexpr (DefaultHandle == Handle::ptr)
+        this->base().template emplace<Storage*>(new Storage(std::forward<Args>(args)...));
+      else if constexpr (DefaultHandle == Handle::unique_ptr)
+        this->base().template emplace<std::unique_ptr<Storage>>(std::make_unique<Storage>(std::forward<Args>(args)...));
+      else if constexpr (DefaultHandle == Handle::shared_ptr)
+        this->base().template emplace<std::shared_ptr<Storage>>(std::make_shared<Storage>(std::forward<Args>(args)...));
+      else  // if constexpr (DefaultHandle == Handle::invalid)
+        abort();
+    }
 
     explicit operator bool() const { return this->index() != 0; }
 
@@ -70,6 +122,9 @@ namespace btas {
 
     template <typename S = Storage>
     std::enable_if_t<has_nonmember_size_v<S>, std::size_t> size() const { using std::size; return size(*(this->get())); }
+
+    template <typename S = Storage>
+    void resize(std::size_t new_size) { return array_adaptor<Storage>::resize(*(this->get()), new_size); }
 
     template <typename S = Storage>
     std::enable_if_t<has_squarebraket_v<S> && !std::is_const_v<S>, reference> operator[](std::size_t ord) { return (*(this->get()))[ord]; }
@@ -116,6 +171,27 @@ namespace btas {
           this->base());
     }
     Storage* get() { return const_cast<Storage*>(const_cast<const mohndle*>(this)->get()); }
+
+    template <typename Archive>
+    void serialize(Archive& ar, const unsigned int = 0) {
+      std::visit(
+          [&ar](auto&& v) -> void {
+            using v_t = std::remove_reference_t<decltype(v)>;
+            if constexpr (std::is_same_v<v_t, Storage> || std::is_same_v<v_t, Storage const> ||
+                          std::is_same_v<v_t, Storage*> || std::is_same_v<v_t, Storage* const> ||
+                          std::is_same_v<v_t, std::unique_ptr<Storage>> ||
+                          std::is_same_v<v_t, std::unique_ptr<Storage> const> ||
+                          std::is_same_v<v_t, std::shared_ptr<Storage>> ||
+                          std::is_same_v<v_t, std::shared_ptr<Storage> const>) {
+              ar& v;
+            } else if constexpr (std::is_same_v<v_t, std::reference_wrapper<Storage>> ||
+                                 std::is_same_v<v_t, std::reference_wrapper<Storage> const>) {
+              abort();
+            } else
+              abort();
+          },
+          this->base());
+    }
 
    private:
     auto& base() { return static_cast<base_type&>(*this); }
