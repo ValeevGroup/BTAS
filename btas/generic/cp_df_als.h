@@ -260,7 +260,6 @@ namespace btas {
         for (auto &i : a) norm += i * i;
         return sqrt(norm);
       };
-
       {
         FitCheck<Tensor> fit(cp3_precision);
         fit.set_norm(nrm(tensor_ref_left));
@@ -280,9 +279,7 @@ namespace btas {
         CP3.compute_rank_random(rank, fit, 100, true);
         init_factors_right = CP3.get_factor_matrices();
         auto cur_dim = init_factors_right.size();
-        for(size_t i = 1; i < cur_dim; ++i){
-          A.push_back(init_factors_right[i]);
-        }
+        A.insert(A.end(), init_factors_right.begin() + 1, init_factors_right.end());
       }
 
       ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
