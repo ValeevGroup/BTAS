@@ -249,11 +249,13 @@ namespace btas {
     /// T_{\rm approx}|| = \epsilon. \f$ Default = false.
     /// \param[in] direct Should the CP decomposition be computed without
     /// calculating the Khatri-Rao product? Default = true.
+    /// \param[in] cp_comp_prec CP precision for the component subproblem decompositions
+    /// Default = 1e-2.
     /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
     /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
     /// else return -1
     double compute_comp_init(ind_t rank, ConvClass converge_test, size_t max_als = 1e4, bool fast_pI = true,
-                            bool calculate_epsilon = false, bool direct = true, double cp3_precision = 1e-2) {
+                            bool calculate_epsilon = false, bool direct = true, double cp_comp_prec = 1e-2) {
       double epsilon = 0.0;
       auto nrm = [](Tensor &a) {
         auto norm = 0.0;
@@ -261,7 +263,7 @@ namespace btas {
         return sqrt(norm);
       };
       {
-        FitCheck<Tensor> fit(cp3_precision);
+        FitCheck<Tensor> fit(cp_comp_prec);
         fit.set_norm(nrm(tensor_ref_left));
         fit.verbose(true);
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
@@ -273,7 +275,7 @@ namespace btas {
         }
       }
       {
-        FitCheck<Tensor> fit(cp3_precision);
+        FitCheck<Tensor> fit(cp_comp_prec);
         fit.set_norm(nrm(tensor_ref_right));
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
         CP3.compute_rank_random(rank, fit, 100, true);
