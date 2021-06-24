@@ -5,6 +5,14 @@
 #include "btas/util/mohndle.h"
 #include "btas/varray/varray.h"
 
+#include <fstream>
+
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#endif  // BTAS_HAS_BOOST_SERIALIZATION
+
 using std::cout;
 using std::endl;
 using namespace btas;
@@ -119,5 +127,40 @@ TEST_CASE("mohndle")
     std::array<double, 5> v2{};
     test(static_cast<const std::array<double, 5>&>(v2));
   }
+
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
+  SECTION("Serialization") {
+    const auto archive_fname = "mohndle.serialization.archive";
+
+    using stdvecshr_t = btas::mohndle<std::vector<double>, btas::Handle::shared_ptr>;
+    using varrayshr_t = btas::mohndle<btas::varray<double>, btas::Handle::shared_ptr>;
+    stdvecshr_t m0(std::vector<double>{1., 2., 3.});
+    varrayshr_t m1(btas::varray<double>{-1., -2.});
+    // write
+    {
+      std::ofstream os(archive_fname);
+      assert(os.good());
+      boost::archive::xml_oarchive ar(os);
+      CHECK_NOTHROW(ar << BOOST_SERIALIZATION_NVP(m0));
+      CHECK_NOTHROW(ar << BOOST_SERIALIZATION_NVP(m1));
+    }
+    // read
+    {
+      std::ifstream is(archive_fname);
+      assert(is.good());
+      boost::archive::xml_iarchive ar(is);
+
+      stdvecshr_t m0copy;
+      CHECK_NOTHROW(ar >> BOOST_SERIALIZATION_NVP(m0copy));
+      CHECK(m0 == m0copy);
+
+      varrayshr_t m1copy;
+      CHECK_NOTHROW(ar >> BOOST_SERIALIZATION_NVP(m1copy));
+      CHECK(m1 == m1copy);
+
+    }
+    std::remove(archive_fname);
+  }
+#endif  // BTAS_HAS_BOOST_SERIALIZATION
 
 }

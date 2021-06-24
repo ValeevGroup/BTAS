@@ -231,15 +231,15 @@ namespace btas {
         if (std::holds_alternative<std::reference_wrapper<Storage>>(this->base()))
           abort();
       }
-      ar& index;
+      ar& BOOST_SERIALIZATION_NVP(index);
       if constexpr (writing)
         std::visit(
-            [&ar](const auto& v) -> void {
-              using v_t = std::decay_t<decltype(v)>;
+            [&ar](const auto& value) -> void {
+              using v_t = std::decay_t<decltype(value)>;
               // - can't read reference_wrapper
               // - no need to write monostate
               if constexpr (!std::is_same_v<v_t, std::reference_wrapper<Storage>> && !std::is_same_v<v_t, std::monostate>)
-                ar& v;
+                ar & BOOST_SERIALIZATION_NVP(value);
             },
             this->base());
       else
@@ -248,6 +248,10 @@ namespace btas {
 
     auto& base() { return static_cast<base_type&>(*this); }
     const auto& base() const { return static_cast<const base_type&>(*this); }
+
+    bool operator==(const mohndle& other) const {
+      return (*this && other) || (!*this && !other && *(this->get()) == *(other.get()));
+    }
 
    private:
     template <typename Storage_, typename>
@@ -262,7 +266,7 @@ namespace btas {
         using type = std::variant_alternative_t<I0, std::variant<Ts...>>;
         if constexpr (!std::is_same_v<type, std::monostate>) {
           type value;
-          ar& value;
+          ar& BOOST_SERIALIZATION_NVP(value);
           v.template emplace<I0>(std::move(value));
         }
         else if constexpr (std::is_same_v<type, std::monostate>)
@@ -366,7 +370,7 @@ namespace madness::archive {
               if constexpr (std::is_same_v<v_t, Storage>) {
                 ar& v;
               } else {
-                ar&* v;
+                ar& *v;
               }
             }
           },
