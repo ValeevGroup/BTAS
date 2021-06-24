@@ -220,7 +220,7 @@ namespace btas {
     Storage* get() { return const_cast<Storage*>(const_cast<const mohndle*>(this)->get()); }
 
     template <typename Archive>
-    void serialize(Archive& ar, const unsigned int = 0) {
+    void serialize(Archive& ar, const unsigned int /* version */) {
       constexpr bool writing = std::is_base_of_v<boost::archive::detail::basic_oarchive, Archive>;
       constexpr auto serializable_index = std::index_sequence<0, 1, 2, 3, 5>{};
 
@@ -246,16 +246,16 @@ namespace btas {
         variant_load_impl(ar, this->base(), index, serializable_index);
     }
 
-   private:
     auto& base() { return static_cast<base_type&>(*this); }
     const auto& base() const { return static_cast<const base_type&>(*this); }
 
+   private:
     template <typename Storage_, typename>
     friend void swap(mohndle<Storage_>& first, mohndle<Storage_>& second);
 
     // utility for serializing select members of variant
     template <typename Archive, typename... Ts, std::size_t I0, std::size_t... Is>
-    Archive& variant_load_impl(Archive& ar, std::variant<Ts...>& v, std::size_t which, std::index_sequence<I0, Is...>) {
+    static Archive& variant_load_impl(Archive& ar, std::variant<Ts...>& v, std::size_t which, std::index_sequence<I0, Is...>) {
       constexpr bool writing = std::is_base_of_v<boost::archive::detail::basic_oarchive, Archive>;
       static_assert(!writing);
       if (which == I0) {
@@ -285,6 +285,96 @@ namespace btas {
     swap(first.base(), second.base());
   }
 
-}
+}  // namespace btas
+
+// serialization to/fro MADNESS archive (github.com/m-a-d-n-e-s-s/madness)
+namespace madness::archive {
+
+  template <class Archive, typename Storage, btas::Handle DefaultHandle>
+  struct ArchiveLoadImpl<Archive, btas::mohndle<Storage, DefaultHandle>> {
+    static inline void load(const Archive& ar, btas::mohndle<Storage, DefaultHandle>& t) {
+      constexpr auto serializable_index = std::index_sequence<0, 1, 2, 3, 5>{};
+      auto index = t.base().index();
+      ar& index;
+      variant_load_impl(ar, t.base(), index, serializable_index);
+    }
+
+    template <typename T>
+    struct value_type {
+      using type = T;
+    };
+    template <typename T>
+    struct value_type<T*> {
+      using type = T;
+    };
+    template <typename T>
+    struct value_type<std::unique_ptr<T>> {
+      using type = T;
+    };
+    template <typename T>
+    struct value_type<std::shared_ptr<T>> {
+      using type = T;
+    };
+
+    // utility for serializing select members of variant
+    template <typename... Ts, std::size_t I0, std::size_t... Is>
+    static const Archive& variant_load_impl(const Archive& ar, std::variant<Ts...>& v, std::size_t which,
+                                      std::index_sequence<I0, Is...>) {
+      if (which == I0) {
+        using type = std::variant_alternative_t<I0, std::variant<Ts...>>;
+        if constexpr (!std::is_same_v<type, std::monostate>) {
+          type value;
+          if constexpr (std::is_same_v<type, Storage>) {
+            ar& value;
+          } else {  // bare or smart ptr
+            using v_t = typename value_type<type>::type;
+            std::allocator<v_t> alloc;  // instead use the allocator associated with the archive?
+            auto* buf = alloc.allocate(sizeof(v_t));
+            v_t* ptr = new (buf) v_t;
+            ar& *ptr;
+            value = type(ptr);
+          }
+          v.template emplace<I0>(std::move(value));
+        } else if constexpr (std::is_same_v<type, std::monostate>)
+          v = {};
+      } else {
+        if constexpr (sizeof...(Is) == 0)
+          throw std::logic_error("btas::mohndle::variant_load_impl(ar,v,idx,idxs): idx is not present in idxs");
+        else
+          return variant_load_impl(ar, v, which, std::index_sequence<Is...>{});
+      }
+      return ar;
+    }
+  };
+
+  template <class Archive, typename Storage, btas::Handle DefaultHandle>
+  struct ArchiveStoreImpl<Archive, btas::mohndle<Storage, DefaultHandle>> {
+    static inline void store(const Archive& ar, const btas::mohndle<Storage, DefaultHandle>& t) {
+      constexpr auto serializable_index = std::index_sequence<0, 1, 2, 3, 5>{};
+      const auto index = t.base().index();
+
+      // abort if trying to store an unsupported case
+      if (std::holds_alternative<std::reference_wrapper<Storage>>(t.base())) abort();
+      ar& index;
+      std::visit(
+          [&ar](const auto& v) -> void {
+            using v_t = std::decay_t<decltype(v)>;
+            // - can't read reference_wrapper
+            // - no need to write monostate
+            if constexpr (!std::is_same_v<v_t, std::reference_wrapper<Storage>> &&
+                          !std::is_same_v<v_t, std::monostate>) {
+              if constexpr (std::is_same_v<v_t, Storage>) {
+                ar& v;
+              } else {
+                ar&* v;
+              }
+            }
+          },
+          t.base());
+    }
+  };
+
+}  // namespace madness::archive
+
 
 #endif  // BTAS_UTIL_MOHNDLE_H
