@@ -3,6 +3,8 @@
 
 #include <btas/fwd.h>
 
+#include <btas/error.h>
+
 #include <btas/serialization.h>
 
 #ifdef BTAS_HAS_BOOST_SERIALIZATION
@@ -64,17 +66,29 @@ private:
      const_pointer cbegin() const { return const_cast<const_pointer>(_M_start); }
      const_pointer cend() const { return const_cast<const_pointer>(_M_finish); }
 
-     pointer rbegin() { return _M_finish-1; }
-     pointer rend() { return _M_start-1; }
-     const_pointer rbegin() const { return _M_finish-1; }
-     const_pointer rend() const { return _M_start-1; }
-     const_pointer crbegin() const { return const_cast<const_pointer>(_M_finish-1); }
-     const_pointer crend() const { return const_cast<const_pointer>(_M_start-1); }
+     pointer rbegin() { return _M_finish==nullptr ? nullptr : _M_finish-1; }
+     pointer rend() { return _M_start==nullptr ? nullptr : _M_start-1; }
+     const_pointer rbegin() const { return _M_finish==nullptr ? nullptr : _M_finish-1; }
+     const_pointer rend() const { return _M_start==nullptr ? nullptr : _M_start-1; }
+     const_pointer crbegin() const { return const_cast<const_pointer>(_M_finish==nullptr ? nullptr : _M_finish-1); }
+     const_pointer crend() const { return const_cast<const_pointer>(_M_start==nullptr ? nullptr : _M_start-1); }
 
-     reference front() { return *begin(); }
-     reference back() { return *rbegin(); }
-     const_reference front() const { return *cbegin(); }
-     const_reference back() const { return *crbegin(); }
+     reference front() {
+       BTAS_ASSERT(!empty());
+       return *begin();
+     }
+     reference back() {
+       BTAS_ASSERT(!empty());
+       return *rbegin();
+     }
+     const_reference front() const {
+       BTAS_ASSERT(!empty());
+       return *cbegin();
+     }
+     const_reference back() const {
+       BTAS_ASSERT(!empty());
+       return *crbegin();
+     }
 
      reference operator[](size_type i) {
        return _M_start[i];
@@ -83,18 +97,20 @@ private:
        return const_cast<const_reference>(_M_start[i]);
      }
      reference at(size_type i) {
-       assert(i < size());
+       BTAS_ASSERT(i < size());
        return _M_start[i];
      }
      const_reference at(size_type i) const {
-       assert(i < size());
+       BTAS_ASSERT(i < size());
        return const_cast<const_reference>(_M_start[i]);
      }
 
      pointer data() {
+       BTAS_ASSERT(!empty());
        return _M_start;
      }
      const_pointer data() const {
+       BTAS_ASSERT(!empty());
        return const_cast<const_pointer>(_M_start);
      }
 
