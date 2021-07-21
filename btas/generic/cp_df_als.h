@@ -249,39 +249,39 @@ namespace btas {
     /// T_{\rm approx}|| = \epsilon. \f$ Default = false.
     /// \param[in] direct Should the CP decomposition be computed without
     /// calculating the Khatri-Rao product? Default = true.
+    /// \param[in] cp_comp_prec CP precision for the component subproblem decompositions
+    /// Default = 1e-2.
     /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
     /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
     /// else return -1
     double compute_comp_init(ind_t rank, ConvClass converge_test, size_t max_als = 1e4, bool fast_pI = true,
-                            bool calculate_epsilon = false, bool direct = true) {
+                            bool calculate_epsilon = false, bool direct = true, double cp_comp_prec = 1e-2) {
       double epsilon = 0.0;
       auto nrm = [](Tensor &a) {
         auto norm = 0.0;
         for (auto &i : a) norm += i * i;
         return sqrt(norm);
       };
-
       {
-        FitCheck<Tensor> fit(1e-2);
+        FitCheck<Tensor> fit(cp_comp_prec);
         fit.set_norm(nrm(tensor_ref_left));
+        fit.verbose(true);
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
         CP3.compute_rank_random(rank, fit, 100, true);
-        auto Al = CP3.get_factor_matrices();
-        auto cur_dim = Al.size() - 1;
+        init_factors_left = CP3.get_factor_matrices();
+        auto cur_dim = init_factors_left.size() - 1;
         for(size_t i = 1; i < cur_dim; ++i){
-          A.push_back(Al[i]);
+          A.push_back(init_factors_left[i]);
         }
       }
       {
-        FitCheck<Tensor> fit(1e-2);
+        FitCheck<Tensor> fit(cp_comp_prec);
         fit.set_norm(nrm(tensor_ref_right));
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
         CP3.compute_rank_random(rank, fit, 100, true);
-        auto Ar = CP3.get_factor_matrices();
-        auto cur_dim = Ar.size();
-        for(size_t i = 1; i < cur_dim; ++i){
-          A.push_back(Ar[i]);
-        }
+        init_factors_right = CP3.get_factor_matrices();
+        auto cur_dim = init_factors_right.size();
+        A.insert(A.end(), init_factors_right.begin() + 1, init_factors_right.end());
       }
 
       ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
@@ -290,6 +290,9 @@ namespace btas {
       return epsilon;
     }
 
+    std::tuple<std::vector<Tensor>, std::vector<Tensor>> get_init_factors(){
+      return std::make_tuple(init_factors_left, init_factors_right);
+    }
    protected:
     Tensor &tensor_ref_left;   // Left connected tensor
     Tensor &tensor_ref_right;  // Right connected tensor
@@ -298,6 +301,8 @@ namespace btas {
     bool lastLeft = false;
     Tensor leftTimesRight;
     std::vector<size_t> dims;
+    std::vector<Tensor> init_factors_left;
+    std::vector<Tensor> init_factors_right;
 
     /// Creates an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
