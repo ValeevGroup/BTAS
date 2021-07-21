@@ -142,7 +142,8 @@ namespace btas {
                                      >::type* = 0) :
       range_(range.lobound(), range.upbound()), storage_(storage)
       {
-        if (storage_.size() != range_.area())
+        using std::size;
+        if (size(storage_) != range_.area())
           array_adaptor<storage_type>::resize(storage_, range_.area());
       }
 
@@ -152,7 +153,8 @@ namespace btas {
       range_(range.ordinal(*range.begin()) == 0 ? range : range_type(range.lobound(), range.upbound())),
       storage_(storage)
       {
-        if (storage_.size() != range_.area())
+        using std::size;
+        if (size(storage_) != range_.area())
           array_adaptor<storage_type>::resize(storage_, range_.area());
       }
 
@@ -162,7 +164,8 @@ namespace btas {
       range_(range.ordinal(*range.begin()) == 0 ? range : range_type(range.lobound(), range.upbound())),
       storage_(std::move(storage))
       {
-        if (storage_.size() != range_.area())
+        using std::size;
+        if (size(storage_) != range_.area())
           array_adaptor<storage_type>::resize(storage_, range_.area());
       }
 
@@ -172,7 +175,8 @@ namespace btas {
       range_(range.ordinal(*range.begin()) == 0 ? std::move(range) : range_type(range.lobound(), range.upbound())),
       storage_(std::move(storage))
       {
-        if (storage_.size() != range_.area())
+        using std::size;
+        if (size(storage_) != range_.area())
           array_adaptor<storage_type>::resize(storage_, range_.area());
       }
 

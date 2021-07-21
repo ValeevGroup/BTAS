@@ -11,10 +11,10 @@
 #include <btas/types.h>
 #include <btas/type_traits.h>
 
+#include <btas/generic/blas_lapack_delegator.h>
+#include <btas/generic/lapack_extensions.h>
 #include <btas/generic/numeric_type.h>
 #include <btas/generic/tensor_iterator_wrapper.h>
-#include <btas/generic/blas_lapack_delegator.h>
-#include <btas/generic/lapack_extensions.hpp>
 
 namespace btas {
 

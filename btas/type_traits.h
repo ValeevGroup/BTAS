@@ -58,6 +58,9 @@ namespace btas {
           decltype(__test<T>(0))>::value;
   };
 
+  template <typename T>
+  constexpr inline bool has_begin_v = has_begin<T>::value;
+
   /// test T has end() member
   template<class T>
   class has_end {
@@ -71,6 +74,9 @@ namespace btas {
       static constexpr const bool value = std::is_same<std::true_type,
           decltype(__test<T>(0))>::value;
   };
+
+  template <typename T>
+  constexpr inline bool has_end_v = has_end<T>::value;
 
   /// test T has value_type
   template<class T>
@@ -86,6 +92,9 @@ namespace btas {
           decltype(__test<T>(0))>::value;
   };
 
+  template <typename T>
+  constexpr inline bool has_value_type_v = has_value_type<T>::value;
+
   /// test _C conforms to the standard Container concept; basic tests only
   template<class _C>
   class is_container {
@@ -93,6 +102,9 @@ namespace btas {
       static constexpr const bool value = has_value_type<_C>::value
           & has_begin<_C>::value & has_end<_C>::value;
   };
+
+  template <typename T>
+  constexpr inline bool is_container_v = is_container<T>::value;
 
   /// test T has operator[] member
   template<class T>
@@ -109,11 +121,38 @@ namespace btas {
           decltype(__test<T>(0,std::size_t(0)))>::value;
   };
 
+  template <typename T>
+  constexpr inline bool has_squarebraket_v = has_squarebraket<T>::value;
 
+  template <typename S, typename Enabler = void>
+  constexpr static bool has_data_v = false;
+  template <typename S>
+  constexpr static bool has_data_v<S, std::void_t<decltype(std::declval<S&>().data())>> = true;
 
+  template <typename S, typename Enabler = void>
+  constexpr static bool has_size_v = false;
+  template <typename S>
+  constexpr static bool has_size_v<S, std::void_t<decltype(std::declval<const S&>().size())>> = true;
 
+  template <typename S, typename Enabler = void>
+  constexpr static bool has_nonmember_begin_v = has_begin_v<S>;  // if have member begin, std::begin will apply
+  template <typename S>
+  constexpr static bool has_nonmember_begin_v<S, std::void_t<decltype(begin(std::declval<S&>()))>> = true;
 
+  template <typename S, typename Enabler = void>
+  constexpr static bool has_nonmember_end_v = has_end_v<S>;  // if have member end, std::end will apply
+  template <typename S>
+  constexpr static bool has_nonmember_end_v<S, std::void_t<decltype(end(std::declval<S&>()))>> = true;
 
+  template <typename S, typename Enabler = void>
+  constexpr static bool has_nonmember_data_v = has_data_v<S>;  // if have member data, std::data will apply
+  template <typename S>
+  constexpr static bool has_nonmember_data_v<S, std::void_t<decltype(data(std::declval<S&>()))>> = true;
+
+  template <typename S, typename Enabler = void>
+  constexpr static bool has_nonmember_size_v = has_end_v<S>;  // if have member size, std::size will apply
+  template <typename S>
+  constexpr static bool has_nonmember_size_v<S, std::void_t<decltype(size(std::declval<const S&>()))>> = true;
 
   // Checks if an iterator is random access
   template <typename _Iterator>

@@ -2,7 +2,7 @@
 #define __BTAS_TRANSPOSE_H 1
 
 #include <btas/error.h>
-#include <btas/generic/mkl_extensions.hpp>
+#include <btas/generic/mkl_extensions.h>
 
 namespace btas {
 
