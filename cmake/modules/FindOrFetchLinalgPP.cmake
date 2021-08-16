@@ -12,7 +12,7 @@ if( BTAS_USE_BLAS_LAPACK )
       cmake_minimum_required (VERSION 3.14.0)  # for FetchContent_MakeAvailable
       FetchContent_Declare( blaspp
             GIT_REPOSITORY https://bitbucket.org/icl/blaspp.git
-            GIT_TAG        9097d6b61468e9e8899d0aed49af0371ca4fff1d
+            GIT_TAG        0c63c240f445f6f6b9b5d4f24ed0869271aef4d4
             )
 
       FetchContent_MakeAvailable( blaspp )
@@ -31,7 +31,7 @@ if( BTAS_USE_BLAS_LAPACK )
       cmake_minimum_required (VERSION 3.14.0)  # for FetchContent_MakeAvailable
       FetchContent_Declare( lapackpp
             GIT_REPOSITORY https://bitbucket.org/icl/lapackpp.git
-            GIT_TAG        213d13e584a8cb3bf0e7caf5d1d40cd10f4254ae
+            GIT_TAG        13301a133f146f9d9b1a2f466bc19fe092c149e1
             )
 
       FetchContent_MakeAvailable( lapackpp )
