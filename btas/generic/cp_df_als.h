@@ -253,7 +253,8 @@ namespace btas {
     /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
     /// else return -1
     double compute_comp_init(ind_t rank, ConvClass converge_test, size_t max_als = 1e4, bool fast_pI = true,
-                            bool calculate_epsilon = false, bool direct = true, double cp3_precision = 1e-2) {
+                            bool calculate_epsilon = false, bool direct = true, double cp3_precision = 1e-2,
+                            bool verbose = false) {
       double epsilon = 0.0;
       auto nrm = [](Tensor &a) {
         auto norm = 0.0;
@@ -264,7 +265,10 @@ namespace btas {
       {
         FitCheck<Tensor> fit(cp3_precision);
         fit.set_norm(nrm(tensor_ref_left));
-        fit.verbose(true);
+        if(verbose){
+          fit.verbose(true);
+          std::cout << "Computing the left factor" << std::endl;
+        }
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
         CP3.compute_rank_random(rank, fit, 100, true);
         init_factors_left = CP3.get_factor_matrices();
@@ -276,12 +280,19 @@ namespace btas {
       {
         FitCheck<Tensor> fit(cp3_precision);
         fit.set_norm(nrm(tensor_ref_right));
+        if(verbose){
+          fit.verbose(true);
+          std::cout << "Computing the right factor" << std::endl;
+        }
         CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
         CP3.compute_rank_random(rank, fit, 100, true);
         init_factors_right = CP3.get_factor_matrices();
         auto cur_dim = init_factors_right.size();
         for(size_t i = 1; i < cur_dim; ++i){
           A.push_back(init_factors_right[i]);
+        }
+        if(verbose){
+          std::cout << "Starting CP4 " << std::endl;
         }
       }
 
@@ -293,6 +304,20 @@ namespace btas {
 
     std::tuple<std::vector<Tensor>, std::vector<Tensor>> get_init_factors(){
       return std::make_tuple(init_factors_left, init_factors_right);
+    }
+
+    void set_factors(std::vector<Tensor> factors,
+                     bool left){
+      auto & f_set = (left ? init_factors_left : init_factors_right);
+      auto & ndim = (left ? ndimL : ndimR);
+      if(factors.size() != ndim + 1)
+        BTAS_EXCEPTION(
+                "Number of factor matrices is less than the number of dimensions in the factor tensor");
+      for(auto i = 0; i < ndim; ++i){
+        if(factors[i].rank() != 2)
+          BTAS_EXCEPTION("Factors must have N matrices and 1 vector");
+      }
+      f_set = factors;
     }
    protected:
     Tensor &tensor_ref_left;   // Left connected tensor

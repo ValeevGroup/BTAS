@@ -101,8 +101,6 @@ namespace btas{
     BTAS_EXCEPTION("QR_decomp required BLAS/LAPACK bindings to be enabled: -DBTAS_USE_BLAS_LAPACK=ON");
 #else
 
-    using ind_t = typename Tensor::range_type::index_type::value_type;
-
     if (A.rank() > 2) {
       BTAS_EXCEPTION("Tensor rank > 2. Can only QR decompose matrices.");
     }
