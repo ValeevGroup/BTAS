@@ -11,13 +11,12 @@ include(FeatureSummary)
 include(RedefaultableOption)
 include(CMakePackageConfigHelpers)
 include(AddCustomTargetSubproject)
+include(CTest) # defines BUILD_TESTING option
 
 # Configure options
 redefaultable_option(BTAS_BUILD_DEPS_FROM_SOURCE "Whether to build missing dependencies from source" OFF)
 add_feature_info(BUILD_DEPS_FROM_SOURCE BTAS_BUILD_DEPS_FROM_SOURCE "Will build missing dependencies from source")
-redefaultable_option(BTAS_BUILD_UNITTEST "Whether to build unit tests" OFF)
-add_feature_info(BUILD_UNITTEST BTAS_BUILD_UNITTEST "Will build unit tests")
-redefaultable_option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw; enable if BTAS_BUILD_UNITTEST=ON" ${BTAS_BUILD_UNITTEST})
+redefaultable_option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw; enable if BUILD_TESTING=ON" ${BUILD_TESTING})
 add_feature_info(ASSERT_THROWS BTAS_ASSERT_THROWS "BTAS_ASSERT(x) will throw if x is false, and not be affected by NDEBUG")
 redefaultable_option(BTAS_USE_BLAS_LAPACK "Whether to enable BLAS/LAPACK bindings via BLAS++/LAPACK++" ON)
 add_feature_info(USE_BLAS_LAPACK BTAS_USE_BLAS_LAPACK "Will use BLAS and LAPACK linear algebra distributions via their BLAS++/LAPACK++ interfaces" )
@@ -134,13 +133,12 @@ add_subdirectory(doc)
 ##########################
 # checking/testing
 ##########################
-enable_testing(true)
-if (BTAS_BUILD_UNITTEST)
+if (BUILD_TESTING)
   add_custom_target_subproject(btas check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
   add_subdirectory(unittest)
-else(BTAS_BUILD_UNITTEST)
-  add_custom_target_subproject(btas check COMMAND echo "WARNING: unit testing disabled. To enable, give -DBTAS_BUILD_UNITTEST=TRUE to cmake")
-endif(BTAS_BUILD_UNITTEST)
+else(BUILD_TESTING)
+  add_custom_target_subproject(btas check COMMAND echo "WARNING: unit testing disabled. To enable, give -DBUILD_TESTING=ON to cmake")
+endif(BUILD_TESTING)
 
 ##########################
 # Get the git revision tag information

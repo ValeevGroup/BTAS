@@ -43,7 +43,7 @@ target_link_libraries(BTAS INTERFACE ${Boost_LIBRARIES})
 # If building unit tests, perform a compile check with Boost
 # this is only possible, though, if did not build Boost from source,
 # since only imported targets can be used in CMAKE_REQUIRED_LIBRARIES
-if (BTAS_BUILD_UNITTEST AND NOT BTAS_BUILT_BOOST_FROM_SOURCE)
+if (BUILD_TESTING AND NOT BTAS_BUILT_BOOST_FROM_SOURCE)
   list(APPEND CMAKE_REQUIRED_LIBRARIES ${Boost_LIBRARIES})
   target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BOOST_ITERATOR=1 -DBTAS_HAS_BOOST_CONTAINER=1 -DBTAS_TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK})
 
@@ -122,4 +122,4 @@ if (BTAS_BUILD_UNITTEST AND NOT BTAS_BUILT_BOOST_FROM_SOURCE)
     message(WARNING "To obtain usable Boost, use your system package manager (HomeBrew, apt, etc.) OR download at www.boost.org and compile (unpacking alone is not enough)")
     message(WARNING "** !! due to missing Boost.Serialization the corresponding unit tests will be disabled !!")
   endif(BOOST_COMPILES_AND_RUNS)
-endif(BTAS_BUILD_UNITTEST AND NOT BTAS_BUILT_BOOST_FROM_SOURCE)
+endif(BUILD_TESTING AND NOT BTAS_BUILT_BOOST_FROM_SOURCE)

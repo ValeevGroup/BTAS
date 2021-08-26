@@ -26,7 +26,7 @@ cd ${BUILD_PREFIX}
 ########## test with blas+lapack   ##########
 mkdir build_blaslapack
 cd build_blaslapack
-cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_PREFIX_PATH=${icl_install_prefix} -DBTAS_ASSERT_THROWS=ON  -DBTAS_BUILD_UNITTEST=ON
+cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_PREFIX_PATH=${icl_install_prefix} -DBTAS_ASSERT_THROWS=ON
 make VERBOSE=1
 make check VERBOSE=1
 cd ..
@@ -34,7 +34,7 @@ cd ..
 ########## test without blas+lapack   ##########
 mkdir build_noblaslapack
 cd build_noblaslapack
-cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_USE_BLAS_LAPACK=OFF -DCMAKE_PREFIX_PATH=${icl_install_prefix} -DBTAS_ASSERT_THROWS=ON  -DBTAS_BUILD_UNITTEST=ON
+cmake ${TRAVIS_BUILD_DIR} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBTAS_USE_BLAS_LAPACK=OFF -DCMAKE_PREFIX_PATH=${icl_install_prefix} -DBTAS_ASSERT_THROWS=ON
 make VERBOSE=1
 make check VERBOSE=1
 cd ..
