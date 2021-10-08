@@ -731,7 +731,11 @@ namespace btas {
           class _Storage
   >
   std::ostream& operator<<(std::ostream& os, const Tensor<_T, _Range, _Storage>& t) {
-    os << "Tensor:\n  Range: " << t.range() << std::endl;
+    os << t.range() << " { ";
+    for(const auto& v: t) {
+      os << v << " ";
+    }
+    os << "}";
     return os;
   }
 
