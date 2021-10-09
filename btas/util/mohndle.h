@@ -299,6 +299,10 @@ namespace btas {
     swap(first.base(), second.base());
   }
 
+  /// mohndle can have shallow copy semantics
+  template <typename S, Handle H>
+  constexpr inline bool is_deep_copy_v<mohndle<S,H>> = false;
+
 }  // namespace btas
 
 // serialization to/fro MADNESS archive (github.com/m-a-d-n-e-s-s/madness)

@@ -303,8 +303,9 @@ namespace btas {
   };
 
 
-
-
+  /// evalutes to true for types with deep-copy semantics, false for types that may not necessarily deep copy
+  template <typename T>
+  constexpr inline bool is_deep_copy_v = false;
 
   } // namespace btas
   
