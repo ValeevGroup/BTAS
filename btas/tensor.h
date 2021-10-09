@@ -209,6 +209,9 @@ namespace btas {
       }
 
       /// copy constructor
+      /// @note this makes a shallow copy of @п х if `storage_type` has shallow-copy semantics; if need a deep copy
+      ///       in that case use Tensor::clone()
+      /// @sa Tensor::clone()
       Tensor (const Tensor& x)
       : range_ (x.range()), storage_(x.storage_)
       {
@@ -218,6 +221,12 @@ namespace btas {
       Tensor (Tensor&& x)
       : range_ (std::move(x.range())), storage_(std::move(x.storage_))
       {
+      }
+
+      /// @return deep copy of `*this`, even if `storage_type` is shallow copy
+      Tensor clone() const
+      {
+        return Tensor(range(), storage_type(storage().cbegin(),storage().cend()));
       }
 
       /// copy assignment operator
@@ -612,7 +621,7 @@ namespace btas {
       Tensor
       operator+ (const Tensor& x) const
       {
-        Tensor y(*this); y += x;
+        Tensor y = this->clone(); y += x;
         return y; /* automatically called move semantics */
       }
 
@@ -634,7 +643,7 @@ namespace btas {
       Tensor
       operator- (const Tensor& x) const
       {
-        Tensor y(*this); y -= x;
+        Tensor y = this->clone(); y -= x;
         return y; /* automatically called move semantics */
       }
 
