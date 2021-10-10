@@ -148,7 +148,7 @@ namespace btas {
 
     template <typename S = Storage>
     std::enable_if_t<has_nonmember_end_v<S>, const_iterator> cend() const {
-      return this->cend();
+      return this->end();
     }
 
     template <typename S = Storage>
