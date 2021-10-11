@@ -218,6 +218,8 @@ void gesvd (
     static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorU>::value &&
                   boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorVt>::value,
                   "btas::gesvd does not support mixed storage order");
+    static_assert(boxtensor_storage_order<_TensorA>::value != boxtensor_storage_order<_TensorA>::other,
+                  "btas::gesvd does not support non-major storage order");
     const blas::Layout order = boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorA>::row_major ?
                               blas::Layout::RowMajor : blas::Layout::ColMajor;
 

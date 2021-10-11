@@ -493,6 +493,8 @@ void gemm (
    static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorC>::value &&
                  boxtensor_storage_order<_TensorB>::value == boxtensor_storage_order<_TensorC>::value,
                  "btas::gemm does not support mixed storage order");
+   static_assert(boxtensor_storage_order<_TensorC>::value != boxtensor_storage_order<_TensorC>::other,
+                 "btas::gemm does not support non-major storage order");
    const blas::Layout order = boxtensor_storage_order<_TensorC>::value == boxtensor_storage_order<_TensorC>::row_major ?
                              blas::Layout::RowMajor : blas::Layout::ColMajor;
 

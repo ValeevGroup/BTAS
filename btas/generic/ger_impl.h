@@ -220,6 +220,8 @@ void ger (
     static_assert(boxtensor_storage_order<_TensorX>::value == boxtensor_storage_order<_TensorA>::value &&
                   boxtensor_storage_order<_TensorY>::value == boxtensor_storage_order<_TensorA>::value,
                   "btas::ger does not support mixed storage order");
+    static_assert(boxtensor_storage_order<_TensorY>::value != boxtensor_storage_order<_TensorY>::other,
+                  "btas::ger does not support non-major storage order");
     const blas::Layout order = boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorA>::row_major ?
                               blas::Layout::RowMajor : blas::Layout::ColMajor;
 
