@@ -12,7 +12,7 @@ Prerequisites
   - Iterator
   - (optional, but recommended) Container for fast small vectors
   - (optional) Serialization for serialization (non-header-only)
-* (optional, but recommended) BLAS+LAPACK libraries and their BLAS++/LAPACK++ C++ APIs for optimized operations (non-header-only)
+* (used by default, strongly recommended, but can be disabled) BLAS+LAPACK libraries and their BLAS++/LAPACK++ C++ APIs for optimized operations (non-header-only)
 
 Building and Installing
 =======================

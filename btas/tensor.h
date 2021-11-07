@@ -108,7 +108,6 @@ namespace btas {
 
       /// construct from \c range object, set all elements to \c v
       template <typename Range>
-      explicit
       Tensor (const Range& range,
               value_type v,
               typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
@@ -120,7 +119,6 @@ namespace btas {
 
       /// construct from \c range object, copy elements from \c vec
       template <typename Range, typename U>
-      explicit
       Tensor (const Range& range,
               U* vec,
               typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
@@ -133,7 +131,6 @@ namespace btas {
 
       /// construct from \c range and \c storage
       template <typename Range, typename Storage>
-      explicit
       Tensor (const Range& range,
               const Storage& storage,
               typename std::enable_if<btas::is_boxrange<Range>::value &
@@ -148,7 +145,6 @@ namespace btas {
       }
 
       /// copy-copy-construct from \c range and \c storage
-      explicit
       Tensor (const range_type& range, const storage_type& storage) :
       range_(range.ordinal(*range.begin()) == 0 ? range : range_type(range.lobound(), range.upbound())),
       storage_(storage)
@@ -159,7 +155,6 @@ namespace btas {
       }
 
       /// copy-move-construct from \c range and \c storage
-      explicit
       Tensor (const range_type& range, storage_type&& storage) :
       range_(range.ordinal(*range.begin()) == 0 ? range : range_type(range.lobound(), range.upbound())),
       storage_(std::move(storage))
@@ -170,7 +165,6 @@ namespace btas {
       }
 
       /// move-construct from \c range and \c storage
-      explicit
       Tensor (range_type&& range, storage_type&& storage) :
       range_(range.ordinal(*range.begin()) == 0 ? std::move(range) : range_type(range.lobound(), range.upbound())),
       storage_(std::move(storage))
@@ -195,7 +189,6 @@ namespace btas {
       /// \param first An input iterator for the argument
       /// \param op The unary operation to be applied to the argument data
       template <typename Range, typename InIter, typename Op>
-      explicit
       Tensor (const Range& range, InIter it, const Op& op,
               typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0) :
               range_(range.lobound(), range.upbound())
@@ -216,7 +209,9 @@ namespace btas {
       }
 
       /// copy constructor
-      explicit
+      /// @note this makes a shallow copy of @п х if `storage_type` has shallow-copy semantics; if need a deep copy
+      ///       in that case use Tensor::clone()
+      /// @sa Tensor::clone()
       Tensor (const Tensor& x)
       : range_ (x.range()), storage_(x.storage_)
       {
@@ -226,6 +221,12 @@ namespace btas {
       Tensor (Tensor&& x)
       : range_ (std::move(x.range())), storage_(std::move(x.storage_))
       {
+      }
+
+      /// @return deep copy of `*this`, even if `storage_type` is shallow copy
+      Tensor clone() const
+      {
+        return Tensor(range(), storage_type(storage().cbegin(),storage().cend()));
       }
 
       /// copy assignment operator
@@ -620,7 +621,7 @@ namespace btas {
       Tensor
       operator+ (const Tensor& x) const
       {
-        Tensor y(*this); y += x;
+        Tensor y = this->clone(); y += x;
         return y; /* automatically called move semantics */
       }
 
@@ -642,7 +643,7 @@ namespace btas {
       Tensor
       operator- (const Tensor& x) const
       {
-        Tensor y(*this); y -= x;
+        Tensor y = this->clone(); y -= x;
         return y; /* automatically called move semantics */
       }
 
@@ -731,7 +732,11 @@ namespace btas {
           class _Storage
   >
   std::ostream& operator<<(std::ostream& os, const Tensor<_T, _Range, _Storage>& t) {
-    os << "Tensor:\n  Range: " << t.range() << std::endl;
+    os << t.range() << " { ";
+    for(const auto& v: t) {
+      os << v << " ";
+    }
+    os << "}";
     return os;
   }
 

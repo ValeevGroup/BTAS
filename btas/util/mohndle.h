@@ -142,6 +142,16 @@ namespace btas {
     }
 
     template <typename S = Storage>
+    std::enable_if_t<has_nonmember_begin_v<S>, const_iterator> cbegin() const {
+      return this->begin();
+    }
+
+    template <typename S = Storage>
+    std::enable_if_t<has_nonmember_end_v<S>, const_iterator> cend() const {
+      return this->end();
+    }
+
+    template <typename S = Storage>
     std::enable_if_t<has_nonmember_data_v<S> && !std::is_const_v<S>, pointer> data() {
       using std::data;
       return data(*(this->get()));
@@ -288,6 +298,10 @@ namespace btas {
     using std::swap;
     swap(first.base(), second.base());
   }
+
+  /// mohndle can have shallow copy semantics
+  template <typename S, Handle H>
+  constexpr inline bool is_deep_copy_v<mohndle<S,H>> = false;
 
 }  // namespace btas
 
