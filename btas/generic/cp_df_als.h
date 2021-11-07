@@ -319,6 +319,7 @@ namespace btas {
         A.emplace_back(lam);
         // compute the left factor and put in the CP4 tensor
         auto a_ptr = A.begin();
+        auto col_dim = (rank_cp3 < rank_cp4 ? rank_cp3 : rank_cp4);
         {
           FitCheck<Tensor> fit(cp_comp_prec);
           fit.set_norm(nrm(tensor_ref_left));
@@ -334,7 +335,7 @@ namespace btas {
             auto row_dim = tensor_ref.extent(0);
             auto a_val_ptr = (*a_ptr).data();
             for(ind_t row = 0; row < row_dim; ++row){
-              for(ind_t col = 0; col < rank_cp3; ++col, ++left_ptr){
+              for(ind_t col = 0; col < col_dim; ++col, ++left_ptr){
                 *(a_val_ptr + row * rank_cp4 + col) = *(left_ptr);
               }
             }
@@ -356,7 +357,7 @@ namespace btas {
             auto row_dim = tensor_ref.extent(0);
             auto a_val_ptr = (*a_ptr).data();
             for(ind_t row = 0; row < row_dim; ++row){
-              for(ind_t col = 0; col < rank_cp3; ++col, ++right_ptr){
+              for(ind_t col = 0; col < col_dim; ++col, ++right_ptr){
                 *(a_val_ptr + row * rank_cp4 + col) = *(right_ptr);
               }
             }
