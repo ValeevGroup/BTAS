@@ -525,20 +525,50 @@ namespace btas {
                       double &epsilon, bool &fast_pI) override {
       std::mt19937 generator(random_seed_accessor());
       std::uniform_real_distribution<> distribution(-1.0, 1.0);
-      for (size_t i = 0; i < this->ndim; ++i) {
-        // If this mode is symmetric to a previous mode, set it equal to
-        // previous mode, else make a random matrix.
-        auto tmp = symmetries[i];
-        if (tmp != i) {
-          A.push_back(A[tmp]);
-        } else {
-          Tensor a(tensor_ref.extent(i), rank);
-          for (auto iter = a.begin(); iter != a.end(); ++iter) {
-            *(iter) = distribution(generator);
+      if(A.empty()) {
+        for (size_t i = 0; i < this->ndim; ++i) {
+          // If this mode is symmetric to a previous mode, set it equal to
+          // previous mode, else make a random matrix.
+          auto tmp = symmetries[i];
+          if (tmp != i) {
+            A.push_back(A[tmp]);
+          } else {
+            Tensor a(tensor_ref.extent(i), rank);
+            for (auto iter = a.begin(); iter != a.end(); ++iter) {
+              *(iter) = distribution(generator);
+            }
+            this->A.push_back(a);
+            this->normCol(i);
           }
           this->A.push_back(a);
           this->normCol(i);
         }
+      } else{
+        for (size_t i = 0; i < this->ndim; ++i) {
+          // If this mode is symmetric to a previous mode, set it equal to
+          // previous mode, else make a random matrix.
+          auto tmp = symmetries[i];
+          if (tmp != i) {
+            A.push_back(A[tmp]);
+          } else {
+            ind_t col_dim = tensor_ref.extent(i);
+            Tensor a(col_dim, rank);
+            for (auto iter = a.begin(); iter != a.end(); ++iter) {
+              *(iter) = distribution(generator);
+            }
+            auto & a_prev = A[i];
+            ind_t prev_rank = a_prev.extent(1),
+                  smaller_rank = (prev_rank < rank ? prev_rank : rank);
+            auto lo_bound = {0l, 0l},
+                 up_bound = {col_dim, smaller_rank};
+            auto view = make_view(a.range().slice(lo_bound, up_bound), a.storage());
+            std::copy(view.begin(), view.end(), a_prev.begin());
+
+            a_prev = a;
+            this->normCol(i);
+          }
+        }
+        A.pop_back();
       }
       Tensor lambda(rank);
       lambda.fill(0.0);
