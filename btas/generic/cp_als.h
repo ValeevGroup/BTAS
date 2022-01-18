@@ -874,6 +874,68 @@ namespace btas {
       this->normCol(temp);
       A[n] = temp;
     }
+
+    void direct_improved(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass & converge_test){
+      Tensor An;
+      ind_t keep_dim = tensor_ref.extent(n);
+      bool n_last_dim = (n == ndim -1);
+
+      std::vector<size_t> tref_idx, mat_idx, final_idx;
+      auto contract_mode = (n_last_dim ? 0 : ndim - 1);
+      // the matrix is A(contract_dimension, rank)
+      mat_idx.emplace_back(contract_mode);
+      mat_idx.emplace_back(ndim);
+      // final will be T(gradient_mode, other, modes, ..., rank)
+      final_idx.emplace_back(n);
+      for(auto i = 0; i < ndim; ++i){
+        // for the reference tensor, add all modes INCLUDING the gradient mode
+        tref_idx.emplace_back(i);
+        // for the final add all modes EXCEPT the gradient mode and the mode we contract out
+        if(i == n || i == contract_mode) continue;
+        final_idx.emplace_back(i);
+      }
+      // replace that contracted mode with the rank
+      final_idx.emplace_back(ndim);
+
+      contract(1.0, tensor_ref, tref_idx, A[contract_mode], mat_idx, 0.0, An, final_idx);
+
+      tref_idx = final_idx;
+      auto ptr = (final_idx.data() + 1);
+      auto extent_ = tensor_ref.extent();
+      ord_t lhs_dim = tensor_ref.size() / tensor_ref.extent(contract_mode);
+      for(auto i = 0; i < ndim - 2; ++i, ++ptr){
+        ind_t middle_dim = tensor_ref.extent(*ptr);
+        lhs_dim /= middle_dim;
+        An.resize(Range{Range1{lhs_dim}, Range1{middle_dim}, Range1{rank}});
+
+        Tensor TtKRP(lhs_dim, rank);
+        auto & Fac_Mat = A[*ptr];
+        TtKRP.fill(0.0);
+        ord_t idx1_times_rank = 0, idx1_times_rank_middle = 0;
+        for (ind_t idx1 = 0; idx1 < lhs_dim; idx1++, idx1_times_rank += rank) {
+          auto *TtKRP_ptr = TtKRP.data() + idx1_times_rank;
+          ord_t idx2_times_rank = 0;
+          for (ind_t idx2 = 0; idx2 < middle_dim; idx2++, idx2_times_rank += rank) {
+            const auto *An_ptr = An.data() + idx1_times_rank_middle + idx2_times_rank;
+            const auto *Fac_ptr = Fac_Mat.data() + idx2_times_rank;
+            for (ind_t r = 0; r < rank; r++) {
+              *(TtKRP_ptr + r) += *(Fac_ptr + r) * *(An_ptr + r);
+            }
+          }
+          idx1_times_rank_middle += idx2_times_rank;
+        }
+        An = TtKRP;
+      }
+
+      detail::set_MtKRP(converge_test, An);
+
+      // Temp is then rewritten with unnormalized new A[n] matrix
+      this->pseudoinverse_helper(n, fast_pI, matlab, An);
+
+      // Normalize the columns of the new factor matrix and update
+      this->normCol(An);
+      A[n] = An;
+    }
   };
 
 } //namespace btas
