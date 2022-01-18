@@ -540,8 +540,6 @@ namespace btas {
             this->A.push_back(a);
             this->normCol(i);
           }
-          this->A.push_back(a);
-          this->normCol(i);
         }
       } else{
         for (size_t i = 0; i < this->ndim; ++i) {
