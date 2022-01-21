@@ -615,7 +615,11 @@ namespace btas {
           if (tmp != i) {
             A[i] = A[tmp];
           } else if (dir) {
+            direct_improved(i, rank, fast_pI, matlab, converge_test);
+            auto adir = A[i];
             direct(i, rank, fast_pI, matlab, converge_test);
+            auto diff = adir - A[i];
+            std::cout << "diff: " << this->norm(diff) / this->norm(adir) << std::endl;
           } else {
             update_w_KRP(i, rank, fast_pI, matlab, converge_test);
           }
