@@ -902,7 +902,8 @@ namespace btas {
       contract(1.0, tensor_ref, tref_idx, A[contract_mode], mat_idx, 0.0, An, final_idx);
 
       tref_idx = final_idx;
-      auto ptr = (final_idx.data() + 1);
+      auto ptr = final_idx.rbegin();
+      ++ptr;
       auto extent_ = tensor_ref.extent();
       ord_t lhs_dim = tensor_ref.size() / tensor_ref.extent(contract_mode);
       for(auto i = 0; i < ndim - 2; ++i, ++ptr){
