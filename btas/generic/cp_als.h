@@ -831,6 +831,7 @@ namespace btas {
         LH_size /= idx2;
         contract_dim--;
       }
+      n = last_dim ? n+1 : n;
 
       // If the mode of interest is the 0th mode, then the while loop above
       // contracts over all other dimensions and resulting temp is of the
@@ -838,21 +839,19 @@ namespace btas {
       // out the 0th mode here, the above algorithm can't perform this
       // contraction because the mode of interest is coupled with the rank
       if (n != 0) {
-        temp.resize(Range{Range1{dimensions[0]}, Range1{dimensions[n]}, Range1{rank}});
-        Tensor contract_tensor(Range{Range1{temp.extent(1)}, Range1{rank}});
         ind_t idx1 = dimensions[0];
         temp.resize(Range{Range1{idx1}, Range1{offset_dim}, Range1{rank}});
         Tensor contract_tensor(Range{Range1{offset_dim}, Range1{rank}});
         contract_tensor.fill(0.0);
 
-        ind_t idx1 = temp.extent(0), idx2 = temp.extent(1);
         const auto &a = A[(last_dim ? 1 : 0)];
         ord_t i_times_rank = 0, i_times_rank_idx2 = 0;
         for (ind_t i = 0; i < idx1; i++, i_times_rank += rank) {
           const auto *A_ptr = a.data() + i_times_rank;
           ord_t j_times_rank = 0;
-          for (ind_t j = 0; j < idx2; j++, j_times_rank += rank) {
+          for (ind_t j = 0; j < offset_dim; j++, j_times_rank += rank) {
             const auto *temp_ptr = temp.data() + i_times_rank_idx2 + j_times_rank;
+            auto *contract_ptr = contract_tensor.data() + j_times_rank;
             for (ind_t r = 0; r < rank; r++) {
               *(contract_ptr + r) += *(A_ptr + r) * *(temp_ptr + r);
             }
@@ -862,7 +861,6 @@ namespace btas {
         temp = contract_tensor;
       }
 
-      n = last_dim ? ndim - 1 : n;
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       detail::set_MtKRP(converge_test, temp);
