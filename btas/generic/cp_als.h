@@ -828,7 +828,7 @@ namespace btas {
           temp = contract_tensor;
         }
 
-        LH_size /= tensor_ref.extent(contract_dim);
+        LH_size /= idx2;
         contract_dim--;
       }
 
