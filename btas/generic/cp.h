@@ -357,7 +357,7 @@ namespace btas {
     }
 
     // For debug purposes
-    void print(Tensor &tensor) {
+    void print(const Tensor &tensor) {
       if (tensor.rank() == 2) {
         ind_t row = tensor.extent(0), col = tensor.extent(1);
         ord_t i_times_col = 0;
@@ -377,6 +377,14 @@ namespace btas {
       }
       std::cout << std::endl;
       return;
+    }
+
+    void write_to_path(const std::string&  path, const Tensor & tensor){
+      std::ofstream file;
+      file.open(path);
+      for(auto &  i : tensor)
+        file << i << ",";
+      file.close();
     }
 
    protected:
