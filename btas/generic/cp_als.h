@@ -615,11 +615,7 @@ namespace btas {
           if (tmp != i) {
             A[i] = A[tmp];
           } else if (dir) {
-            direct_improved(i, rank, fast_pI, matlab, converge_test);
-            auto adir = A[i];
             direct(i, rank, fast_pI, matlab, converge_test);
-            auto diff = adir - A[i];
-            std::cout << "diff: " << this->norm(diff) / this->norm(adir) << std::endl;
           } else {
             update_w_KRP(i, rank, fast_pI, matlab, converge_test);
           }
@@ -747,7 +743,7 @@ namespace btas {
 
       // Modifying the dimension of tensor_ref so store the range here to resize
       Range R = tensor_ref.range();
-      Tensor an(A[n].range());
+      //Tensor an(A[n].range());
 
       // Resize the tensor which will store the product of tensor_ref and the first factor matrix
       Tensor temp = Tensor(size / tensor_ref.extent(contract_dim), rank);
@@ -776,9 +772,11 @@ namespace btas {
         // Now temp is three index object where temp has size
         // (size of tensor_ref/product of dimension contracted, dimension to be
         // contracted, rank)
+        ord_t idx2 = dimensions[contract_dim],
+              idx1 = LH_size / idx2;
         temp.resize(
-            Range{Range1{LH_size / dimensions[contract_dim]}, Range1{dimensions[contract_dim]}, Range1{pseudo_rank}});
-        Tensor contract_tensor(Range{Range1{temp.extent(0)}, Range1{temp.extent(2)}});
+            Range{Range1{idx1}, Range1{idx2}, Range1{pseudo_rank}});
+        Tensor contract_tensor(Range{Range1{idx1}, Range1{pseudo_rank}});
         contract_tensor.fill(0.0);
         const auto &a = A[(last_dim ? contract_dim + 1 : contract_dim)];
         // If the middle dimension is the mode not being contracted, I will move
@@ -792,7 +790,6 @@ namespace btas {
         // over the middle dimension and sum over the rank.
 
         else if (contract_dim > n) {
-          ind_t idx1 = temp.extent(0), idx2 = temp.extent(1);
           ord_t i_times_rank = 0, i_times_rank_idx2 = 0;
           for (ind_t i = 0; i < idx1; i++, i_times_rank += rank) {
             auto *contract_ptr = contract_tensor.data() + i_times_rank;
@@ -812,17 +809,16 @@ namespace btas {
         // If the code has passed the mode of interest, it will contract over
         // the middle dimension and sum over rank * mode n dimension
         else {
-          ind_t idx1 = temp.extent(0), idx2 = temp.extent(1), offset = offset_dim;
           ord_t i_times_rank = 0, i_times_rank_idx2 = 0;
-          for (ind_t i = 0; i < idx1; i++, i_times_rank += pseudo_rank) {
+          for (ind_t i = 0; i < idx1; ++i, i_times_rank += pseudo_rank) {
             auto *contract_ptr = contract_tensor.data() + i_times_rank;
             ord_t j_times_prank = 0, j_times_rank = 0;
-            for (ind_t j = 0; j < idx2; j++, j_times_prank += pseudo_rank, j_times_rank += rank) {
+            for (ind_t j = 0; j < idx2; ++j, j_times_prank += pseudo_rank, j_times_rank += rank) {
               const auto *temp_ptr = temp.data() + i_times_rank_idx2 + j_times_prank;
               const auto *A_ptr = a.data() + j_times_rank;
               ord_t k_times_rank = 0;
-              for (ind_t k = 0; k < offset; k++, k_times_rank += rank) {
-                for (ind_t r = 0; r < rank; r++) {
+              for (ind_t k = 0; k < offset_dim; ++k, k_times_rank += rank) {
+                for (ind_t r = 0; r < rank; ++r) {
                   *(contract_ptr + k_times_rank + r) += *(temp_ptr + k_times_rank + r) * *(A_ptr + r);
                 }
               }
@@ -844,6 +840,9 @@ namespace btas {
       if (n != 0) {
         temp.resize(Range{Range1{dimensions[0]}, Range1{dimensions[n]}, Range1{rank}});
         Tensor contract_tensor(Range{Range1{temp.extent(1)}, Range1{rank}});
+        ind_t idx1 = dimensions[0];
+        temp.resize(Range{Range1{idx1}, Range1{offset_dim}, Range1{rank}});
+        Tensor contract_tensor(Range{Range1{offset_dim}, Range1{rank}});
         contract_tensor.fill(0.0);
 
         ind_t idx1 = temp.extent(0), idx2 = temp.extent(1);
@@ -854,7 +853,6 @@ namespace btas {
           ord_t j_times_rank = 0;
           for (ind_t j = 0; j < idx2; j++, j_times_rank += rank) {
             const auto *temp_ptr = temp.data() + i_times_rank_idx2 + j_times_rank;
-            auto *contract_ptr = contract_tensor.data() + j * rank;
             for (ind_t r = 0; r < rank; r++) {
               *(contract_ptr + r) += *(A_ptr + r) * *(temp_ptr + r);
             }
