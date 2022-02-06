@@ -393,6 +393,7 @@ namespace btas {
     std::vector<Tensor> AtA;
     size_t ndim;                     // Modes in the reference tensor
     std::vector<size_t> symmetries;  // Symmetries of the reference tensor
+    double s = 0;          // this is a variable for rals;
 
     /// Virtual function. Solver classes should implement a build function to
     /// generate factor matrices then compute the CP decomposition
