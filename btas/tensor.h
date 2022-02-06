@@ -302,7 +302,7 @@ namespace btas {
       }
 
       /// assign scalar to this (i.e. fill this with scalar)
-      template <typename Scalar, typename = typename std::enable_if<not std::is_same<typename std::decay<Scalar>::type,Tensor>::value>::type, typename = btas::void_t<decltype(static_cast<typename storage_type::value_type>(std::declval<Scalar>()))>>
+      template <typename Scalar, typename = typename std::enable_if<not std::is_same<typename std::decay<Scalar>::type,Tensor>::value && not btas::is_boxtensor<typename std::decay<Scalar>::type>::value>::type, typename = btas::void_t<decltype(static_cast<typename storage_type::value_type>(std::declval<Scalar>()))>>
       Tensor&
       operator= (Scalar&& v)
       {
@@ -690,15 +690,6 @@ namespace btas {
       storage_type storage_;///< data
 
   }; // end of Tensor
-
-  template <class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
-  auto cbegin(const _Tensor& x) -> decltype(x.cbegin()) {
-    return x.cbegin();
-  }
-  template <class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
-  auto cend(const _Tensor& x) -> decltype(x.cbegin()) {
-    return x.cend();
-  }
 
   /// maps Tensor -> Range
   template <class _Tensor, class = typename std::enable_if<btas::is_boxtensor<_Tensor>::value>::type>
