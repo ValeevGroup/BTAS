@@ -647,7 +647,8 @@ namespace btas {
     /// in the same manner that matlab would compute the inverse.
     /// return if matlab was successful.
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
-    void update_w_KRP(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {
+    void update_w_KRP(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test,
+                      double lambda = 0) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -690,6 +691,11 @@ namespace btas {
            temp);
 #endif
 
+      if(lambda != 0){
+        auto LamA = A[n];
+        scal(lambda, LamA);
+        temp += LamA;
+      }
       detail::set_MtKRP(converge_test, temp);
 
       // contract the product from above with the pseudoinverse of the Hadamard
@@ -725,7 +731,7 @@ namespace btas {
     /// return if \c matlab was successful
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
 
-    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {
+    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test, double lambda = 0.0) {
       // Determine if n is the last mode, if it is first contract with first mode
       // and transpose the product
       bool last_dim = n == ndim - 1;
@@ -861,6 +867,12 @@ namespace btas {
         temp = contract_tensor;
       }
 
+      // Add lambda to factor matrices if RALS
+      if(lambda !=0){
+        auto LamA = A[n];
+        scal(lambda, LamA);
+        temp += LamA;
+      }
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       detail::set_MtKRP(converge_test, temp);
