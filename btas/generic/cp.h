@@ -379,13 +379,13 @@ namespace btas {
       return;
     }
 
-    void write_to_path(const std::string&  path, const Tensor & tensor){
+    /*void write_to_path(const std::string&  path, const Tensor & tensor){
       std::ofstream file;
       file.open(path);
       for(auto &  i : tensor)
         file << i << ",";
       file.close();
-    }
+    }*/
 
    protected:
     size_t num_ALS;         // Number of ALS iterations
