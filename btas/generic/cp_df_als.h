@@ -365,6 +365,15 @@ namespace btas {
         }
       }
 
+      Tensor full;
+      std::cout << A[0].extent(1) << std::endl;
+      contract(1.0, tensor_ref_left, {1,2,4}, tensor_ref_right, {1,3,5}, 0.0, full, {2,3,4,5});
+      CP_ALS<Tensor, FitCheck<Tensor>> CP5(full);
+      ConvClass conv(1e-3);
+      CP5.set_cp_factors(this->A);
+      conv.set_norm(norm(full));
+      conv.verbose(true);
+      CP5.compute_rank(rank_cp4, conv, 1, false, 0, 100, true, false, true);
       ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
 
       detail::get_fit(converge_test, epsilon);
