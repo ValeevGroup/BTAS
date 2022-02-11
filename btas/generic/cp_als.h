@@ -316,6 +316,15 @@ namespace btas {
       return epsilon;
     }
 
+    void set_cp_factors(std::vector<Tensor> vecs){
+      BTAS_ASSERT(vecs.size() == ndim + 1);
+      A.reserve(ndim + 1);
+      for(auto & i : vecs)
+        this->A.emplace_back(i);
+      std::cout << this->A[0].extent(1) << std::endl;
+      factors_set = true;
+    }
+
    protected:
     Tensor &tensor_ref;        // Tensor to be decomposed
     ord_t size;                // Total number of elements
