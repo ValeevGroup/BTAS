@@ -1,8 +1,28 @@
 #; -*-CMake-*-
 
-cmake_minimum_required (VERSION 3.8.0)  # cxx_std_17 compile feature
+cmake_minimum_required (VERSION 3.14.0)  # FetchContent_MakeAvailable
 project (BTAS)
 enable_language(CXX)
+
+###############################################################################
+# Bring ValeevGroup cmake toolkit
+###############################################################################
+include(FetchContent)
+if (DEFINED PROJECT_BINARY_DIR)
+  set(VG_CMAKE_KIT_PREFIX_DIR PROJECT_BINARY_DIR)
+else ()
+  set(VG_CMAKE_KIT_PREFIX_DIR CMAKE_CURRENT_BINARY_DIR)
+endif()
+FetchContent_Declare(
+        vg_cmake_kit
+        QUIET
+        GIT_REPOSITORY      https://github.com/ValeevGroup/kit-cmake.git
+        SOURCE_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg
+        BINARY_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg-build
+        SUBBUILD_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg-subbuild
+)
+FetchContent_MakeAvailable(vg_cmake_kit)
+list(APPEND CMAKE_MODULE_PATH "${vg_cmake_kit_SOURCE_DIR}/modules")
 
 # extra cmake files are shipped with BTAS
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
@@ -115,7 +135,9 @@ install(DIRECTORY btas
 ##########################
 # external dependencies
 ##########################
-include(FindOrFetchLinalgPP)
+if( BTAS_USE_BLAS_LAPACK )
+  include(external/linalgpp.cmake)
+endif()
 include(external/boost.cmake)
 
 ##########################
