@@ -11,13 +11,14 @@ jobs:
       matrix:
         build_type : [ Release, Debug ]
         os : [ macos-latest, ubuntu-20.04 ]
+        linalg : [netlib, vendor]
         include:
           - os: ubuntu-20.04
             cxx: /usr/bin/g++-9
           - os: macos-latest
             cxx: clang++
 
-    name: "${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }}"
+    name: "${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }} linalg=${{ matrix.linalg }}"
     runs-on: ${{ matrix.os }}
     env:
       CXX : ${{ matrix.cxx }}
@@ -43,7 +44,15 @@ jobs:
 
     - name: Install prerequisite MacOS packages
       if: ${{ matrix.os == 'macos-latest' }}
-      run: brew install ninja gcc@10 boost eigen open-mpi bison ccache
+      run: |
+        brew install ninja gcc@10 boost eigen open-mpi bison ccache
+        # install Netlib if want generic linalg
+        if [ "${{matrix.linalg}}" = "netlib" ]; then
+          brew install lapack
+          echo "BLAS_PREFERENCE_LIST=ReferenceBLAS" >> $GITHUB_ENV
+        else
+          echo "BLAS_PREFERENCE_LIST=Accelerate" >> $GITHUB_ENV
+        fi
 
     - name: Install prerequisites Ubuntu packages
       if: ${{ matrix.os == 'ubuntu-20.04' }}
@@ -62,6 +71,18 @@ jobs:
           ${DOXYGEN_DIR}/bin/doxygen --version
           # doxygen should be in PATH in subsequent steps
           echo "${DOXYGEN_DIR}/bin" >> $GITHUB_PATH
+        fi
+        # install MKL if want vendor linalg
+        if [ "${{matrix.linalg}}" = "vendor" ]; then
+          wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB 
+          sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB
+          rm GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB
+          sudo sh -c 'echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources.list.d/intel-mkl.list'
+          sudo apt-get update
+          sudo apt-get install intel-mkl-2019.4-070
+          echo "BLAS_PREFERENCE_LIST=IntelMKL" >> $GITHUB_ENV
+        else
+          echo "BLAS_PREFERENCE_LIST=ReferenceBLAS" >> $GITHUB_ENV
         fi
 
     - name: Prepare ccache timestamp
@@ -87,7 +108,8 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source 
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
+      run: |
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBLAS_PREFERENCE_LIST=$BLAS_PREFERENCE_LIST $BUILD_CONFIG
 
     - name: Build
       working-directory: ${{github.workspace}}/build
