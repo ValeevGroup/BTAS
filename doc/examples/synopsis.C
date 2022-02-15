@@ -41,10 +41,10 @@ int main(int argc, char **argv) {
   {
     // usually one wants to deal with Tensors whose rank is known as compile time.
     typedef Tensor<double,
-                   RangeNd<CblasRowMajor, std::array<long, 2> >,
+                   RangeNd<blas::Layout::RowMajor, std::array<long, 2> >,
                    std::vector<double> > DTensor2;               // rank-2 tensor (matrix) of doubles
     typedef Tensor<double,
-                   RangeNd<CblasRowMajor, std::array<long, 3> >,
+                   RangeNd<blas::Layout::RowMajor, std::array<long, 3> >,
                    std::vector<double> > DTensor3;               // rank-3 tensor of doubles
 
     DTensor2 a(Range{O,U}, 0.0);   // OK
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
 
     // sometimes one wants to deal with tensors of fixed rank AND dimension
     typedef Tensor<double,
-                   RangeNd<CblasRowMajor, std::array<long, 2> >,
+                   RangeNd<blas::Layout::RowMajor, std::array<long, 2> >,
                    std::array<double, 9> > DMatrix9;               // a 9-element matrix
     DMatrix9 d(Range{U,U}, 0.0);   // OK: Range.area == 9
 //  DMatrix9 e(Range{P,U}, 0.0);   // runtime error: Range.area > 9
