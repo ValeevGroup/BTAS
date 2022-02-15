@@ -1,0 +1,10 @@
+# import BLAS++ / LAPACK++
+include(FindOrFetchLinalgPP)
+target_link_libraries(BTAS INTERFACE blaspp lapackpp)
+if (TARGET blaspp_headers)
+    target_link_libraries(BTAS INTERFACE blaspp_headers)
+endif ()
+target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BLAS_LAPACK=1 -DLAPACK_COMPLEX_CPP=1)
+if (BLAS_IS_MKL)
+    target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_INTEL_MKL=1)
+endif ()
