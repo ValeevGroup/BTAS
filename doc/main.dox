@@ -7,8 +7,8 @@
    custom implementations, as demonstrated below.
 
    \section synopsis Synopsis
-   Here's a short C++ example of what is possible with BTAS (see doc/examples/synopsis.C ):
-   \snippet synopsis.C Synopsis
+   Here's a short C++ example of what is possible with BTAS (see doc/examples/synopsis.cxx ):
+   \snippet synopsis.cxx Synopsis
 
    \section twg Tensor Working Group Specification
    <ul>
