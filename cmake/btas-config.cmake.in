@@ -85,7 +85,7 @@ endif()
 
 # Include library IMPORT targets
 if(NOT TARGET blaspp_headers)
-  include("${CMAKE_CURRENT_LIST_DIR}/blaspp_headers-targets.cmake")
+  include("${blaspp_DIR}/blaspp_headers-targets.cmake")
   if(NOT TARGET blaspp_headers)
     message(FATAL_ERROR "expected blaspp_headers among imported BTAS targets")
   endif()
