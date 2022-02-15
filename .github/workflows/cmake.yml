@@ -81,6 +81,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install intel-mkl-2019.4-070
           echo "BLAS_PREFERENCE_LIST=IntelMKL" >> $GITHUB_ENV
+          echo "MKLROOT=/opt/intel/mkl" >> $GITHUB_ENV
         else
           echo "BLAS_PREFERENCE_LIST=ReferenceBLAS" >> $GITHUB_ENV
         fi
