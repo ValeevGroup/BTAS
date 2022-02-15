@@ -1,5 +1,5 @@
 /*
- * synopsis.C
+ * synopsis.cxx
  *
  *  Created on: Jan 3, 2014
  *      Author: evaleev
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
                                                                        // SOON: TensorViews will be usable interchangeably with Tensors
            0.0, t2v, {'i','j','c','d'});
 
-  // Tensor is highly configurable. A few examples are shown below. See doc/examples/synopsis.C for more examples.
+  // Tensor is highly configurable. A few examples are shown below. See doc/examples/synopsis.cxx for more examples.
   {
     // usually one wants to deal with Tensors whose rank is known as compile time.
     typedef Tensor<double,

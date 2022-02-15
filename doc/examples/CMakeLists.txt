@@ -3,5 +3,5 @@ project(test-btas)
 
 find_package(BTAS REQUIRED)
 
-add_executable(synopsis synopsis.C)
+add_executable(synopsis synopsis.cxx)
 target_link_libraries(synopsis BTAS::BTAS)
