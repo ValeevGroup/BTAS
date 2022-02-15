@@ -1,4 +1,8 @@
 # import BLAS++ / LAPACK++
+if (ENABLE_WFN91_LINALG_DISCOVERY_KIT)
+    include(FetchWfn91LinAlgModules)
+    include(FindLinalg)
+endif(ENABLE_WFN91_LINALG_DISCOVERY_KIT)
 include(FindOrFetchLinalgPP)
 target_link_libraries(BTAS INTERFACE blaspp lapackpp)
 if (TARGET blaspp_headers)
