@@ -68,6 +68,16 @@ if(NOT TARGET blaspp)
     endif()
   endif()
   find_dependency( blaspp CONFIG REQUIRED HINTS "${blaspp_DIR}" )
+
+  # if need Threads::Threads, load it
+  get_target_property(blaspp_LINK_LIBRARIES blaspp INTERFACE_LINK_LIBRARIES)
+  if (Threads::Threads IN_LIST blaspp_LINK_LIBRARIES AND NOT TARGET Threads::Threads)
+    find_dependency(Threads)
+    # Threads::Threads by default is not GLOBAL, so to allow users of LINALG_LIBRARIES to safely use it we need to make it global
+    # more discussion here: https://gitlab.kitware.com/cmake/cmake/-/issues/17256
+    set_target_properties(Threads::Threads PROPERTIES IMPORTED_GLOBAL TRUE)
+  endif()
+
 endif()
 if(NOT TARGET lapackpp)
   include( CMakeFindDependencyMacro )
@@ -85,7 +95,7 @@ endif()
 
 # Include library IMPORT targets
 if(NOT TARGET blaspp_headers)
-  include("${CMAKE_CURRENT_LIST_DIR}/blaspp_headers-targets.cmake")
+  include("${blaspp_DIR}/blaspp_headers-targets.cmake")
   if(NOT TARGET blaspp_headers)
     message(FATAL_ERROR "expected blaspp_headers among imported BTAS targets")
   endif()

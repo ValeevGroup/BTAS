@@ -1,8 +1,28 @@
 #; -*-CMake-*-
 
-cmake_minimum_required (VERSION 3.8.0)  # cxx_std_17 compile feature
+cmake_minimum_required (VERSION 3.14.0)  # FetchContent_MakeAvailable
 project (BTAS)
 enable_language(CXX)
+
+###############################################################################
+# Bring ValeevGroup cmake toolkit
+###############################################################################
+include(FetchContent)
+if (DEFINED PROJECT_BINARY_DIR)
+  set(VG_CMAKE_KIT_PREFIX_DIR PROJECT_BINARY_DIR)
+else ()
+  set(VG_CMAKE_KIT_PREFIX_DIR CMAKE_CURRENT_BINARY_DIR)
+endif()
+FetchContent_Declare(
+        vg_cmake_kit
+        QUIET
+        GIT_REPOSITORY      https://github.com/ValeevGroup/kit-cmake.git
+        SOURCE_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg
+        BINARY_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg-build
+        SUBBUILD_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg-subbuild
+)
+FetchContent_MakeAvailable(vg_cmake_kit)
+list(APPEND CMAKE_MODULE_PATH "${vg_cmake_kit_SOURCE_DIR}/modules")
 
 # extra cmake files are shipped with BTAS
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
@@ -20,6 +40,8 @@ redefaultable_option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw; enabl
 add_feature_info(ASSERT_THROWS BTAS_ASSERT_THROWS "BTAS_ASSERT(x) will throw if x is false, and not be affected by NDEBUG")
 redefaultable_option(BTAS_USE_BLAS_LAPACK "Whether to enable BLAS/LAPACK bindings via BLAS++/LAPACK++" ON)
 add_feature_info(USE_BLAS_LAPACK BTAS_USE_BLAS_LAPACK "Will use BLAS and LAPACK linear algebra distributions via their BLAS++/LAPACK++ interfaces" )
+option(ENABLE_WFN91_LINALG_DISCOVERY_KIT "Use linear algebra discovery kit from github.com/wavefunction91 [recommended]" ON)
+add_feature_info(WFN91LinearAlgebraDiscoveryKit ENABLE_WFN91_LINALG_DISCOVERY_KIT "Linear algebra discovery kit from github.com/wavefunction91 supports many more corner cases than the default CMake modules and/or ICL's BLAS++/LAPACK++ modules")
 
 set(TARGET_MAX_INDEX_RANK 6 CACHE STRING "Determines the rank for which the default BTAS index type will use stack (default: 6); this requires Boost.Container")
 add_feature_info("TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK}" TRUE "default BTAS index type will use stack for rank<=${TARGET_MAX_INDEX_RANK}")
@@ -115,7 +137,9 @@ install(DIRECTORY btas
 ##########################
 # external dependencies
 ##########################
-include(FindOrFetchLinalgPP)
+if( BTAS_USE_BLAS_LAPACK )
+  include(external/linalgpp.cmake)
+endif()
 include(external/boost.cmake)
 
 ##########################
