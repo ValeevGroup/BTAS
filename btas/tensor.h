@@ -601,7 +601,7 @@ namespace btas {
       TensorView<value_type, range_type, const storage_type>
       slice(std::initializer_list<Range1d<U>> range1s) const
       {
-        return TensorView<value_type, range_type, const storage_type>{this->range().slice(range1s), this->storage()};
+        return __make_cview<value_type, range_type, storage_type, btas::TensorViewPolicy<>>(this->range().slice(range1s), this->storage());
       }
 
       /// addition assignment
