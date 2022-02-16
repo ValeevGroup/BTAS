@@ -365,16 +365,54 @@ namespace btas {
         }
       }
 
-      Tensor full;
-      std::cout << A[0].extent(1) << std::endl;
-      contract(1.0, tensor_ref_left, {1,2,4}, tensor_ref_right, {1,3,5}, 0.0, full, {2,3,4,5});
-      CP_ALS<Tensor, FitCheck<Tensor>> CP5(full);
-      ConvClass conv(1e-3);
-      CP5.set_cp_factors(this->A);
-      conv.set_norm(norm(full));
-      conv.verbose(true);
-      CP5.compute_rank(rank_cp4, conv, 1, false, 0, 100, true, false, true);
+      // testing full (not TN) CP4
+      /*{
+        Tensor full;
+        std::cout << A[0].extent(1) << std::endl;
+        contract(1.0, tensor_ref_left, {1, 2, 4}, tensor_ref_right, {1, 3, 5}, 0.0, full, {2, 3, 4, 5});
+        auto norm = [&full]() {
+          double n = 0.0;
+          for (auto i : full) n += i * i;
+          return sqrt(n);
+        };
+        ConvClass conv(1e-3);
+        conv.set_norm(norm());
+        conv.verbose(true);
+      *//*{
+        CP_ALS<Tensor, FitCheck<Tensor>> CP5(full);
+        CP5.set_cp_factors(this->A);
+        auto t1 = std::chrono::high_resolution_clock::now();
+        CP5.compute_rank(rank_cp4, conv, 1, false, 0, 100, true, false, true);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        auto dur = std::chrono::duration<double>(t2 - t1);
+        std::cout << "Timer conventional CP4: " << dur.count() << std::endl;
+      }*//*
+      *//*{
+        full.resize(
+            btas::Range{btas::Range1{full.extent(0) * full.extent(1)}, btas::Range1{full.extent(2) * full.extent(3)}});
+        std::cout << "full .extent(0) : " << full.extent(0) << std::endl;
+        std::cout << "full .extent(1) : " << full.extent(1) << std::endl;
+        CP_ALS<Tensor, FitCheck<Tensor>> CP5(full);
+        //CP5.set_cp_factors(this->A);
+        auto t1 = std::chrono::high_resolution_clock::now();
+        CP5.compute_rank(full.extent(0), conv, 1, false, 0, 100, true, false, false);
+        auto facs = CP5.get_factor_matrices();
+        for(auto & i : facs[2]) std::cout << i << std::endl;
+        std::cout << std::endl;
+        std::cout << "{ ";
+        for(auto & i : full) std::cout << i << ", ";
+        std::cout << "}" << std::endl;
+        auto t2 = std::chrono::high_resolution_clock::now();
+        auto dur = std::chrono::duration<double>(t2 - t1);
+        std::cout << "Timer conventional CP4: " << dur.count() << std::endl;
+      }*//*
+      }*/
+
+      auto t1 = std::chrono::high_resolution_clock::now();
       ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
+      auto t2 = std::chrono::high_resolution_clock::now();
+      auto dur = std::chrono::duration<double>(t2 - t1);
+      std::cout << "Timer TN CP4: " << dur.count() << std::endl;
 
       detail::get_fit(converge_test, epsilon);
       return epsilon;
