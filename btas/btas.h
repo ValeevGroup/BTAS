@@ -18,6 +18,7 @@
 #include <btas/generic/gemv_impl.h>
 #include <btas/generic/gemm_impl.h>
 #include <btas/generic/gesvd_impl.h>
+#include <btas/generic/element_wise_contract.h>
 
 #ifdef _CONTRACT_OPT_BAGEL
 #include <btas/optimize/contract.h>

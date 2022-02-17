@@ -22,6 +22,7 @@
 #include <btas/generic/rals_helper.h>
 #include <btas/generic/reconstruct.h>
 #include <btas/generic/linear_algebra.h>
+#include <btas/generic/element_wise_contract.h>
 
 namespace btas {
   namespace detail {
@@ -55,7 +56,7 @@ namespace btas {
     template <typename T>
     void get_fit(T &t, double &epsilon) {
       // epsilon = epsilon;
-      epsilon = -1;
+      epsilon = 0;
       return;
     }
 
