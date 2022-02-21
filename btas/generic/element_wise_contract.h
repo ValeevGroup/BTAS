@@ -8,10 +8,27 @@
 namespace btas{
 
   // This compute \alpha A(i, j, r) * B(j, r) + \beta C(i,r) = C(i,r)
-  template <typename Tensor>
-  void middle_contract(double alpha, const Tensor& A, const Tensor& B, double beta, Tensor& C){
-    using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+  template<
+      typename _T,
+      class _TensorA, class _TensorB, class _TensorC,
+      class = typename std::enable_if<
+          is_boxtensor<_TensorA>::value &
+          is_boxtensor<_TensorB>::value &
+          is_boxtensor<_TensorC>::value &
+          std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value &
+          std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value
+          >::type
+      >
+  void middle_contract(_T alpha, const _TensorA& A, const _TensorB& B, _T beta, _TensorC& C){
+    static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorC>::value &&
+                      boxtensor_storage_order<_TensorB>::value == boxtensor_storage_order<_TensorC>::value,
+                  "btas::middle_contract does not support mixed storage order");
+    static_assert(boxtensor_storage_order<_TensorC>::value != boxtensor_storage_order<_TensorC>::other,
+                  "btas::middle_contract does not support non-major storage order");
+
+    typedef typename _TensorA::value_type value_type;
+    using ind_t = typename _TensorA::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename _TensorA::range_type>::ordinal_type;
 
     BTAS_ASSERT(A.rank() == 3)
     BTAS_ASSERT(B.rank() == 2)
@@ -23,8 +40,8 @@ namespace btas{
       BTAS_ASSERT(C.extent(0) == A.extent(0))
       BTAS_ASSERT(C.extent(1) == A.extent(2))
     } else{
-      C = Tensor(A.extent(0), A.extent(2));
-      C.fill(0.0);
+      C = _TensorC(A.extent(0), A.extent(2));
+      NumericType<value_type>::fill(std::begin(C), std::end(C), NumericType<value_type>::zero());
     }
     ind_t idx1 = A.extent(0), idx2 = A.extent(1), rank = A.extent(2);
 
@@ -45,11 +62,28 @@ namespace btas{
   }
 
   // this does the elementwise contraction \alpha A(i,j,k,r) * B(j, r) + \beta C(i,k,r) = C(i,k,r)
-  template <typename Tensor>
-  void middle_contract_with_pseudorank(double alpha, const Tensor & A,
-                                       const Tensor& B, double beta, Tensor& C){
-    using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+  template<
+      typename _T,
+      class _TensorA, class _TensorB, class _TensorC,
+      class = typename std::enable_if<
+          is_boxtensor<_TensorA>::value &
+          is_boxtensor<_TensorB>::value &
+          is_boxtensor<_TensorC>::value &
+          std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value &
+          std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value
+          >::type
+      >
+  void middle_contract_with_pseudorank(_T alpha, const _TensorA & A,
+                                       const _TensorB& B, _T beta, _TensorC& C){
+    static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorC>::value &&
+                      boxtensor_storage_order<_TensorB>::value == boxtensor_storage_order<_TensorC>::value,
+                  "btas::middle_contract does not support mixed storage order");
+    static_assert(boxtensor_storage_order<_TensorC>::value != boxtensor_storage_order<_TensorC>::other,
+                  "btas::middle_contract does not support non-major storage order");
+
+    typedef typename _TensorA::value_type value_type;
+    using ind_t = typename _TensorA::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename _TensorA::range_type>::ordinal_type;
 
     BTAS_ASSERT(A.rank() == 3)
     BTAS_ASSERT(B.rank() == 2)
@@ -63,8 +97,8 @@ namespace btas{
       BTAS_ASSERT(C.extent(0) == A.extent(0))
       BTAS_ASSERT(C.extent(1) == A.extent(2))
     } else{
-      C = Tensor(A.extent(0), A.extent(2));
-      C.fill(0.0);
+      C = _TensorC(A.extent(0), A.extent(2));
+      NumericType<value_type>::fill(std::begin(C), std::end(C), NumericType<value_type>::zero());
     }
 
     ind_t idx1 = A.extent(0), idx2 = A.extent(1), pseudo_rank = A.extent(2);
@@ -89,10 +123,28 @@ namespace btas{
   }
 
   // this computes \alpha A(i,j,r) * B(i,r) + \beta C(j,r) = C(j,r)
-  template<typename Tensor>
-  void front_contract(double alpha, const Tensor & A, const Tensor & B, double beta, Tensor & C){
-    using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+  template<
+      typename _T,
+      class _TensorA, class _TensorB, class _TensorC,
+      class = typename std::enable_if<
+          is_boxtensor<_TensorA>::value &
+          is_boxtensor<_TensorB>::value &
+          is_boxtensor<_TensorC>::value &
+          std::is_same<typename _TensorA::value_type, typename _TensorB::value_type>::value &
+          std::is_same<typename _TensorA::value_type, typename _TensorC::value_type>::value
+          >::type
+      >
+  void front_contract(_T alpha, const _TensorA & A,
+                      const _TensorB& B, _T beta, _TensorC& C){
+    static_assert(boxtensor_storage_order<_TensorA>::value == boxtensor_storage_order<_TensorC>::value &&
+                      boxtensor_storage_order<_TensorB>::value == boxtensor_storage_order<_TensorC>::value,
+                  "btas::middle_contract does not support mixed storage order");
+    static_assert(boxtensor_storage_order<_TensorC>::value != boxtensor_storage_order<_TensorC>::other,
+                  "btas::middle_contract does not support non-major storage order");
+
+    typedef typename _TensorA::value_type value_type;
+    using ind_t = typename _TensorA::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename _TensorA::range_type>::ordinal_type;
 
     BTAS_ASSERT(A.rank() == 3)
     BTAS_ASSERT(B.rank() == 2)
@@ -104,8 +156,8 @@ namespace btas{
       BTAS_ASSERT(C.extent(0) == A.extent(1))
       BTAS_ASSERT(C.extent(1) == A.extent(2))
     } else{
-      C = Tensor(A.extent(0), A.extent(1));
-      C.fill(0.0);
+      C = _TensorC(A.extent(0), A.extent(1));
+      NumericType<value_type>::fill(std::begin(C), std::end(C), NumericType<value_type>::zero());
     }
 
     ind_t idx1 = A.extent(0), idx2 =  A.extent(1), rank = A.extent(2);
