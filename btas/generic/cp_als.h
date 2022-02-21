@@ -606,9 +606,8 @@ namespace btas {
              bool &fast_pI) {
       size_t count = 0;
 
-      // Until either the initial guess is converged or it runs out of iterations
-      // update the factor matrices with or without Khatri-Rao product
-      // intermediate
+      // forms and stores partial grammian to minimize number of
+      // small gemm contractions
       bool is_converged = false;
       bool matlab = fast_pI;
       AtA = std::vector<Tensor>(ndim);
@@ -616,7 +615,10 @@ namespace btas {
         auto &a_mat = A[i];
         contract(1.0, a_mat, {1, 2}, a_mat, {1, 3}, 0.0, AtA[i], {2, 3});
       }
-      while (count < max_als && !is_converged) {
+      // Until either the initial guess is converged or it runs out of iterations
+      // update the factor matrices with or without Khatri-Rao product
+      // intermediate
+      do{
         count++;
         this->num_ALS++;
         for (size_t i = 0; i < ndim; i++) {
@@ -632,16 +634,13 @@ namespace btas {
           contract(1.0, ai, {1, 2}, ai, {1, 3}, 0.0, AtA[i], {2, 3});
         }
         is_converged = converge_test(A, AtA);
-      }
+      }while (count < max_als && !is_converged);
 
+      detail::get_fit(converge_test, epsilon);
+      epsilon = 1 - epsilon;
       // Checks loss function if required
-      if (calculate_epsilon) {
-        if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
-          detail::get_fit(converge_test, epsilon);
-          epsilon = 1 - epsilon;
-        } else {
+      if (calculate_epsilon && typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
           epsilon = this->norm(this->reconstruct() - tensor_ref);
-        }
       }
     }
 
@@ -791,8 +790,9 @@ namespace btas {
               idx1 = LH_size / idx2;
         temp.resize(
             Range{Range1{idx1}, Range1{idx2}, Range1{pseudo_rank}});
-        Tensor contract_tensor(Range{Range1{idx1}, Range1{pseudo_rank}});
-        contract_tensor.fill(0.0);
+        Tensor contract_tensor;
+        //Tensor contract_tensor(Range{Range1{idx1}, Range1{pseudo_rank}});
+        //contract_tensor.fill(0.0);
         const auto &a = A[(last_dim ? contract_dim + 1 : contract_dim)];
         // If the middle dimension is the mode not being contracted, I will move
         // it to the right hand side temp((size of tensor_ref/product of
