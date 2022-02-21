@@ -26,7 +26,7 @@ namespace btas {
     lambda = (lambda.empty() ? A[ndim] : lambda);
     auto lam_ptr = lambda.data();
     for (ind_t i = 0; i < rank; i++) {
-      scal(A[dims_order[0]].extent(0), (lam_ptr + i), std::begin(A[dims_order[0]]) + i, rank);
+      scal(A[dims_order[0]].extent(0), *(lam_ptr + i), std::begin(A[dims_order[0]]) + i, rank);
     }
 
     // Make the Khatri-Rao product of all the factor matrices execpt the last dimension
@@ -48,7 +48,7 @@ namespace btas {
     // remove the scaling applied to the first factor matrix
     lam_ptr = lambda.data();
     for (ind_t i = 0; i < rank; i++) {
-      auto val = 1.0 / (lam_ptr + i);
+      auto val = 1.0 / *(lam_ptr + i);
       scal(A[dims_order[0]].extent(0), val, std::begin(A[dims_order[0]]) + i, rank);
     }
     return hold;
