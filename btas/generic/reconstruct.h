@@ -9,7 +9,7 @@
 
 namespace btas {
   template<typename Tensor>
-  Tensor reconstruct(std::vector<Tensor> &A, std::vector<size_t> dims_order) {
+  Tensor reconstruct(std::vector<Tensor> &A, std::vector<size_t> dims_order, Tensor lambda = Tensor()) {
     using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
@@ -23,8 +23,10 @@ namespace btas {
       dimensions.push_back(A[dims_order[i]].extent(0));
     }
     ind_t rank = A[0].extent(1);
+    lambda = (lambda.empty() ? A[ndim] : lambda);
+    auto lam_ptr = lambda.data();
     for (ind_t i = 0; i < rank; i++) {
-      scal(A[dims_order[0]].extent(0), A[ndim](i), std::begin(A[dims_order[0]]) + i, rank);
+      scal(A[dims_order[0]].extent(0), (lam_ptr + i), std::begin(A[dims_order[0]]) + i, rank);
     }
 
     // Make the Khatri-Rao product of all the factor matrices execpt the last dimension
@@ -44,8 +46,10 @@ namespace btas {
     hold.resize(dimensions);
 
     // remove the scaling applied to the first factor matrix
+    lam_ptr = lambda.data();
     for (ind_t i = 0; i < rank; i++) {
-      scal(A[dims_order[0]].extent(0), 1 / A[ndim](i), std::begin(A[dims_order[0]]) + i, rank);
+      auto val = 1.0 / (lam_ptr + i);
+      scal(A[dims_order[0]].extent(0), val, std::begin(A[dims_order[0]]) + i, rank);
     }
     return hold;
   }
