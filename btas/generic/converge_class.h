@@ -167,7 +167,7 @@ namespace btas {
       verbose_ = verb;
     }
 
-  private:
+  protected:
     double tol_;
     double fitOld_ = -1.0;
     double normT_ = -1.0;
