@@ -245,7 +245,6 @@ TEST_CASE("CP")
       CHECK(std::abs(diff - results(19,0)) <= epsilon);
     }
 #endif
-#if 0
     SECTION("RALS MODE = 5, Finite rank"){
       CP_RALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
@@ -258,7 +257,6 @@ TEST_CASE("CP")
       double diff = A1.compute_error(conv, 1e-2, 1, 20);
       CHECK(std::abs(diff - results(21,0)) <= epsilon);
     }
-#endif
 #if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("RALS MODE = 5, Tucker + CP"){
       auto d = D5;
