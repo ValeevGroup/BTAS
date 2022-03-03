@@ -186,13 +186,11 @@ namespace btas {
       }
 
       // Checks loss function if required
-      if (calculate_epsilon) {
-        if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
-          detail::get_fit(converge_test, epsilon);
-          epsilon = 1 - epsilon;
-        } else {
-          epsilon = this->norm(this->reconstruct() - tensor_ref);
-        }
+      detail::get_fit(converge_test, epsilon);
+      epsilon = 1 - epsilon;
+      // Checks loss function if required
+      if (calculate_epsilon && typeid(converge_test) != typeid(btas::FitCheck<Tensor>)) {
+        epsilon = this->norm(this->reconstruct() - tensor_ref);
       }
     }
 
