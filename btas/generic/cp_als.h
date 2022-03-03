@@ -610,10 +610,13 @@ namespace btas {
       // small gemm contractions
       bool is_converged = false;
       bool matlab = fast_pI;
-      AtA = std::vector<Tensor>(ndim);
-      for (size_t i = 0; i < ndim; ++i) {
+      if(AtA.empty())
+        AtA = std::vector<Tensor>(ndim);
+      auto ptr_ata = AtA.begin();
+      for (size_t i = 0; i < ndim; ++i, ++ptr_ata) {
         auto &a_mat = A[i];
-        contract(1.0, a_mat, {1, 2}, a_mat, {1, 3}, 0.0, AtA[i], {2, 3});
+        *ptr_ata = Tensor();
+        contract(1.0, a_mat, {1, 2}, a_mat, {1, 3}, 0.0, *ptr_ata, {2, 3});
       }
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
