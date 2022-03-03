@@ -132,6 +132,8 @@ namespace btas {
           fitOld_ = -1.0;
           return true;
         }
+      } else if(fit > 0.999){
+        return true;
       }
 
       ++iter_;
