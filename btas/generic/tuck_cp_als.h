@@ -76,10 +76,17 @@ namespace btas{
     using CP<Tensor, ConvClass>::AtA;
 
    public:
-    TUCKER_CP_ALS(Tensor & tensor, double epsilon_tucker) :CP_ALS<Tensor, ConvClass>(tensor), tcut_tucker(epsilon_tucker){
+    /// Create a Tucker compressed CP ALS object
+    /// that stores but does not modify the reference tensor \c tensor.
+    /// Unless some other transformation is defined, computes the
+    /// Tucker decomposition truncating singular vectors with singular values
+    /// less than |tensor| * \c epsilon_tucker
+    /// \param[in] tensor the reference tensor to be decomposed.
+    /// \param[in] epsilon_tucker truncation parameter for tucker decomposition
+    TUCKER_CP_ALS(Tensor & tensor, double epsilon_tucker = 1e-3) :CP_ALS<Tensor, ConvClass>(tensor), tcut_tucker(epsilon_tucker){
     }
 
-    /// set the tensor transformation
+    /// Set the tensor transformation
     /// require that the factors be dimension (modified_size, orig_size)
     /// also assume that since you have the transormations, the reference is already
     /// transformed
@@ -96,39 +103,19 @@ namespace btas{
     Tensor core_tensor;
     double tcut_tucker;
 
-    /// \param[in] toCore this determines if computing ref -> core (true) or core -> ref (false);
-    /*void compute_core_tensor(){
-      // make sure its not a shallow copy
-      core_tensor = Tensor(tensor_ref);
-      // for each transformation, we are going to contract the
-      // leading mode and transpose it to the result of the dimension
-      // list.
-      // so collect total modes and prime
-      std::vector<size_t> core_modes, final, trans_modes;
-      core_modes.reserve(ndim); trans_modes.reserve(2); final.reserve(ndim);
-      trans_modes.emplace_back(0); trans_modes.emplace_back(ndim + 1);
-      for(size_t i = 0; i < ndim; ++i){
-        core_modes.emplace_back(i);
-      }
-
-      ord_t size = A.size();
-      final = core_modes;
-      auto ptr_tran = tucker_factors.begin();
-      // contracts the first mode and then tranposes it to the back of the tensor.
-      // works like the s^N algebra does N rotations and then finished
-      for(size_t i = 0; i < ndim; ++i, ++ptr_tran){
-        final.erase(final.begin());
-        final.emplace_back(0);
-        core_modes[0] = ndim + 1;
-        Tensor temp;
-        contract(1.0, *ptr_tran, trans_modes, core_tensor, core_modes, 0.0, temp, final);
-
-        core_tensor = temp;
-        final[ndim - 1] = i + 1;
-        core_modes = final;
-      }
-    }*/
-
+    /// computes the CP ALS of the tensor \c tensor using the core tensor \c core_tensor
+    /// stops when converge_test is satisfies. Stores the exact CP factors in A
+    /// stores the transformed CP factors in transformed_A
+    /// only one solver so dir isn't used, just an artifact of base class.
+    /// \param[in] rank current rank of the decomposotion
+    /// \param[in] converge_test ALS satisfactory condition checker.
+    /// \param[in] dir not used in this function
+    /// \param[in] max_als maximum number of ALS iterations
+    /// \param[in] calculate_epsilon should epsilon be returned, disregarded if ConvClass = FitCheck
+    /// \param[in, out] epsilon in: a double value is disregarded.
+    /// out: if ConvClass = FitCheck || \c calculate_epsilon the 2-norm tensor
+    /// error of the CP approximation else not modified.
+    /// \param[in] fast_pI Should ALS use a faster version of pseudoinverse?
     void ALS(ind_t rank, ConvClass &converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon,
                   bool &fast_pI) override{
       if(tucker_factors.empty()) {
@@ -182,6 +169,16 @@ namespace btas{
       }
     }
 
+    /// This is  solver for ALS, it computes the optimal factor assuming all others fixed.
+    /// Does not compute khatri-rao product, instead uses the same algorithm as base classes
+    /// direct algorithm.
+    /// \param[in] n Current mode being optimized
+    /// \param[in] rank rank of the decomposition
+    /// \param[in] fast_pI Should ALS use a faster version of pseudoinverse?
+    /// \param[in, out] matlab in: if cholesky failes use fast pseudoinverse? out: did fast pseudoinverse fail?
+    /// \param[in, out] converge_test in: important to set matricized tensor times khatri rao (MttKRP) if using FitCheck
+    /// otherwise not used. out: \c converge_test with MttKRP set.
+    /// \param[in] lambda regularization parameter.
     void core_ALS_solver(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test, double lambda = 0.0) {
       // Determine if n is the last mode, if it is first contract with first mode
       // and transpose the product
@@ -309,6 +306,55 @@ namespace btas{
 
   };
 
+  /** \brief Computes the Canonical Product (CP) decomposition of an order-N
+    tensor which has been transformed via HOSVD (or some other defined transformation)
+    using regularized alternating least squares (RALS).
+
+  This computes the CP decomposition of btas::Tensor objects with row
+          major storage only with fixed (compile-time) and variable (run-time)
+              ranks Does not support strided ranges.
+
+   \warning this code takes a non-const reference \c tensor_ref and does not
+              modify the values. This is a result of API (reshape needs non-const tensor)
+
+                  Synopsis:
+    \code
+      // Constructors
+      TUCKER_CP_RALS A(tensor)        // TUCKER_CP_RALS object with empty factor
+                               // matrices and empty transformation matrices
+
+      // Operations
+      A.compute_rank(rank, converge_test)             // Computes the CP of a tensor to
+                                           // rank \c rank by either building the rank or using HOSVD.
+
+      A.compute_rank_random(rank, converge_test)      // Computes the CP of tensor to
+                                                  // rank \c rank. Factor matrices built at \c rank
+                                                  // with random numbers
+
+      A.compute_error(converge_test, omega)           // Computes the CP_RALS of tensor to
+                                             // 2-norm
+                                             // error < omega by building the rank (HOSVD option available)
+
+      A.compute_geometric(rank, converge_test, step)  // Computes CP of tensor to
+                                                      // rank with
+                                                      // geometric steps of step between
+                                                      // guesses.
+
+      A.compute_PALS(converge_test)                   // computes CP_RALS of tensor to
+                                     // rank = 3 * max_dim(tensor)
+                                     // in 4 panels using a modified
+                                     // HOSVD initial guess
+
+      //See documentation for full range of options
+
+      // Accessing Factor Matrices
+      A.get_factor_matrices()             // Returns a vector of factor matrices, if
+                               // they have been computed
+
+      A.reconstruct()                     // Returns the tensor computed using the
+                       // CP factor matrices
+    \endcode
+              */
   template <typename Tensor, class ConvClass = NormCheck<Tensor> >
   class TUCKER_CP_RALS : public TUCKER_CP_ALS<Tensor, ConvClass>{
    protected:
@@ -326,12 +372,32 @@ namespace btas{
     using TUCKER_CP_ALS<Tensor, ConvClass> ::transformed_A;
 
    public:
+    /// Create a Tucker compressed CP ALS object
+    /// that stores but does not modify the reference tensor \c tensor.
+    /// Unless some other transformation is defined, computes the
+    /// Tucker decomposition truncating singular vectors with singular values
+    /// less than |tensor| * \c epsilon_tucker
+    /// \param[in] tensor the reference tensor to be decomposed.
+    /// \param[in] epsilon_tucker truncation parameter for tucker decomposition
     TUCKER_CP_RALS(Tensor & tensor, double epsilon_tucker) :TUCKER_CP_ALS<Tensor, ConvClass>(tensor, epsilon_tucker){
     }
 
    protected:
     RALSHelper<Tensor> helper;  // Helper object to compute regularized steps
 
+    /// computes the CP ALS of the tensor \c tensor using the core tensor \c core_tensor
+    /// stops when converge_test is satisfies. Stores the exact CP factors in A
+    /// stores the transformed CP factors in transformed_A
+    /// only one solver so dir isn't used, just an artifact of base class.
+    /// \param[in] rank current rank of the decomposotion
+    /// \param[in] converge_test ALS satisfactory condition checker.
+    /// \param[in] dir not used in this function
+    /// \param[in] max_als maximum number of ALS iterations
+    /// \param[in] calculate_epsilon should epsilon be returned, disregarded if ConvClass = FitCheck
+    /// \param[in, out] epsilon in: a double value is disregarded.
+    /// out: if ConvClass = FitCheck || \c calculate_epsilon the 2-norm tensor
+    /// error of the CP approximation else not modified.
+    /// \param[in] fast_pI Should ALS use a faster version of pseudoinverse?
     void ALS(ind_t rank, ConvClass &converge_test, bool dir, ind_t max_als, bool calculate_epsilon, double &epsilon,
              bool &fast_pI) {
       size_t count = 0;
