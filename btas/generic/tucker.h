@@ -92,5 +92,124 @@ namespace btas {
 #endif  // BTAS_HAS_INTEL_MKL
     }
   }
+
+  template<typename Tensor>
+  void make_tucker_factors(Tensor& A, double epsilon_svd,
+                           std::vector<Tensor> &transforms, bool compute_core = false){
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+    auto ndim = A.rank();
+    transforms.clear();
+    transforms.reserve(ndim);
+
+    double norm2 = dot(A,A);
+    auto threshold = epsilon_svd * epsilon_svd * norm2 / ndim;
+    std::vector<size_t> left_modes, right_modes, final;
+    final.push_back(0); final.emplace_back(ndim+1);
+    left_modes.reserve(ndim); right_modes.reserve(ndim);
+    for(size_t i = 1; i <= ndim; ++i){
+      left_modes.emplace_back(i);
+      right_modes.emplace_back(i);
+    }
+
+    auto ptr_left = left_modes.begin(), ptr_right = right_modes.begin();
+    auto print=[](Tensor & a){
+      std::cout << a.extent() << "{";
+      for(auto & i : a) std::cout << i << " ";
+      std::cout << "}" << std::endl;
+    };
+    for(size_t i = 0; i < ndim; ++i, ++ptr_left, ++ptr_right){
+      // Compute A * A to make tucker computation easier (this turns from SVD into an eigenvalue
+      // decomposition, i.e. HOSVD)
+      size_t temp = *ptr_left;
+      *ptr_left = 0;
+      *ptr_right = ndim + 1;
+      Tensor AAt;
+      contract(1.0, A, left_modes, A, right_modes, 0.0, AAt, final);
+      *ptr_left = temp;
+      *ptr_right = temp;
+
+      // compute the eigenvalue decomposition of each mode of A
+      ind_t r = AAt.extent(0);
+      Tensor lambda(r); lambda.fill(0.0);
+      auto info = hereig(blas::Layout::ColMajor, lapack::Job::Vec, lapack::Uplo::Lower, r, AAt.data(), r, lambda.data());
+      if (info) BTAS_EXCEPTION("Error in computing the tucker SVD");
+
+      // Find how many significant vectors are in this transformation
+      ind_t rank = 0,  zero = 0;
+      for(auto & eig : lambda){
+        if(eig < threshold) ++rank;
+      }
+
+      // Truncate the column space of the unitary factor matrix.
+      ind_t kept_evals = r - rank;
+      lambda = Tensor(kept_evals, r);
+      auto lower_bound = {rank, zero};
+      auto upper_bound = {r, r};
+      auto view = btas::make_view(AAt.range().slice(lower_bound, upper_bound), AAt.storage());
+      std::copy(view.begin(), view.end(), lambda.begin());
+
+      // Push the factor matrix back as a transformation.
+      transforms.emplace_back(lambda);
+    }
+
+    if(compute_core){
+      std::cout << A << std::endl;
+      transform_tucker(true, A, transforms);
+    }
+  }
+
+  template<typename Tensor>
+  void transform_tucker(bool to_core, Tensor & A, std::vector<Tensor> transforms){
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
+    auto ndim = A.rank();
+
+    std::vector<size_t> left_modes, right_modes, final;
+    final.push_back(0); final.emplace_back(ndim+1);
+    left_modes.reserve(ndim); right_modes.reserve(ndim);
+    for(size_t i = 1; i <= ndim; ++i){
+      left_modes.emplace_back(i);
+      right_modes.emplace_back(i);
+    }
+
+    if(!to_core) {
+      // as a reference, this properly flips the original tensor back to the original
+      // subspace.
+      auto ptr_tran = transforms.begin();
+
+      for (size_t i = 0; i < ndim; ++i, ++ptr_tran) {
+        right_modes.emplace_back(ndim + 1);
+        right_modes.erase(right_modes.begin());
+        left_modes[0] = 0;
+        Tensor temp;
+
+        contract(1.0, *ptr_tran, final, A, left_modes, 0.0, temp, right_modes);
+
+        A = temp;
+        right_modes[ndim - 1] = i + 1;
+        left_modes = right_modes;
+      }
+    }
+    else {
+      ord_t size = A.size();
+      right_modes = left_modes;
+      auto ptr_tran = transforms.begin();
+      // contracts the first mode and then tranposes it to the back of the tensor.
+      // works like the s^N algebra does N rotations and then finished
+      for(size_t i = 0; i < ndim; ++i, ++ptr_tran){
+        right_modes.erase(right_modes.begin());
+        right_modes.emplace_back(0);
+        left_modes[0] = ndim + 1;
+        Tensor temp;
+        contract(1.0, *ptr_tran, final, A, left_modes, 0.0, temp, right_modes);
+
+        A = temp;
+        right_modes[ndim - 1] = i + 1;
+        left_modes = right_modes;
+      }
+    }
+  }
 } // namespace btas
 #endif // BTAS_TUCKER_DECOMP_H
