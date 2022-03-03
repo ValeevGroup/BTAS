@@ -602,7 +602,7 @@ namespace btas {
     /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// return in \c fast_pI was successful
 
-    void ALS(ind_t rank, ConvClass &converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon,
+    virtual void ALS(ind_t rank, ConvClass &converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon,
              bool &fast_pI) {
       size_t count = 0;
 
