@@ -198,9 +198,7 @@ TEST_CASE("CP")
 
       btas::TUCKER_CP_RALS<tensor, conv_class > A1(d, 1e-3);
       conv.set_norm(norm3);
-      conv.verbose(true);
       double diff = A1.compute_rank(5, conv, 1, false, 0, 100, false, false, true);
-      conv.verbose(false);
       CHECK(std::abs(diff - results(12,0)) <= epsilon);
     }
 #endif
@@ -262,7 +260,8 @@ TEST_CASE("CP")
       auto d = D5;
       btas::TUCKER_CP_RALS<tensor, conv_class > A1(d, 1e-1);
       conv.set_norm(norm5);
-      conv.verbose(true);
+      double diff = A1.compute_rank(5, conv);
+      CHECK(std::abs(diff - results(20,0)) <= epsilon);
     }
 #endif
 #if BTAS_ENABLE_RANDOM_CP_UT
