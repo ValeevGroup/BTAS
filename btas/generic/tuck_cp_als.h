@@ -65,6 +65,7 @@ namespace btas{
                                          */
   template <typename Tensor, class ConvClass = NormCheck<Tensor> >
   class TUCKER_CP_ALS : public CP_ALS<Tensor, ConvClass> {
+   protected:
     using CP_ALS<Tensor, ConvClass>::tensor_ref;
     using typename CP_ALS<Tensor, ConvClass>::ind_t;
     using typename CP_ALS<Tensor, ConvClass>::ord_t;
@@ -310,6 +311,7 @@ namespace btas{
 
   template <typename Tensor, class ConvClass = NormCheck<Tensor> >
   class TUCKER_CP_RALS : public TUCKER_CP_ALS<Tensor, ConvClass>{
+   protected:
     using CP_ALS<Tensor, ConvClass>::tensor_ref;
     using typename CP_ALS<Tensor, ConvClass>::ind_t;
     using typename CP_ALS<Tensor, ConvClass>::ord_t;
@@ -318,6 +320,7 @@ namespace btas{
     using CP<Tensor, ConvClass>::A;
     using CP<Tensor, ConvClass>::ndim;
     using CP<Tensor, ConvClass>::AtA;
+
     using TUCKER_CP_ALS<Tensor, ConvClass> ::core_tensor;
     using TUCKER_CP_ALS<Tensor, ConvClass> ::tucker_factors;
     using TUCKER_CP_ALS<Tensor, ConvClass> ::transformed_A;
