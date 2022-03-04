@@ -92,9 +92,11 @@ namespace btas{
     /// transformed
    void set_tucker_factors(std::vector<Tensor> & facs){
      BTAS_ASSERT(facs.size() == this->ndim)
+     size_t num = 0;
      for(auto i : facs){
        BTAS_ASSERT(i.rank() == 2)
-       BTAS_ASSERT(i.extent(0) == tensor_ref.extent(i))
+       BTAS_ASSERT(i.extent(0) == tensor_ref.extent(num))
+       ++num;
      }
      tucker_factors = facs;
    }
