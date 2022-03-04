@@ -99,6 +99,8 @@ namespace btas{
        ++num;
      }
      tucker_factors = facs;
+     core_tensor = tensor_ref;
+     transform_tucker(true, core_tensor, tucker_factors);
    }
 
    protected:
