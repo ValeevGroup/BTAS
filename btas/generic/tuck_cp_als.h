@@ -96,6 +96,7 @@ namespace btas{
        BTAS_ASSERT(i.rank() == 2)
        BTAS_ASSERT(i.extent(0) == tensor_ref.extent(i))
      }
+     tucker_factors = facs;
    }
 
    protected:
