@@ -93,12 +93,15 @@ namespace btas{
    void set_tucker_factors(std::vector<Tensor> & facs){
      BTAS_ASSERT(facs.size() == this->ndim)
      size_t num = 0;
+     tucker_factors.reserve(ndim);
+     // because the reference is transformed we need the untransformed as tensor_ref
      for(auto i : facs){
        BTAS_ASSERT(i.rank() == 2)
        BTAS_ASSERT(i.extent(0) == tensor_ref.extent(num))
+       tucker_factors.emplace_back(i);
        ++num;
      }
-     tucker_factors = facs;
+
      core_tensor = tensor_ref;
      transform_tucker(true, core_tensor, tucker_factors);
    }
@@ -107,6 +110,7 @@ namespace btas{
     std::vector<Tensor> tucker_factors, transformed_A;
     Tensor core_tensor;
     double tcut_tucker;
+    size_t core_size;
 
     /// computes the CP ALS of the tensor \c tensor using the core tensor \c core_tensor
     /// stops when converge_test is satisfies. Stores the exact CP factors in A
@@ -129,6 +133,7 @@ namespace btas{
         transform_tucker(true, core_tensor, tucker_factors);
       }
 
+      core_size = core_tensor.size();
       size_t count = 0;
 
       bool is_converged = false;
@@ -155,9 +160,6 @@ namespace btas{
         count++;
         this->num_ALS++;
         for (size_t i = 0; i < ndim; i++) {
-          auto acur = A[i];
-          this->direct(i, rank, fast_pI, matlab, converge_test);
-          A[i] = acur;
           core_ALS_solver(i, rank, fast_pI, matlab, converge_test);
           auto &ai = A[i];
           contract(1.0, ai, {1, 2}, ai, {1, 3}, 0.0, AtA[i], {2, 3});
@@ -189,7 +191,7 @@ namespace btas{
       // and transpose the product
       bool last_dim = n == ndim - 1;
       // product of all dimensions
-      ord_t LH_size = size;
+      ord_t LH_size = core_size;
       size_t contract_dim = last_dim ? 0 : ndim - 1;
       ind_t offset_dim = core_tensor.extent(n);
       ind_t pseudo_rank = rank;
@@ -298,7 +300,6 @@ namespace btas{
       }
       // multiply resulting matrix An by pseudoinverse to calculate optimized
       // factor matrix
-      //std::cout << An << std::endl;
       detail::set_MtKRP(converge_test, An);
 
       // Temp is then rewritten with unnormalized new A[n] matrix
@@ -407,11 +408,11 @@ namespace btas{
              bool &fast_pI) {
       size_t count = 0;
 
-      if(tucker_factors.empty())
+      if(tucker_factors.empty()) {
         make_tucker_factors(tensor_ref, this->tcut_tucker, tucker_factors, false);
-
-      core_tensor = tensor_ref;
-      transform_tucker(true, core_tensor, tucker_factors);
+        core_tensor = tensor_ref;
+        transform_tucker(true, core_tensor, tucker_factors);
+      }
 
       if(AtA.empty()) {
         AtA = std::vector<Tensor>(ndim);
