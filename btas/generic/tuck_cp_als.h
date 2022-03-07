@@ -90,7 +90,9 @@ namespace btas{
     /// require that the factors be dimension (modified_size, orig_size)
     /// also assume that since you have the transormations, the reference is already
     /// transformed
-   void set_tucker_factors(std::vector<Tensor> & facs){
+    /// \param[in] facs : set of tucker factor matrices
+    /// \param[in] transform_core : should the "original" non tucker approximated tensor be constructed?
+   void set_tucker_factors(std::vector<Tensor> facs, bool transform_core = false){
      BTAS_ASSERT(facs.size() == this->ndim)
      size_t num = 0;
      tucker_factors.reserve(ndim);
@@ -103,7 +105,8 @@ namespace btas{
      }
 
      core_tensor = tensor_ref;
-     transform_tucker(true, core_tensor, tucker_factors);
+     if(transform_core)
+      transform_tucker(false, tensor_ref, tucker_factors);
    }
 
    protected:
