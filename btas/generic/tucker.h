@@ -113,11 +113,6 @@ namespace btas {
     }
 
     auto ptr_left = left_modes.begin(), ptr_right = right_modes.begin();
-    auto print=[](Tensor & a){
-      std::cout << a.extent() << "{";
-      for(auto & i : a) std::cout << i << " ";
-      std::cout << "}" << std::endl;
-    };
     for(size_t i = 0; i < ndim; ++i, ++ptr_left, ++ptr_right){
       // Compute A * A to make tucker computation easier (this turns from SVD into an eigenvalue
       // decomposition, i.e. HOSVD)
@@ -154,7 +149,6 @@ namespace btas {
     }
 
     if(compute_core){
-      std::cout << A << std::endl;
       transform_tucker(true, A, transforms);
     }
   }
