@@ -91,8 +91,9 @@ namespace btas{
     /// also assume that since you have the transormations, the reference is already
     /// transformed
     /// \param[in] facs : set of tucker factor matrices
-    /// \param[in] transform_core : should the "original" non tucker approximated tensor be constructed?
-   void set_tucker_factors(std::vector<Tensor> facs, bool transform_core = false){
+    /// \param[in] reference_is_core : was the reference tensor provided to TUCKER_CP_ALS a core tensor
+    /// if no compute the core tensor.
+   void set_tucker_factors(std::vector<Tensor> facs, bool reference_is_core = true){
      BTAS_ASSERT(facs.size() == this->ndim)
      size_t num = 0;
      tucker_factors.reserve(ndim);
@@ -105,8 +106,13 @@ namespace btas{
      }
 
      core_tensor = tensor_ref;
-     if(transform_core)
-      transform_tucker(false, tensor_ref, tucker_factors);
+     if(reference_is_core) {
+       tref_is_core = reference_is_core;
+     } else{
+       transform_tucker(true, core_tensor, tucker_factors);
+     }
+    //if(transform_core)
+    //transform_tucker(false, tensor_ref, tucker_factors);
    }
 
    protected:
@@ -114,6 +120,7 @@ namespace btas{
     Tensor core_tensor;
     double tcut_tucker;
     size_t core_size;
+    bool tref_is_core = false;
 
     /// computes the CP ALS of the tensor \c tensor using the core tensor \c core_tensor
     /// stops when converge_test is satisfies. Stores the exact CP factors in A
@@ -130,10 +137,45 @@ namespace btas{
     /// \param[in] fast_pI Should ALS use a faster version of pseudoinverse?
     void ALS(ind_t rank, ConvClass &converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon,
                   bool &fast_pI) override{
-      if(tucker_factors.empty()) {
-        make_tucker_factors(tensor_ref, tcut_tucker, tucker_factors, false);
-        core_tensor = tensor_ref;
-        transform_tucker(true, core_tensor, tucker_factors);
+      {
+        // If no tucker factors
+        if (tucker_factors.empty()) {
+          make_tucker_factors(tensor_ref, tcut_tucker, tucker_factors, false);
+          core_tensor = tensor_ref;
+          transform_tucker(true, core_tensor, tucker_factors);
+        }
+        if (AtA.empty()) {
+          AtA = std::vector<Tensor>(ndim);
+          transformed_A = std::vector<Tensor>(ndim);
+        }
+
+        auto ptr_A = A.begin(),
+             ptr_T = tucker_factors.begin(),
+             ptr_AtA = AtA.begin(),
+             ptr_tran = transformed_A.begin();
+        if (!tref_is_core) {
+          // tensor_ref is not the core tensor so the dimensions of the
+          // reference factors need to be scaled by the tucker factors.
+          for (size_t i = 0; i < ndim; ++i, ++ptr_A, ++ptr_T, ++ptr_AtA, ++ptr_tran) {
+            *ptr_AtA = Tensor();
+            contract(1.0, *ptr_A, {1, 2}, *ptr_A, {1, 3}, 0.0, *ptr_AtA, {2, 3});
+            Tensor trans;
+            *ptr_tran = Tensor();
+            contract(1.0, *ptr_T, {1, 2}, *ptr_A, {2, 3}, 0.0, *ptr_tran, {1, 3});
+          }
+        } else {
+          // if tensor_ref is the core tensor then the factors in A need to be taken
+          // back into the correct (non tucker) subspace.
+          for (size_t i = 0; i < ndim; ++i, ++ptr_A, ++ptr_T, ++ptr_AtA, ++ptr_tran) {
+            Tensor trans;
+            *ptr_tran = *ptr_A;
+            *ptr_A = Tensor();
+            contract(1.0, *ptr_T, {2, 1}, *ptr_tran, {2, 3}, 0.0, *ptr_A, {1, 3});
+
+            *ptr_AtA = Tensor();
+            contract(1.0, *ptr_A, {1, 2}, *ptr_A, {1, 3}, 0.0, *ptr_AtA, {2, 3});
+          }
+        }
       }
 
       core_size = core_tensor.size();
@@ -141,20 +183,6 @@ namespace btas{
 
       bool is_converged = false;
       bool matlab = fast_pI;
-      if(AtA.empty()) {
-        AtA = std::vector<Tensor>(ndim);
-        transformed_A = std::vector<Tensor>(ndim);
-      }
-      auto ptr_A = A.begin(), ptr_T = tucker_factors.begin(),
-           ptr_AtA = AtA.begin(), ptr_tran = transformed_A.begin();
-      for (size_t i = 0; i < ndim; ++i,++ptr_A, ++ptr_T, ++ptr_AtA, ++ptr_tran) {
-        auto &a_mat = A[i];
-        *ptr_AtA = Tensor();
-        contract(1.0, *ptr_A, {1, 2}, *ptr_A, {1, 3}, 0.0, *ptr_AtA, {2, 3});
-        Tensor trans;
-        *ptr_tran = Tensor();
-        contract(1.0, *ptr_T, {1,2}, *ptr_A, {2,3}, 0.0, *ptr_tran, {1,3});
-      }
 
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
