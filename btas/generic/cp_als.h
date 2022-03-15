@@ -316,12 +316,19 @@ namespace btas {
       return epsilon;
     }
 
+    /// function to set the CP factor matrices
+    /// When factors are set rank = vecs[0].extent(1)
+    /// when computing ALS.
+    /// \param[in] vecs : set of initial factor matrices to use in ALS
     void set_cp_factors(std::vector<Tensor> vecs){
       BTAS_ASSERT(vecs.size() == ndim + 1);
+      auto rank = vecs[0].extent(1);
       A.reserve(ndim + 1);
-      for(auto & i : vecs)
+      for(auto & i : vecs) {
+        BTAS_ASSERT(i.extent(1) == rank)
         this->A.emplace_back(i);
-      std::cout << this->A[0].extent(1) << std::endl;
+      }
+      //std::cout << this->A[0].extent(1) << std::endl;
       factors_set = true;
     }
 
@@ -506,6 +513,7 @@ namespace btas {
         ALS(rank_new, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
       if (factors_set && !opt_in_for_loop) {
+        rank = A[0].extent(1);
         ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
     }
