@@ -129,11 +129,9 @@ namespace btas {
           iter_ = 0;
           converged_num = 0;
           final_fit_ = fitOld_;
-          fitOld_ = -1.0;
+          fitOld_ = 1.0;
           return true;
         }
-      } else if(fit > 0.999){
-        return true;
       }
 
       ++iter_;
@@ -171,7 +169,7 @@ namespace btas {
 
   protected:
     double tol_;
-    double fitOld_ = -1.0;
+    double fitOld_ = 1.0;
     double normT_ = -1.0;
     double final_fit_ = 0.0;
     size_t iter_ = 0;
@@ -326,7 +324,7 @@ namespace btas {
       if(fitChange < tol_) {
         iter_ = 0;
         final_fit_ = fitOld_;
-        fitOld_ = -1.0;
+        fitOld_ = 1.0;
         return true;
       }
 
@@ -376,7 +374,7 @@ namespace btas {
 
   private:
     double tol_;
-    double fitOld_ = -1.0;
+    double fitOld_ = 1.0;
     double final_fit_ = 0.0;
     double normTL_ = -1.0, normTR_ = -1.0;
     size_t iter_ = 0;
