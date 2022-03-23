@@ -827,7 +827,19 @@ namespace btas {
             temp.fill(0.0);
 
             const auto &a = A[contract_dim_inter];
-            middle_contract(1.0, contract_tensor, a, 0.0, temp);
+            ord_t j_times_rank = 0, j_times_cont_rank = 0;
+            for (ind_t j = 0; j < idx1; ++j, j_times_rank += rank) {
+              auto *temp_ptr = temp.data() + j_times_rank;
+              ord_t k_times_rank = 0;
+              for (ind_t k = 0; k < contract_size; ++k, k_times_rank += rank) {
+                const auto *contract_ptr = contract_tensor.data() + j_times_cont_rank + k_times_rank;
+                const auto *A_ptr = a.data() + k_times_rank;
+                for (ord_t r = 0; r < rank; ++r) {
+                  *(temp_ptr + r) += *(contract_ptr + r) * *(A_ptr + r);
+                }
+              }
+              j_times_cont_rank += k_times_rank;
+            }
             // After hadamard contract reset contract_tensor with new product
             contract_tensor = temp;
             // Remove the contracted dimension from the current size.
@@ -897,14 +909,42 @@ namespace btas {
         // If the code hasn't hit the mode of interest yet, it will contract
         // over the middle dimension and sum over the rank.
         else if (contract_dim > nInTensor) {
-          //ord_t j_times_rank = 0, j_times_cont_rank = 0;
-          middle_contract(1.0, contract_tensor, a, 0.0, temp);
+          ord_t j_times_rank = 0, j_times_cont_rank = 0;
+          for (ind_t j = 0; j < LH_size; ++j, j_times_rank += pseudo_rank) {
+            auto *temp_ptr = temp.data() + j_times_rank;
+            ord_t k_times_rank = 0;
+            for (ind_t k = 0; k < contract_size; ++k, k_times_rank += pseudo_rank) {
+              const auto *contract_ptr = contract_tensor.data() + j_times_cont_rank + k_times_rank;
+              const auto *A_ptr = a.data() + k_times_rank;
+              for (ind_t r = 0; r < pseudo_rank; ++r) {
+                *(temp_ptr + r) += *(contract_ptr + r) * *(A_ptr + r);
+              }
+            }
+            j_times_cont_rank += k_times_rank;
+          }
           contract_tensor = temp;
         }
         // If the code has passed the mode of interest, it will contract over
         // the middle dimension and sum over rank * mode n dimension
         else {
-          middle_contract_with_pseudorank(1.0, contract_tensor, a, 0.0, temp);
+          ord_t j_times_rank = 0, j_times_cont_rank = 0;
+          for (ind_t j = 0; j < LH_size; ++j, j_times_rank += pseudo_rank) {
+            auto *temp_ptr = temp.data() + j_times_rank;
+            ord_t k_times_prank = 0, k_times_rank = 0;
+            for (ind_t k = 0; k < contract_size; ++k, k_times_prank += pseudo_rank, k_times_rank += rank) {
+              const auto *A_ptr = a.data() + k_times_rank;
+              ord_t l_times_rank = 0;
+              for (ind_t l = 0; l < offset; ++l, l_times_rank += rank) {
+                const auto *contract_ptr = contract_tensor.data() + j_times_cont_rank + k_times_prank + l_times_rank;
+                for (ind_t r = 0; r < rank; ++r) {
+                  *(temp_ptr + l * rank + r) += *(contract_ptr + r) * *(A_ptr + r);
+                  // temp(j, l*rank + r) += contract_tensor(j,k,l*rank+r) * A[a_dim](k,r);
+                }
+              }
+            }
+            j_times_cont_rank += k_times_rank;
+          }
+
           contract_tensor = temp;
         }
       }
@@ -920,7 +960,19 @@ namespace btas {
         contract_tensor.resize(Range{Range1{contract_size}, Range1{offset}, Range1{rank}});
         temp.fill(0.0);
         const auto &a = A[a_dim];
-        front_contract(1.0,  contract_tensor, a, 0.0, temp);
+        ord_t i_times_rank = 0, i_times_off_rank = 0;
+        for (ind_t i = 0; i < contract_size; i++, i_times_rank += rank) {
+          const auto *A_ptr = a.data() + i_times_rank;
+          ord_t j_times_rank = 0;
+          for (ind_t j = 0; j < offset; j++, j_times_rank += rank) {
+            const auto *contract_ptr = contract_tensor.data() + i_times_off_rank + j_times_rank;
+            auto *temp_ptr = temp.data() + j_times_rank;
+            for (ord_t r = 0; r < rank; r++) {
+              *(temp_ptr + r) += *(A_ptr + r) * *(contract_ptr + r);
+            }
+          }
+          i_times_off_rank += j_times_rank;
+        }
         contract_tensor = temp;
       }
 
