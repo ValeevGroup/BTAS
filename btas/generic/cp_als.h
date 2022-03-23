@@ -116,6 +116,8 @@ namespace btas {
       }
     }
 
+    CP_ALS() = default;
+
     ~CP_ALS() = default;
 
     /// \brief Computes decomposition of the order-N tensor \c tensor
