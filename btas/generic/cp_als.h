@@ -649,6 +649,7 @@ namespace btas {
         is_converged = converge_test(A, AtA);
       }while (count < max_als && !is_converged);
 
+      std::cout << "Finished rank: " << rank << std::endl;
       detail::get_fit(converge_test, epsilon);
       epsilon = 1 - epsilon;
       // Checks loss function if required
@@ -818,7 +819,19 @@ namespace btas {
         // over the middle dimension and sum over the rank.
 
         else if (contract_dim > n) {
+          Tensor rand, diff;
+          //middle_rand_contract(1.0, temp, a, 0.0, rand);
+          //std::cout << rand << std::endl;
           middle_contract(1.0, temp, a, 0.0, contract_tensor);
+          //std::cout << contract_tensor << std::endl;
+
+//          diff = rand - contract_tensor;
+//          auto nrm=[](Tensor & a){
+//            double n = 0.0;
+//            for(auto & i : a) n += i * i;
+//            return sqrt(n);
+//          };
+//          std::cout << "error : " << nrm(diff) / nrm(contract_tensor) << std::endl;
           temp = contract_tensor;
         }
 

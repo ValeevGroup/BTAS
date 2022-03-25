@@ -23,6 +23,7 @@
 #include <btas/generic/reconstruct.h>
 #include <btas/generic/linear_algebra.h>
 #include <btas/generic/element_wise_contract.h>
+#include <btas/generic/elementwise_rand_contract.h>
 
 namespace btas {
   namespace detail {
