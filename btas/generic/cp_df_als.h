@@ -827,7 +827,8 @@ namespace btas {
             temp.fill(0.0);
 
             const auto &a = A[contract_dim_inter];
-            ord_t j_times_rank = 0, j_times_cont_rank = 0;
+            middle_contract(1.0, contract_tensor, a, 0.0, temp);
+            /*ord_t j_times_rank = 0, j_times_cont_rank = 0;
             for (ind_t j = 0; j < idx1; ++j, j_times_rank += rank) {
               auto *temp_ptr = temp.data() + j_times_rank;
               ord_t k_times_rank = 0;
@@ -839,7 +840,7 @@ namespace btas {
                 }
               }
               j_times_cont_rank += k_times_rank;
-            }
+            }*/
             // After hadamard contract reset contract_tensor with new product
             contract_tensor = temp;
             // Remove the contracted dimension from the current size.
@@ -909,19 +910,9 @@ namespace btas {
         // If the code hasn't hit the mode of interest yet, it will contract
         // over the middle dimension and sum over the rank.
         else if (contract_dim > nInTensor) {
+          middle_contract(1.0, contract_tensor, a, 0.0, temp);
           ord_t j_times_rank = 0, j_times_cont_rank = 0;
-          for (ind_t j = 0; j < LH_size; ++j, j_times_rank += pseudo_rank) {
-            auto *temp_ptr = temp.data() + j_times_rank;
-            ord_t k_times_rank = 0;
-            for (ind_t k = 0; k < contract_size; ++k, k_times_rank += pseudo_rank) {
-              const auto *contract_ptr = contract_tensor.data() + j_times_cont_rank + k_times_rank;
-              const auto *A_ptr = a.data() + k_times_rank;
-              for (ind_t r = 0; r < pseudo_rank; ++r) {
-                *(temp_ptr + r) += *(contract_ptr + r) * *(A_ptr + r);
-              }
-            }
-            j_times_cont_rank += k_times_rank;
-          }
+
           contract_tensor = temp;
         }
         // If the code has passed the mode of interest, it will contract over
