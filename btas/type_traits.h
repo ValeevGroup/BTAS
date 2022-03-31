@@ -5,7 +5,7 @@
 #include <complex>
 
 // C++20 extensions
-// TODO: CPP guard if compiling with C++20
+#if __cplusplus < 202002L
 namespace std {
   template< class T >
   struct remove_cvref {
@@ -23,6 +23,7 @@ namespace std {
   template< class T >
   using type_identity_t = typename type_identity<T>::type;
 }
+#endif
 
 namespace btas {
 
