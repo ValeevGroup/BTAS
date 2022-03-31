@@ -395,9 +395,11 @@ namespace btas{
             A[i] = A[tmp];
           }
         }
-        detail::get_fit(converge_test, epsilon);
         is_converged = converge_test(A);
       }
+
+      detail::get_fit(converge_test, epsilon);
+      epsilon = 1 - epsilon;
     }
 
     /// Computes an optimized factor matrix holding all others constant.
