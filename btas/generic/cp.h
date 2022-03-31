@@ -56,7 +56,7 @@ namespace btas {
     template <typename T>
     void get_fit(T &t, double &epsilon) {
       // epsilon = epsilon;
-      epsilon = 0;
+      epsilon = -1;
       return;
     }
 
