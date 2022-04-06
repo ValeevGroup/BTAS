@@ -272,7 +272,7 @@ namespace btas {
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
           auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
-          //std::cout << "The accuracy of the LHS decomposition is : " << error * 100 << std::endl;
+          std::cout << "The accuracy of the LHS decomposition is : " << error * 100 << std::endl;
           init_factors_left = CP3.get_factor_matrices();
           auto cur_dim = init_factors_left.size() - 1;
           for (size_t i = 1; i < cur_dim; ++i) {
@@ -286,7 +286,7 @@ namespace btas {
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
           auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
-          //std::cout << "The accuracy of the RHS decomposition is : " << error * 100 << std::endl;
+          std::cout << "The accuracy of the RHS decomposition is : " << error * 100 << std::endl;
           init_factors_right = CP3.get_factor_matrices();
           auto cur_dim = init_factors_right.size();
           if (rank_cp3 == rank_cp4) {
@@ -326,7 +326,7 @@ namespace btas {
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
           auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
-          //std::cout << "LHS accuracy: " << error * 100 << std::endl;
+          std::cout << "LHS accuracy: " << error * 100 << std::endl;
           init_factors_left = CP3.get_factor_matrices();
           auto cur_dim = init_factors_left.size() - 1;
           for (size_t i = 1; i < cur_dim; ++i, ++a_ptr) {
@@ -348,7 +348,7 @@ namespace btas {
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
           auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
-          //std::cout << "RHS accuracy: " << error * 100 << std::endl;
+          std::cout << "RHS accuracy: " << error * 100 << std::endl;
           init_factors_right = CP3.get_factor_matrices();
           auto cur_dim = init_factors_right.size() - 1;
           for (size_t i = 1; i < cur_dim; ++i, ++a_ptr) {
