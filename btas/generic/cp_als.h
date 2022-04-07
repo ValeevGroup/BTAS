@@ -318,10 +318,9 @@ namespace btas {
       return epsilon;
     }
 
-    /// function to set the CP factor matrices
-    /// When factors are set rank = vecs[0].extent(1)
-    /// when computing ALS.
+    /// sets the CP factor matrices to be used, e.g., as initial guess for ALS
     /// \param[in] vecs : set of initial factor matrices to use in ALS
+    /// @note When factors are set via this computing ALS uses rank given by `vecs[0].extent(1)`
     void set_cp_factors(std::vector<Tensor> vecs){
       BTAS_ASSERT(vecs.size() == ndim + 1);
       auto rank = vecs[0].extent(1);
@@ -330,7 +329,6 @@ namespace btas {
         BTAS_ASSERT(i.extent(1) == rank)
         this->A.emplace_back(i);
       }
-      //std::cout << this->A[0].extent(1) << std::endl;
       factors_set = true;
     }
 
@@ -594,7 +592,7 @@ namespace btas {
       ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
     }
 
-    /// performs the ALS method to minimize the loss function for a single rank
+    /// computed the CP decomposition using ALS to minimize the loss function for fixed rank \p rank
     /// \param[in] rank The rank of the CP decomposition.
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
     /// \param[in] dir The CP decomposition be computed without calculating the
@@ -609,9 +607,8 @@ namespace btas {
     /// single rank converged. Default = 0.1.
     /// \param[in, out] epsilon The 2-norm
     /// error between the exact and approximated reference tensor
-    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    /// return in \c fast_pI was successful
-
+    /// \param[in,out] fast_pI Whether the pseudo inverse be computed using a fast cholesky decomposition,
+    ///       on return \c fast_pI will be true if use of Cholesky was successful
     virtual void ALS(ind_t rank, ConvClass &converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon,
              bool &fast_pI) {
       size_t count = 0;
