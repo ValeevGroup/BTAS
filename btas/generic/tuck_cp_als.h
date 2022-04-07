@@ -2,8 +2,8 @@
 // Created by Karl Pierce on 2/10/22.
 //
 
-#ifndef MPQC_TUCK_COMP_CP_ALS_IPP
-#define MPQC_TUCK_COMP_CP_ALS_IPP
+#ifndef BTAS_GENERIC_TUCK_COMP_CP_ALS_IPP
+#define BTAS_GENERIC_TUCK_COMP_CP_ALS_IPP
 
 #include <btas/generic/cp_als.h>
 
@@ -497,4 +497,4 @@ namespace btas{
   };
 }//namespace btas
 
-#endif  // MPQC_TUCK_COMP_CP_ALS_IPP
+#endif  // BTAS_GENERIC_TUCK_COMP_CP_ALS_IPP
