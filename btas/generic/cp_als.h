@@ -243,6 +243,7 @@ namespace btas {
     /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
     /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
     /// else return -1
+    [[deprecated]]
     double compress_compute_tucker(double tcutSVD, ConvClass &converge_test, ind_t rank = 0, bool direct = true,
                                    bool calculate_epsilon = false, ind_t max_als = 1e4, bool fast_pI = false) {
       // Tensor compression
