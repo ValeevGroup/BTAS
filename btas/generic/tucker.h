@@ -9,17 +9,151 @@
 #include <cstdlib>
 
 namespace btas {
+
   /// Computes the tucker compression of an order-N tensor A.
   /// <a href=http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088> See
   /// reference. </a>
 
   /// \param[in, out] A In: Order-N tensor to be decomposed.  Out: The core
   /// tensor of the Tucker decomposition \param[in] epsilon_svd The threshold
-  /// truncation value for the Truncated Tucker-SVD decomposition \param[in, out]
-  /// transforms In: An empty vector.  Out: The Tucker factor matrices.
+  /// truncation value for the Truncated Tucker-SVD decomposition
+  ///  \param[in, out] transforms In: An empty vector.  Out: The Tucker factor matrices.
+  /// compute_core
+  /// \param[in] compute_core A bool which indicates if the tensor \c A should be transformed
+  /// into the Tucker core matrices using the computed Tucker factor matrices stored in
+  /// \c transforms.
+  template<typename Tensor>
+  void make_tucker_factors(Tensor& A, double epsilon_svd,
+                           std::vector<Tensor> &transforms, bool compute_core = false){
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+    auto ndim = A.rank();
+    transforms.clear();
+    transforms.reserve(ndim);
+
+    double norm2 = dot(A,A);
+    auto threshold = epsilon_svd * epsilon_svd * norm2 / ndim;
+    std::vector<size_t> left_modes, right_modes, final;
+    final.push_back(0); final.emplace_back(ndim+1);
+    left_modes.reserve(ndim); right_modes.reserve(ndim);
+    for(size_t i = 1; i <= ndim; ++i){
+      left_modes.emplace_back(i);
+      right_modes.emplace_back(i);
+    }
+
+    auto ptr_left = left_modes.begin(), ptr_right = right_modes.begin();
+    for(size_t i = 0; i < ndim; ++i, ++ptr_left, ++ptr_right){
+      // Compute A * A to make tucker computation easier (this turns from SVD into an eigenvalue
+      // decomposition, i.e. HOSVD)
+      size_t temp = *ptr_left;
+      *ptr_left = 0;
+      *ptr_right = ndim + 1;
+      Tensor AAt;
+      contract(1.0, A, left_modes, A, right_modes, 0.0, AAt, final);
+      *ptr_left = temp;
+      *ptr_right = temp;
+
+      // compute the eigenvalue decomposition of each mode of A
+      ind_t r = AAt.extent(0);
+      Tensor lambda(r); lambda.fill(0.0);
+      auto info = hereig(blas::Layout::ColMajor, lapack::Job::Vec, lapack::Uplo::Lower, r, AAt.data(), r, lambda.data());
+      if (info) BTAS_EXCEPTION("Error in computing the tucker SVD");
+
+      // Find how many significant vectors are in this transformation
+      ind_t rank = 0,  zero = 0;
+      for(auto & eig : lambda){
+        if(eig < threshold) ++rank;
+      }
+
+      // Truncate the column space of the unitary factor matrix.
+      ind_t kept_evals = r - rank;
+      lambda = Tensor(kept_evals, r);
+      auto lower_bound = {rank, zero};
+      auto upper_bound = {r, r};
+      auto view = btas::make_view(AAt.range().slice(lower_bound, upper_bound), AAt.storage());
+      std::copy(view.begin(), view.end(), lambda.begin());
+
+      // Push the factor matrix back as a transformation.
+      transforms.emplace_back(lambda);
+    }
+
+    if(compute_core){
+      transform_tucker(true, A, transforms);
+    }
+  }
+
+  /// A function to take an exact tensor to the Tucker core tensor or
+  /// the Tucker core tensor to an approximation of the exact tensor.
+  /// \param[in] to_core: if \c to_core tensor \c A will be taken from the exact representation to
+  /// the Tucker core else \c A will be taken from the Tucker core representation to the exact representation
+  /// \param[in, out] A In : depending on \c to_core an exact tensor or a Tucker core tensor. Out :
+  /// a transformed tensor which represents either the Tucker core or exact tensor.
+  /// \param[in] transforms the complete set of Tucker factor matrices. Note this does
+  /// not include the core tensor.
+  template<typename Tensor>
+  void transform_tucker(bool to_core, Tensor & A, std::vector<Tensor> transforms){
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
+    auto ndim = A.rank();
+
+    std::vector<size_t> left_modes, right_modes, final;
+    final.push_back(0); final.emplace_back(ndim+1);
+    left_modes.reserve(ndim); right_modes.reserve(ndim);
+    for(size_t i = 1; i <= ndim; ++i){
+      left_modes.emplace_back(i);
+      right_modes.emplace_back(i);
+    }
+
+    if(!to_core) {
+      // as a reference, this properly flips the original tensor back to the original
+      // subspace.
+      auto ptr_tran = transforms.begin();
+
+      for (size_t i = 0; i < ndim; ++i, ++ptr_tran) {
+        right_modes.emplace_back(ndim + 1);
+        right_modes.erase(right_modes.begin());
+        left_modes[0] = 0;
+        Tensor temp;
+
+        contract(1.0, *ptr_tran, final, A, left_modes, 0.0, temp, right_modes);
+
+        A = temp;
+        right_modes[ndim - 1] = i + 1;
+        left_modes = right_modes;
+      }
+    }
+    else {
+      ord_t size = A.size();
+      right_modes = left_modes;
+      auto ptr_tran = transforms.begin();
+      // contracts the first mode and then tranposes it to the back of the tensor.
+      // works like the s^N algebra does N rotations and then finished
+      for(size_t i = 0; i < ndim; ++i, ++ptr_tran){
+        right_modes.erase(right_modes.begin());
+        right_modes.emplace_back(0);
+        left_modes[0] = ndim + 1;
+        Tensor temp;
+        contract(1.0, *ptr_tran, final, A, left_modes, 0.0, temp, right_modes);
+
+        A = temp;
+        right_modes[ndim - 1] = i + 1;
+        left_modes = right_modes;
+      }
+    }
+  }
+
+  /// Computes the tucker compression of an order-N tensor A.
+  /// <a href=http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7516088> See
+  /// reference. </a>
+
+  /// \param[in, out] A In: Order-N tensor to be decomposed.  Out: The core
+  /// tensor of the Tucker decomposition \param[in] epsilon_svd The threshold
+  /// truncation value for the Truncated Tucker-SVD decomposition.
+  /// \param[in, out] transforms In: An empty vector.  Out: The Tucker factor matrices.
 
   template <typename Tensor>
-  void tucker_compression(Tensor &A, double epsilon_svd, std::vector<Tensor> &transforms) {
+  [[deprecated]] void tucker_compression(Tensor &A, double epsilon_svd, std::vector<Tensor> &transforms) {
     using ind_t = typename Tensor::range_type::index_type::value_type;
     auto ndim = A.rank();
 
@@ -90,119 +224,6 @@ namespace btas {
       *(ptr_final) = i;
       A = rotated;
 #endif  // BTAS_HAS_INTEL_MKL
-    }
-  }
-
-  template<typename Tensor>
-  void make_tucker_factors(Tensor& A, double epsilon_svd,
-                           std::vector<Tensor> &transforms, bool compute_core = false){
-    using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
-    auto ndim = A.rank();
-    transforms.clear();
-    transforms.reserve(ndim);
-
-    double norm2 = dot(A,A);
-    auto threshold = epsilon_svd * epsilon_svd * norm2 / ndim;
-    std::vector<size_t> left_modes, right_modes, final;
-    final.push_back(0); final.emplace_back(ndim+1);
-    left_modes.reserve(ndim); right_modes.reserve(ndim);
-    for(size_t i = 1; i <= ndim; ++i){
-      left_modes.emplace_back(i);
-      right_modes.emplace_back(i);
-    }
-
-    auto ptr_left = left_modes.begin(), ptr_right = right_modes.begin();
-    for(size_t i = 0; i < ndim; ++i, ++ptr_left, ++ptr_right){
-      // Compute A * A to make tucker computation easier (this turns from SVD into an eigenvalue
-      // decomposition, i.e. HOSVD)
-      size_t temp = *ptr_left;
-      *ptr_left = 0;
-      *ptr_right = ndim + 1;
-      Tensor AAt;
-      contract(1.0, A, left_modes, A, right_modes, 0.0, AAt, final);
-      *ptr_left = temp;
-      *ptr_right = temp;
-
-      // compute the eigenvalue decomposition of each mode of A
-      ind_t r = AAt.extent(0);
-      Tensor lambda(r); lambda.fill(0.0);
-      auto info = hereig(blas::Layout::ColMajor, lapack::Job::Vec, lapack::Uplo::Lower, r, AAt.data(), r, lambda.data());
-      if (info) BTAS_EXCEPTION("Error in computing the tucker SVD");
-
-      // Find how many significant vectors are in this transformation
-      ind_t rank = 0,  zero = 0;
-      for(auto & eig : lambda){
-        if(eig < threshold) ++rank;
-      }
-
-      // Truncate the column space of the unitary factor matrix.
-      ind_t kept_evals = r - rank;
-      lambda = Tensor(kept_evals, r);
-      auto lower_bound = {rank, zero};
-      auto upper_bound = {r, r};
-      auto view = btas::make_view(AAt.range().slice(lower_bound, upper_bound), AAt.storage());
-      std::copy(view.begin(), view.end(), lambda.begin());
-
-      // Push the factor matrix back as a transformation.
-      transforms.emplace_back(lambda);
-    }
-
-    if(compute_core){
-      transform_tucker(true, A, transforms);
-    }
-  }
-
-  template<typename Tensor>
-  void transform_tucker(bool to_core, Tensor & A, std::vector<Tensor> transforms){
-    using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
-
-    auto ndim = A.rank();
-
-    std::vector<size_t> left_modes, right_modes, final;
-    final.push_back(0); final.emplace_back(ndim+1);
-    left_modes.reserve(ndim); right_modes.reserve(ndim);
-    for(size_t i = 1; i <= ndim; ++i){
-      left_modes.emplace_back(i);
-      right_modes.emplace_back(i);
-    }
-
-    if(!to_core) {
-      // as a reference, this properly flips the original tensor back to the original
-      // subspace.
-      auto ptr_tran = transforms.begin();
-
-      for (size_t i = 0; i < ndim; ++i, ++ptr_tran) {
-        right_modes.emplace_back(ndim + 1);
-        right_modes.erase(right_modes.begin());
-        left_modes[0] = 0;
-        Tensor temp;
-
-        contract(1.0, *ptr_tran, final, A, left_modes, 0.0, temp, right_modes);
-
-        A = temp;
-        right_modes[ndim - 1] = i + 1;
-        left_modes = right_modes;
-      }
-    }
-    else {
-      ord_t size = A.size();
-      right_modes = left_modes;
-      auto ptr_tran = transforms.begin();
-      // contracts the first mode and then tranposes it to the back of the tensor.
-      // works like the s^N algebra does N rotations and then finished
-      for(size_t i = 0; i < ndim; ++i, ++ptr_tran){
-        right_modes.erase(right_modes.begin());
-        right_modes.emplace_back(0);
-        left_modes[0] = ndim + 1;
-        Tensor temp;
-        contract(1.0, *ptr_tran, final, A, left_modes, 0.0, temp, right_modes);
-
-        A = temp;
-        right_modes[ndim - 1] = i + 1;
-        left_modes = right_modes;
-      }
     }
   }
 } // namespace btas
