@@ -197,7 +197,7 @@ namespace btas {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       double epsilon = -1.0;
       build_random(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
-      // std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
+      std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
 
       detail::get_fit(converge_test, epsilon);
 

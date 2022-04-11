@@ -264,7 +264,7 @@ namespace btas {
         for (auto &i : a) norm += i * i;
         return sqrt(norm);
       };
-      if(rank_cp3 == rank_cp4) {
+      if (rank_cp3 == rank_cp4) {
         // compute the left factor
         {
           FitCheck<Tensor> fit(cp_comp_prec);
@@ -293,7 +293,7 @@ namespace btas {
             A.insert(A.end(), init_factors_right.begin() + 1, init_factors_right.end());
           }
         }
-      } else{
+      } else {
         // fill the factors with random numbers
         std::mt19937 generator(random_seed_accessor());
         std::uniform_real_distribution<> distribution(-1.0, 1.0);
@@ -330,12 +330,12 @@ namespace btas {
           init_factors_left = CP3.get_factor_matrices();
           auto cur_dim = init_factors_left.size() - 1;
           for (size_t i = 1; i < cur_dim; ++i, ++a_ptr) {
-            auto & tensor_ref = init_factors_left[i];
+            auto &tensor_ref = init_factors_left[i];
             auto left_ptr = tensor_ref.begin();
             auto row_dim = tensor_ref.extent(0);
             auto a_val_ptr = (*a_ptr).data();
-            for(ind_t row = 0; row < row_dim; ++row){
-              for(ind_t col = 0; col < col_dim; ++col, ++left_ptr){
+            for (ind_t row = 0; row < row_dim; ++row) {
+              for (ind_t col = 0; col < col_dim; ++col, ++left_ptr) {
                 *(a_val_ptr + row * rank_cp4 + col) = *(left_ptr);
               }
             }
@@ -352,21 +352,50 @@ namespace btas {
           init_factors_right = CP3.get_factor_matrices();
           auto cur_dim = init_factors_right.size() - 1;
           for (size_t i = 1; i < cur_dim; ++i, ++a_ptr) {
-            auto & tensor_ref = init_factors_right[i];
+            auto &tensor_ref = init_factors_right[i];
             auto right_ptr = tensor_ref.begin();
             auto row_dim = tensor_ref.extent(0);
             auto a_val_ptr = (*a_ptr).data();
-            for(ind_t row = 0; row < row_dim; ++row){
-              for(ind_t col = 0; col < col_dim; ++col, ++right_ptr){
+            for (ind_t row = 0; row < row_dim; ++row) {
+              for (ind_t col = 0; col < col_dim; ++col, ++right_ptr) {
                 *(a_val_ptr + row * rank_cp4 + col) = *(right_ptr);
               }
             }
           }
         }
       }
-      
-      ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
 
+      //ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
+      // testing full (not TN) CP4
+      {
+        Tensor full;
+        std::cout << A[0].extent(1) << std::endl;
+        contract(1.0, tensor_ref_left, {1, 2, 4}, tensor_ref_right, {1, 3, 5}, 0.0, full, {2, 3, 4, 5});
+        auto norm = [&full]() {
+          double n = 0.0;
+          for (auto i : full) n += i * i;
+          return sqrt(n);
+        };
+        ConvClass conv(1e-3);
+        conv.set_norm(norm());
+        conv.verbose(true);
+        {
+          CP_ALS<Tensor, FitCheck<Tensor>> CP5(full);
+          CP5.set_cp_factors(this->A);
+          auto t1 = std::chrono::high_resolution_clock::now();
+          //CP5.compute_rank(rank_cp4, conv, 1, false, 0, 100, true, false, true);
+          CP5.compute_rank_random(rank_cp4, conv, 1000, true, false, true);
+          auto t2 = std::chrono::high_resolution_clock::now();
+          auto dur = std::chrono::duration<double>(t2 - t1);
+          std::cout << "Timer conventional CP4: " << dur.count() << std::endl;
+        }
+        auto t1 = std::chrono::high_resolution_clock::now();
+        ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        auto dur = std::chrono::duration<double>(t2 - t1);
+        std::cout << "Timer TN CP4: " << dur.count() << std::endl;
+      }
+      std::cout<< "Total number of ALS for TN CP4: " << this->num_ALS << std::endl;
       detail::get_fit(converge_test, epsilon);
       return epsilon;
     }
