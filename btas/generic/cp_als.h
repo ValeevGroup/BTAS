@@ -326,10 +326,12 @@ namespace btas {
       BTAS_ASSERT(vecs.size() == ndim + 1);
       auto rank = vecs[0].extent(1);
       A.reserve(ndim + 1);
-      for(auto & i : vecs) {
-        BTAS_ASSERT(i.extent(1) == rank)
-        this->A.emplace_back(i);
+      auto ptr = vecs.begin();
+      for(size_t num = 0; num < ndim; ++num, ++ptr) {
+        BTAS_ASSERT((*ptr).extent(1) == rank)
+        this->A.emplace_back((*ptr));
       }
+      this->A.emplace_back((*ptr));
       factors_set = true;
     }
 
