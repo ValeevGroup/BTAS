@@ -367,7 +367,7 @@ namespace btas {
 
       //ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
       // testing full (not TN) CP4
-      {
+      /*{
         Tensor full;
         std::cout << A[0].extent(1) << std::endl;
         contract(1.0, tensor_ref_left, {1, 2, 4}, tensor_ref_right, {1, 3, 5}, 0.0, full, {2, 3, 4, 5});
@@ -390,11 +390,11 @@ namespace btas {
           std::cout << "Timer conventional CP4: " << dur.count() << std::endl;
         }
         auto t1 = std::chrono::high_resolution_clock::now();
-        ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
         auto t2 = std::chrono::high_resolution_clock::now();
         auto dur = std::chrono::duration<double>(t2 - t1);
         std::cout << "Timer TN CP4: " << dur.count() << std::endl;
-      }
+      }*/
+      ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
       std::cout<< "Total number of ALS for TN CP4: " << this->num_ALS << std::endl;
       detail::get_fit(converge_test, epsilon);
       return epsilon;
