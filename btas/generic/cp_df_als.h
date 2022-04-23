@@ -256,7 +256,7 @@ namespace btas {
     /// else return -1
     double compute_comp_init(ind_t rank_cp3, ConvClass converge_test, size_t max_als = 1e4, bool fast_pI = true,
                             bool calculate_epsilon = false, bool direct = true, double cp_comp_prec = 1e-2, ind_t rank_cp4 = 0,
-                             bool verbose = false) {
+                             bool verbose = false, bool full_cp4 = false, std::string print = "CP") {
       rank_cp4 = (rank_cp4 == 0 ? rank_cp3 : rank_cp4);
       double epsilon = 0.0;
       auto nrm = [](Tensor &a) {
@@ -271,8 +271,9 @@ namespace btas {
           fit.set_norm(nrm(tensor_ref_left));
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
-          auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
-          std::cout << "The accuracy of the LHS decomposition is : " << error * 100 << std::endl;
+          auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true, false, true,
+                                               true, "CP3 LHS");
+          std::cout << "CP3 LHS error: " << error * 100 << std::endl;
           init_factors_left = CP3.get_factor_matrices();
           auto cur_dim = init_factors_left.size() - 1;
           for (size_t i = 1; i < cur_dim; ++i) {
@@ -285,7 +286,8 @@ namespace btas {
           fit.set_norm(nrm(tensor_ref_right));
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
-          auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
+          auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true, false, true,
+                                               true, "CP3 RHS");
           std::cout << "The accuracy of the RHS decomposition is : " << error * 100 << std::endl;
           init_factors_right = CP3.get_factor_matrices();
           auto cur_dim = init_factors_right.size();
@@ -325,7 +327,8 @@ namespace btas {
           fit.set_norm(nrm(tensor_ref_left));
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
-          auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
+          auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true, false, true,
+                                               true, "CP3 LHS");
           std::cout << "LHS accuracy: " << error * 100 << std::endl;
           init_factors_left = CP3.get_factor_matrices();
           auto cur_dim = init_factors_left.size() - 1;
@@ -347,7 +350,8 @@ namespace btas {
           fit.set_norm(nrm(tensor_ref_right));
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
-          auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
+          auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true, false, true,
+                                               true, "CP3 RHS");
           std::cout << "RHS accuracy: " << error * 100 << std::endl;
           init_factors_right = CP3.get_factor_matrices();
           auto cur_dim = init_factors_right.size() - 1;
@@ -363,6 +367,40 @@ namespace btas {
             }
           }
         }
+      }
+      //ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
+      {
+        Tensor full;
+        contract(1.0, tensor_ref_left, {1, 2, 4}, tensor_ref_right, {1, 3, 5}, 0.0, full, {2, 3, 4, 5});
+        auto norm = [&full]() {
+          double n = 0.0;
+          for (auto i : full) n += i * i;
+          return sqrt(n);
+        };
+        ConvClass conv(1e-3);
+        conv.set_norm(norm());
+        conv.verbose(true);
+        if(full_cp4){
+          CP_ALS<Tensor, FitCheck<Tensor>> CP5(full);
+          CP5.set_cp_factors(this->A);
+          auto t1 = std::chrono::high_resolution_clock::now();
+          //CP5.compute_rank(rank_cp4, conv, 1, false, 0, 100, true, false, true);
+          auto error = CP5.compute_rank_random(rank_cp4, conv,
+                                               1000, true, false, true, true,
+                                               "Full CP4");
+          auto t2 = std::chrono::high_resolution_clock::now();
+          auto dur = std::chrono::duration<double>(t2 - t1);
+          std::cout << "Full CP4 error: " << error * 100 << std::endl;
+          std::cout << "Full CP4 duration: " << dur.count() << std::endl;
+        }
+        auto t1 = std::chrono::high_resolution_clock::now();
+        ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        auto dur = std::chrono::duration<double>(t2 - t1);
+        detail::get_fit(converge_test, epsilon);
+        std::cout << print + " iterations: " << this->num_ALS << std::endl;
+        std::cout << print + " accuracy: " << epsilon * 100 << std::endl;
+        std::cout << print + " duration: " << dur.count() << std::endl;
       }
 
       //ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);

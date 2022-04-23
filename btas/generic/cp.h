@@ -193,11 +193,13 @@ namespace btas {
     /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
     /// else return -1
     double compute_rank_random(ind_t rank, ConvClass &converge_test, ind_t max_als = 1e4, bool fast_pI = true,
-                               bool calculate_epsilon = false, bool direct = true) {
+                               bool calculate_epsilon = false, bool direct = true,
+                               bool verbose=false, std::string CP = "CP") {
       if (rank <= 0) BTAS_EXCEPTION("Decomposition rank must be greater than 0");
       double epsilon = -1.0;
       build_random(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
-      std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
+      if(verbose)
+        std::cout << CP + " iterations: " << num_ALS << std::endl;
 
       detail::get_fit(converge_test, epsilon);
 
