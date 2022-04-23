@@ -392,6 +392,7 @@ namespace btas {
           auto dur = std::chrono::duration<double>(t2 - t1);
           std::cout << "Full CP4 error: " << error * 100 << std::endl;
           std::cout << "Full CP4 duration: " << dur.count() << std::endl;
+          std::cout << std::endl;
         }
         auto t1 = std::chrono::high_resolution_clock::now();
         ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
@@ -402,39 +403,6 @@ namespace btas {
         std::cout << print + " accuracy: " << epsilon * 100 << std::endl;
         std::cout << print + " duration: " << dur.count() << std::endl;
       }
-
-      //ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
-      // testing full (not TN) CP4
-      /*{
-        Tensor full;
-        std::cout << A[0].extent(1) << std::endl;
-        contract(1.0, tensor_ref_left, {1, 2, 4}, tensor_ref_right, {1, 3, 5}, 0.0, full, {2, 3, 4, 5});
-        auto norm = [&full]() {
-          double n = 0.0;
-          for (auto i : full) n += i * i;
-          return sqrt(n);
-        };
-        ConvClass conv(1e-3);
-        conv.set_norm(norm());
-        conv.verbose(true);
-        {
-          CP_ALS<Tensor, FitCheck<Tensor>> CP5(full);
-          CP5.set_cp_factors(this->A);
-          auto t1 = std::chrono::high_resolution_clock::now();
-          //CP5.compute_rank(rank_cp4, conv, 1, false, 0, 100, true, false, true);
-          CP5.compute_rank_random(rank_cp4, conv, 1000, true, false, true);
-          auto t2 = std::chrono::high_resolution_clock::now();
-          auto dur = std::chrono::duration<double>(t2 - t1);
-          std::cout << "Timer conventional CP4: " << dur.count() << std::endl;
-        }
-        auto t1 = std::chrono::high_resolution_clock::now();
-        auto t2 = std::chrono::high_resolution_clock::now();
-        auto dur = std::chrono::duration<double>(t2 - t1);
-        std::cout << "Timer TN CP4: " << dur.count() << std::endl;
-      }*/
-      ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
-      std::cout<< "Total number of ALS for TN CP4: " << this->num_ALS << std::endl;
-      detail::get_fit(converge_test, epsilon);
       return epsilon;
     }
 
