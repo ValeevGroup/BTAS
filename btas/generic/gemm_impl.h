@@ -463,13 +463,13 @@ void gemm (
 //  ================================================================================================
 
 /// Generic implementation of BLAS-GEMM
-/// \param transA transpose directive for tensor \p a (blas::Op)
-/// \param transB transpose directive for tensor \p b (blas::Op)
-/// \param alpha scalar value to be multiplied to \param a * \param b
-/// \param a input tensor
-/// \param b input tensor
-/// \param beta scalar value to be multiplied to \param c
-/// \param c output tensor which can be empty tensor but needs to have rank info
+/// \param transA transpose directive for tensor \p A (blas::Op)
+/// \param transB transpose directive for tensor \p B (blas::Op)
+/// \param alpha scalar value to be multiplied to \param A * \param B
+/// \param A input tensor
+/// \param B input tensor
+/// \param beta scalar value to be multiplied to \param C
+/// \param C output tensor which can be empty tensor but needs to have rank info
 template<
    typename _T,
    class _TensorA, class _TensorB, class _TensorC,

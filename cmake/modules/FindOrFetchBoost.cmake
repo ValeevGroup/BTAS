@@ -27,5 +27,5 @@ endif(NOT TARGET Boost::boost)
 
 # postcond check
 if (NOT TARGET Boost::boost)
-  message(FATAL_ERROR "FindOrFetchBOOST could not make Boost::boost target available")
+  message(FATAL_ERROR "FindOrFetchBoost could not make Boost::boost target available")
 endif(NOT TARGET Boost::boost)
