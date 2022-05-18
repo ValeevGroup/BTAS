@@ -301,7 +301,6 @@ void gemv (
 //  ================================================================================================
 
 /// Generic interface of BLAS-GEMV
-/// \param order storage order of tensor in matrix view (blas::Layout::RowMajor, blas::Layout::ColMajor)
 /// \param transA transpose directive for tensor A (blas::Op::NoTrans, blas::Op::Trans, blas::Op::ConjTrans)
 /// \param alpha scalar value to be multiplied to A * X
 /// \param A input tensor

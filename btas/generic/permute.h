@@ -54,7 +54,8 @@ namespace btas {
   }
 
   /// permute \c X annotated with \c aX into \c Y annotated with \c aY
-  /// \tparam _Annotation contaner type
+  /// \tparam _AnnotationX a container type
+  /// \tparam _AnnotationY a container type
   template<class _TensorX, typename _AnnotationX, class _TensorY, typename _AnnotationY,
            class = typename std::enable_if<is_boxtensor<_TensorX>::value &&
                                            is_boxtensor<_TensorY>::value &&
