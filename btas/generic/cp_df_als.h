@@ -399,9 +399,11 @@ namespace btas {
         auto t2 = std::chrono::high_resolution_clock::now();
         auto dur = std::chrono::duration<double>(t2 - t1);
         detail::get_fit(converge_test, epsilon);
-        std::cout << print + " iterations: " << this->num_ALS << std::endl;
-        std::cout << print + " accuracy: " << epsilon * 100 << std::endl;
-        std::cout << print + " duration: " << dur.count() << std::endl;
+        if(verbose) {
+          std::cout << print + " iterations: " << this->num_ALS << std::endl;
+          std::cout << print + " accuracy: " << epsilon * 100 << std::endl;
+          std::cout << print + " duration: " << dur.count() << std::endl;
+        }
       }
       return epsilon;
     }
