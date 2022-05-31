@@ -22,6 +22,7 @@
 #include <btas/generic/rals_helper.h>
 #include <btas/generic/reconstruct.h>
 #include <btas/generic/linear_algebra.h>
+#include <btas/generic/element_wise_contract.h>
 
 namespace btas {
   namespace detail {
@@ -357,7 +358,7 @@ namespace btas {
     }
 
     // For debug purposes
-    void print(Tensor &tensor) {
+    void print(const Tensor &tensor) {
       if (tensor.rank() == 2) {
         ind_t row = tensor.extent(0), col = tensor.extent(1);
         ord_t i_times_col = 0;
@@ -385,6 +386,7 @@ namespace btas {
     std::vector<Tensor> AtA;
     size_t ndim;                     // Modes in the reference tensor
     std::vector<size_t> symmetries;  // Symmetries of the reference tensor
+    double s = 0;          // this is a variable for rals;
 
     /// Virtual function. Solver classes should implement a build function to
     /// generate factor matrices then compute the CP decomposition

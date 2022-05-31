@@ -364,7 +364,7 @@ namespace btas {
           }
         }
       }
-
+      
       ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
 
       detail::get_fit(converge_test, epsilon);
@@ -743,11 +743,12 @@ namespace btas {
       }
 
       // Checks loss function if required
-      if (calculate_epsilon) {
-        if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
-          detail::get_fit(converge_test, epsilon);
-          epsilon = 1 - epsilon;
-        }
+      detail::get_fit(converge_test, epsilon);
+      epsilon = 1 - epsilon;
+      // Checks loss function if required
+      if (calculate_epsilon && epsilon == 2) {
+        // TODO make this work for non-FitCheck convergence_classes
+        //epsilon = this->norm(this->reconstruct() - tensor_ref);
       }
     }
 

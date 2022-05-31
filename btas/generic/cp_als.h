@@ -116,6 +116,8 @@ namespace btas {
       }
     }
 
+    CP_ALS() = default;
+
     ~CP_ALS() = default;
 
     /// \brief Computes decomposition of the order-N tensor \c tensor
@@ -241,6 +243,7 @@ namespace btas {
     /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
     /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
     /// else return -1
+    [[deprecated]]
     double compress_compute_tucker(double tcutSVD, ConvClass &converge_test, ind_t rank = 0, bool direct = true,
                                    bool calculate_epsilon = false, ind_t max_als = 1e4, bool fast_pI = false) {
       // Tensor compression
@@ -314,6 +317,22 @@ namespace btas {
       }
 
       return epsilon;
+    }
+
+    /// sets the CP factor matrices to be used, e.g., as initial guess for ALS
+    /// \param[in] vecs : set of initial factor matrices to use in ALS
+    /// @note When factors are set via this computing ALS uses rank given by `vecs[0].extent(1)`
+    void set_cp_factors(std::vector<Tensor> vecs){
+      BTAS_ASSERT(vecs.size() == ndim + 1);
+      auto rank = vecs[0].extent(1);
+      A.reserve(ndim + 1);
+      auto ptr = vecs.begin();
+      for(size_t num = 0; num < ndim; ++num, ++ptr) {
+        BTAS_ASSERT((*ptr).extent(1) == rank)
+        this->A.emplace_back((*ptr));
+      }
+      this->A.emplace_back((*ptr));
+      factors_set = true;
     }
 
    protected:
@@ -497,6 +516,7 @@ namespace btas {
         ALS(rank_new, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
       if (factors_set && !opt_in_for_loop) {
+        rank = A[0].extent(1);
         ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       }
     }
@@ -525,20 +545,48 @@ namespace btas {
                       double &epsilon, bool &fast_pI) override {
       std::mt19937 generator(random_seed_accessor());
       std::uniform_real_distribution<> distribution(-1.0, 1.0);
-      for (size_t i = 0; i < this->ndim; ++i) {
-        // If this mode is symmetric to a previous mode, set it equal to
-        // previous mode, else make a random matrix.
-        auto tmp = symmetries[i];
-        if (tmp != i) {
-          A.push_back(A[tmp]);
-        } else {
-          Tensor a(tensor_ref.extent(i), rank);
-          for (auto iter = a.begin(); iter != a.end(); ++iter) {
-            *(iter) = distribution(generator);
+      if(A.empty()) {
+        for (size_t i = 0; i < this->ndim; ++i) {
+          // If this mode is symmetric to a previous mode, set it equal to
+          // previous mode, else make a random matrix.
+          auto tmp = symmetries[i];
+          if (tmp != i) {
+            A.push_back(A[tmp]);
+          } else {
+            Tensor a(tensor_ref.extent(i), rank);
+            for (auto iter = a.begin(); iter != a.end(); ++iter) {
+              *(iter) = distribution(generator);
+            }
+            this->A.push_back(a);
+            this->normCol(i);
           }
-          this->A.push_back(a);
-          this->normCol(i);
         }
+      } else{
+        for (size_t i = 0; i < this->ndim; ++i) {
+          // If this mode is symmetric to a previous mode, set it equal to
+          // previous mode, else make a random matrix.
+          auto tmp = symmetries[i];
+          if (tmp != i) {
+            A.push_back(A[tmp]);
+          } else {
+            ind_t col_dim = tensor_ref.extent(i);
+            Tensor a(col_dim, rank);
+            for (auto iter = a.begin(); iter != a.end(); ++iter) {
+              *(iter) = distribution(generator);
+            }
+            auto & a_prev = A[i];
+            ind_t prev_rank = a_prev.extent(1),
+                  smaller_rank = (prev_rank < rank ? prev_rank : rank);
+            auto lo_bound = {0l, 0l},
+                 up_bound = {col_dim, smaller_rank};
+            auto view = make_view(a.range().slice(lo_bound, up_bound), a.storage());
+            std::copy(view.begin(), view.end(), a_prev.begin());
+
+            a_prev = a;
+            this->normCol(i);
+          }
+        }
+        A.pop_back();
       }
       Tensor lambda(rank);
       lambda.fill(0.0);
@@ -547,7 +595,7 @@ namespace btas {
       ALS(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
     }
 
-    /// performs the ALS method to minimize the loss function for a single rank
+    /// computed the CP decomposition using ALS to minimize the loss function for fixed rank \p rank
     /// \param[in] rank The rank of the CP decomposition.
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit.
     /// \param[in] dir The CP decomposition be computed without calculating the
@@ -562,24 +610,28 @@ namespace btas {
     /// single rank converged. Default = 0.1.
     /// \param[in, out] epsilon The 2-norm
     /// error between the exact and approximated reference tensor
-    /// \param[in,out] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
-    /// return in \c fast_pI was successful
-
-    void ALS(ind_t rank, ConvClass &converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon,
+    /// \param[in,out] fast_pI Whether the pseudo inverse be computed using a fast cholesky decomposition,
+    ///       on return \c fast_pI will be true if use of Cholesky was successful
+    virtual void ALS(ind_t rank, ConvClass &converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon,
              bool &fast_pI) {
       size_t count = 0;
 
+      // forms and stores partial grammian to minimize number of
+      // small gemm contractions
+      bool is_converged = false;
+      bool matlab = fast_pI;
+      if(AtA.empty())
+        AtA = std::vector<Tensor>(ndim);
+      auto ptr_ata = AtA.begin();
+      for (size_t i = 0; i < ndim; ++i, ++ptr_ata) {
+        auto &a_mat = A[i];
+        *ptr_ata = Tensor();
+        contract(1.0, a_mat, {1, 2}, a_mat, {1, 3}, 0.0, *ptr_ata, {2, 3});
+      }
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate
-      bool is_converged = false;
-      bool matlab = fast_pI;
-      AtA = std::vector<Tensor>(ndim);
-      for (size_t i = 0; i < ndim; ++i) {
-        auto &a_mat = A[i];
-        contract(1.0, a_mat, {1, 2}, a_mat, {1, 3}, 0.0, AtA[i], {2, 3});
-      }
-      while (count < max_als && !is_converged) {
+      do{
         count++;
         this->num_ALS++;
         for (size_t i = 0; i < ndim; i++) {
@@ -595,16 +647,13 @@ namespace btas {
           contract(1.0, ai, {1, 2}, ai, {1, 3}, 0.0, AtA[i], {2, 3});
         }
         is_converged = converge_test(A, AtA);
-      }
+      }while (count < max_als && !is_converged);
 
+      detail::get_fit(converge_test, epsilon);
+      epsilon = 1 - epsilon;
       // Checks loss function if required
-      if (calculate_epsilon) {
-        if (typeid(converge_test) == typeid(btas::FitCheck<Tensor>)) {
-          detail::get_fit(converge_test, epsilon);
-          epsilon = 1 - epsilon;
-        } else {
+      if (calculate_epsilon && epsilon == 2) {
           epsilon = this->norm(this->reconstruct() - tensor_ref);
-        }
       }
     }
 
@@ -619,7 +668,8 @@ namespace btas {
     /// in the same manner that matlab would compute the inverse.
     /// return if matlab was successful.
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
-    void update_w_KRP(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {
+    void update_w_KRP(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test,
+                      double lambda = 0) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
@@ -662,6 +712,11 @@ namespace btas {
            temp);
 #endif
 
+      if(lambda != 0){
+        auto LamA = A[n];
+        scal(lambda, LamA);
+        temp += LamA;
+      }
       detail::set_MtKRP(converge_test, temp);
 
       // contract the product from above with the pseudoinverse of the Hadamard
@@ -697,7 +752,7 @@ namespace btas {
     /// return if \c matlab was successful
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
 
-    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test) {
+    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test, double lambda = 0.0) {
       // Determine if n is the last mode, if it is first contract with first mode
       // and transpose the product
       bool last_dim = n == ndim - 1;
@@ -715,7 +770,7 @@ namespace btas {
 
       // Modifying the dimension of tensor_ref so store the range here to resize
       Range R = tensor_ref.range();
-      Tensor an(A[n].range());
+      //Tensor an(A[n].range());
 
       // Resize the tensor which will store the product of tensor_ref and the first factor matrix
       Tensor temp = Tensor(size / tensor_ref.extent(contract_dim), rank);
@@ -744,10 +799,13 @@ namespace btas {
         // Now temp is three index object where temp has size
         // (size of tensor_ref/product of dimension contracted, dimension to be
         // contracted, rank)
+        ord_t idx2 = dimensions[contract_dim],
+              idx1 = LH_size / idx2;
         temp.resize(
-            Range{Range1{LH_size / dimensions[contract_dim]}, Range1{dimensions[contract_dim]}, Range1{pseudo_rank}});
-        Tensor contract_tensor(Range{Range1{temp.extent(0)}, Range1{temp.extent(2)}});
-        contract_tensor.fill(0.0);
+            Range{Range1{idx1}, Range1{idx2}, Range1{pseudo_rank}});
+        Tensor contract_tensor;
+        //Tensor contract_tensor(Range{Range1{idx1}, Range1{pseudo_rank}});
+        //contract_tensor.fill(0.0);
         const auto &a = A[(last_dim ? contract_dim + 1 : contract_dim)];
         // If the middle dimension is the mode not being contracted, I will move
         // it to the right hand side temp((size of tensor_ref/product of
@@ -760,49 +818,21 @@ namespace btas {
         // over the middle dimension and sum over the rank.
 
         else if (contract_dim > n) {
-          ind_t idx1 = temp.extent(0), idx2 = temp.extent(1);
-          ord_t i_times_rank = 0, i_times_rank_idx2 = 0;
-          for (ind_t i = 0; i < idx1; i++, i_times_rank += rank) {
-            auto *contract_ptr = contract_tensor.data() + i_times_rank;
-            ord_t j_times_rank = 0;
-            for (ind_t j = 0; j < idx2; j++, j_times_rank += rank) {
-              const auto *temp_ptr = temp.data() + i_times_rank_idx2 + j_times_rank;
-              const auto *A_ptr = a.data() + j_times_rank;
-              for (ind_t r = 0; r < rank; r++) {
-                *(contract_ptr + r) += *(temp_ptr + r) * *(A_ptr + r);
-              }
-            }
-            i_times_rank_idx2 += j_times_rank;
-          }
+          middle_contract(1.0, temp, a, 0.0, contract_tensor);
           temp = contract_tensor;
         }
 
         // If the code has passed the mode of interest, it will contract over
         // the middle dimension and sum over rank * mode n dimension
         else {
-          ind_t idx1 = temp.extent(0), idx2 = temp.extent(1), offset = offset_dim;
-          ord_t i_times_rank = 0, i_times_rank_idx2 = 0;
-          for (ind_t i = 0; i < idx1; i++, i_times_rank += pseudo_rank) {
-            auto *contract_ptr = contract_tensor.data() + i_times_rank;
-            ord_t j_times_prank = 0, j_times_rank = 0;
-            for (ind_t j = 0; j < idx2; j++, j_times_prank += pseudo_rank, j_times_rank += rank) {
-              const auto *temp_ptr = temp.data() + i_times_rank_idx2 + j_times_prank;
-              const auto *A_ptr = a.data() + j_times_rank;
-              ord_t k_times_rank = 0;
-              for (ind_t k = 0; k < offset; k++, k_times_rank += rank) {
-                for (ind_t r = 0; r < rank; r++) {
-                  *(contract_ptr + k_times_rank + r) += *(temp_ptr + k_times_rank + r) * *(A_ptr + r);
-                }
-              }
-            }
-            i_times_rank_idx2 += j_times_prank;
-          }
+          middle_contract_with_pseudorank(1.0, temp, a, 0.0, contract_tensor);
           temp = contract_tensor;
         }
 
-        LH_size /= tensor_ref.extent(contract_dim);
+        LH_size /= idx2;
         contract_dim--;
       }
+      n = last_dim ? n+1 : n;
 
       // If the mode of interest is the 0th mode, then the while loop above
       // contracts over all other dimensions and resulting temp is of the
@@ -810,29 +840,23 @@ namespace btas {
       // out the 0th mode here, the above algorithm can't perform this
       // contraction because the mode of interest is coupled with the rank
       if (n != 0) {
-        temp.resize(Range{Range1{dimensions[0]}, Range1{dimensions[n]}, Range1{rank}});
-        Tensor contract_tensor(Range{Range1{temp.extent(1)}, Range1{rank}});
+        ind_t idx1 = dimensions[0];
+        temp.resize(Range{Range1{idx1}, Range1{offset_dim}, Range1{rank}});
+        Tensor contract_tensor(Range{Range1{offset_dim}, Range1{rank}});
         contract_tensor.fill(0.0);
 
-        ind_t idx1 = temp.extent(0), idx2 = temp.extent(1);
         const auto &a = A[(last_dim ? 1 : 0)];
-        ord_t i_times_rank = 0, i_times_rank_idx2 = 0;
-        for (ind_t i = 0; i < idx1; i++, i_times_rank += rank) {
-          const auto *A_ptr = a.data() + i_times_rank;
-          ord_t j_times_rank = 0;
-          for (ind_t j = 0; j < idx2; j++, j_times_rank += rank) {
-            const auto *temp_ptr = temp.data() + i_times_rank_idx2 + j_times_rank;
-            auto *contract_ptr = contract_tensor.data() + j * rank;
-            for (ind_t r = 0; r < rank; r++) {
-              *(contract_ptr + r) += *(A_ptr + r) * *(temp_ptr + r);
-            }
-          }
-          i_times_rank_idx2 += j_times_rank;
-        }
+        front_contract(1.0, temp, a, 0.0, contract_tensor);
+
         temp = contract_tensor;
       }
 
-      n = last_dim ? ndim - 1 : n;
+      // Add lambda to factor matrices if RALS
+      if(lambda !=0){
+        auto LamA = A[n];
+        scal(lambda, LamA);
+        temp += LamA;
+      }
       // multiply resulting matrix temp by pseudoinverse to calculate optimized
       // factor matrix
       detail::set_MtKRP(converge_test, temp);
@@ -843,6 +867,69 @@ namespace btas {
       // Normalize the columns of the new factor matrix and update
       this->normCol(temp);
       A[n] = temp;
+    }
+
+    void direct_improved(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass & converge_test){
+      Tensor An;
+      ind_t keep_dim = tensor_ref.extent(n);
+      bool n_last_dim = (n == ndim -1);
+
+      std::vector<size_t> tref_idx, mat_idx, final_idx;
+      auto contract_mode = (n_last_dim ? 0 : ndim - 1);
+      // the matrix is A(contract_dimension, rank)
+      mat_idx.emplace_back(contract_mode);
+      mat_idx.emplace_back(ndim);
+      // final will be T(gradient_mode, other, modes, ..., rank)
+      final_idx.emplace_back(n);
+      for(auto i = 0; i < ndim; ++i){
+        // for the reference tensor, add all modes INCLUDING the gradient mode
+        tref_idx.emplace_back(i);
+        // for the final add all modes EXCEPT the gradient mode and the mode we contract out
+        if(i == n || i == contract_mode) continue;
+        final_idx.emplace_back(i);
+      }
+      // replace that contracted mode with the rank
+      final_idx.emplace_back(ndim);
+
+      contract(1.0, tensor_ref, tref_idx, A[contract_mode], mat_idx, 0.0, An, final_idx);
+
+      tref_idx = final_idx;
+      auto ptr = final_idx.rbegin();
+      ++ptr;
+      auto extent_ = tensor_ref.extent();
+      ord_t lhs_dim = tensor_ref.size() / tensor_ref.extent(contract_mode);
+      for(auto i = 0; i < ndim - 2; ++i, ++ptr){
+        ind_t middle_dim = tensor_ref.extent(*ptr);
+        lhs_dim /= middle_dim;
+        An.resize(Range{Range1{lhs_dim}, Range1{middle_dim}, Range1{rank}});
+
+        Tensor TtKRP(lhs_dim, rank);
+        auto & Fac_Mat = A[*ptr];
+        TtKRP.fill(0.0);
+        ord_t idx1_times_rank = 0, idx1_times_rank_middle = 0;
+        for (ind_t idx1 = 0; idx1 < lhs_dim; idx1++, idx1_times_rank += rank) {
+          auto *TtKRP_ptr = TtKRP.data() + idx1_times_rank;
+          ord_t idx2_times_rank = 0;
+          for (ind_t idx2 = 0; idx2 < middle_dim; idx2++, idx2_times_rank += rank) {
+            const auto *An_ptr = An.data() + idx1_times_rank_middle + idx2_times_rank;
+            const auto *Fac_ptr = Fac_Mat.data() + idx2_times_rank;
+            for (ind_t r = 0; r < rank; r++) {
+              *(TtKRP_ptr + r) += *(Fac_ptr + r) * *(An_ptr + r);
+            }
+          }
+          idx1_times_rank_middle += idx2_times_rank;
+        }
+        An = TtKRP;
+      }
+
+      detail::set_MtKRP(converge_test, An);
+
+      // Temp is then rewritten with unnormalized new A[n] matrix
+      this->pseudoinverse_helper(n, fast_pI, matlab, An);
+
+      // Normalize the columns of the new factor matrix and update
+      this->normCol(An);
+      A[n] = An;
     }
   };
 

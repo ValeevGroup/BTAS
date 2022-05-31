@@ -9,28 +9,32 @@
 
 namespace btas {
   template<typename Tensor>
-  Tensor reconstruct(std::vector<Tensor> &A, std::vector<size_t> dims_order) {
+  Tensor reconstruct(std::vector<Tensor> &A, std::vector<size_t> dims_order, Tensor lambda = Tensor()) {
     using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
-    if (A.size() - 1 != dims_order.size()) {
+    if (A.size() - 1 != dims_order.size() &&  lambda.empty()) {
       BTAS_EXCEPTION("A.size() - 1 != dims_order.size(), please verify that you have correctly assigned the "
                      "order of dimension reconstruction");
     }
     std::vector<ord_t> dimensions;
-    size_t ndim = A.size() - 1;
+    // ndim is the size of dim_orders, this allows you
+    // to resize a subtensor in the factors set A
+    size_t ndim = dims_order.size();
     for (size_t i = 0; i < ndim; i++) {
       dimensions.push_back(A[dims_order[i]].extent(0));
     }
     ind_t rank = A[0].extent(1);
+    lambda = (lambda.empty() ? A[ndim] : lambda);
+    auto lam_ptr = lambda.data();
     for (ind_t i = 0; i < rank; i++) {
-      scal(A[dims_order[0]].extent(0), A[ndim](i), std::begin(A[dims_order[0]]) + i, rank);
+      scal(A[dims_order[0]].extent(0), *(lam_ptr + i), std::begin(A[dims_order[0]]) + i, rank);
     }
 
     // Make the Khatri-Rao product of all the factor matrices execpt the last dimension
     Tensor KRP = A[dims_order[0]];
     Tensor hold = A[dims_order[0]];
-    for (size_t i = 1; i < A.size() - 2; i++) {
+    for (size_t i = 1; i < ndim - 1; i++) {
       khatri_rao_product(KRP, A[dims_order[i]], hold);
       KRP = hold;
     }
@@ -44,8 +48,10 @@ namespace btas {
     hold.resize(dimensions);
 
     // remove the scaling applied to the first factor matrix
+    // if the value of lambda is very small, don't invert it.
     for (ind_t i = 0; i < rank; i++) {
-      scal(A[dims_order[0]].extent(0), 1 / A[ndim](i), std::begin(A[dims_order[0]]) + i, rank);
+      auto val = *(lam_ptr + i);
+      scal(A[dims_order[0]].extent(0), (val > 1e-12 ? 1/val : 1), std::begin(A[dims_order[0]]) + i, rank);
     }
     return hold;
   }

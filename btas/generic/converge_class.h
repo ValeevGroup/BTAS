@@ -94,29 +94,17 @@ namespace btas {
       auto n = btas_factors.size() - 2;
       ord_t size = btas_factors[n].size();
       ind_t rank = btas_factors[n].extent(1);
-      Tensor temp(btas_factors[n + 1].range());
-      temp.fill(0.0);
       auto *ptr_A = btas_factors[n].data();
       auto *ptr_MtKRP = MtKRP_.data();
-      for (ord_t i = 0; i < size; ++i) {
-        *(ptr_MtKRP + i) *= *(ptr_A + i);
-      }
-
-      auto * ptr_temp = temp.data();
-      for (ord_t i = 0; i < size; ++i) {
-        *(ptr_temp + i % rank) += *(ptr_MtKRP + i);
-      }
-
-      size = temp.size();
-      ptr_A = btas_factors[n+1].data();
+      auto lam_ptr = btas_factors[n + 1].data();
       double iprod = 0.0;
       for (ord_t i = 0; i < size; ++i) {
-        iprod += *(ptr_temp + i) * *(ptr_A + i);
+        iprod += *(ptr_MtKRP + i) * *(ptr_A + i) * *(lam_ptr + i % rank);
       }
 
       double normFactors = norm(btas_factors, V);
       double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * iprod));
-      double fit = 1 - (normResidual / normT_);
+      double fit = 1. - (normResidual / normT_);
 
       double fitChange = abs(fitOld_ - fit);
       fitOld_ = fit;
@@ -129,7 +117,7 @@ namespace btas {
           iter_ = 0;
           converged_num = 0;
           final_fit_ = fitOld_;
-          fitOld_ = -1.0;
+          fitOld_ = 1.0;
           return true;
         }
       }
@@ -167,9 +155,9 @@ namespace btas {
       verbose_ = verb;
     }
 
-  private:
+  protected:
     double tol_;
-    double fitOld_ = -1.0;
+    double fitOld_ = 1.0;
     double normT_ = -1.0;
     double final_fit_ = 0.0;
     size_t iter_ = 0;
@@ -324,7 +312,7 @@ namespace btas {
       if(fitChange < tol_) {
         iter_ = 0;
         final_fit_ = fitOld_;
-        fitOld_ = -1.0;
+        fitOld_ = 1.0;
         return true;
       }
 
@@ -374,7 +362,7 @@ namespace btas {
 
   private:
     double tol_;
-    double fitOld_ = -1.0;
+    double fitOld_ = 1.0;
     double final_fit_ = 0.0;
     double normTL_ = -1.0, normTR_ = -1.0;
     size_t iter_ = 0;
