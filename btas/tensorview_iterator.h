@@ -17,30 +17,22 @@ namespace btas {
   /// Iterates over elements of \c Storage using ordinal values of indices in \c Range
 
   template <typename Range, typename Storage>
-  class TensorViewIterator : public std::iterator<typename std::conditional<std::is_const<Storage>::value,
-                                                                            std::forward_iterator_tag,
-                                                                            std::output_iterator_tag>::type,
-                                                  typename std::conditional<std::is_const<Storage>::value,
-                                                  const typename storage_traits<Storage>::value_type,
-                                                        typename storage_traits<Storage>::value_type>::type>
-  {
+  class TensorViewIterator {
       struct Enabler {};
 
     public:
       typedef Storage storage_type;
       typedef std::reference_wrapper<storage_type> storageref_type;
       typedef std::reference_wrapper<const storage_type> ncstorageref_type;
-      typedef std::iterator<typename std::conditional<std::is_const<Storage>::value,
-          std::forward_iterator_tag,
-          std::output_iterator_tag>::type,
-          typename std::conditional<std::is_const<Storage>::value,
-          const typename storage_traits<Storage>::value_type,
-          typename storage_traits<Storage>::value_type>::type> base_type;
-      using typename base_type::value_type;
-      using typename base_type::pointer;
-      using typename base_type::reference;
-      using typename base_type::difference_type;
-      using typename base_type::iterator_category;
+      using iterator_category = std::conditional_t<std::is_const<Storage>::value,
+                                                   std::forward_iterator_tag,
+                                                   std::output_iterator_tag>;
+      using value_type = std::conditional_t<std::is_const<Storage>::value,
+                                            const typename storage_traits<Storage>::value_type,
+                                            typename storage_traits<Storage>::value_type>;
+      using difference_type = std::ptrdiff_t;
+      using pointer = std::add_pointer_t<value_type>;
+      using reference = std::add_lvalue_reference_t<value_type>;
 
     private:
       typedef typename Range::ordinal_subiterator subiterator;
