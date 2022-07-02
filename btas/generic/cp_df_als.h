@@ -595,6 +595,7 @@ namespace btas {
 
         right_modes[0] = ndim + 3;
         result_modes[1] = ndim + 3;
+        contracted = Tensor();
         contract(1.0, XXp, result_modes, tensor_ref_right, left_modes, 0.0, contracted, right_modes);
         right_modes[0] = 0;
 
