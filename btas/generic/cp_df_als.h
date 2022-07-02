@@ -367,8 +367,8 @@ namespace btas {
       
       ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
 
-      detail::get_fit(converge_test, epsilon);
-      return epsilon;
+      detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
+      return 1.0 - epsilon;
     }
 
     std::tuple<std::vector<Tensor>, std::vector<Tensor>> get_init_factors(){
@@ -743,8 +743,8 @@ namespace btas {
       }
 
       // Checks loss function if required
-      detail::get_fit(converge_test, epsilon);
-      epsilon = 1 - epsilon;
+      detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
+      epsilon = 1.0 - epsilon;
       // Checks loss function if required
       if (calculate_epsilon && epsilon == 2) {
         // TODO make this work for non-FitCheck convergence_classes
