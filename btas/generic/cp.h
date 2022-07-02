@@ -171,7 +171,7 @@ namespace btas {
             fast_pI);
       // std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
 
-      detail::get_fit(converge_test, epsilon);
+      //detail::get_fit(converge_test, epsilon);
 
       return epsilon;
     }
@@ -201,7 +201,7 @@ namespace btas {
       build_random(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       // std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
 
-      detail::get_fit(converge_test, epsilon);
+      //detail::get_fit(converge_test, epsilon);
 
       return epsilon;
     }
@@ -242,7 +242,7 @@ namespace btas {
         build(rank, converge_test, direct, max_als, true, step, epsilon, SVD_initial_guess, SVD_rank, fast_pI);
         rank++;
       }
-      detail::get_fit(converge_test, epsilon);
+//      detail::get_fit(converge_test, epsilon);
       return epsilon;
     }
 
@@ -296,7 +296,7 @@ namespace btas {
           rank *= geometric_step;
       }
 
-      detail::get_fit(converge_test, epsilon);
+//      detail::get_fit(converge_test, epsilon);
       return epsilon;
     }
 
