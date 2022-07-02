@@ -61,14 +61,16 @@ namespace btas {
     }
 
     template <typename Tensor>
-    void get_fit(FitCheck<Tensor> &t, double &epsilon) {
-      epsilon = t.get_fit();
+    void get_fit(FitCheck<Tensor> &t, double &epsilon,
+                 bool max_iter = false) {
+      epsilon = t.get_fit(max_iter);
       return;
     }
 
     template <typename Tensor>
-    void get_fit(CoupledFitCheck<Tensor> &t, double &epsilon) {
-      epsilon = t.get_fit();
+    void get_fit(CoupledFitCheck<Tensor> &t, double &epsilon,
+                 bool max_iter = false) {
+      epsilon = t.get_fit(max_iter);
       return;
     }
   }  // namespace detail
