@@ -20,6 +20,15 @@ if (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
   else()
     set(Boost_USE_CONFIG TRUE)
   endif()
+
+  # Boost::* targets by default are not GLOBAL, so to allow users of LINALG_LIBRARIES to safely use them we need to make them global
+  # more discussion here: https://gitlab.kitware.com/cmake/cmake/-/issues/17256
+  foreach(tgt boost;headers;${Boost_BTAS_DEPS_LIBRARIES})
+    if (TARGET Boost::${tgt})
+      set_target_properties(Boost::${tgt} PROPERTIES IMPORTED_GLOBAL TRUE)
+    endif()
+  endforeach()
+
 endif (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
 
 # if Boost not found, and BTAS_BUILD_DEPS_FROM_SOURCE=ON, use FetchContent to build it

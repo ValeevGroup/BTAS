@@ -816,7 +816,7 @@ namespace btas {
       /// \tparam _extent0 An integer
       /// \tparam _extents A pack of integers
       /// \param extent0 The extent of first dimension (0)
-      /// \param sizes A pack of sizes for dimensions 1+
+      /// \param extents A pack of sizes for dimensions 1+
       template<typename _extent0, typename... _extents, class = typename std::enable_if<std::is_integral<_extent0>::value>::type>
       explicit RangeNd(const _extent0& extent0, const _extents&... extents) :
         base_type()
