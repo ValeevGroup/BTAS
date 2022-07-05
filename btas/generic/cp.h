@@ -240,7 +240,7 @@ namespace btas {
       double epsilon = tcutCP + 1;
       while (epsilon > tcutCP && rank <= max_rank) {
         build(rank, converge_test, direct, max_als, true, step, epsilon, SVD_initial_guess, SVD_rank, fast_pI);
-        rank++;
+        rank += step;
       }
 //      detail::get_fit(converge_test, epsilon);
       return epsilon;
