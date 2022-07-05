@@ -152,7 +152,7 @@ TEST_CASE("CP")
      SECTION("ALS MODE = 5, Finite error"){
       CP_ALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
-      double diff = 1.0 - A1.compute_error(conv, 1e-2, 10, 199);
+      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 199);
       CHECK(std::abs(diff - results(9,0)) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
