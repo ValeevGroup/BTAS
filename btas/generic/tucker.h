@@ -67,6 +67,7 @@ namespace btas {
 
       // Truncate the column space of the unitary factor matrix.
       ind_t kept_evals = r - rank;
+      if(kept_evals == 0) BTAS_EXCEPTION("Tucker decomposition failed. Tucker transformation rank = 0");
       lambda = Tensor(kept_evals, r);
       auto lower_bound = {rank, zero};
       auto upper_bound = {r, r};
@@ -133,6 +134,7 @@ namespace btas {
 
       // Truncate the column space of the unitary factor matrix.
       ind_t kept_evals = r - rank;
+      if(kept_evals == 0) BTAS_EXCEPTION("Tucker decomposition failed. Tucker transformation rank = 0");
       lambda = Tensor(kept_evals, r);
       auto lower_bound = {rank, zero};
       auto upper_bound = {r, r};
