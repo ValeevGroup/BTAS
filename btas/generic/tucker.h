@@ -27,7 +27,6 @@ namespace btas {
   void make_tucker_factors(Tensor& A, double epsilon_svd,
                            std::vector<Tensor> &transforms, bool compute_core = false){
     using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
     auto ndim = A.rank();
     transforms.clear();
     transforms.reserve(ndim);
@@ -37,13 +36,13 @@ namespace btas {
     std::vector<size_t> left_modes, right_modes, final;
     final.push_back(0); final.emplace_back(ndim+1);
     left_modes.reserve(ndim); right_modes.reserve(ndim);
-    for(size_t i = 1; i <= ndim; ++i){
+    for(ind_t i = 1; i <= ndim; ++i){
       left_modes.emplace_back(i);
       right_modes.emplace_back(i);
     }
 
     auto ptr_left = left_modes.begin(), ptr_right = right_modes.begin();
-    for(size_t i = 0; i < ndim; ++i, ++ptr_left, ++ptr_right){
+    for(ind_t i = 0; i < ndim; ++i, ++ptr_left, ++ptr_right){
       // Compute A * A to make tucker computation easier (this turns from SVD into an eigenvalue
       // decomposition, i.e. HOSVD)
       size_t temp = *ptr_left;
@@ -94,7 +93,6 @@ namespace btas {
   void sequential_tucker(Tensor& A, double epsilon_svd,
                            std::vector<Tensor> &transforms){
     using ind_t = typename Tensor::range_type::index_type::value_type;
-    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
     auto ndim = A.rank();
     transforms.clear();
     transforms.reserve(ndim);
@@ -105,7 +103,7 @@ namespace btas {
     final.push_back(0); final.emplace_back(ndim);
     left_modes.reserve(ndim); right_modes.reserve(ndim);
     core.reserve(ndim);
-    for(size_t i = 0; i < ndim; ++i){
+    for(ind_t i = 0; i < ndim; ++i){
       left_modes.emplace_back(i);
       right_modes.emplace_back(i);
       core.emplace_back(i + 1);
@@ -113,7 +111,7 @@ namespace btas {
     *(right_modes.data()) = ndim;
     *(core.data() + ndim - 1) = 0;
     //auto ptr_left = left_modes.begin(), ptr_right = right_modes.begin();
-    for(size_t i = 0; i < ndim; ++i){
+    for(ind_t i = 0; i < ndim; ++i){
       // Compute A * A to make tucker computation easier (this turns from SVD into an eigenvalue
       // decomposition, i.e. HOSVD)
       // Because of later algorithm, mode of interest is always the 0th mode of the tensor
