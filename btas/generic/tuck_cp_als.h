@@ -238,10 +238,10 @@ namespace btas{
       //Tensor an(A[n].range());
 
       // Resize the tensor which will store the product of tensor_ref and the first factor matrix
-      Tensor An = Tensor(size / core_tensor.extent(contract_dim), rank);
+      Tensor An = Tensor(LH_size / core_tensor.extent(contract_dim), rank);
       core_tensor.resize(
-          Range{Range1{last_dim ? core_tensor.extent(contract_dim) : size / core_tensor.extent(contract_dim)},
-                Range1{last_dim ? size / core_tensor.extent(contract_dim) : core_tensor.extent(contract_dim)}});
+          Range{Range1{last_dim ? core_tensor.extent(contract_dim) : LH_size / core_tensor.extent(contract_dim)},
+                Range1{last_dim ? LH_size / core_tensor.extent(contract_dim) : core_tensor.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
       gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans),
