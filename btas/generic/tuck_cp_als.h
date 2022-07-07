@@ -140,9 +140,11 @@ namespace btas{
       {
         // If no tucker factors
         if (tucker_factors.empty()) {
-          make_tucker_factors(tensor_ref, tcut_tucker, tucker_factors, false);
           core_tensor = tensor_ref;
-          transform_tucker(true, core_tensor, tucker_factors);
+          subequential_tucker(core_tensor, tcut_tucker, tucker_factors);
+          //make_tucker_factors(tensor_ref, tcut_tucker, tucker_factors, false);
+          //core_tensor = tensor_ref;
+          //transform_tucker(true, core_tensor, tucker_factors);
         }
         if (AtA.empty()) {
           AtA = std::vector<Tensor>(ndim);
