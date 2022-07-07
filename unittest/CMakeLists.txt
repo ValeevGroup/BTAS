@@ -24,4 +24,4 @@ add_dependencies(check-btas ${executable})
 
 # Add a test
 add_test(${executable} ${PROJECT_BINARY_DIR}/unittest/${executable})
-set_tests_properties(${executable} PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/unittest" ENVIRONMENT LD_LIBRARY_PATH=$ENV{LIBRARY_PATH})
+set_tests_properties(${executable} PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/unittest")
