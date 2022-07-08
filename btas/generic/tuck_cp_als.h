@@ -115,6 +115,11 @@ namespace btas{
     //transform_tucker(false, tensor_ref, tucker_factors);
    }
 
+   /// Function to get the computed tucker factors.
+   std::vector<Tensor> get_tucker_factors(){
+     if(tucker_factors.empty()) BTAS_EXCEPTION("Tucker factors have not been computed");
+     return tucker_factors;
+   }
    protected:
     std::vector<Tensor> tucker_factors, transformed_A;
     Tensor core_tensor;
