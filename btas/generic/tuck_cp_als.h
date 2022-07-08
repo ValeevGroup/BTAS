@@ -100,7 +100,7 @@ namespace btas{
      // because the reference is transformed we need the untransformed as tensor_ref
      for(auto i : facs){
        BTAS_ASSERT(i.rank() == 2)
-       BTAS_ASSERT(i.extent(0) == tensor_ref.extent(num))
+       BTAS_ASSERT(i.extent((reference_is_core ? 0 : 1)) == tensor_ref.extent(num))
        tucker_factors.emplace_back(i);
        ++num;
      }
