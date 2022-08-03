@@ -1,8 +1,15 @@
 #; -*-CMake-*-
 
 cmake_minimum_required (VERSION 3.14.0)  # FetchContent_MakeAvailable
-project (BTAS)
-enable_language(CXX)
+
+###############################################################################
+# CMake defaults to address key pain points
+###############################################################################
+
+# safety net for dev workflow: accidental install will not affect FindOrFetch*
+if (NOT DEFINED CACHE{CMAKE_FIND_NO_INSTALL_PREFIX})
+  set(CMAKE_FIND_NO_INSTALL_PREFIX ON CACHE BOOL "Whether find_* commands will search CMAKE_INSTALL_PREFIX and CMAKE_STAGING_PREFIX; see https://cmake.org/cmake/help/latest/variable/CMAKE_FIND_NO_INSTALL_PREFIX.html#variable:CMAKE_FIND_NO_INSTALL_PREFIX")
+endif()
 
 ###############################################################################
 # Bring ValeevGroup cmake toolkit
@@ -23,6 +30,28 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(vg_cmake_kit)
 list(APPEND CMAKE_MODULE_PATH "${vg_cmake_kit_SOURCE_DIR}/modules")
+
+###############################################################################
+# Announce ourselves
+###############################################################################
+# see https://semver.org/
+set(BTAS_MAJOR_VERSION 1)
+set(BTAS_MINOR_VERSION 0)
+set(BTAS_MICRO_VERSION 0)
+set(BTAS_PRERELEASE_ID alpha.1)
+set(BTAS_VERSION "${BTAS_MAJOR_VERSION}.${BTAS_MINOR_VERSION}.${BTAS_MICRO_VERSION}")
+if (BTAS_PRERELEASE_ID)
+  set(BTAS_EXT_VERSION "${BTAS_VERSION}-${BTAS_PRERELEASE_ID}")
+else(BTAS_PRERELEASE_ID)
+  set(BTAS_EXT_VERSION "${BTAS_VERSION}")
+endif(BTAS_PRERELEASE_ID)
+
+project(BTAS
+        VERSION ${BTAS_VERSION}
+        DESCRIPTION "BTAS: Basic Tensor Algebra for Seeplusplus"
+        LANGUAGES CXX
+        HOMEPAGE_URL "https://github.com/ValeevGroup/BTAS")
+enable_language(C)  # C needed even for basic platform introspection
 
 # extra cmake files are shipped with BTAS
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
@@ -46,17 +75,6 @@ add_feature_info(WFN91LinearAlgebraDiscoveryKit ENABLE_WFN91_LINALG_DISCOVERY_KI
 set(TARGET_MAX_INDEX_RANK 6 CACHE STRING "Determines the rank for which the default BTAS index type will use stack (default: 6); this requires Boost.Container")
 add_feature_info("TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK}" TRUE "default BTAS index type will use stack for rank<=${TARGET_MAX_INDEX_RANK}")
 
-# Set BTAS version
-set(BTAS_MAJOR_VERSION 1)
-set(BTAS_MINOR_VERSION 0)
-set(BTAS_MICRO_VERSION 0)
-set(BTAS_PRERELEASE_ID alpha.1)
-set(BTAS_VERSION "${BTAS_MAJOR_VERSION}.${BTAS_MINOR_VERSION}.${BTAS_MICRO_VERSION}")
-if (BTAS_PRERELEASE_ID)
-  set(BTAS_EXT_VERSION "${BTAS_VERSION}-${BTAS_PRERELEASE_ID}")
-else(BTAS_PRERELEASE_ID)
-  set(BTAS_EXT_VERSION "${BTAS_VERSION}")
-endif(BTAS_PRERELEASE_ID)
 set(TARGET_ARCH "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 
 include(CMakePushCheckState)
