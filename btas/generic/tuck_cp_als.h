@@ -100,7 +100,7 @@ namespace btas{
      // because the reference is transformed we need the untransformed as tensor_ref
      for(auto i : facs){
        BTAS_ASSERT(i.rank() == 2)
-       BTAS_ASSERT(i.extent(0) == tensor_ref.extent(num))
+       BTAS_ASSERT(i.extent((reference_is_core ? 0 : 1)) == tensor_ref.extent(num))
        tucker_factors.emplace_back(i);
        ++num;
      }
@@ -115,6 +115,11 @@ namespace btas{
     //transform_tucker(false, tensor_ref, tucker_factors);
    }
 
+   /// Function to get the computed tucker factors.
+   std::vector<Tensor> get_tucker_factors(){
+     if(tucker_factors.empty()) BTAS_EXCEPTION("Tucker factors have not been computed");
+     return tucker_factors;
+   }
    protected:
     std::vector<Tensor> tucker_factors, transformed_A;
     Tensor core_tensor;
@@ -140,9 +145,11 @@ namespace btas{
       {
         // If no tucker factors
         if (tucker_factors.empty()) {
-          make_tucker_factors(tensor_ref, tcut_tucker, tucker_factors, false);
           core_tensor = tensor_ref;
-          transform_tucker(true, core_tensor, tucker_factors);
+          sequential_tucker(core_tensor, tcut_tucker, tucker_factors);
+          //make_tucker_factors(tensor_ref, tcut_tucker, tucker_factors, false);
+          //core_tensor = tensor_ref;
+          //transform_tucker(true, core_tensor, tucker_factors);
         }
         if (AtA.empty()) {
           AtA = std::vector<Tensor>(ndim);
@@ -199,8 +206,8 @@ namespace btas{
         is_converged = converge_test(A, AtA);
       }while (count < max_als && !is_converged);
 
-      detail::get_fit(converge_test, epsilon);
-      epsilon = 1 - epsilon;
+      detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
+      epsilon = 1.0 - epsilon;
       // Checks loss function if required
       if (calculate_epsilon && epsilon == 2) {
         epsilon = this->norm(this->reconstruct() - tensor_ref);
@@ -238,10 +245,10 @@ namespace btas{
       //Tensor an(A[n].range());
 
       // Resize the tensor which will store the product of tensor_ref and the first factor matrix
-      Tensor An = Tensor(size / core_tensor.extent(contract_dim), rank);
+      Tensor An = Tensor(LH_size / core_tensor.extent(contract_dim), rank);
       core_tensor.resize(
-          Range{Range1{last_dim ? core_tensor.extent(contract_dim) : size / core_tensor.extent(contract_dim)},
-                Range1{last_dim ? size / core_tensor.extent(contract_dim) : core_tensor.extent(contract_dim)}});
+          Range{Range1{last_dim ? core_tensor.extent(contract_dim) : LH_size / core_tensor.extent(contract_dim)},
+                Range1{last_dim ? LH_size / core_tensor.extent(contract_dim) : core_tensor.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
       gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans),
@@ -487,8 +494,8 @@ namespace btas{
       }
 
       // Checks loss function if required
-      detail::get_fit(converge_test, epsilon);
-      epsilon = 1 - epsilon;
+      detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
+      epsilon = 1.0 - epsilon;
       // Checks loss function if required
       if (calculate_epsilon && epsilon == 2) {
         epsilon = this->norm(this->reconstruct() - tensor_ref);

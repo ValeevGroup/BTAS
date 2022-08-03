@@ -144,8 +144,16 @@ namespace btas {
     /// Returns the fit of the CP approximation, \f$ 1 - \frac{\|X - full{M}\|}{\|T\|} \f$
     /// from the previous () operator call.
     /// Where \f$ \hat{T} \f$ is the CP approximation of T
+    /// \param[in] hit_max_iters bool, if CP_ALS strategy didn't converge hit_max_iters = true
+    /// will return fitOld_ and reset the object, else return final_fit_;
     /// \returns fit of the CP approximation
-    double get_fit(){
+    double get_fit(bool hit_max_iters = false){
+      if(hit_max_iters){
+        iter_ = 0;
+        converged_num = 0;
+        final_fit_ = fitOld_;
+        fitOld_ = 1.0;
+      }
       return final_fit_;
     }
 
@@ -349,8 +357,15 @@ namespace btas {
     /// Returns the fit of the CP approximation, \f$ 1 - \frac{\|T - \hat{T}\|}{\|T\|} \f$
     /// from the previous () operator call
     /// Where \f$ T = T_{left}^T  T_{right} \f$ and \f$ \hat{T} \f$ is the CP approximation of T
+    /// \param[in] hit_max_iters bool, if CP_ALS strategy didn't converge hit_max_iters = true
+    /// will return fitOld_ and reset the object, else return final_fit_;
     /// \returns fit of the CP approximation
-    double get_fit(){
+    double get_fit(bool hit_max_iters = false){
+      if(hit_max_iters) {
+        iter_ = 0;
+        final_fit_ = fitOld_;
+        fitOld_ = 1.0;
+      }
       return final_fit_;
     }
 
