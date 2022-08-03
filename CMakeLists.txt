@@ -51,6 +51,7 @@ project(BTAS
         DESCRIPTION "BTAS: Basic Tensor Algebra for Seeplusplus"
         LANGUAGES CXX
         HOMEPAGE_URL "https://github.com/ValeevGroup/BTAS")
+enable_language(C)  # C needed even for basic platform introspection
 
 # extra cmake files are shipped with BTAS
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
