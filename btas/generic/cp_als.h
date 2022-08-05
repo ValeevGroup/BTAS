@@ -818,7 +818,8 @@ namespace btas {
         // over the middle dimension and sum over the rank.
 
         else if (contract_dim > n) {
-          middle_contract(1.0, temp, a, 0.0, contract_tensor);
+//          middle_contract(1.0, temp, a, 0.0, contract_tensor);
+          middle_contract_parallel(1.0, temp, a, 0.0, contract_tensor);
           temp = contract_tensor;
         }
 
