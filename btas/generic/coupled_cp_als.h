@@ -398,8 +398,8 @@ namespace btas{
         is_converged = converge_test(A);
       }
 
-      detail::get_fit(converge_test, epsilon);
-      epsilon = 1 - epsilon;
+      detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
+      epsilon = 1.0 - epsilon;
     }
 
     /// Computes an optimized factor matrix holding all others constant.

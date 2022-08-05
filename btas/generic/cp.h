@@ -61,14 +61,16 @@ namespace btas {
     }
 
     template <typename Tensor>
-    void get_fit(FitCheck<Tensor> &t, double &epsilon) {
-      epsilon = t.get_fit();
+    void get_fit(FitCheck<Tensor> &t, double &epsilon,
+                 bool max_iter = false) {
+      epsilon = t.get_fit(max_iter);
       return;
     }
 
     template <typename Tensor>
-    void get_fit(CoupledFitCheck<Tensor> &t, double &epsilon) {
-      epsilon = t.get_fit();
+    void get_fit(CoupledFitCheck<Tensor> &t, double &epsilon,
+                 bool max_iter = false) {
+      epsilon = t.get_fit(max_iter);
       return;
     }
   }  // namespace detail
@@ -169,7 +171,7 @@ namespace btas {
             fast_pI);
       // std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
 
-      detail::get_fit(converge_test, epsilon);
+      //detail::get_fit(converge_test, epsilon);
 
       return epsilon;
     }
@@ -199,7 +201,7 @@ namespace btas {
       build_random(rank, converge_test, direct, max_als, calculate_epsilon, epsilon, fast_pI);
       // std::cout << "Number of ALS iterations performed: " << num_ALS << std::endl;
 
-      detail::get_fit(converge_test, epsilon);
+      //detail::get_fit(converge_test, epsilon);
 
       return epsilon;
     }
@@ -236,11 +238,11 @@ namespace btas {
                          bool direct = true) {
       ind_t rank = (A.empty()) ? ((SVD_initial_guess) ? SVD_rank : 1) : A[0].extent(0);
       double epsilon = tcutCP + 1;
-      while (epsilon > tcutCP && rank < max_rank) {
+      while (epsilon > tcutCP && rank <= max_rank) {
         build(rank, converge_test, direct, max_als, true, step, epsilon, SVD_initial_guess, SVD_rank, fast_pI);
-        rank++;
+        rank += step;
       }
-      detail::get_fit(converge_test, epsilon);
+//      detail::get_fit(converge_test, epsilon);
       return epsilon;
     }
 
@@ -294,7 +296,7 @@ namespace btas {
           rank *= geometric_step;
       }
 
-      detail::get_fit(converge_test, epsilon);
+//      detail::get_fit(converge_test, epsilon);
       return epsilon;
     }
 

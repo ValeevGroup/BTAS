@@ -272,7 +272,8 @@ namespace btas {
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
           auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
-          std::cout << "The accuracy of the LHS decomposition is : " << error * 100 << std::endl;
+          if(verbose)
+            std::cout << "The accuracy of the LHS decomposition is : " << error * 100 << std::endl;
           init_factors_left = CP3.get_factor_matrices();
           auto cur_dim = init_factors_left.size() - 1;
           for (size_t i = 1; i < cur_dim; ++i) {
@@ -286,7 +287,8 @@ namespace btas {
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
           auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
-          std::cout << "The accuracy of the RHS decomposition is : " << error * 100 << std::endl;
+          if(verbose)
+            std::cout << "The accuracy of the RHS decomposition is : " << error * 100 << std::endl;
           init_factors_right = CP3.get_factor_matrices();
           auto cur_dim = init_factors_right.size();
           if (rank_cp3 == rank_cp4) {
@@ -326,7 +328,8 @@ namespace btas {
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
           auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
-          std::cout << "LHS accuracy: " << error * 100 << std::endl;
+          if(verbose)
+            std::cout << "LHS accuracy: " << error * 100 << std::endl;
           init_factors_left = CP3.get_factor_matrices();
           auto cur_dim = init_factors_left.size() - 1;
           for (size_t i = 1; i < cur_dim; ++i, ++a_ptr) {
@@ -348,7 +351,8 @@ namespace btas {
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
           auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
-          std::cout << "RHS accuracy: " << error * 100 << std::endl;
+          if(verbose)
+            std::cout << "RHS accuracy: " << error * 100 << std::endl;
           init_factors_right = CP3.get_factor_matrices();
           auto cur_dim = init_factors_right.size() - 1;
           for (size_t i = 1; i < cur_dim; ++i, ++a_ptr) {
@@ -367,8 +371,8 @@ namespace btas {
       
       ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
 
-      detail::get_fit(converge_test, epsilon);
-      return epsilon;
+      detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
+      return 1.0 - epsilon;
     }
 
     std::tuple<std::vector<Tensor>, std::vector<Tensor>> get_init_factors(){
@@ -591,6 +595,7 @@ namespace btas {
 
         right_modes[0] = ndim + 3;
         result_modes[1] = ndim + 3;
+        contracted = Tensor();
         contract(1.0, XXp, result_modes, tensor_ref_right, left_modes, 0.0, contracted, right_modes);
         right_modes[0] = 0;
 
@@ -743,8 +748,8 @@ namespace btas {
       }
 
       // Checks loss function if required
-      detail::get_fit(converge_test, epsilon);
-      epsilon = 1 - epsilon;
+      detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
+      epsilon = 1.0 - epsilon;
       // Checks loss function if required
       if (calculate_epsilon && epsilon == 2) {
         // TODO make this work for non-FitCheck convergence_classes

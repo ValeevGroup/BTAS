@@ -649,8 +649,8 @@ namespace btas {
         is_converged = converge_test(A, AtA);
       }while (count < max_als && !is_converged);
 
-      detail::get_fit(converge_test, epsilon);
-      epsilon = 1 - epsilon;
+      detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
+      epsilon = 1.0 - epsilon;
       // Checks loss function if required
       if (calculate_epsilon && epsilon == 2) {
           epsilon = this->norm(this->reconstruct() - tensor_ref);
