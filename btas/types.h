@@ -10,7 +10,19 @@
 #ifdef BTAS_HAS_BLAS_LAPACK
 
 #include <blas.hh>
+
+#include <btas/macros.h>
+
+#if defined(LAPACK_COMPLEX_CPP)
+BTAS_PRAGMA_CLANG(diagnostic push)
+BTAS_PRAGMA_CLANG(diagnostic ignored "-Wreturn-type-c-linkage")
+#endif  // defined(LAPACK_COMPLEX_CPP)
+
 #include <lapack.hh>
+
+#if defined(LAPACK_COMPLEX_CPP)
+BTAS_PRAGMA_CLANG(diagnostic pop)
+#endif  // defined(LAPACK_COMPLEX_CPP)
 
 #else
 
