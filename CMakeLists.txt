@@ -182,22 +182,6 @@ else(BUILD_TESTING)
   add_custom_target_subproject(btas check COMMAND echo "WARNING: unit testing disabled. To enable, give -DBUILD_TESTING=ON to cmake")
 endif(BUILD_TESTING)
 
-##########################
-# Get the git revision tag information
-##########################
-
-if(EXISTS ${PROJECT_SOURCE_DIR}/.git)
-  find_package(Git REQUIRED)
-  execute_process(
-      COMMAND ${GIT_EXECUTABLE} rev-parse -q HEAD
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      OUTPUT_VARIABLE BTAS_REVISION )
-  string(REGEX MATCH "[0-9a-f]*"
-      BTAS_REVISION "${BTAS_REVISION}")
-else()
-  set(BTAS_REVISION "unknown")
-endif()
-
 configure_file(
     ${PROJECT_SOURCE_DIR}/btas/version.h.in
     ${PROJECT_BINARY_DIR}/btas/version.h
