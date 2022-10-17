@@ -19,9 +19,13 @@ target_include_directories(${executable} PRIVATE
 )
 target_link_libraries(${executable} BTAS)
 
-# Add targets
-add_dependencies(check-btas ${executable})
-
-# Add a test
-add_test(${executable} ${PROJECT_BINARY_DIR}/unittest/${executable})
-set_tests_properties(${executable} PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/unittest")
+# Add test suite
+add_test(btas/unit/build "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target ${executable})
+set_tests_properties(btas/unit/build PROPERTIES FIXTURES_SETUP BTAS_UNIT_TESTS_EXEC)
+add_test(NAME btas/unit/run
+        COMMAND ${executable})
+set_tests_properties(btas/unit/run
+        PROPERTIES
+          FIXTURES_REQUIRED BTAS_UNIT_TESTS_EXEC
+          WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/unittest"
+        )
