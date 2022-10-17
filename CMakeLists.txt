@@ -176,7 +176,7 @@ add_subdirectory(doc)
 # checking/testing
 ##########################
 if (BUILD_TESTING)
-  add_custom_target_subproject(btas check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
+  add_custom_target_subproject(btas check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V -R "btas/unit/run")
   add_subdirectory(unittest)
 else(BUILD_TESTING)
   add_custom_target_subproject(btas check COMMAND echo "WARNING: unit testing disabled. To enable, give -DBUILD_TESTING=ON to cmake")
