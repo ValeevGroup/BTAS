@@ -102,19 +102,19 @@ TEST_CASE("Tensor SVD") {
           return randomCplx<double>();
       });
       zT U(M, N, M*N);
-      zT Vt(5, 5);
-      dT Sigma(5);
+      zT Vt(O, O);
+      dT Sigma(O);
       auto Acopy = A;
       gesvd(lapack::Job::AllVec, lapack::Job::AllVec, A, Sigma, U, Vt);
-      zT A_(2, 3, 5);
-      zT S(6, 5);
+      zT A_(M, N, O);
+      zT S(M*N, O);
       S.fill(0.0);
-      for (auto i = 0; i < 5; i++) {
+      for (auto i = 0; i < O; i++) {
         S(i, i) = Sigma(i);
       }
       ztype one(1.0);
       ztype zero(0.0);
-      zT temp1(2, 3, 5);
+      zT temp1(M, N, O);
       contract(one, U, {'i', 'j', 'k'}, S, {'k', 'l'}, zero, temp1, {'i', 'j', 'l'});
       contract(one, temp1, {'i', 'j', 'l'}, Vt, {'l', 'm'},zero, A_, {'i', 'j', 'm'});
       double res = 0;
