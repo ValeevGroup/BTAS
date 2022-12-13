@@ -194,7 +194,7 @@ void gesvd (
 /// \param order storage order of tensor in matrix view (blas::Layout)
 /// \param transA transpose directive for tensor \p A (blas::Op)
 /// \param alpha scalar value to be multiplied to A * X
-/// \param A input tensor
+/// \param[in,out] A on input the tensor to be SVDed, contents overwritten on output
 /// \param X input tensor
 /// \param beta scalar value to be multiplied to Y
 /// \param Y output tensor which can be empty tensor but needs to have rank info (= size of shape).
