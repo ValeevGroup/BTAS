@@ -8,6 +8,7 @@ set(btas_test_src_files
   range_test.cc
   tensor_blas_test.cc
   tensor_func_test.cc
+  tensor_lapack_test.cc
   tensorview_test.cc
   test.cc
 )
