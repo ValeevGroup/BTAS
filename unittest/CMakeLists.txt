@@ -4,7 +4,7 @@ set(btas_test_src_files
   tensor_test.cc
   contract_test.cc
   mohndle_test.cc
-  tensor_cp_test.cc
+  tensor_cp_test.cc tensor_cp_test.cc
   range_test.cc
   tensor_blas_test.cc
   tensor_func_test.cc
