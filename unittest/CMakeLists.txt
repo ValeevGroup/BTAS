@@ -1,15 +1,7 @@
 # Create the ta_test executable
 set(executable btas_test)
 set(btas_test_src_files
-  tensor_test.cc
-  contract_test.cc
-  mohndle_test.cc
-  tensor_cp_test.cc tensor_cp_test.cc
-  range_test.cc
-  tensor_blas_test.cc
-  tensor_func_test.cc
-  tensor_lapack_test.cc
-  tensorview_test.cc
+        ztensor_cp_test.cc
   test.cc
 )
 add_executable(${executable} EXCLUDE_FROM_ALL ${btas_test_src_files})

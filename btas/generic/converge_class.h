@@ -74,6 +74,7 @@ namespace btas {
   class FitCheck{
   public:
     using ind_t = typename Tensor::range_type::index_type::value_type;
+    using dtype = typename Tensor::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     /// constructor for the base convergence test object
@@ -128,7 +129,7 @@ namespace btas {
 
     /// Set the norm of the reference tensor T
     /// \param[in] normT Norm of the reference tensor;
-    void set_norm(double normT){
+    void set_norm(dtype normT){
       normT_ = normT;
     }
 
@@ -166,7 +167,7 @@ namespace btas {
   protected:
     double tol_;
     double fitOld_ = 1.0;
-    double normT_ = -1.0;
+    dtype normT_ = -1.0;
     double final_fit_ = 0.0;
     size_t iter_ = 0;
     size_t converged_num = 0;
