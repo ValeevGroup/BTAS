@@ -5,7 +5,7 @@
 #include <complex>
 
 // C++20 extensions
-#if __cplusplus < 202002L
+#if __cplusplus <= 201703L
 namespace std {
   template< class T >
   struct remove_cvref {

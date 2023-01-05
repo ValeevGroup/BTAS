@@ -406,7 +406,7 @@ namespace btas {
           Tensor S(R, R);
           RTensor lambda(R);
 
-          // Contract refrence tensor to make it square matrix of mode i
+          // Contract reference tensor to make it square matrix of mode i
           gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
 
           // Find the Singular vectors of the matrix using eigenvalue decomposition

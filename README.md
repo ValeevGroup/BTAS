@@ -23,6 +23,6 @@ TL;DR version
 ## useful CMake variables
 - `CMAKE_CXX_COMPILER` -- specifies the C++ compiler (by default CMake will look for the C++ compiler in `PATH`)
 - `BTAS_USE_BLAS_LAPACK` -- specifies whether to enable the use of BLAS/LAPACK via the BLAS++/LAPACK++ APIs; the default is `ON`
-- `BTAS_BUILD_DEPS_FROM_SOURCE` -- specifies whetther to enable building the missing dependencies (Boost) from source; the default is `OFF`
+- `BTAS_BUILD_DEPS_FROM_SOURCE` -- specifies whether to enable building the missing dependencies (Boost) from source; the default is `OFF`
 - `BUILD_TESTING` -- specifies whether to build unit tests; the default is `ON`
 - `TARGET_MAX_INDEX_RANK` -- specifies the rank for which the default BTAS index type will use stack; the default is `6`
