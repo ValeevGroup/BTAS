@@ -626,7 +626,7 @@ namespace btas {
       for (size_t i = 0; i < ndim; ++i, ++ptr_ata) {
         auto &a_mat = A[i];
         *ptr_ata = Tensor();
-        contract(1.0, a_mat, {1, 2}, a_mat, {1, 3}, 0.0, *ptr_ata, {2, 3});
+        contract(this->one, a_mat, {1, 2}, a_mat, {1, 3}, this->zero, *ptr_ata, {2, 3});
       }
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
@@ -644,7 +644,7 @@ namespace btas {
             update_w_KRP(i, rank, fast_pI, matlab, converge_test);
           }
           auto &ai = A[i];
-          contract(1.0, ai, {1, 2}, ai, {1, 3}, 0.0, AtA[i], {2, 3});
+          contract(this->one, ai, {1, 2}, ai, {1, 3}, this->zero, AtA[i], {2, 3});
         }
         is_converged = converge_test(A, AtA);
       }while (count < max_als && !is_converged);

@@ -183,7 +183,8 @@ namespace btas {
       auto n = btas_factors.size() - 1;
       Tensor coeffMat;
       auto &temp1 = btas_factors[n];
-      ger(1.0, temp1, temp1, coeffMat);
+      typename Tensor::value_type one = 1.0;
+      ger(one, temp1, temp1, coeffMat);
 
       auto rank2 = rank * (ord_t) rank;
       Tensor temp(rank, rank);
