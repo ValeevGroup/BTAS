@@ -142,8 +142,8 @@ namespace btas{
 /// \param[in, out] lambda In: An empty vector with length greater than
 /// or equal to the largest mode of \c A. Out: The eigenvalues of the
 ///  matrix \c A
-  template <typename Tensor>
-  void eigenvalue_decomp(Tensor & A, Tensor & lambda) {
+  template <typename Tensor, typename RealTensor>
+  void eigenvalue_decomp(Tensor& A, RealTensor& lambda) {
 
 #ifndef BTAS_HAS_BLAS_LAPACK
     BTAS_EXCEPTION("eigenvalue_decomp required BLAS/LAPACK bindings to be enabled: -DBTAS_USE_BLAS_LAPACK=ON");

@@ -81,6 +81,10 @@ namespace btas {
   template <typename Tensor, class ConvClass = NormCheck<Tensor> >
   class CP_ALS : public CP<Tensor, ConvClass> {
    public:
+    using T = typename Tensor::value_type;
+    using RT = real_type_t<T>;
+    using RTensor = rebind_tensor_t<Tensor, RT>;
+
     using CP<Tensor, ConvClass>::A;
     using CP<Tensor, ConvClass>::ndim;
     using CP<Tensor, ConvClass>::symmetries;
@@ -399,7 +403,8 @@ namespace btas {
           auto tmp = symmetries[i];
           if (tmp != i) continue;
           ind_t R = tensor_ref.extent(i);
-          Tensor S(R, R), lambda(R);
+          Tensor S(R, R);
+          RTensor lambda(R);
 
           // Contract refrence tensor to make it square matrix of mode i
           gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
@@ -409,7 +414,7 @@ namespace btas {
 
           // Fill a factor matrix with the singular vectors with the largest corresponding singular
           // values
-          lambda = Tensor(R, SVD_rank);
+          lambda = RTensor(R, SVD_rank);
           lambda.fill(0.0);
           auto lower_bound = {0, 0};
           auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
@@ -418,7 +423,6 @@ namespace btas {
           for (auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter) {
             *(l_iter) = *(iter);
           }
-
           A[i] = lambda;
         }
 
