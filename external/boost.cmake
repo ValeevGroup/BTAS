@@ -7,7 +7,17 @@ endif()
 
 # make sure Boost::boost is available, and look for optional serialization component
 if (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
-  set(Boost_BTAS_DEPS_LIBRARIES serialization)
+  list(APPEND Boost_BTAS_DEPS_LIBRARIES serialization)
+
+  # detect which Boost targets I already have
+  foreach(tgt boost;headers;${Boost_BTAS_DEPS_LIBRARIES})
+    if (TARGET Boost::${tgt})
+      set(btas_imported_boost_${tgt} 0)
+    else()
+      set(btas_imported_boost_${tgt} 1)
+    endif()
+  endforeach()
+
   # try config first
   # OPTIONAL_COMPONENTS in FindBoost available since 3.11
   cmake_minimum_required(VERSION 3.11.0)
@@ -24,7 +34,7 @@ if (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
   # Boost::* targets by default are not GLOBAL, so to allow users of LINALG_LIBRARIES to safely use them we need to make them global
   # more discussion here: https://gitlab.kitware.com/cmake/cmake/-/issues/17256
   foreach(tgt boost;headers;${Boost_BTAS_DEPS_LIBRARIES})
-    if (TARGET Boost::${tgt})
+    if (TARGET Boost::${tgt} AND btas_imported_boost_${tgt})
       get_target_property(_boost_tgt_${tgt}_is_imported_global Boost::${tgt} IMPORTED_GLOBAL)
       if (NOT _boost_tgt_${tgt}_is_imported_global)
         set_target_properties(Boost::${tgt} PROPERTIES IMPORTED_GLOBAL TRUE)
