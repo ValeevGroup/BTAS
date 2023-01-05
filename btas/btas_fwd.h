@@ -64,6 +64,13 @@ namespace btas {
     >
     class Tensor;
 
+    template<typename Tensor,
+              typename _T,
+              class _Range = btas::DEFAULT::range,
+              class _Storage = btas::DEFAULT::storage<_T>
+              >
+    using rebind_tensor_t = typename Tensor::template rebind_t<_T, _Range, _Storage>;
+
     template <typename _T,
             class _Range = btas::DEFAULT::range,
             class _Storage = btas::DEFAULT::storage<_T>>

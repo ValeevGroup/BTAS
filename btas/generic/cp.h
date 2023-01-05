@@ -151,10 +151,12 @@ namespace btas {
                                         // CP factor matrices
     \endcode
   */
+
   template <typename Tensor, class ConvClass>
   class CP {
    public:
     using ind_t = typename Tensor::range_type::index_type::value_type;
+    using dtype = typename Tensor::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     /// Create a generic CP object that stores the factor matrices,
@@ -561,7 +563,7 @@ namespace btas {
       for (ind_t col = 0; col < rank; ++col) {
         auto val = sqrt(*(lam_ptr + col));
         *(lam_ptr + col) = val;
-        val = (val < 1e-12 ? 0 : 1 / val);
+        val = (abs(val) < 1e-12 ? 0.0 : 1.0 / val);
         btas::scal(Nsize, val, (A_ptr + col), rank);
       }
 
@@ -588,7 +590,7 @@ namespace btas {
       for (ind_t i = 0; i < rank; ++i) {
         auto val = sqrt(*(A_ptr + i));
         *(A_ptr + i) = val;
-        val = (val < 1e-12 ? 0.0 : 1 / val);
+        val = (abs(val) < 1e-12 ? 0.0 : 1.0 / val);
         btas::scal(Nsize, val, (Mat_ptr + i), rank);
       }
     }
