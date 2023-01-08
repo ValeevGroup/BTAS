@@ -76,7 +76,8 @@ namespace btas {
     using ind_t = typename Tensor::range_type::index_type::value_type;
     using dtype = typename Tensor::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
-
+    using RT = real_type_t<dtype>;
+    using RTensor = rebind_tensor_t<Tensor, RT>;
     /// constructor for the base convergence test object
     /// \param[in] tol tolerance for ALS convergence default = 1e-4
     explicit FitCheck(double tol = 1e-4): tol_(tol){
@@ -91,20 +92,20 @@ namespace btas {
     /// default = std::vector<Tensor>();
     bool operator()(const std::vector<Tensor> &btas_factors,
                     const std::vector<Tensor> & V = std::vector<Tensor>()) {
-      if (normT_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
+      if (normT_ < 0.0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
       auto n = btas_factors.size() - 2;
       ord_t size = btas_factors[n].size();
       ind_t rank = btas_factors[n].extent(1);
       auto *ptr_A = btas_factors[n].data();
       auto *ptr_MtKRP = MtKRP_.data();
       auto lam_ptr = btas_factors[n + 1].data();
-      double iprod = 0.0;
+      dtype iprod = 0.0;
       for (ord_t i = 0; i < size; ++i) {
         iprod += *(ptr_MtKRP + i) * *(ptr_A + i) * *(lam_ptr + i % rank);
       }
 
       double normFactors = norm(btas_factors, V);
-      double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * iprod));
+      double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * abs(iprod)));
       double fit = 1. - (normResidual / normT_);
 
       double fitChange = abs(fitOld_ - fit);
@@ -129,7 +130,7 @@ namespace btas {
 
     /// Set the norm of the reference tensor T
     /// \param[in] normT Norm of the reference tensor;
-    void set_norm(dtype normT){
+    void set_norm(double normT){
       normT_ = normT;
     }
 
@@ -167,7 +168,7 @@ namespace btas {
   protected:
     double tol_;
     double fitOld_ = 1.0;
-    dtype normT_ = -1.0;
+    double normT_ = -1.0;
     double final_fit_ = 0.0;
     size_t iter_ = 0;
     size_t converged_num = 0;
@@ -207,7 +208,7 @@ namespace btas {
         }
       }
 
-      auto nrm = 0.0;
+      dtype nrm = 0.0;
       for(auto & i: coeffMat){
         nrm += i;
       }

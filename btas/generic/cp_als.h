@@ -410,16 +410,16 @@ namespace btas {
 
           // Fill a factor matrix with the singular vectors with the largest corresponding singular
           // values
-          lambda = RTensor(R, SVD_rank);
-          lambda.fill(0.0);
+          Tensor lambda_(R,SVD_rank);
+          lambda_.fill(0.0);
           auto lower_bound = {0, 0};
           auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
           auto view = make_view(S.range().slice(lower_bound, upper_bound), S.storage());
-          auto l_iter = lambda.begin();
+          auto l_iter = lambda_.begin();
           for (auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter) {
             *(l_iter) = *(iter);
           }
-          A[i] = lambda;
+          A[i] = lambda_;
         }
 
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
