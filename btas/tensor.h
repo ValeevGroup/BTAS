@@ -236,6 +236,21 @@ namespace btas {
         return Tensor(range(), storage_type(storage().cbegin(),storage().cend()));
       }
 
+      /// returns element-wise conjugate of a *this tensor if have complex value type
+      Tensor conj(){
+        if(is_complex_type_v<value_type>){
+          Tensor conjT = clone();
+          auto conj_ptr = conjT.data();
+          auto self_ptr = data();
+          auto self_size = size();
+          for(auto i=0;i<self_size;++i){ *(conj_ptr+i) = btas::impl::conj( *(self_ptr+i) ); }
+          return conjT;
+        }
+        else{
+          return *this;
+        }
+      }
+
       /// copy assignment operator
       template<class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value &&
                                                               not std::is_same<typename _Tensor::storage_type,Tensor::storage_type>::value
