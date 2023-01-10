@@ -158,7 +158,7 @@ namespace btas{
     ord_t lambda_length = lambda.size();
     ind_t smallest_mode_A = (A.extent(0) < A.extent(1) ? A.extent(0) : A.extent(1));
     if (lambda_length < smallest_mode_A) {
-      lambda = Tensor(smallest_mode_A);
+      lambda = RealTensor(smallest_mode_A);
     }
 
     auto info = hereig( blas::Layout::RowMajor, lapack::Job::Vec, 
@@ -217,6 +217,9 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
 #else // BTAS_HAS_BLAS_LAPACK
 
     using ind_t = typename Tensor::range_type::index_type::value_type;
+    using T = typename Tensor::value_type;
+    using RT = real_type_t<T>;
+    using RTensor = rebind_tensor_t<Tensor, RT>;
     if (A.rank() > 2) {
       BTAS_EXCEPTION("PseudoInverse can only be computed on a matrix");
     }
@@ -236,7 +239,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
         std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
       }
     }
-    Tensor s(Range{Range1{rank}});
+    RTensor s(Range{Range1{rank}});
     Tensor U(Range{Range1{row}, Range1{row}});
     Tensor Vt(Range{Range1{col}, Range1{col}});
 
@@ -247,17 +250,17 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
     Tensor s_inv(Range{Range1{row}, Range1{col}});
     s_inv.fill(0.0);
     for (ind_t i = 0; i < rank; ++i) {
-      if (s(i) > lr_thresh)
-        s_inv(i, i) = 1 / s(i);
+      if (abs(s(i)) > lr_thresh)
+        s_inv(i, i) = 1.0 / s(i);
       else
-        s_inv(i, i) = 0;
+        s_inv(i, i) = 0.0;
     }
-    s.resize(Range{Range1{row}, Range1{col}});
+    Tensor s_(Range{Range1{row}, Range1{col}});
 
     // Compute the matrix A^-1 from the inverted singular values and the U and
     // V^T provided by the SVD
-    gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, U, s_inv, 0.0, s);
-    gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, s, Vt, 0.0, U);
+    gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, U, s_inv, 0.0, s_);
+    gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, s_, Vt, 0.0, U);
 
     return U;
                           

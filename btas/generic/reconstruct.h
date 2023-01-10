@@ -51,7 +51,7 @@ namespace btas {
     // if the value of lambda is very small, don't invert it.
     for (ind_t i = 0; i < rank; i++) {
       auto val = *(lam_ptr + i);
-      scal(A[dims_order[0]].extent(0), (val > 1e-12 ? 1/val : 1), std::begin(A[dims_order[0]]) + i, rank);
+      scal(A[dims_order[0]].extent(0), (abs(val) > 1e-12 ? 1.0/val : 1.0), std::begin(A[dims_order[0]]) + i, rank);
     }
     return hold;
   }

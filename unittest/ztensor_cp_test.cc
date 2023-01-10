@@ -53,8 +53,15 @@ TEST_CASE("ZCP")
   // ALS tests
     SECTION("ALS MODE = 4, Finite error"){
       CP_ALS<ztensor, zconv_class> A1(Z4);
-      conv.set_norm(norm4);
-      //double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 99);
+      conv.set_norm(norm4.real());
+      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 99);
+      std::cout << diff << std::endl;
+    }
+    SECTION("ALS MODE = 4, Finite rank"){
+      CP_ALS<ztensor, zconv_class> A1(Z4);
+      conv.set_norm(norm4.real());
+      double diff = 1.0 - A1.compute_rank(5, conv);
+      std::cout << diff << std::endl;
     }
 }
 #endif

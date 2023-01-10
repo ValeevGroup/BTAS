@@ -61,15 +61,13 @@ namespace btas {
     }
 
     template <typename Tensor>
-    void get_fit(FitCheck<Tensor> &t, double &epsilon,
-                 bool max_iter = false) {
+    void get_fit(FitCheck<Tensor> &t, double &epsilon, bool max_iter = false) {
       epsilon = t.get_fit(max_iter);
       return;
     }
 
     template <typename Tensor>
-    void get_fit(CoupledFitCheck<Tensor> &t, double &epsilon,
-                 bool max_iter = false) {
+    void get_fit(CoupledFitCheck<Tensor> &t, double &epsilon, bool max_iter = false) {
       epsilon = t.get_fit(max_iter);
       return;
     }
@@ -598,7 +596,7 @@ namespace btas {
     /// \param[in] Mat Calculates the 2-norm of the matrix mat
     /// \return the 2-norm.
 
-    double norm(const Tensor &Mat) { return sqrt(dot(Mat, Mat)); }
+    auto norm(const Tensor &Mat) { return sqrt(abs(dot(Mat, Mat))); }
 
     /// SVD referencing code from
     /// http://www.netlib.org/lapack/explore-html/de/ddd/lapacke_8h_af31b3cb47f7cc3b9f6541303a2968c9f.html
