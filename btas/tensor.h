@@ -553,10 +553,10 @@ namespace btas {
 
     /// generate all elements by gen()
     template <class Generator>
-    void generate(Generator gen) {
+    void generate(Generator&& gen) {
       using std::begin;
       using std::end;
-      std::generate(begin(storage_), end(storage_), gen);
+      std::generate(begin(storage_), end(storage_), std::forward<Generator>(gen));
     }
 
    private:

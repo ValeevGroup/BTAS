@@ -164,6 +164,9 @@ namespace btas {
       /// element iterator
       typedef TensorViewIterator<range_type, const storage_type> const_iterator;
 
+      /// numeric type
+      typedef typename numeric_type<value_type>::type numeric_type;
+
     private:
       struct Enabler {};
 

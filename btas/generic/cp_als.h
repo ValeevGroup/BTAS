@@ -192,7 +192,7 @@ namespace btas {
             {
               auto lower_new = {zero, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              detail::fill_factor(new_view);
+              fill_random(new_view);
             }
 
             A.erase(A.begin());
@@ -428,7 +428,7 @@ namespace btas {
           auto lower_bound = {zero, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
-          detail::fill_factor(view);
+          fill_random(view);
         }
 
         // Normalize the columns of the factor matrices and
@@ -459,12 +459,7 @@ namespace btas {
           // and create the weighting vector lambda
           if (i == 0) {
             Tensor a(Range{tensor_ref.range().range(j), Range1{rank_new}});
-            //            std::mt19937 generator(random_seed_accessor());
-            //            std::uniform_real_distribution<> distribution(-1.0, 1.0);
-            //            for(auto iter = a.begin(); iter != a.end(); ++iter) {
-            //              *(iter) = distribution(generator);
-            //            }
-            a.fill(rand());
+            fill_random(a);
             A.push_back(a);
             this->normCol(j);
           }

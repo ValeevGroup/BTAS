@@ -13,6 +13,26 @@
 
 namespace btas {
 
+  /// fills a Tensor or TensorView with random numbers
+  /// \tparam Tensor_ a Tensor type (\sa btas::is_tensor)
+  /// \param t a tensor object
+  /// \param engine random number engine
+  /// \param dist a distribution object
+  template <typename Tensor_, typename = typename std::enable_if_t<btas::is_tensor<Tensor_>::value>>
+  void fill_random(Tensor_ &t, std::mt19937 engine = std::mt19937(random_seed_accessor()),
+                   std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)) {
+    using Numeric_ = typename Tensor_::numeric_type;
+    if constexpr (is_complex_type_v<Numeric_>) {
+      std::generate(t.begin(), t.end(), [&]() {
+        auto re = dist(engine);
+        auto im = dist(engine);
+        return Numeric_(re, im);
+      });
+    } else  // real T
+      std::generate(t.begin(), t.end(), [&]() { return dist(engine); });
+  }
+
+
 /// \param[in,out] A In: An empty matrix of size column dimension of the nth
 /// mode flattened tensor provided to the randomized compression method by the
 /// desired rank of the randmoized compression method.  Out: A random matrix,
