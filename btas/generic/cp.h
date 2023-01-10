@@ -83,11 +83,12 @@ namespace btas {
 
       template <typename T, typename range, typename storage>
       void fill_factor(Tensor<std::complex<T>, range, storage> & t,
-                       std::mt19937 r_gener = std::mt19937(random_seed_accessor()),
-                       std::mt19937 i_gener = std::mt19937(random_seed_accessor()),
+                       std::mt19937 gen = std::mt19937(random_seed_accessor()),
                        std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)){
-          std::complex<T> Zgenerator (dist(r_gener), dist(i_gener));
-          t.generate(Zgenerator);
+          auto gen__=[&dist, &gen](){
+              return std::complex<T>(dist(gen), dist(gen));
+          };
+          t.generate(gen__);
       }
 
       template <typename T, typename range, typename storage>
@@ -103,9 +104,8 @@ namespace btas {
                        std::mt19937 r_gener = std::mt19937(random_seed_accessor()),
                        std::mt19937 i_gener = std::mt19937(random_seed_accessor()),
                        std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)){
-          std::complex<T> Zgenerator (dist(r_gener), dist(i_gener));
           for(auto i = t.begin(); i != t.end(); ++i)
-              *i = Zgenerator;
+              *i = std::complex<T>(dist(r_gener), dist(i_gener));
       }
   }  // namespace detail
 
