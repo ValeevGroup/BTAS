@@ -71,40 +71,6 @@ namespace btas {
       epsilon = t.get_fit(max_iter);
       return;
     }
-
-      template <typename T, typename range, typename storage>
-      void fill_factor(Tensor<T, range, storage> & t,
-                       std::mt19937 generator = std::mt19937(random_seed_accessor()),
-                       std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)){
-        t.generate(dist(generator));
-    }
-
-      template <typename T, typename range, typename storage>
-      void fill_factor(Tensor<std::complex<T>, range, storage> & t,
-                       std::mt19937 gen = std::mt19937(random_seed_accessor()),
-                       std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)){
-          auto gen__=[&dist, &gen](){
-              return std::complex<T>(dist(gen), dist(gen));
-          };
-          t.generate(gen__);
-      }
-
-      template <typename T, typename range, typename storage>
-      void fill_factor(TensorView<T, range, storage> & t,
-           std::mt19937 generator = std::mt19937(random_seed_accessor()),
-           std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)){
-          for(auto i = t.begin(); i != t.end(); ++i)
-              *i = dist(generator);
-      }
-
-      template <typename T, typename range, typename storage>
-      void fill_factor(TensorView<std::complex<T>, range, storage> & t,
-                       std::mt19937 r_gener = std::mt19937(random_seed_accessor()),
-                       std::mt19937 i_gener = std::mt19937(random_seed_accessor()),
-                       std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)){
-          for(auto i = t.begin(); i != t.end(); ++i)
-              *i = std::complex<T>(dist(r_gener), dist(i_gener));
-      }
   }  // namespace detail
 
   /** \brief Base class to compute the Canonical Product (CP) decomposition of an order-N
