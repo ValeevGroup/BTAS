@@ -71,40 +71,6 @@ namespace btas {
       epsilon = t.get_fit(max_iter);
       return;
     }
-
-      template <typename T, typename range, typename storage>
-      void fill_factor(Tensor<T, range, storage> & t,
-                       std::mt19937 generator = std::mt19937(random_seed_accessor()),
-                       std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)){
-        t.generate(dist(generator));
-    }
-
-      template <typename T, typename range, typename storage>
-      void fill_factor(Tensor<std::complex<T>, range, storage> & t,
-                       std::mt19937 gen = std::mt19937(random_seed_accessor()),
-                       std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)){
-          auto gen__=[&dist, &gen](){
-              return std::complex<T>(dist(gen), dist(gen));
-          };
-          t.generate(gen__);
-      }
-
-      template <typename T, typename range, typename storage>
-      void fill_factor(TensorView<T, range, storage> & t,
-           std::mt19937 generator = std::mt19937(random_seed_accessor()),
-           std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)){
-          for(auto i = t.begin(); i != t.end(); ++i)
-              *i = dist(generator);
-      }
-
-      template <typename T, typename range, typename storage>
-      void fill_factor(TensorView<std::complex<T>, range, storage> & t,
-                       std::mt19937 r_gener = std::mt19937(random_seed_accessor()),
-                       std::mt19937 i_gener = std::mt19937(random_seed_accessor()),
-                       std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)){
-          for(auto i = t.begin(); i != t.end(); ++i)
-              *i = std::complex<T>(dist(r_gener), dist(i_gener));
-      }
   }  // namespace detail
 
   /** \brief Base class to compute the Canonical Product (CP) decomposition of an order-N
@@ -154,7 +120,7 @@ namespace btas {
   class CP {
    public:
     using ind_t = typename Tensor::range_type::index_type::value_type;
-    using dtype = typename Tensor::value_type;
+    using dtype = typename Tensor::numeric_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     /// Create a generic CP object that stores the factor matrices,
@@ -483,7 +449,7 @@ namespace btas {
         Tensor lhs_prod(rank, rank);
         for (size_t i = 0; i < ndim; ++i) {
           if (i != n) {
-            gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
+            gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i].conj(), A[i], 0.0, lhs_prod);
             const auto *lhs_ptr = lhs_prod.data();
             for (ord_t j = 0; j < rank2; j++) *(V_ptr + j) *= *(lhs_ptr + j);
           }
@@ -555,7 +521,7 @@ namespace btas {
       auto A_ptr = a.data();
       auto lam_ptr = lambda.data();
       for (ord_t i = 0; i < size; ++i) {
-        *(lam_ptr + i % rank) += *(A_ptr + i) * *(A_ptr + i);
+        *(lam_ptr + i % rank) += *(A_ptr + i) * btas::impl::conj(*(A_ptr + i));
       }
 
       for (ind_t col = 0; col < rank; ++col) {
@@ -582,7 +548,7 @@ namespace btas {
       auto Mat_ptr = Mat.data();
       auto A_ptr = A[ndim].data();
       for (ord_t i = 0; i < size; ++i) {
-        *(A_ptr + i % rank) += *(Mat_ptr + i) * *(Mat_ptr + i);
+        *(A_ptr + i % rank) += *(Mat_ptr + i) * btas::impl::conj(*(Mat_ptr + i));
       }
 
       for (ind_t i = 0; i < rank; ++i) {

@@ -193,7 +193,7 @@ namespace btas {
     Tensor clone() const { return Tensor(range(), storage_type(storage().cbegin(), storage().cend())); }
 
     /// returns element-wise conjugate of a *this tensor if have complex value type
-    std::conditional_t<is_complex_type_v<_T>, Tensor, const Tensor&> conj() {
+    std::conditional_t<is_complex_type_v<_T>, Tensor, const Tensor&> conj() const {
       if constexpr (is_complex_type_v<_T>) {
         Tensor conjT = clone();
         auto conj_ptr = conjT.data();

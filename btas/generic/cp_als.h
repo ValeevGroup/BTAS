@@ -403,7 +403,7 @@ namespace btas {
           RTensor lambda(R);
 
           // Contract reference tensor to make it square matrix of mode i
-          gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
+          gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i).conj(), 0.0, S);
 
           // Find the Singular vectors of the matrix using eigenvalue decomposition
           eigenvalue_decomp(S, lambda);
@@ -483,11 +483,7 @@ namespace btas {
             {
               auto lower_new = {zero, rank_old}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(random_seed_accessor());
-              std::uniform_real_distribution<> distribution(-1.0, 1.0);
-              for (auto iter = new_view.begin(); iter != new_view.end(); ++iter) {
-                *(iter) = distribution(generator);
-              }
+              fill_random(new_view);
             }
 
             A.erase(A.begin());
@@ -616,7 +612,7 @@ namespace btas {
       for (size_t i = 0; i < ndim; ++i, ++ptr_ata) {
         auto &a_mat = A[i];
         *ptr_ata = Tensor();
-        contract(this->one, a_mat, {1, 2}, a_mat, {1, 3}, this->zero, *ptr_ata, {2, 3});
+        contract(this->one, a_mat, {1, 2}, a_mat.conj(), {1, 3}, this->zero, *ptr_ata, {2, 3});
       }
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
@@ -634,7 +630,7 @@ namespace btas {
             update_w_KRP(i, rank, fast_pI, matlab, converge_test);
           }
           auto &ai = A[i];
-          contract(this->one, ai, {1, 2}, ai, {1, 3}, this->zero, AtA[i], {2, 3});
+          contract(this->one, ai, {1, 2}, ai.conj(), {1, 3}, this->zero, AtA[i], {2, 3});
         }
         is_converged = converge_test(A, AtA);
       }while (count < max_als && !is_converged);
@@ -769,7 +765,7 @@ namespace btas {
                 Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
-      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, 1.0, tensor_ref, A[contract_dim], 0.0,
+      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, 1.0, (last_dim? tensor_ref.conj():tensor_ref), A[contract_dim], 0.0,
            temp);
 
       // Resize tensor_ref
