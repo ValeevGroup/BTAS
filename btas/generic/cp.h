@@ -120,7 +120,7 @@ namespace btas {
   class CP {
    public:
     using ind_t = typename Tensor::range_type::index_type::value_type;
-    using dtype = typename Tensor::value_type;
+    using dtype = typename Tensor::numeric_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     /// Create a generic CP object that stores the factor matrices,
@@ -449,7 +449,7 @@ namespace btas {
         Tensor lhs_prod(rank, rank);
         for (size_t i = 0; i < ndim; ++i) {
           if (i != n) {
-            gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
+            gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i].conj(), A[i], 0.0, lhs_prod);
             const auto *lhs_ptr = lhs_prod.data();
             for (ord_t j = 0; j < rank2; j++) *(V_ptr + j) *= *(lhs_ptr + j);
           }
@@ -521,7 +521,7 @@ namespace btas {
       auto A_ptr = a.data();
       auto lam_ptr = lambda.data();
       for (ord_t i = 0; i < size; ++i) {
-        *(lam_ptr + i % rank) += *(A_ptr + i) * *(A_ptr + i);
+        *(lam_ptr + i % rank) += *(A_ptr + i) * btas::impl::conj(*(A_ptr + i));
       }
 
       for (ind_t col = 0; col < rank; ++col) {
@@ -548,7 +548,7 @@ namespace btas {
       auto Mat_ptr = Mat.data();
       auto A_ptr = A[ndim].data();
       for (ord_t i = 0; i < size; ++i) {
-        *(A_ptr + i % rank) += *(Mat_ptr + i) * *(Mat_ptr + i);
+        *(A_ptr + i % rank) += *(Mat_ptr + i) * btas::impl::conj(*(Mat_ptr + i));
       }
 
       for (ind_t i = 0; i < rank; ++i) {

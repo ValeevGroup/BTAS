@@ -101,11 +101,11 @@ namespace btas {
       auto lam_ptr = btas_factors[n + 1].data();
       dtype iprod = 0.0;
       for (ord_t i = 0; i < size; ++i) {
-        iprod += *(ptr_MtKRP + i) * *(ptr_A + i) * *(lam_ptr + i % rank);
+        iprod += *(ptr_MtKRP + i) * btas::impl::conj(*(ptr_A + i)) * *(lam_ptr + i % rank);
       }
 
       double normFactors = norm(btas_factors, V);
-      double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * abs(iprod)));
+      double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * std::real(iprod)));
       double fit = 1. - (normResidual / normT_);
 
       double fitChange = abs(fitOld_ - fit);
@@ -193,7 +193,7 @@ namespace btas {
       auto *ptr_coeff = coeffMat.data();
       if(V.empty()) {
         for (size_t i = 0; i < n; ++i) {
-          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
+          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, btas_factors[i].conj(), btas_factors[i], 0.0, temp);
           auto *ptr_temp = temp.data();
           for (ord_t j = 0; j < rank2; ++j) {
             *(ptr_coeff + j) *= *(ptr_temp + j);
