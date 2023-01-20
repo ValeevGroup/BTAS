@@ -605,7 +605,7 @@ namespace btas {
       // forms and stores partial grammian to minimize number of
       // small gemm contractions
       bool is_converged = false;
-      bool matlab = fast_pI;
+      bool matlab = true;
       if(AtA.empty())
         AtA = std::vector<Tensor>(ndim);
       auto ptr_ata = AtA.begin();
@@ -765,7 +765,7 @@ namespace btas {
                 Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
-      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, 1.0, (last_dim? tensor_ref.conj():tensor_ref), A[contract_dim], 0.0,
+      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, 1.0, (last_dim? tensor_ref.conj():tensor_ref), A[contract_dim].conj(), 0.0,
            temp);
 
       // Resize tensor_ref
@@ -804,14 +804,14 @@ namespace btas {
         // over the middle dimension and sum over the rank.
 
         else if (contract_dim > n) {
-          middle_contract(1.0, temp, a, 0.0, contract_tensor);
+          middle_contract(1.0, temp, a.conj(), 0.0, contract_tensor);
           temp = contract_tensor;
         }
 
         // If the code has passed the mode of interest, it will contract over
         // the middle dimension and sum over rank * mode n dimension
         else {
-          middle_contract_with_pseudorank(1.0, temp, a, 0.0, contract_tensor);
+          middle_contract_with_pseudorank(1.0, temp, a.conj(), 0.0, contract_tensor);
           temp = contract_tensor;
         }
 
@@ -832,7 +832,7 @@ namespace btas {
         contract_tensor.fill(0.0);
 
         const auto &a = A[(last_dim ? 1 : 0)];
-        front_contract(1.0, temp, a, 0.0, contract_tensor);
+        front_contract(1.0, temp, a.conj(), 0.0, contract_tensor);
 
         temp = contract_tensor;
       }

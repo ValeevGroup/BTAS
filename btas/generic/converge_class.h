@@ -105,13 +105,13 @@ namespace btas {
       }
 
       double normFactors = norm(btas_factors, V);
-      double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * std::real(iprod)));
+      double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * abs(iprod)));
       double fit = 1. - (normResidual / normT_);
 
       double fitChange = abs(fitOld_ - fit);
       fitOld_ = fit;
       if(verbose_) {
-        std::cout << fit << "\t" << fitChange << std::endl;
+        std::cout <<iter_ << "\t" << fit << "\t" << fitChange << std::endl;
       }
       if(fitChange < tol_) {
         converged_num++;
@@ -185,7 +185,7 @@ namespace btas {
       Tensor coeffMat;
       auto &temp1 = btas_factors[n];
       typename Tensor::value_type one = 1.0;
-      ger(one, temp1, temp1, coeffMat);
+      ger(one, temp1.conj(), temp1, coeffMat);
 
       auto rank2 = rank * (ord_t) rank;
       Tensor temp(rank, rank);

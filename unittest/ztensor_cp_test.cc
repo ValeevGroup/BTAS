@@ -27,13 +27,25 @@ TEST_CASE("ZCP")
   //double epsilon = fmax(1e-10, std::numeric_limits<double>::epsilon());
   double epsilon = 1e-7;
 
+  ztensor Z3(3,2,4);
+  std::ifstream inp3 (__dirname + "/z-mat3D.txt");
+  if (inp3.is_open()){
+    int i,j,k;
+    double rel,img;
+    while(inp3){
+      inp3 >> i >> j >> k>> rel>> img;
+      std::complex<double> val (rel,img);
+      Z3(i,j,k) = val;
+    }
+  }
+
   ztensor Z4(4,2,7,3);
-  std::ifstream inp (__dirname + "/z-mat4D.txt");
-  if (inp.is_open()){
+  std::ifstream inp4 (__dirname + "/z-mat4D.txt");
+  if (inp4.is_open()){
     int i,j,k,l;
     double rel,img;
-    while(inp){
-      inp >> i >> j >> k>>l>> rel>> img;
+    while(inp4){
+      inp4 >> i >> j >> k>>l>> rel>> img;
       std::complex<double> val (rel,img);
       Z4(i,j,k,l) = val;
     }
@@ -47,17 +59,26 @@ TEST_CASE("ZCP")
   std::complex<double> norm4 = sqrt(dot(Z4, Z4));
   std::complex<double> norm42 = sqrt(dot(Z44, Z44));
 
+  std::complex<double> norm3 = sqrt(dot(Z3,Z3));
+
   zconv_class conv(1e-3);
 
   // ALS tests
-    SECTION("ALS MODE = 4, Finite error"){
+    SECTION("ALS MODE = 3, Finite error"){
+      CP_ALS<ztensor, zconv_class> A1(Z3);
+      conv.set_norm(norm3.real());
+      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 10,false,0,1e4,false,true);
+      std::cout << diff << std::endl;
+    }
+#if 0
+      SECTION("ALS MODE = 4, Finite error"){
       CP_ALS<ztensor, zconv_class> A1(Z4);
       conv.set_norm(norm4.real());
       conv.verbose(true);
       double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 99);
       std::cout << diff << std::endl;
     }
-#if 0
+
     SECTION("ALS MODE = 4, Finite rank"){
       CP_ALS<ztensor, zconv_class> A1(Z4);
       conv.set_norm(norm4.real());
