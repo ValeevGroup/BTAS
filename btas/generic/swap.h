@@ -35,6 +35,7 @@ void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
                    bool for_ALS_update = true) {
   using ind_t = typename Tensor::range_type::index_type::value_type;
   using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+  using dtype = typename Tensor::numeric_type;
   auto ndim = A.rank();
   // If the mode of interest is the the first mode you are done.
   if (mode > ndim) {
@@ -76,7 +77,7 @@ void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
     rows = (is_in_front) ? A.extent(0) : size / A.extent(mode);
     cols = (is_in_front) ? size / A.extent(0) : A.extent(mode);
 
-    double *data_ptr = A.data();
+    dtype *data_ptr = A.data();
     mkl_dimatcopy('R', 'T', rows, cols, 1.0, data_ptr, cols, rows);
   }
 
@@ -91,7 +92,7 @@ void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
     for (size_t i = 0; i <= mode; i++)
       rows *= A.extent(i);
     cols = size / rows;
-    double *data_ptr = A.data();
+    dtype *data_ptr = A.data();
 
     mkl_dimatcopy('R', 'T', rows, cols, 1.0, data_ptr, cols, rows);
 
