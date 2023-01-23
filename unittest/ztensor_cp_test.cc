@@ -51,6 +51,12 @@ TEST_CASE("ZCP")
     }
   }
 
+  tensor results(43, 1);
+  std::ifstream res(__dirname + "/cp_test_results.txt");
+  CHECK(res.is_open());
+  for (auto &i : results) {
+    res >> i;
+  }
 
   ztensor Z44(Z4.extent(1), Z4.extent(2), Z4.extent(3), Z4.extent(1), Z4.extent(2), Z4.extent(3));
   std::complex<double> one {1.0,0.0};
@@ -67,24 +73,20 @@ TEST_CASE("ZCP")
     SECTION("ALS MODE = 3, Finite error"){
       CP_ALS<ztensor, zconv_class> A1(Z3);
       conv.set_norm(norm3.real());
-      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 10,false,0,1e4,false,true);
-      std::cout << diff << std::endl;
+      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 99,false,0,1e4,false,true);
+      CHECK(std::abs(diff - results(39,0)) <= epsilon);
     }
-#if 0
       SECTION("ALS MODE = 4, Finite error"){
       CP_ALS<ztensor, zconv_class> A1(Z4);
       conv.set_norm(norm4.real());
-      conv.verbose(true);
       double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 99);
-      std::cout << diff << std::endl;
+      CHECK(std::abs(diff - results(40,0)) <= epsilon);
     }
-
     SECTION("ALS MODE = 4, Finite rank"){
       CP_ALS<ztensor, zconv_class> A1(Z4);
       conv.set_norm(norm4.real());
       double diff = 1.0 - A1.compute_rank(5, conv);
-      std::cout << diff << std::endl;
+      CHECK(std::abs(diff - results(41,0)) <= epsilon);
     }
-#endif
 }
 #endif

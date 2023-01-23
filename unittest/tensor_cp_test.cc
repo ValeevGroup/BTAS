@@ -53,7 +53,7 @@ TEST_CASE("CP")
   }
   in5.close();
 
-  tensor results(40, 1);
+  tensor results(43, 1);
   std::ifstream res(__dirname + "/cp_test_results.txt");
   CHECK(res.is_open());
   for (auto &i : results) {
@@ -247,6 +247,7 @@ TEST_CASE("CP")
       CP_RALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
       double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 19);
+      std::cout <<std::setprecision(16) << diff << std::endl;
       CHECK(std::abs(diff - results(21,0)) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT

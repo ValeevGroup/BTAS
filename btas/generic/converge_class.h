@@ -2,7 +2,7 @@
 #define BTAS_GENERIC_CONV_BASE_CLASS
 
 #include <vector>
-
+#include <iomanip>
 #include <btas/generic/dot_impl.h>
 #include <btas/varray/varray.h>
 
@@ -111,7 +111,7 @@ namespace btas {
       double fitChange = abs(fitOld_ - fit);
       fitOld_ = fit;
       if(verbose_) {
-        std::cout <<iter_ << "\t" << fit << "\t" << fitChange << std::endl;
+        std::cout<< iter_ << "\t" << fit << "\t" << fitChange << std::endl;
       }
       if(fitChange < tol_) {
         converged_num++;
