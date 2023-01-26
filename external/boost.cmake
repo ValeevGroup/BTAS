@@ -46,9 +46,11 @@ if (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
 endif (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
 
 # if Boost not found, and BTAS_BUILD_DEPS_FROM_SOURCE=ON, use FetchContent to build it
+set(BTAS_BUILT_BOOST_FROM_SOURCE 0)
 if (NOT TARGET Boost::boost)
   if (BTAS_BUILD_DEPS_FROM_SOURCE)
-    include(FindOrFetchBoost)
+    include(${PROJECT_SOURCE_DIR}/cmake/modules/FindOrFetchBoost.cmake)
+    set(BTAS_BUILT_BOOST_FROM_SOURCE 1)
   else(BTAS_BUILD_DEPS_FROM_SOURCE)
     message(FATAL_ERROR "Boost is a required prerequisite of BTAS, but not found; install Boost or set BTAS_BUILD_DEPS_FROM_SOURCE=ON to obtain from source")
   endif(BTAS_BUILD_DEPS_FROM_SOURCE)
