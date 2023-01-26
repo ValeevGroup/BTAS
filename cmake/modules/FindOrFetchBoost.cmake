@@ -16,12 +16,6 @@ if (NOT TARGET Boost::boost)
   # boost-cmake/install_rules https://github.com/Orphis/boost-cmake/pull/45 is supposed to fix it but is inactive
   message(WARNING "Building Boost from source makes BTAS unusable from the install location! Install Boost using package manager or manually and reconfigure/reinstall BTAS to fix this")
   install(TARGETS Boost_serialization EXPORT btas COMPONENT boost-libs)
-  export(EXPORT btas
-      FILE "${PROJECT_BINARY_DIR}/boost-targets.cmake")
-  install(EXPORT btas
-      FILE "boost-targets.cmake"
-      DESTINATION "${BTAS_INSTALL_CMAKEDIR}"
-      COMPONENT boost-libs)
 
 endif(NOT TARGET Boost::boost)
 
