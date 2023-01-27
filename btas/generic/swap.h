@@ -18,6 +18,17 @@
 // do not mix swap to first and swap to back
 
 namespace btas {
+/// Generalized implementation for mkl_?imatcopy
+template<typename T_>
+void imatcopy(char* ordering, char* trans, size_t rows, size_t cols, T_ alpha, T_ a, size_t src_lda, size_t dst_lda){
+  if constexpr (is_complex_type_v<_T>){
+    mkl_zimatcopy(ordering , trans , rows, cols, alpha , a, src_lda, dst_lda);
+  }
+  else{
+    mkl_dimatcopy(ordering , trans , rows, cols, alpha , a, src_lda, dst_lda);
+  }
+}
+
 
 /// Swaps the nth mode of an Nth order tensor to the front preserving the
 /// order of the other modes. \n
@@ -46,6 +57,7 @@ void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
 
   // Build the resize vector for reference tensor to update dimensions
   std::vector<ind_t> aug_dims;
+  dtype one {1.0};
   ord_t size = A.range().area();
   for (size_t i = 0; i < ndim; i++) {
     aug_dims.push_back(A.extent(i));
@@ -78,7 +90,7 @@ void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
     cols = (is_in_front) ? size / A.extent(0) : A.extent(mode);
 
     dtype *data_ptr = A.data();
-    mkl_dimatcopy('R', 'T', rows, cols, 1.0, data_ptr, cols, rows);
+    imatcopy('R', 'T', rows, cols, one, data_ptr, cols, rows);
   }
 
     // All other dimension not so easy all indices up to mode of interest row
@@ -94,7 +106,7 @@ void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
     cols = size / rows;
     dtype *data_ptr = A.data();
 
-    mkl_dimatcopy('R', 'T', rows, cols, 1.0, data_ptr, cols, rows);
+    imatcopy('R', 'T', rows, cols, one, data_ptr, cols, rows);
 
     step = rows;
     ind_t in_rows = (is_in_front) ? A.extent(0) : rows / A.extent(mode);
@@ -102,11 +114,11 @@ void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
 
     for (ind_t i = 0; i < cols; i++) {
       data_ptr = A.data() + i * step;
-      mkl_dimatcopy('R', 'T', in_rows, in_cols, 1.0, data_ptr, in_cols,
+      imatcopy('R', 'T', in_rows, in_cols, one, data_ptr, in_cols,
                     in_rows);
     }
     data_ptr = A.data();
-    mkl_dimatcopy('R', 'T', cols, rows, 1.0, data_ptr, rows, cols);
+    imatcopy('R', 'T', cols, rows, one, data_ptr, rows, cols);
   }
   A.resize(aug_dims);
 }
@@ -125,6 +137,7 @@ void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
   void swap_to_back(Tensor &A, size_t mode, bool is_in_back = false) {
     using ind_t = typename Tensor::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+    using dtype = typename Tensor::numeric_type;
     auto ndim = A.rank();
 
     if (mode > ndim)
@@ -152,7 +165,7 @@ void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
 
     // Permutes the rows and columns
     double *data_ptr = A.data();
-  mkl_dimatcopy('R', 'T', rows, cols, 1.0, data_ptr, cols, rows);
+  imatcopy('R', 'T', rows, cols, 1.0, data_ptr, cols, rows);
 
   // resized to the new correct order.
   A.resize(aug_dims);
