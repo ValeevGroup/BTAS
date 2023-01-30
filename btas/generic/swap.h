@@ -19,8 +19,8 @@
 
 namespace btas {
 /// Generalized implementation for mkl_?imatcopy
-template<typename T_>
-void imatcopy(char* ordering, char* trans, size_t rows, size_t cols, T_ alpha, T_ a, size_t src_lda, size_t dst_lda){
+template<typename T_ , typename indx>
+void imatcopy(char* ordering, char* trans, indx rows, indx cols, T_ alpha, T_ a, indx src_lda, indx dst_lda){
   if constexpr (is_complex_type_v<T_>){
     mkl_zimatcopy(ordering , trans , rows, cols, alpha , a, src_lda, dst_lda);
   }
