@@ -42,8 +42,7 @@ namespace btas {
 
     // Build the resize vector for reference tensor to update dimensions
     std::vector<ind_t> aug_dims;
-    dtype one_{1.0};
-    dtype *one = &one_;
+    dtype one {1.0};
     ord_t size = A.range().area();
     for (size_t i = 0; i < ndim; i++) {
       aug_dims.push_back(A.extent(i));
@@ -148,7 +147,6 @@ namespace btas {
     // Permutes the rows and columns
     double *data_ptr = A.data();
     imatcopy('R', 'T', rows, cols, one , data_ptr, cols, rows);
-
     // resized to the new correct order.
     A.resize(aug_dims);
     return;
