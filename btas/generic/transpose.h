@@ -11,7 +11,8 @@ namespace btas {
                   T* B, int64_t LDB ) {
 
 #ifdef BTAS_HAS_INTEL_MKL
-  omatcopy( 'C', 'T', M, N, T(1.), A, LDA, B, LDB );
+  T one {1.0};
+  omatcopy('C', 'T', M, N, one, A, LDA, B, LDB );
 #else
     for( int64_t j = 0; j < N; ++j )
     for( int64_t i = 0; i < M; ++i ) {
