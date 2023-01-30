@@ -27,6 +27,7 @@ namespace btas {
   void make_tucker_factors(Tensor& A, double epsilon_svd,
                            std::vector<Tensor> &transforms, bool compute_core = false){
     using ind_t = typename Tensor::range_type::index_type::value_type;
+    using dtype = typename Tensor::numeric_type;
     auto ndim = A.rank();
     transforms.clear();
     transforms.reserve(ndim);
@@ -94,11 +95,16 @@ namespace btas {
   void sequential_tucker(Tensor& A, double epsilon_svd,
                            std::vector<Tensor> &transforms){
     using ind_t = typename Tensor::range_type::index_type::value_type;
+    using T = typename Tensor::numeric_type;
+    using RT = real_type_t<T>;
+    using RTensor = rebind_tensor_t<Tensor, RT>;
     auto ndim = A.rank();
+    T one {1.0};
+    T zero {0.0};
     transforms.clear();
     transforms.reserve(ndim);
 
-    double norm2 = dot(A,A);
+    double norm2 = std::abs(dot(A,A));
     auto threshold = epsilon_svd * epsilon_svd * norm2 / ndim;
     std::vector<size_t> left_modes, right_modes, final, core;
     final.push_back(0); final.emplace_back(ndim);
@@ -117,13 +123,12 @@ namespace btas {
       // decomposition, i.e. HOSVD)
       // Because of later algorithm, mode of interest is always the 0th mode of the tensor
       Tensor AAt;
-      contract(1.0, A, left_modes, A, right_modes, 0.0, AAt, final);
+      contract(one , A, left_modes, A, right_modes, zero, AAt, final);
 
       // compute the eigenvalue decomposition of each mode of A
       ind_t r = AAt.extent(0);
-      Tensor lambda(r); lambda.fill(0.0);
-      auto info = hereig(blas::Layout::ColMajor, lapack::Job::Vec,
-                         lapack::Uplo::Lower, r, AAt.data(), r, lambda.data());
+      RTensor lambda(r); lambda.fill(0.0);
+      auto info = hereig(blas::Layout::ColMajor, lapack::Job::Vec, lapack::Uplo::Lower, r, AAt.data(), r, lambda.data());
       if (info) BTAS_EXCEPTION("Error in computing the tucker SVD");
 
       // Find how many significant vectors are in this transformation

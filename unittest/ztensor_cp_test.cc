@@ -74,6 +74,13 @@ TEST_CASE("ZCP") {
     double diff = A1.compute_error(conv, 1e-9, 1, 50, false, 0, 1e4, false, true);
     CHECK(std::abs(diff) <= epsilon);
   }
+  SECTION("ALS MODE = 3, Finite rank") {
+    CP_ALS<ztensor, zconv_class> A1(Z4);
+    conv.set_norm(norm4.real());
+    double diff = A1.compute_rank(99, conv);
+    CHECK(std::abs(diff) <= epsilon);
+  }
+
   SECTION("ALS MODE = 4, Finite error") {
     CP_ALS<ztensor, zconv_class> A1(Z4);
     conv.set_norm(norm4.real());

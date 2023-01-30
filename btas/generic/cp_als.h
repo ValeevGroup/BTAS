@@ -686,7 +686,7 @@ namespace btas {
       }
       KRP_dims.push_back(ndim);
 
-      contract(1.0, tensor_ref, tref_indices, KhatriRao, KRP_dims, 0.0, temp, An_indices);
+      contract(this-> one , tensor_ref, tref_indices, KhatriRao, KRP_dims, this-> zero, temp, An_indices);
 
       // move the nth mode of the reference tensor back where it belongs
       swap_to_first(tensor_ref, n, true);
@@ -694,8 +694,7 @@ namespace btas {
 #else  // BTAS_HAS_CBLAS
       // without MKL program cannot perform the swapping algorithm, must compute
       // flattened intermediate
-      gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, flatten(tensor_ref, n), this->generate_KRP(n, rank, true), 0.0,
-           temp);
+      gemm(blas::Op::NoTrans, blas::Op::NoTrans, this-> one, flatten(tensor_ref, n), this->generate_KRP(n, rank, true), this-> zero, temp);
 #endif
 
       if(lambda != 0){
@@ -765,7 +764,7 @@ namespace btas {
                 Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
-      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, 1.0, (last_dim? tensor_ref.conj():tensor_ref), A[contract_dim].conj(), 0.0,
+      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, this-> one , (last_dim? tensor_ref.conj():tensor_ref), A[contract_dim].conj(), this-> zero,
            temp);
 
       // Resize tensor_ref
@@ -804,14 +803,14 @@ namespace btas {
         // over the middle dimension and sum over the rank.
 
         else if (contract_dim > n) {
-          middle_contract(1.0, temp, a.conj(), 0.0, contract_tensor);
+          middle_contract(this->one, temp, a.conj(), this-> zero, contract_tensor);
           temp = contract_tensor;
         }
 
         // If the code has passed the mode of interest, it will contract over
         // the middle dimension and sum over rank * mode n dimension
         else {
-          middle_contract_with_pseudorank(1.0, temp, a.conj(), 0.0, contract_tensor);
+          middle_contract_with_pseudorank(this->one, temp, a.conj(),this-> zero, contract_tensor);
           temp = contract_tensor;
         }
 
@@ -832,7 +831,7 @@ namespace btas {
         contract_tensor.fill(0.0);
 
         const auto &a = A[(last_dim ? 1 : 0)];
-        front_contract(1.0, temp, a.conj(), 0.0, contract_tensor);
+        front_contract(this->one , temp, a.conj(),this-> zero, contract_tensor);
 
         temp = contract_tensor;
       }
@@ -877,7 +876,7 @@ namespace btas {
       // replace that contracted mode with the rank
       final_idx.emplace_back(ndim);
 
-      contract(1.0, tensor_ref, tref_idx, A[contract_mode], mat_idx, 0.0, An, final_idx);
+      contract(this-> one , tensor_ref, tref_idx, A[contract_mode], mat_idx, this-> zero, An, final_idx);
 
       tref_idx = final_idx;
       auto ptr = final_idx.rbegin();
