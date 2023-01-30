@@ -57,7 +57,7 @@ void swap_to_first(Tensor &A, size_t mode, bool is_in_front = false,
 
   // Build the resize vector for reference tensor to update dimensions
   std::vector<ind_t> aug_dims;
-  dtype one_ {1.0}; dtype *one = one_;
+  dtype one_ {1.0}; dtype *one = &one_;
   ord_t size = A.range().area();
   for (size_t i = 0; i < ndim; i++) {
     aug_dims.push_back(A.extent(i));
