@@ -4,9 +4,8 @@
 #ifdef BTAS_HAS_INTEL_MKL
 
 #include <vector>
-
+#define MKL_Complex16 std::complex<double>
 #include <mkl_trans.h>
-
 #include <btas/error.h>
 #include <btas/range_traits.h>
 
