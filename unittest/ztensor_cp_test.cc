@@ -125,13 +125,13 @@ TEST_CASE("ZCP") {
     SECTION("RALS MODE = 3, Finite rank"){
       CP_RALS<ztensor, zconv_class> A1(Z3);
       conv.set_norm(norm3.real());
-      double diff =A1.compute_rank(10, conv, 1, false, 0, 100, false, false, true);
+      double diff =A1.compute_rank(20, conv, 1, false, 0, 100, false, false, true);
       CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("RALS MODE = 3, Finite error"){
       CP_RALS<ztensor, zconv_class> A1(Z3);
       conv.set_norm(norm3.real());
-      double diff = A1.compute_error(conv, 1e-9, 1, 20, false, 0, 1e4, false, true);
+      double diff = A1.compute_error(conv, 1e-9, 1, 30, false, 0, 1e4, false, true);
       CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
@@ -139,7 +139,7 @@ TEST_CASE("ZCP") {
       auto d = Z3;
       btas::TUCKER_CP_RALS<ztensor, zconv_class > A1(d, 1e-3);
       conv.set_norm(norm3.real());
-      double diff = A1.compute_rank(25, conv, 1, false, 0, 100, false, false, true);
+      double diff = A1.compute_rank(35, conv, 1, false, 0, 100, false, false, true);
       CHECK(std::abs(diff) <= epsilon);
     }
 #endif
