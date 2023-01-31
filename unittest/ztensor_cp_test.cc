@@ -102,5 +102,14 @@ TEST_CASE("ZCP") {
     double diff = A1.compute_rank(99, conv);
     CHECK(std::abs(diff) <= epsilon);
   }
+#if BTAS_ENABLE_TUCKER_CP_UT
+  SECTION("ALS MODE = 4, Tucker + CP"){
+    auto d = Z4;
+    btas::TUCKER_CP_ALS<ztensor, zconv_class> A1(d, 1e-3);
+    conv.set_norm(norm4.real());
+    double diff = A1.compute_rank(35, conv, 1, false, 0, 1e4, false, false, true);
+    CHECK(std::abs(diff) <= epsilon);
+  }
+#endif
 }
 #endif
