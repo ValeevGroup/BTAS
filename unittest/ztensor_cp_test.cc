@@ -74,11 +74,13 @@ TEST_CASE("ZCP") {
 
   zconv_class conv(1e-3);
 
+
   // ALS tests
   {
     SECTION("ALS MODE = 3, Finite error") {
       CP_ALS<ztensor, zconv_class> A1(Z3);
       conv.set_norm(norm3.real());
+      conv.verbose(true);
       double diff = A1.compute_error(conv, 1e-9, 1, 50, false, 0, 1e4, false, true);
       CHECK(std::abs(diff) <= epsilon);
     }
@@ -165,5 +167,17 @@ TEST_CASE("ZCP") {
     }
 #endif
   }
+#if 0
+  // CP-DF-ALS tests
+  {
+    SECTION("DF-ALS MODE = 3, Finite error"){
+      CP_DF_ALS<ztensor, zconv_class> A1(Z3, Z3);
+      conv.set_norm(norm32.real());
+      conv.verbose(true);
+      double diff = A1.compute_error(conv, 1e-9, 1, 50, false, 0, 1e4, false, true);
+      CHECK(std::abs(diff) <= epsilon);
+    }
+  }
+#endif
 }
 #endif

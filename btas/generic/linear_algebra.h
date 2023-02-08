@@ -230,10 +230,10 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
     if (fast_pI) {
       Tensor temp(col, col), inv(col, row);
       // compute V^{\dag} = (A^T A) ^{-1} A^T
-      gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A, A, 0.0, temp);
+      gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A.conj(), A, 0.0, temp);
       fast_pI = Inverse_Matrix(temp);
       if (fast_pI) {
-        gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, temp, A, 0.0, inv);
+        gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, temp, A.conj(), 0.0, inv);
         return inv;
       } else {
         std::cout << "Fast pseudo-inverse failed reverting to normal pseudo-inverse" << std::endl;
