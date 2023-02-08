@@ -80,7 +80,6 @@ TEST_CASE("ZCP") {
     SECTION("ALS MODE = 3, Finite error") {
       CP_ALS<ztensor, zconv_class> A1(Z3);
       conv.set_norm(norm3.real());
-      conv.verbose(true);
       double diff = A1.compute_error(conv, 1e-9, 1, 50, false, 0, 1e4, false, true);
       CHECK(std::abs(diff) <= epsilon);
     }
