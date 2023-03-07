@@ -310,8 +310,7 @@ TEST_CASE("CP")
     SECTION("DF-ALS MODE = 5, Finite rank"){
       CP_DF_ALS<tensor,conv_class> A1(D5,D5);
       conv.set_norm(norm52);
-      double diff = 1.0 - A1.compute_rank(5,conv, 1, true, 5,
-                                    100, false, true);
+      double diff = 1.0 - A1.compute_rank(5,conv, 1, true, 5, 100, false, true);
       CHECK(std::abs(diff - results(30,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 5, Finite error"){

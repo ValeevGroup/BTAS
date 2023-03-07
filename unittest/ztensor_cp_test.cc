@@ -64,7 +64,7 @@ TEST_CASE("ZCP") {
   std::complex<double> zero{0.0, 0.0};
 
   contract(one, Z3, {1,2,3}, Z3, {1,4,5}, zero, Z33, {2,3,4,5});
-  contract(one, Z4, {1, 2, 3, 4}, Z4, {1, 5, 6, 7}, zero, Z44, {2, 3, 4, 5, 6, 7});
+  contract(one, Z4, {1, 2, 3, 4}, Z4.conj(), {1, 5, 6, 7}, zero, Z44, {2, 3, 4, 5, 6, 7});
 
   std::complex<double> norm4 = sqrt(dot(Z4, Z4));
   std::complex<double> norm42 = sqrt(dot(Z44, Z44));
@@ -166,17 +166,5 @@ TEST_CASE("ZCP") {
     }
 #endif
   }
-#if 0
-  // CP-DF-ALS tests
-  {
-    SECTION("DF-ALS MODE = 3, Finite error"){
-      CP_DF_ALS<ztensor, zconv_class> A1(Z3, Z3);
-      conv.set_norm(norm32.real());
-      conv.verbose(true);
-      double diff = A1.compute_error(conv, 1e-9, 1, 50, false, 0, 1e4, false, true);
-      CHECK(std::abs(diff) <= epsilon);
-    }
-  }
-#endif
 }
 #endif
