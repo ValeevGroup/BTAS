@@ -2,7 +2,6 @@
 
 #include <ctime>
 #include <iostream>
-#include <random>
 
 #include "btas/tensor.h"
 #include "btas/tensor_func.h"
@@ -25,8 +24,8 @@ template <typename T>
 T
 randomReal()
     {
-    static std::mt19937 rng(std::time(NULL));
-    static auto dist = std::uniform_real_distribution<T>{0., 1.};
+    static boost::random::mt19937 rng(random_seed_accessor());
+    static auto dist = boost::random::uniform_real_distribution<T>{0., 1.};
     return dist(rng);
     }
 

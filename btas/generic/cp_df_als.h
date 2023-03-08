@@ -211,8 +211,8 @@ namespace btas {
             {
               auto lower_new = {zero, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(random_seed_accessor());
-              std::uniform_real_distribution<> distribution(-1.0, 1.0);
+              boost::random::mt19937 generator(random_seed_accessor());
+              boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
               for (auto iter = new_view.begin(); iter != new_view.end(); ++iter) {
                 *(iter) = distribution(generator);
               }
@@ -301,8 +301,8 @@ namespace btas {
         }
       } else{
         // fill the factors with random numbers
-        std::mt19937 generator(random_seed_accessor());
-        std::uniform_real_distribution<> distribution(-1.0, 1.0);
+        boost::random::mt19937 generator(random_seed_accessor());
+        boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
         for (size_t i = 1; i < ndimL; ++i) {
           auto &tensor_ref = tensor_ref_left;
           Tensor a(tensor_ref.extent(i), rank_cp4);
@@ -667,8 +667,8 @@ namespace btas {
     /// return if \c fast_pI was successful
     void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
                       double &epsilon, bool &fast_pI) override {
-      std::mt19937 generator(random_seed_accessor());
-      std::uniform_real_distribution<> distribution(-1.0, 1.0);
+      boost::random::mt19937 generator(random_seed_accessor());
+      boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
       for (size_t i = 1; i < ndimL; ++i) {
         auto &tensor_ref = tensor_ref_left;
         Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
