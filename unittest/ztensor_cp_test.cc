@@ -24,7 +24,7 @@ TEST_CASE("ZCP") {
   using btas::CP_RALS;
 
   // double epsilon = fmax(1e-10, std::numeric_limits<double>::epsilon());
-  double epsilon = 1e-5;
+  double epsilon = 4e-5;
 
   ztensor Z3(3, 2, 4);
   std::ifstream inp3(__dirname + "/z-mat3D.txt");

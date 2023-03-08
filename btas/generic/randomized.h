@@ -7,9 +7,12 @@
 #include <btas/generic/linear_algebra.h>
 #include <btas/generic/contract.h>
 
-#include <random>
-#include <stdlib.h>
+#include <cstdlib>
 #include <vector>
+
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
+#include <boost/random/normal_distribution.hpp>
 
 namespace btas {
 
@@ -18,9 +21,11 @@ namespace btas {
   /// \param t a tensor object
   /// \param engine random number engine
   /// \param dist a distribution object
-  template <typename Tensor_, typename = typename std::enable_if_t<btas::is_tensor<Tensor_>::value>>
-  void fill_random(Tensor_ &t, std::mt19937 engine = std::mt19937(random_seed_accessor()),
-                   std::uniform_real_distribution<> dist = std::uniform_real_distribution<>(-1.0, 1.0)) {
+  template <typename Tensor_, typename RandomEngine = boost::random::mt19937,
+            typename UniformRealDistribution = boost::random::uniform_real_distribution<>,
+            typename = typename std::enable_if_t<btas::is_tensor<Tensor_>::value>>
+  void fill_random(Tensor_& t, RandomEngine&& engine = RandomEngine(random_seed_accessor()),
+                   UniformRealDistribution&& dist = UniformRealDistribution(-1.0, 1.0)) {
     using Numeric_ = typename Tensor_::numeric_type;
     if constexpr (is_complex_type_v<Numeric_>) {
       std::generate(t.begin(), t.end(), [&]() {
@@ -32,23 +37,21 @@ namespace btas {
       std::generate(t.begin(), t.end(), [&]() { return dist(engine); });
   }
 
-
-/// \param[in,out] A In: An empty matrix of size column dimension of the nth
-/// mode flattened tensor provided to the randomized compression method by the
-/// desired rank of the randmoized compression method.  Out: A random matrix,
-/// column drawn from a random distribution and orthogonalized
-template <typename Tensor> void generate_random_metric(Tensor &A) {
+  /// \param[in,out] A In: An empty matrix of size column dimension of the nth
+  /// mode flattened tensor provided to the randomized compression method by the
+  /// desired rank of the randmoized compression method.  Out: A random matrix,
+  /// column drawn from a random distribution and orthogonalized
+  template <typename Tensor, typename RandomEngine = boost::random::mt19937,
+            typename NormalDistribution = boost::random::normal_distribution<typename Tensor::numeric_type>>
+  void generate_random_metric(Tensor& A, RandomEngine&& rand = RandomEngine(random_seed_accessor()),
+                              NormalDistribution&& dist = boost::random::normal_distribution<>(0., 10.)) {
     using ind_t = typename Tensor::range_type::index_type::value_type;
     using value_type = typename Tensor::value_type;
+    boost::random::normal_distribution<value_type> distribution(0.0, 10.0);
     for (ind_t i = 0; i < A.extent(1); i++) {
-      std::random_device rd;
-      // uncomment for more randomness
-      // std::mt19937 gen(rd());
-      std::mt19937 gen(1.0); // comment out for more randomness.
-      std::normal_distribution<value_type> distribution(0.0, 10.0);
       value_type norm = 0.0;
       for (ind_t j = 0; j < A.extent(0); j++) {
-        auto val = abs(distribution(gen));
+        auto val = abs(dist(rand));
         norm += val * val;
         A(j, i) = val;
       }
@@ -58,25 +61,24 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
         A(j, i) /= norm;
       }
 
-      distribution.reset();
+      dist.reset();
     }
-  QR_decomp(A);
-}
+    QR_decomp(A);
+  }
 
-/// Calculates the randomized compression of tensor \c A.
-/// <a href=https://arxiv.org/pdf/1703.09074.pdf> See reference </a>
-/// \param[in, out] A In: An order-N tensor to be randomly decomposed.
-/// Out: The core tensor of random decomposition \param[in, out] transforms
-/// In: An empty vector.  Out: The randomized decomposition factor matrices.
-/// \param[in] des_rank The rank of each mode of \c A after randomized
-/// decomposition. \param[in] oversampl Oversampling added to \c
-/// desired_compression_rank required to provide an optimal decomposition.
-/// Default = suggested = 10. \param[in] powerit Number of power iterations, as
-/// specified in the literature, to scale the spectrum of each mode. Default =
-/// suggested = 2.
-  template<typename Tensor>
-  void randomized_decomposition(Tensor &A, std::vector<Tensor> &transforms,
-                                long des_rank, size_t oversampl = 10,
+  /// Calculates the randomized compression of tensor \c A.
+  /// <a href=https://arxiv.org/pdf/1703.09074.pdf> See reference </a>
+  /// \param[in, out] A In: An order-N tensor to be randomly decomposed.
+  /// Out: The core tensor of random decomposition \param[in, out] transforms
+  /// In: An empty vector.  Out: The randomized decomposition factor matrices.
+  /// \param[in] des_rank The rank of each mode of \c A after randomized
+  /// decomposition. \param[in] oversampl Oversampling added to \c
+  /// desired_compression_rank required to provide an optimal decomposition.
+  /// Default = suggested = 10. \param[in] powerit Number of power iterations, as
+  /// specified in the literature, to scale the spectrum of each mode. Default =
+  /// suggested = 2.
+  template <typename Tensor>
+  void randomized_decomposition(Tensor& A, std::vector<Tensor>& transforms, long des_rank, size_t oversampl = 10,
                                 size_t powerit = 2) {
     using ind_t = typename Tensor::range_type::index_type::value_type;
 
@@ -102,7 +104,7 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
       Tensor Y(An.extent(0), rank);
       gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, An, G, 0.0, Y);
 
-    // Start power iteration
+      // Start power iteration
       for (size_t j = 0; j < powerit; j++) {
         // Find L of an LU decomposition of the projected flattened tensor
         LU_decomp(Y);
@@ -114,26 +116,28 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
         LU_decomp(Z);
 
         // Project the second L from above (called Z) onto the flattened reference
-      // tensor and start power iteration over again.
-      Y.resize(Range{Range1{An.extent(0)}, Range1{Z.extent(1)}});
-      gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, An, Z, 0.0, Y);
+        // tensor and start power iteration over again.
+        Y.resize(Range{Range1{An.extent(0)}, Range1{Z.extent(1)}});
+        gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, An, Z, 0.0, Y);
+      }
+
+      // Compute the QR from Y above.  If the QR is non-singular push it into
+      // transforms and project the unitary matrix onto the reference tensor
+      bool QR_good = true;
+      QR_good = QR_decomp(Y);
+
+      if (!QR_good) {
+        BTAS_EXCEPTION(
+            "QR did not complete successfully due to chosen "
+            "dimension. Choose desired_compression_rank <= smallest "
+            "dimension of tensor A");
+      }
+
+      transforms.push_back(Y);
     }
-
-    // Compute the QR from Y above.  If the QR is non-singular push it into
-    // transforms and project the unitary matrix onto the reference tensor
-    bool QR_good = true;
-    QR_good = QR_decomp(Y);
-
-    if (!QR_good) {
-      BTAS_EXCEPTION("QR did not complete successfully due to chosen "
-                     "dimension. Choose desired_compression_rank <= smallest "
-                     "dimension of tensor A");
-    }
-
-    transforms.push_back(Y);
-  }
     std::vector<size_t> contract_modes;
-  contract_modes.push_back(0); contract_modes.push_back(ndim);
+    contract_modes.push_back(0);
+    contract_modes.push_back(ndim);
     for (size_t n = 0; n < ndim; n++) {
 #ifdef BTAS_HAS_INTEL_MKL
       core_contract(A, transforms[n], n);
@@ -146,16 +150,17 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
           final_dims.push_back(A.extent(j));
         }
       }
-    contract_modes[0] = n;
-    final_modes[n] = ndim;
-    btas::Range final_range(final_dims);
-    Tensor final(final_range);
-    contract(1.0, A, A_modes, transforms[n], contract_modes, 0.0, final, final_modes);
-    final_modes[n] = n;
-    A = final;
-#endif //BTAS_HAS_INTEL_MKL
+      contract_modes[0] = n;
+      final_modes[n] = ndim;
+      btas::Range final_range(final_dims);
+      Tensor final(final_range);
+      contract(1.0, A, A_modes, transforms[n], contract_modes, 0.0, final, final_modes);
+      final_modes[n] = n;
+      A = final;
+#endif  // BTAS_HAS_INTEL_MKL
+    }
   }
-}
+
 } // namespace btas
 
 #endif // BTAS_RANDOMIZED_DECOMP_H

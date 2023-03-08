@@ -529,8 +529,8 @@ namespace btas {
     /// return if fast_pI was successful.
     void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
                       double &epsilon, bool &fast_pI) override {
-      std::mt19937 generator(random_seed_accessor());
-      std::uniform_real_distribution<> distribution(-1.0, 1.0);
+      boost::random::mt19937 generator(random_seed_accessor());
+      boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
       if(A.empty()) {
         for (size_t i = 0; i < this->ndim; ++i) {
           // If this mode is symmetric to a previous mode, set it equal to

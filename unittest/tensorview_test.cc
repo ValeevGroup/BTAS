@@ -1,7 +1,6 @@
 #include "test.h"
 
 #include <iostream>
-#include <random>
 
 #include "btas/tensorview.h"
 #include "btas/tensor.h"
