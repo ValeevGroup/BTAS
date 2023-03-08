@@ -370,13 +370,21 @@ namespace btas {
       return storage_[range_.ordinal(index)];
     }
 
-    /// accesses element using its ordinal value
-    /// \param indexord ordinal value of the index
-    template <typename IndexOrdinal>
-    typename std::enable_if<std::is_integral<IndexOrdinal>::value, const_reference>::type operator[](
-        const IndexOrdinal& indexord) const {
-      return storage_[indexord];
-    }
+      template <typename Integer>
+      typename std::enable_if<std::is_integral<Integer>::value, const_reference>::type
+      operator() (std::initializer_list<Integer> index) const
+      {
+        return this->operator()<std::initializer_list<Integer>>(index);
+      }
+
+      /// accesses element using its ordinal value
+      /// \param indexord ordinal value of the index
+      template <typename IndexOrdinal>
+      typename std::enable_if<std::is_integral<IndexOrdinal>::value, const_reference>::type
+      operator[] (const IndexOrdinal& indexord) const
+      {
+        return storage_[indexord];
+      }
 
     template <typename... Index>
     typename std::enable_if<not is_index<typename std::decay<Index>::type...>::value, reference>::type operator()(
@@ -394,13 +402,21 @@ namespace btas {
       return storage_[range_.ordinal(index)];
     }
 
-    /// accesses element using its ordinal value
-    /// \param indexord ordinal value of the index
-    template <typename IndexOrdinal>
-    typename std::enable_if<std::is_integral<IndexOrdinal>::value, reference>::type operator[](
-        const IndexOrdinal& indexord) {
-      return storage_[indexord];
-    }
+      template <typename Integer>
+      typename std::enable_if<std::is_integral<Integer>::value, reference>::type
+      operator() (std::initializer_list<Integer> index)
+      {
+        return this->operator()<std::initializer_list<Integer>>(index);
+      }
+
+      /// accesses element using its ordinal value
+      /// \param indexord ordinal value of the index
+      template <typename IndexOrdinal>
+      typename std::enable_if<std::is_integral<IndexOrdinal>::value, reference>::type
+      operator[] (const IndexOrdinal& indexord)
+      {
+        return storage_[indexord];
+      }
 
     ///@} // element accessors with range check
 

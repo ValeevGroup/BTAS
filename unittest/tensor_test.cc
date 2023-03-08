@@ -198,6 +198,7 @@ TEST_CASE("Tensor Operations") {
 
   SECTION("Element Access") {
     CHECK(T3(2,1,3) == 1213);
+    CHECK(T3({2,1,3}) == 1213);
   }
 
   SECTION("Conversion to Scalar") {
