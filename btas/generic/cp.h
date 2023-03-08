@@ -148,13 +148,11 @@ namespace btas {
     /// \param[in] SVD_rank if \c
     /// SVD_initial_guess is true specify the rank of the initial guess such that
     /// SVD_rank <= rank. default = 0
-    /// \param[in]
-    /// max_als Max number of iterations allowed to converge the ALS approximation default = 1e4
+    /// \param[in] max_als Max number of iterations allowed to converge the ALS approximation default = 1e4
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// default = true
-    /// \param[in]
-    /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{\rm exact} -
-    /// T_{\rm approx}|| = \epsilon. \f$ Default = false.
+    /// \param[in] calculate_epsilon Should the 2-norm error be calculated
+    /// \f$ ||T_{\rm exact} - T_{\rm approx}|| = \epsilon. \f$ Default = false.
     /// \param[in] direct Should the CP decomposition be computed without
     /// calculating the Khatri-Rao product? Default = true.
     /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
