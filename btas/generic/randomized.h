@@ -50,7 +50,7 @@ template <typename Tensor> void generate_random_metric(Tensor &A) {
       for (ind_t j = 0; j < A.extent(0); j++) {
         auto val = abs(distribution(gen));
         norm += val * val;
-        A(i, j) = val;
+        A(j, i) = val;
       }
 
       norm = sqrt(norm);
