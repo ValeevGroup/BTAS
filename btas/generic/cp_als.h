@@ -694,7 +694,8 @@ namespace btas {
 #else  // BTAS_HAS_CBLAS
       // without MKL program cannot perform the swapping algorithm, must compute
       // flattened intermediate
-      gemm(blas::Op::NoTrans, blas::Op::NoTrans, this-> one, flatten(tensor_ref, n), this->generate_KRP(n, rank, true), this-> zero, temp);
+      gemm(blas::Op::NoTrans, blas::Op::NoTrans, this->one, flatten(tensor_ref, n), this->generate_KRP(n, rank, true),
+           this->zero, temp);
 #endif
 
       if(lambda != 0){
@@ -764,8 +765,8 @@ namespace btas {
                 Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
-      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, this-> one , (last_dim? tensor_ref.conj():tensor_ref), A[contract_dim].conj(), this-> zero,
-           temp);
+      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, this->one,
+           (last_dim ? tensor_ref.conj() : tensor_ref), A[contract_dim].conj(), this->zero, temp);
 
       // Resize tensor_ref
       tensor_ref.resize(R);

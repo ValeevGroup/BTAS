@@ -110,12 +110,12 @@ namespace btas {
 
       double fitChange = abs(fitOld_ - fit);
       fitOld_ = fit;
-      if(verbose_) {
-        std::cout<< MtKRP_.extent(1)<< "\t" << iter_ << "\t" << fit << "\t" << fitChange << std::endl;
+      if (verbose_) {
+        std::cout << MtKRP_.extent(1) << "\t" << iter_ << "\t" << fit << "\t" << fitChange << std::endl;
       }
-      if(fitChange < tol_) {
+      if (fitChange < tol_) {
         converged_num++;
-        if(converged_num == 2){
+        if (converged_num == 2) {
           iter_ = 0;
           converged_num = 0;
           final_fit_ = fitOld_;
@@ -187,11 +187,11 @@ namespace btas {
       typename Tensor::value_type one = 1.0;
       ger(one, temp1.conj(), temp1, coeffMat);
 
-      auto rank2 = rank * (ord_t) rank;
+      auto rank2 = rank * (ord_t)rank;
       Tensor temp(rank, rank);
 
       auto *ptr_coeff = coeffMat.data();
-      if(V.empty()) {
+      if (V.empty()) {
         for (size_t i = 0; i < n; ++i) {
           gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, btas_factors[i].conj(), btas_factors[i], 0.0, temp);
           auto *ptr_temp = temp.data();
@@ -199,17 +199,17 @@ namespace btas {
             *(ptr_coeff + j) *= *(ptr_temp + j);
           }
         }
-      } else{
-        for(size_t i = 0; i < n; ++i) {
+      } else {
+        for (size_t i = 0; i < n; ++i) {
           auto *ptr_V = V[i].data();
-          for(ord_t j = 0; j < rank2; ++j){
+          for (ord_t j = 0; j < rank2; ++j) {
             *(ptr_coeff + j) *= *(ptr_V + j);
           }
         }
       }
 
       dtype nrm = 0.0;
-      for(auto & i: coeffMat){
+      for (auto &i : coeffMat) {
         nrm += i;
       }
       return sqrt(abs(nrm));

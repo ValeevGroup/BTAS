@@ -806,7 +806,8 @@ namespace btas {
           tensor_ref.resize(Range{Range1{sizeCurr / contract_size}, Range1{contract_size}});
 
           // Contract out the last dimension
-          gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, tensor_ref.conj(), A[contract_dim_inter].conj(), 0.0, contract_tensor);
+          gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, tensor_ref.conj(), A[contract_dim_inter].conj(), 0.0,
+               contract_tensor);
           // Resize tensor_ref back to original size
           tensor_ref.resize(R);
 
@@ -866,7 +867,7 @@ namespace btas {
           // resize tensor_ref to remove connecting dimension
           tensor_ref.resize(Range{Range1{tensor_ref.extent(0)}, Range1{LH_size}});
 
-          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, tensor_ref , K, 0.0, leftTimesRight);
+          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, tensor_ref, K, 0.0, leftTimesRight);
           // resize tensor_ref back to original dimensions
           tensor_ref.resize(R);
 

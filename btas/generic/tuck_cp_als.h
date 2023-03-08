@@ -254,8 +254,8 @@ namespace btas{
                 Range1{last_dim ? LH_size / core_tensor.extent(contract_dim) : core_tensor.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
-      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans),
-           blas::Op::NoTrans, 1.0, core_tensor, transformed_A[contract_dim], 0.0, An);
+      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, 1.0, core_tensor,
+           transformed_A[contract_dim], 0.0, An);
 
       // Resize tensor_ref
       core_tensor.resize(R);
