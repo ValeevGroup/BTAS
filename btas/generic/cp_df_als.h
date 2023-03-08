@@ -534,7 +534,8 @@ namespace btas {
         right_modes[0] = ndimR;
         result_modes.push_back(0);
         result_modes.push_back(ndimR);
-        contract(this->one , tensor_ref_right, left_modes, tensor_ref_right.conj(), right_modes, this-> zero, XXp, result_modes);
+        contract(this->one, tensor_ref_right, left_modes, tensor_ref_right.conj(), right_modes, this->zero, XXp,
+                 result_modes);
         left_modes.clear(); right_modes.clear();
         for (size_t i = 0; i < ndimL; i++) {
           left_modes.push_back(i);
@@ -542,7 +543,7 @@ namespace btas {
         }
         right_modes[0] = ndim + 3;
         result_modes[1] = ndim + 3;
-        contract(this->one, XXp, result_modes, tensor_ref_left, left_modes, this -> zero, contracted, right_modes);
+        contract(this->one, XXp, result_modes, tensor_ref_left, left_modes, this->zero, contracted, right_modes);
         right_modes[0] = 0;
       }
 
@@ -553,7 +554,8 @@ namespace btas {
           Tensor tucker;
           *(ptrr) = ndim + 3;
           *(ptrf) = i;
-          contract(this->one, contracted, left_modes, tensor_ref_left.conj(), right_modes, this->zero, tucker, result_modes);
+          contract(this->one, contracted, left_modes, tensor_ref_left.conj(), right_modes, this->zero, tucker,
+                   result_modes);
           *(ptrr) = i;
 
           auto R = tucker.extent(0);
@@ -581,7 +583,8 @@ namespace btas {
       {
         right_modes[0] = ndim + 3;
         result_modes[0] = 0;
-        contract(this->one, tensor_ref_left, left_modes, tensor_ref_left.conj(), right_modes, this->zero, XXp, result_modes);
+        contract(this->one, tensor_ref_left, left_modes, tensor_ref_left.conj(), right_modes, this->zero, XXp,
+                 result_modes);
         left_modes.clear(); right_modes.clear();
         for (size_t i = 0; i < ndimR; ++i) {
           left_modes.push_back(i);
@@ -591,7 +594,7 @@ namespace btas {
         right_modes[0] = ndim + 3;
         result_modes[1] = ndim + 3;
         contracted = Tensor();
-        contract(this->one , XXp, result_modes, tensor_ref_right, left_modes, this-> zero, contracted, right_modes);
+        contract(this->one, XXp, result_modes, tensor_ref_right, left_modes, this->zero, contracted, right_modes);
         right_modes[0] = 0;
 
         auto ptrr = right_modes.begin() + 1, ptrf = result_modes.begin();
@@ -599,7 +602,8 @@ namespace btas {
           Tensor tucker;
           *(ptrr) = ndim + 3;
           *(ptrf) = i;
-          contract(this->one, contracted, left_modes, tensor_ref_right.conj(), right_modes, this->zero, tucker, result_modes);
+          contract(this->one, contracted, left_modes, tensor_ref_right.conj(), right_modes, this->zero, tucker,
+                   result_modes);
           *(ptrr) = i;
 
           auto R = tucker.extent(0);

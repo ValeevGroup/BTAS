@@ -803,14 +803,14 @@ namespace btas {
         // over the middle dimension and sum over the rank.
 
         else if (contract_dim > n) {
-          middle_contract(this->one, temp, a.conj(), this-> zero, contract_tensor);
+          middle_contract(this->one, temp, a.conj(), this->zero, contract_tensor);
           temp = contract_tensor;
         }
 
         // If the code has passed the mode of interest, it will contract over
         // the middle dimension and sum over rank * mode n dimension
         else {
-          middle_contract_with_pseudorank(this->one, temp, a.conj(),this-> zero, contract_tensor);
+          middle_contract_with_pseudorank(this->one, temp, a.conj(), this->zero, contract_tensor);
           temp = contract_tensor;
         }
 
@@ -831,7 +831,7 @@ namespace btas {
         contract_tensor.fill(0.0);
 
         const auto &a = A[(last_dim ? 1 : 0)];
-        front_contract(this->one , temp, a.conj(),this-> zero, contract_tensor);
+        front_contract(this->one, temp, a.conj(), this->zero, contract_tensor);
 
         temp = contract_tensor;
       }
@@ -876,7 +876,7 @@ namespace btas {
       // replace that contracted mode with the rank
       final_idx.emplace_back(ndim);
 
-      contract(this-> one , tensor_ref, tref_idx, A[contract_mode], mat_idx, this-> zero, An, final_idx);
+      contract(this->one, tensor_ref, tref_idx, A[contract_mode], mat_idx, this->zero, An, final_idx);
 
       tref_idx = final_idx;
       auto ptr = final_idx.rbegin();

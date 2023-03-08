@@ -168,7 +168,7 @@ namespace btas{
           // reference factors need to be scaled by the tucker factors.
           for (size_t i = 0; i < ndim; ++i, ++ptr_A, ++ptr_T, ++ptr_AtA, ++ptr_tran) {
             *ptr_AtA = Tensor();
-            contract(this->one , *ptr_A, {1, 2}, btas::impl::conj(*ptr_A), {1, 3}, this->zero, *ptr_AtA, {2, 3});
+            contract(this->one, *ptr_A, {1, 2}, btas::impl::conj(*ptr_A), {1, 3}, this->zero, *ptr_AtA, {2, 3});
             Tensor trans;
             *ptr_tran = Tensor();
             contract(this->one, *ptr_T, {1, 2}, btas::impl::conj(*ptr_A), {2, 3}, this->zero, *ptr_tran, {1, 3});
@@ -204,7 +204,7 @@ namespace btas{
           core_ALS_solver(i, rank, fast_pI, matlab, converge_test);
           auto &ai = A[i];
           contract(this->one, ai, {1, 2}, ai.conj(), {1, 3}, this->zero, AtA[i], {2, 3});
-          contract(this->one, tucker_factors[i], {1,2}, ai.conj(), {2,3}, this->zero, transformed_A[i], {1,3});
+          contract(this->one, tucker_factors[i], {1, 2}, ai.conj(), {2, 3}, this->zero, transformed_A[i], {1, 3});
         }
         is_converged = converge_test(A, AtA);
       }while (count < max_als && !is_converged);
@@ -336,7 +336,7 @@ namespace btas{
       // need to reverse tucker transformation of that mode.
       {
         Tensor temp;
-        contract(this->one, tucker_factors[n], {1,2}, An, {1,3}, this->zero, temp, {2,3});
+        contract(this->one, tucker_factors[n], {1, 2}, An, {1, 3}, this->zero, temp, {2, 3});
         An = temp;
       }
       // multiply resulting matrix An by pseudoinverse to calculate optimized
@@ -467,7 +467,7 @@ namespace btas{
         contract(1.0, *ptr_A, {1, 2}, *ptr_A, {1, 3}, 0.0, *ptr_AtA, {2, 3});
         Tensor trans;
         *ptr_tran = Tensor();
-        contract(1.0, *ptr_T, {1,2}, *ptr_A, {2,3}, 0.0, *ptr_tran, {1,3});
+        contract(1.0, *ptr_T, {1, 2}, *ptr_A, {2, 3}, 0.0, *ptr_tran, {1, 3});
       }
 
       helper = RALSHelper<Tensor>(A);
@@ -490,8 +490,8 @@ namespace btas{
           this->s = helper(i, ai);
           // recompute lambda
           lambda[i] = (lambda[i] * (this->s * this->s) / (s0 * s0)) * alpha + (1 - alpha) * lambda[i];
-          contract(1.0, tucker_factors[i], {1,2}, ai, {2,3},0.0, transformed_A[i], {1,3});
-          contract(1.0, ai, {1,2}, ai, {1,3}, 0.0, AtA[i], {2,3});
+          contract(1.0, tucker_factors[i], {1, 2}, ai, {2, 3}, 0.0, transformed_A[i], {1, 3});
+          contract(1.0, ai, {1, 2}, ai, {1, 3}, 0.0, AtA[i], {2, 3});
         }
         is_converged = converge_test(A);
       }
