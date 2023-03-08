@@ -283,7 +283,7 @@ namespace btas{
           auto &tensor_ref = left ? tensor_ref_left : tensor_ref_right;
           if (i == 0) {
             Tensor a(Range{tensor_ref.range().range((left ? j : j - ndimL + 1)), Range1{rank_new}});
-            a.fill(rand());
+            fill_random(a);
             A.push_back(a);
             this->normCol(j);
           }
