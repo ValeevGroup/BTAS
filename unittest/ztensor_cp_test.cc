@@ -72,7 +72,7 @@ TEST_CASE("ZCP") {
   std::complex<double> norm3 = sqrt(dot(Z3, Z3));
   std::complex<double> norm32 = sqrt(dot(Z33, Z33));
 
-  zconv_class conv(1e-3);
+  zconv_class conv(1e-4);
 
 
   // ALS tests
