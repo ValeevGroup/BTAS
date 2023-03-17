@@ -257,6 +257,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
     // Compute the matrix A^-1 from the inverted singular values and the U and
     // V^T provided by the SVD
     gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, U, s_inv, 0.0, s);
+    U = Tensor(s.extent(0), Vt.extent(1));
     gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, s, Vt, 0.0, U);
 
     return U;
@@ -264,5 +265,76 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
 #endif
   }
 
+template <typename Tensor>
+Tensor svd(Tensor & A, Tensor & U, Tensor & s, Tensor & Vt, bool reconstruct = false) {
+
+#ifndef BTAS_HAS_BLAS_LAPACK
+    BTAS_EXCEPTION("pseudoInverse required BLAS/LAPACK bindings to be enabled: -DBTAS_USE_BLAS_LAPACK=ON");
+#else // BTAS_HAS_BLAS_LAPACK
+
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    if (A.rank() > 2) {
+      BTAS_EXCEPTION("PseudoInverse can only be computed on a matrix");
+    }
+
+    ind_t row = A.extent(0), col = A.extent(1);
+    auto rank = (row < col ? row : col);
+
+    s = Tensor(Range{Range1{rank}});
+    U = Tensor(Range{Range1{row}, Range1{row}});
+    Vt = Tensor(Range{Range1{col}, Range1{col}});
+
+    gesvd(lapack::Job::AllVec, lapack::Job::AllVec, A, s, U, Vt);
+
+    //std::cout << s << std::endl;
+    // Inverse the Singular values with threshold 1e-13 = 0
+    Tensor s_inv(Range{Range1{row}, Range1{col}});
+    s_inv.fill(0.0);
+    for (ind_t i = 0; i < rank; ++i) {
+      s_inv(i, i) = s(i);
+    }
+    if(reconstruct) {
+      s.resize(Range{Range1{row}, Range1{col}});
+      // Compute the matrix A^-1 from the inverted singular values and the U and
+      // V^T provided by the SVD
+      gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, U, s_inv, 0.0, s);
+      U = Tensor(s.range());
+      gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, s, Vt, 0.0, U);
+
+      return U;
+    } else{
+      Tensor temp(s_inv.range());
+      gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, U, s_inv, 0.0, temp);
+      U = temp;
+    }
+    return Tensor();
+
+#endif
+  }
+
+  template <typename Tensor>
+  Tensor experimental_contract( Tensor u, Tensor v, Tensor lambda1,
+                               Tensor v_til, Tensor s, Tensor lambda2){
+    // Given 2 SVD \sum_{r1} u_{r1} \lambda_{r1} v_{r1}
+    // and \sum_{r2} \tilde{v}_{r2} \lambda_{r2} s_{r2}
+    // compute the contraction in N^2 time.
+    auto rank1 = u.extent(1), rank2 = s.extent(0);
+    auto contract_rank = min(rank1, rank2);
+
+    Tensor result(u.extent(0), s.extent(1));
+    result.fill(0.0);
+
+    auto contract_dim = v.extent(0);
+    for(auto r = 0; r < contract_rank; ++r) {
+      auto val = 0.0;
+      for (auto c = 0; c < contract_dim; ++c) {
+        val += v(c,r) * v_til(c,r);
+      }
+      val *= lambda1(r) * lambda2(r);
+      contract(val, u, {1,2}, s, {2,3}, 1.0, result, {1,3});
+    }
+    // First need to compute the mixed contraction between
+    return result;
+  }
 } // namespace btas
 #endif //BTAS_LINEAR_ALGEBRA_H

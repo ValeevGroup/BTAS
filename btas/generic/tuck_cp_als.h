@@ -147,6 +147,8 @@ namespace btas{
         if (tucker_factors.empty()) {
           core_tensor = tensor_ref;
           sequential_tucker(core_tensor, tcut_tucker, tucker_factors);
+          auto a = core_tensor.size(), b = tensor_ref.size();
+          std::cout << "Tref size; " << b << "\ncore; " << a << std::endl;
           //make_tucker_factors(tensor_ref, tcut_tucker, tucker_factors, false);
           //core_tensor = tensor_ref;
           //transform_tucker(true, core_tensor, tucker_factors);
@@ -191,6 +193,25 @@ namespace btas{
       bool is_converged = false;
       bool matlab = fast_pI;
 
+      // Testing old way of tucker compression
+      {
+        ConvClass core_conv(1e-3);
+        auto norm2 = [](Tensor &a) {
+          auto n2 = 0.0;
+          for (auto i : a) n2 += i * i;
+          return sqrt(n2);
+        };
+        core_conv.set_norm(norm2(core_tensor));
+        core_conv.verbose(true);
+
+        CP_ALS<Tensor, ConvClass> coreCP(core_tensor);
+        coreCP.compute_rank_random(rank, core_conv, 1000, true, false, true);
+        auto core_recon = coreCP.reconstruct();
+        transform_tucker(false, core_recon, tucker_factors);
+        Tensor diff;
+        diff = tensor_ref - core_recon;
+        std::cout << "Error : " << 1.0 - norm2(diff) / norm2(tensor_ref) << std::endl;
+      }
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
       // intermediate

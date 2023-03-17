@@ -272,8 +272,7 @@ namespace btas {
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_left);
           auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
-          if(verbose)
-            std::cout << "The accuracy of the LHS decomposition is : " << error * 100 << std::endl;
+          std::cout << "The accuracy of the LHS decomposition is : " << (1.0 - error) * 100 << std::endl;
           init_factors_left = CP3.get_factor_matrices();
           auto cur_dim = init_factors_left.size() - 1;
           for (size_t i = 1; i < cur_dim; ++i) {
@@ -287,8 +286,7 @@ namespace btas {
           fit.verbose(verbose);
           CP_ALS<Tensor, FitCheck<Tensor>> CP3(tensor_ref_right);
           auto error = CP3.compute_rank_random(rank_cp3, fit, 100, true);
-          if(verbose)
-            std::cout << "The accuracy of the RHS decomposition is : " << error * 100 << std::endl;
+          std::cout << "The accuracy of the RHS decomposition is : " << (1.0 - error) * 100 << std::endl;
           init_factors_right = CP3.get_factor_matrices();
           auto cur_dim = init_factors_right.size();
           if (rank_cp3 == rank_cp4) {
@@ -378,6 +376,11 @@ namespace btas {
     std::tuple<std::vector<Tensor>, std::vector<Tensor>> get_init_factors(){
       return std::make_tuple(init_factors_left, init_factors_right);
     }
+
+    void set_init_factors(std::vector<Tensor> init_facs){
+      this->A = init_facs;
+      factors_set = true;
+    }
    protected:
     Tensor &tensor_ref_left;   // Left connected tensor
     Tensor &tensor_ref_right;  // Right connected tensor
@@ -388,6 +391,7 @@ namespace btas {
     std::vector<size_t> dims;
     std::vector<Tensor> init_factors_left;
     std::vector<Tensor> init_factors_right;
+    bool factors_set = false;
 
     /// Creates an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
@@ -418,11 +422,11 @@ namespace btas {
     void build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon, ind_t step,
                double &epsilon, bool SVD_initial_guess, ind_t SVD_rank, bool &fast_pI) override {
       {
-        bool factors_set = false;
         // If its the first time into build and SVD_initial_guess
         // build and optimize the initial guess based on the left
         // singular vectors of the reference tensor.
         if (A.empty() && SVD_initial_guess) {
+          factors_set = false;
           if (SVD_rank == 0) BTAS_EXCEPTION("Must specify the rank of the initial approximation using SVD");
           make_svd_guess(SVD_rank);
           // Optimize this initial guess.
@@ -672,31 +676,33 @@ namespace btas {
     /// return if \c fast_pI was successful
     void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
                       double &epsilon, bool &fast_pI) override {
-      std::mt19937 generator(random_seed_accessor());
-      std::uniform_real_distribution<> distribution(-1.0, 1.0);
-      for (size_t i = 1; i < ndimL; ++i) {
-        auto &tensor_ref = tensor_ref_left;
-        Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
-        for (auto iter = a.begin(); iter != a.end(); ++iter) {
-          *(iter) = distribution(generator);
+      if(!factors_set) {
+        std::mt19937 generator(random_seed_accessor());
+        std::uniform_real_distribution<> distribution(-1.0, 1.0);
+        for (size_t i = 1; i < ndimL; ++i) {
+          auto &tensor_ref = tensor_ref_left;
+          Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
+          for (auto iter = a.begin(); iter != a.end(); ++iter) {
+            *(iter) = distribution(generator);
+          }
+          A.push_back(a);
         }
-        A.push_back(a);
-      }
-      for (size_t i = 1; i < ndimR; ++i) {
-        auto &tensor_ref = tensor_ref_right;
+        for (size_t i = 1; i < ndimR; ++i) {
+          auto &tensor_ref = tensor_ref_right;
 
-        Tensor a(tensor_ref.extent(i), rank);
-        for (auto iter = a.begin(); iter != a.end(); ++iter) {
-          *(iter) = distribution(generator);
+          Tensor a(tensor_ref.extent(i), rank);
+          for (auto iter = a.begin(); iter != a.end(); ++iter) {
+            *(iter) = distribution(generator);
+          }
+          this->A.push_back(a);
         }
-        this->A.push_back(a);
-      }
 
-      Tensor lambda(rank);
-      lambda.fill(0.0);
-      this->A.push_back(lambda);
-      for (size_t i = 0; i < ndim; ++i) {
-        normCol(i);
+        Tensor lambda(rank);
+        lambda.fill(0.0);
+        this->A.push_back(lambda);
+        for (size_t i = 0; i < ndim; ++i) {
+          normCol(i);
+        }
       }
 
       ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);

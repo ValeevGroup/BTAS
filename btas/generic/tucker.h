@@ -128,12 +128,17 @@ namespace btas {
 
       // Find how many significant vectors are in this transformation
       ind_t rank = 0,  zero = 0;
+      std::cout << lambda(0) << std::endl;
+      std::cout << lambda(lambda.size() - 1) << "\n" << std::endl;
       for(auto & eig : lambda){
         if(eig < threshold) ++rank;
       }
 
       // Truncate the column space of the unitary factor matrix.
       ind_t kept_evals = r - rank;
+      std::cout << lambda.size() << std::endl;
+      if(lambda.size() > 73)
+        rank = r - 72;
       if(kept_evals == 0) BTAS_EXCEPTION("Tucker decomposition failed. Tucker transformation rank = 0");
       lambda = Tensor(kept_evals, r);
       auto lower_bound = {rank, zero};

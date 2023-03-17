@@ -73,7 +73,6 @@ int64_t gesv( blas::Layout order, int64_t N, int64_t NRHS, T* A, int64_t LDA,
   return info;
 }
 
-
 template <typename T>
 int64_t gesvd( blas::Layout order, lapack::Job jobu, lapack::Job jobvt,
                int64_t M, int64_t N, T* A, int64_t LDA, real_type_t<T>* S, 
