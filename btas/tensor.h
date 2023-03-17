@@ -460,6 +460,13 @@ namespace btas {
         return storage_[range_.ordinal(index)];
       }
 
+      template <typename Integer>
+      typename std::enable_if<std::is_integral<Integer>::value, const_reference>::type
+      operator() (std::initializer_list<Integer> index) const
+      {
+        return this->operator()<std::initializer_list<Integer>>(index);
+      }
+
       /// accesses element using its ordinal value
       /// \param indexord ordinal value of the index
       template <typename IndexOrdinal>
@@ -488,6 +495,13 @@ namespace btas {
       operator[] (const Index& index)
       {
         return storage_[range_.ordinal(index)];
+      }
+
+      template <typename Integer>
+      typename std::enable_if<std::is_integral<Integer>::value, reference>::type
+      operator() (std::initializer_list<Integer> index)
+      {
+        return this->operator()<std::initializer_list<Integer>>(index);
       }
 
       /// accesses element using its ordinal value

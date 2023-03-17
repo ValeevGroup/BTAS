@@ -1,9 +1,9 @@
 # import BLAS++ / LAPACK++
 if (ENABLE_WFN91_LINALG_DISCOVERY_KIT)
-    include(FetchWfn91LinAlgModules)
-    include(FindLinalg)
+    include(${vg_cmake_kit_SOURCE_DIR}/modules/FetchWfn91LinAlgModules.cmake)
+    include(${vg_cmake_kit_SOURCE_DIR}/modules/FindLinalg.cmake)
 endif(ENABLE_WFN91_LINALG_DISCOVERY_KIT)
-include(FindOrFetchLinalgPP)
+include(${vg_cmake_kit_SOURCE_DIR}/modules/FindOrFetchLinalgPP.cmake)
 target_link_libraries(BTAS INTERFACE blaspp lapackpp)
 if (TARGET blaspp_headers)
     target_link_libraries(BTAS INTERFACE blaspp_headers)

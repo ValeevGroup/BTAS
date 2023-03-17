@@ -29,14 +29,18 @@ namespace btas {
 
   /// Computes pair<T1,T2> -> T1
   template <typename T1, typename T2>
-  struct first_of_pair< std::pair<T1,T2> > : public std::unary_function<const std::pair<T1,T2>&,const T1&>  {
+  struct first_of_pair< std::pair<T1,T2> > {
+      using argument_type = const std::pair<T1,T2>&;
+      using result_type = const T1&;
       typedef T1 type;
       const type& operator()(const std::pair<T1,T2>& x) const { return x.first; }
   };
 
   /// Computes pair<T1,T2> -> T2
   template <typename T1, typename T2>
-  struct second_of_pair< std::pair<T1,T2> > : public std::unary_function<const std::pair<T1,T2>&,const T2&> {
+  struct second_of_pair< std::pair<T1,T2> > {
+      using argument_type = const std::pair<T1,T2>&;
+      using result_type = const T2&;
       typedef T2 type;
       const type& operator()(const std::pair<T1,T2>& x) const { return x.second; }
   };
