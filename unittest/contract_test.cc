@@ -6,6 +6,10 @@
 #include "btas/generic/contract.h"
 #include "btas/tensor.h"
 
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
+#include "btas/generic/default_random_seed.h"
+
 using std::cout;
 using std::endl;
 
@@ -41,7 +45,7 @@ void static fillEls(DTensor& T) {
 // rng() is useful for filling Tensors with random elements
 // using the code T.generate(rng);
 double static rng() {
-  static boost::random::mt19937 rng(random_seed_accessor());
+  static boost::random::mt19937 rng(btas::random_seed_accessor());
   static auto dist = boost::random::uniform_real_distribution<double>{0., 1.};
   return dist(rng);
 }

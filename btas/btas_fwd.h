@@ -65,11 +65,8 @@ namespace btas {
     class Tensor;
 
     template<typename Tensor,
-              typename _T,
-              class _Range = btas::DEFAULT::range,
-              class _Storage = btas::DEFAULT::storage<_T>
-              >
-    using rebind_tensor_t = typename Tensor::template rebind_t<_T, _Range, _Storage>;
+              typename _T>
+    using rebind_tensor_t = typename Tensor::template rebind_t<_T>;
 
     template <typename _T,
             class _Range = btas::DEFAULT::range,
@@ -79,6 +76,10 @@ namespace btas {
     template <typename _T,
       typename _Allocator = std::allocator<_T> >
     class varray;
+
+    template <typename _Ptr,
+              typename = typename std::enable_if<std::is_pointer<_Ptr>::value>::type >
+    class infinite_sequence_adaptor;
 }
 
 #endif //BTAS_BTAS_FWD_H

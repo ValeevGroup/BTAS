@@ -72,12 +72,35 @@ namespace btas {
 
     ///@}
 
-    /// numeric type
+    /// the numeric type supporting `value_type`
+    /// \note this is `value_type` if this is a plain (non-recursive) Tensor, but differs from `value_type` for
+    /// recursive Tensor's, e.g. for `Tensor<Tensor<T>>` this is `T` whereas `value_type` is `Tensor<T>`
     typedef typename numeric_type<value_type>::type numeric_type;
 
-    /// compute type of Tensor with different T, Range, and Storage
-    template <typename U, class RangeU = _Range, class StorageU = _Storage>
-    using rebind_t = Tensor<U, RangeU, StorageU>;
+    /// compute type of Tensor with different element type
+    template <typename U>
+    using rebind_t = Tensor<U, _Range, typename storage_traits<_Storage>::template rebind_t<U>>;
+
+    template <typename U, typename V = value_type, typename = void> struct rebind_numeric;
+    template <typename U, typename V> struct rebind_numeric<U, V, std::enable_if_t<has_numeric_type<V>::value>> {
+      using VU = typename V::template rebind_numeric<U>::type;
+      using type = Tensor<VU, _Range, typename storage_traits<_Storage>::template rebind_t<VU>>;
+    };
+    template <typename U, typename V> struct rebind_numeric<U, V, std::enable_if_t<!has_numeric_type<V>::value>> {
+      using type = Tensor<U, _Range, typename storage_traits<_Storage>::template rebind_t<U>>;
+    };
+
+    /// compute type of Tensor with different numeric type
+    template <typename U>
+    using rebind_numeric_t = typename rebind_numeric<U, value_type>::type;
+
+    /// compute type of Tensor with different range type
+    template <typename Range = _Range>
+    using rebind_range_t = Tensor<_T, Range, _Storage>;
+
+    /// compute type of Tensor with different storage type
+    template <typename Storage = _Storage>
+    using rebind_storage_t = Tensor<_T, _Range, Storage>;
 
    private:
     struct Enabler {};
