@@ -76,7 +76,7 @@ namespace btas {
     typedef typename numeric_type<value_type>::type numeric_type;
 
     /// compute type of Tensor with different T, Range, and Storage
-    template <typename U, class RangeU, class StorageU>
+    template <typename U, class RangeU = _Range, class StorageU = _Storage>
     using rebind_t = Tensor<U, RangeU, StorageU>;
 
    private:
