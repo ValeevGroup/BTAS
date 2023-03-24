@@ -75,6 +75,10 @@ namespace btas{
     using CP<Tensor, ConvClass>::ndim;
     using CP<Tensor, ConvClass>::AtA;
 
+    using T = typename Tensor::numeric_type;
+    using RT = real_type_t<T>;
+    using RTensor = rebind_tensor_t<Tensor, RT>;
+
    public:
     /// Create a Tucker compressed CP ALS object
     /// that stores but does not modify the reference tensor \c tensor.
@@ -155,7 +159,6 @@ namespace btas{
           AtA = std::vector<Tensor>(ndim);
           transformed_A = std::vector<Tensor>(ndim);
         }
-
         auto ptr_A = A.begin(),
              ptr_T = tucker_factors.begin(),
              ptr_AtA = AtA.begin(),
@@ -165,10 +168,10 @@ namespace btas{
           // reference factors need to be scaled by the tucker factors.
           for (size_t i = 0; i < ndim; ++i, ++ptr_A, ++ptr_T, ++ptr_AtA, ++ptr_tran) {
             *ptr_AtA = Tensor();
-            contract(1.0, *ptr_A, {1, 2}, *ptr_A, {1, 3}, 0.0, *ptr_AtA, {2, 3});
+            contract(this->one, *ptr_A, {1, 2}, btas::impl::conj(*ptr_A), {1, 3}, this->zero, *ptr_AtA, {2, 3});
             Tensor trans;
             *ptr_tran = Tensor();
-            contract(1.0, *ptr_T, {1, 2}, *ptr_A, {2, 3}, 0.0, *ptr_tran, {1, 3});
+            contract(this->one, *ptr_T, {1, 2}, btas::impl::conj(*ptr_A), {2, 3}, this->zero, *ptr_tran, {1, 3});
           }
         } else {
           // if tensor_ref is the core tensor then the factors in A need to be taken
@@ -177,10 +180,10 @@ namespace btas{
             Tensor trans;
             *ptr_tran = *ptr_A;
             *ptr_A = Tensor();
-            contract(1.0, *ptr_T, {2, 1}, *ptr_tran, {2, 3}, 0.0, *ptr_A, {1, 3});
+            contract(this->one, *ptr_T, {2, 1}, btas::impl::conj(*ptr_tran), {2, 3}, this->zero, *ptr_A, {1, 3});
 
             *ptr_AtA = Tensor();
-            contract(1.0, *ptr_A, {1, 2}, *ptr_A, {1, 3}, 0.0, *ptr_AtA, {2, 3});
+            contract(this->one, *ptr_A, {1, 2}, btas::impl::conj(*ptr_A), {1, 3}, this->zero, *ptr_AtA, {2, 3});
           }
         }
       }
@@ -200,8 +203,8 @@ namespace btas{
         for (size_t i = 0; i < ndim; i++) {
           core_ALS_solver(i, rank, fast_pI, matlab, converge_test);
           auto &ai = A[i];
-          contract(1.0, ai, {1, 2}, ai, {1, 3}, 0.0, AtA[i], {2, 3});
-          contract(1.0, tucker_factors[i], {1,2}, ai, {2,3},0.0, transformed_A[i], {1,3});
+          contract(this->one, ai, {1, 2}, ai.conj(), {1, 3}, this->zero, AtA[i], {2, 3});
+          contract(this->one, tucker_factors[i], {1, 2}, ai.conj(), {2, 3}, this->zero, transformed_A[i], {1, 3});
         }
         is_converged = converge_test(A, AtA);
       }while (count < max_als && !is_converged);
@@ -251,8 +254,8 @@ namespace btas{
                 Range1{last_dim ? LH_size / core_tensor.extent(contract_dim) : core_tensor.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
-      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans),
-           blas::Op::NoTrans, 1.0, core_tensor, transformed_A[contract_dim], 0.0, An);
+      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, 1.0, core_tensor,
+           transformed_A[contract_dim], 0.0, An);
 
       // Resize tensor_ref
       core_tensor.resize(R);
@@ -290,14 +293,14 @@ namespace btas{
         // over the middle dimension and sum over the rank.
 
         else if (contract_dim > n) {
-          middle_contract(1.0, An, a, 0.0, contract_tensor);
+          middle_contract(this->one, An, a, this->zero, contract_tensor);
           An = contract_tensor;
         }
 
         // If the code has passed the mode of interest, it will contract over
         // the middle dimension and sum over rank * mode n dimension
         else {
-          middle_contract_with_pseudorank(1.0, An, a, 0.0, contract_tensor);
+          middle_contract_with_pseudorank(this->one, An, a, this->zero, contract_tensor);
           An = contract_tensor;
         }
 
@@ -318,7 +321,7 @@ namespace btas{
         contract_tensor.fill(0.0);
 
         const auto &a = transformed_A[(last_dim ? 1 : 0)];
-        front_contract(1.0, An, a, 0.0, contract_tensor);
+        front_contract(this->one, An, a, this->zero, contract_tensor);
 
         An = contract_tensor;
       }
@@ -333,7 +336,7 @@ namespace btas{
       // need to reverse tucker transformation of that mode.
       {
         Tensor temp;
-        contract(1.0, tucker_factors[n], {1,2}, An, {1,3}, 0.0, temp, {2,3});
+        contract(this->one, tucker_factors[n], {1, 2}, An, {1, 3}, this->zero, temp, {2, 3});
         An = temp;
       }
       // multiply resulting matrix An by pseudoinverse to calculate optimized
@@ -464,7 +467,7 @@ namespace btas{
         contract(1.0, *ptr_A, {1, 2}, *ptr_A, {1, 3}, 0.0, *ptr_AtA, {2, 3});
         Tensor trans;
         *ptr_tran = Tensor();
-        contract(1.0, *ptr_T, {1,2}, *ptr_A, {2,3}, 0.0, *ptr_tran, {1,3});
+        contract(1.0, *ptr_T, {1, 2}, *ptr_A, {2, 3}, 0.0, *ptr_tran, {1, 3});
       }
 
       helper = RALSHelper<Tensor>(A);
@@ -487,8 +490,8 @@ namespace btas{
           this->s = helper(i, ai);
           // recompute lambda
           lambda[i] = (lambda[i] * (this->s * this->s) / (s0 * s0)) * alpha + (1 - alpha) * lambda[i];
-          contract(1.0, tucker_factors[i], {1,2}, ai, {2,3},0.0, transformed_A[i], {1,3});
-          contract(1.0, ai, {1,2}, ai, {1,3}, 0.0, AtA[i], {2,3});
+          contract(1.0, tucker_factors[i], {1, 2}, ai, {2, 3}, 0.0, transformed_A[i], {1, 3});
+          contract(1.0, ai, {1, 2}, ai, {1, 3}, 0.0, AtA[i], {2, 3});
         }
         is_converged = converge_test(A);
       }

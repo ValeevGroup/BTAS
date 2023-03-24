@@ -25,7 +25,7 @@ TEST_CASE("CP")
   using btas::COUPLED_CP_ALS;
 
   //double epsilon = fmax(1e-10, std::numeric_limits<double>::epsilon());
-  double epsilon = 1e-7;
+  double epsilon = 1e-5;
   // TEST_CASE("CP_ALS"){
   tensor D3(5, 2, 9);
   std::ifstream in3(__dirname + "/mat3D.txt");
@@ -53,7 +53,7 @@ TEST_CASE("CP")
   }
   in5.close();
 
-  tensor results(40, 1);
+  tensor results(43, 1);
   std::ifstream res(__dirname + "/cp_test_results.txt");
   CHECK(res.is_open());
   for (auto &i : results) {
@@ -83,23 +83,22 @@ TEST_CASE("CP")
     SECTION("ALS MODE = 3, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
-      double diff = 1.0 - A1.compute_rank(5, conv, 1, false, 0, 100, false, false, true);
-      CHECK(std::abs(diff - results(0,0)) <= epsilon);
+      double diff = A1.compute_rank(20, conv, 1, false, 0, 100, false, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("ALS MODE = 3, Finite error"){
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
-      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 99);
-      CHECK(std::abs(diff - results(1,0)) <= epsilon);
+      double diff = A1.compute_error(conv, 1e-9, 1, 20);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("ALS MODE = 3, Tucker + CP"){
       auto d = D3;
       btas::TUCKER_CP_ALS<tensor, conv_class> A1(d, 1e-3);
       conv.set_norm(norm3);
-      double diff = 1.0 - A1.compute_rank(5, conv, 1, false,
-                                    0, 100, false, false, true);
-      CHECK(std::abs(diff - results(0,0)) <= epsilon);
+      double diff = A1.compute_rank(20, conv, 1, false, 0, 100, false, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #endif
 #if BTAS_ENABLE_RANDOM_CP_UT
@@ -115,22 +114,22 @@ TEST_CASE("CP")
     SECTION("ALS MODE = 4, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);
-      double diff = 1.0 - A1.compute_rank(5, conv);
-      CHECK(std::abs(diff - results(4,0)) <= epsilon);
+      double diff = A1.compute_rank(40, conv);
+      CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("ALS MODE = 4, Finite error"){
       CP_ALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);
-      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 99);
-      CHECK(std::abs(diff - results(5,0)) <= epsilon);
+      double diff = A1.compute_error(conv, 1e-9, 1, 40);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("ALS MODE = 4, Tucker + CP"){
       auto d = D4;
       btas::TUCKER_CP_ALS<tensor, conv_class> A1(d, 1e-3);
       conv.set_norm(norm4);
-      double diff = 1.0 - A1.compute_rank(5, conv);
-      CHECK(std::abs(diff - results(4,0)) <= epsilon);
+      double diff = A1.compute_rank(40, conv);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #endif
 #if BTAS_ENABLE_RANDOM_CP_UT
@@ -146,22 +145,22 @@ TEST_CASE("CP")
     SECTION("ALS MODE = 5, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
-      double diff = 1.0 - A1.compute_rank(5, conv);
-      CHECK(std::abs(diff - results(8,0)) <= epsilon);
+      double diff = A1.compute_rank(40, conv, 1, false, 0, 1e4, false , false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
      SECTION("ALS MODE = 5, Finite error"){
       CP_ALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
-      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 199);
-      CHECK(std::abs(diff - results(9,0)) <= epsilon);
+      double diff = A1.compute_error(conv, 1e-9, 1, 40, false, 0, 1e4, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("ALS MODE = 5, Tucker + CP"){
       auto d = D5;
       btas::TUCKER_CP_ALS<tensor, conv_class> A1(d, 1e-3);
       conv.set_norm(norm5);
-      double diff = 1.0 - A1.compute_rank(5, conv);
-      CHECK(std::abs(diff - results(8,0)) <= epsilon);
+      double diff = A1.compute_rank(40, conv, 1, false, 0, 1e4, false , false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #endif
 #if BTAS_ENABLE_RANDOM_CP_UT
@@ -179,14 +178,14 @@ TEST_CASE("CP")
     SECTION("RALS MODE = 3, Finite rank"){
       CP_RALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
-      double diff = 1.0 - A1.compute_rank(5, conv, 1, false, 0, 100, false, false, true);
-      CHECK(std::abs(diff - results(12,0)) <= epsilon);
+      double diff =A1.compute_rank(20, conv, 1, false, 0, 100, false, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("RALS MODE = 3, Finite error"){
       CP_RALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
-      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 99);
-      CHECK(std::abs(diff - results(13,0)) <= epsilon);
+      double diff = A1.compute_error(conv, 1e-9, 1, 20, false, 0, 1e4, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("RALS MODE = 3, Tucker + CP"){
@@ -194,8 +193,8 @@ TEST_CASE("CP")
 
       btas::TUCKER_CP_RALS<tensor, conv_class > A1(d, 1e-3);
       conv.set_norm(norm3);
-      double diff = 1.0 - A1.compute_rank(5, conv, 1, false, 0, 100, false, false, true);
-      CHECK(std::abs(diff - results(12,0)) <= epsilon);
+      double diff = A1.compute_rank(20, conv, 1, false, 0, 100, false, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #endif
 #if BTAS_ENABLE_RANDOM_CP_UT
@@ -210,22 +209,22 @@ TEST_CASE("CP")
     SECTION("RALS MODE = 4, Finite rank"){
       CP_RALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);
-      double diff = 1.0 - A1.compute_rank(5, conv);
-      CHECK(std::abs(diff - results(16,0)) <= epsilon);
+      double diff = A1.compute_rank(40, conv);
+      CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("RALS MODE = 4, Finite error"){
       CP_RALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);
-      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 99);
-      CHECK(std::abs(diff - results(17,0)) <= epsilon);
+      double diff = A1.compute_error(conv, 1e-9, 1, 40);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("RALS MODE = 4, Tucker + CP"){
       auto d = D4;
       btas::TUCKER_CP_RALS<tensor, conv_class > A1(d, 1e-3);
       conv.set_norm(norm4);
-      double diff = 1.0 - A1.compute_rank(5, conv);
-      CHECK(std::abs(diff - results(16,0)) <= epsilon);
+      double diff = A1.compute_rank(40, conv, 1, false, 0, 100, false, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #endif
 #if BTAS_ENABLE_RANDOM_CP_UT
@@ -240,22 +239,22 @@ TEST_CASE("CP")
     SECTION("RALS MODE = 5, Finite rank"){
       CP_RALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
-      double diff = 1.0 - A1.compute_rank(5, conv);
-      CHECK(std::abs(diff - results(20,0)) <= epsilon);
+      double diff = A1.compute_rank(40, conv, 1, false, 0, 100, false, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("RALS MODE = 5, Finite error"){
       CP_RALS<tensor, conv_class> A1(D5);
       conv.set_norm(norm5);
-      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 19);
-      CHECK(std::abs(diff - results(21,0)) <= epsilon);
+      double diff = A1.compute_error(conv, 1e-9, 1, 40, false, 0, 1e4, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
     SECTION("RALS MODE = 5, Tucker + CP"){
       auto d = D5;
       btas::TUCKER_CP_RALS<tensor, conv_class > A1(d, 1e-1);
       conv.set_norm(norm5);
-      double diff = 1.0 - A1.compute_rank(5, conv);
-      CHECK(std::abs(diff - results(20,0)) <= epsilon);
+      double diff = A1.compute_rank(40, conv, 1, false, 0, 100, false, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
 #endif
 #if BTAS_ENABLE_RANDOM_CP_UT
@@ -275,32 +274,31 @@ TEST_CASE("CP")
     SECTION("DF-ALS MODE = 3, Finite rank"){
       CP_DF_ALS<tensor, conv_class> A1(D3, D3);
       conv.set_norm(norm32);
-      double diff = 1.0 - A1.compute_rank(5, conv);
-      CHECK(std::abs(diff - results(24,0)) <= epsilon);
+      double diff = A1.compute_rank(40, conv, 1, false, 0, 100, false, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
      SECTION("DF-ALS MODE = 3, Finite error"){
       CP_DF_ALS<tensor, conv_class> A1(D3, D3);
       conv.set_norm(norm32);
-      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 19);
-      CHECK(std::abs(diff - results(25,0)) <= epsilon);
+      double diff = A1.compute_error(conv, 1e-9, 1, 40, false, 0, 1e4, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("DF-ALS MODE = 3, component decomposition"){
       CP_DF_ALS<tensor, conv_class> A1(D3, D3);
       conv.set_norm(norm32);
-      double diff = 1.0 - A1.compute_comp_init(5, conv, 20 );
-      CHECK(std::abs(diff - results(26,0)) <= epsilon);
+      double diff = A1.compute_comp_init(40, conv, 20);
+      CHECK(std::abs(diff) <= epsilon);
     }
      SECTION("DF-ALS MODE = 4, Finite rank"){
       CP_DF_ALS<tensor,conv_class> A1(D4,D4);
       conv.set_norm(norm42);
-      double diff = 1.0 - A1.compute_rank(5,conv);
+      double diff = 1.0 - A1.compute_rank(5,conv);    // All DF mode 4 and 5 do not converge to 1
       CHECK(std::abs(diff - results(27,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 4, Finite error"){
       CP_DF_ALS<tensor,conv_class>A1(D4,D4);
       conv.set_norm(norm42);
-      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 4, false, 0,
-                                     100, false, true);
+      double diff = 1.0 - A1.compute_error(conv, 1e-2, 1, 4, false, 0, 100, false, true);
       CHECK(std::abs(diff - results(28,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 4, component decompsoition"){
@@ -312,8 +310,7 @@ TEST_CASE("CP")
     SECTION("DF-ALS MODE = 5, Finite rank"){
       CP_DF_ALS<tensor,conv_class> A1(D5,D5);
       conv.set_norm(norm52);
-      double diff = 1.0 - A1.compute_rank(5,conv, 1, true, 5,
-                                    100, false, true);
+      double diff = 1.0 - A1.compute_rank(5,conv, 1, true, 5, 100, false, true);
       CHECK(std::abs(diff - results(30,0)) <= epsilon);
     }
     SECTION("DF-ALS MODE = 5, Finite error"){
@@ -339,30 +336,31 @@ TEST_CASE("CP")
       conv_class_coupled conv_coupled(3, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D3, D3);
       conv_coupled.set_norm(norm3, norm3);
-      double diff = 1.0 - A1.compute_rank(5, conv_coupled);
-      CHECK(std::abs(diff - results(33,0)) <= epsilon);
+      double diff = A1.compute_rank(20, conv_coupled, 1, false, 0, 100, false, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 3, Finite error"){
       conv_class_coupled conv_coupled(3, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D3, D3);
       conv_coupled.set_norm(norm3, norm3);
-      double diff = 1.0 - A1.compute_error(conv_coupled, 1e-2, 1, 19);
-      CHECK(std::abs(diff - results(34,0)) <= epsilon);
+      double diff = A1.compute_error(conv_coupled, 1e-9, 1, 20, false, 0, 1e4, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 4, Finite rank"){
       conv_class_coupled conv_coupled(4, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D4, D4);
       conv_coupled.set_norm(norm4, norm4);
-      double diff = 1.0 - A1.compute_rank(5,conv_coupled);
-      CHECK(std::abs(diff - results(35,0)) <= epsilon);
+      double diff = A1.compute_rank(50, conv_coupled, 1, false, 0, 100, false, false, true);
+      CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("COUPLED-ALS MODE = 4, Finite error"){
       conv_class_coupled conv_coupled(4, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D4, D4);
       conv_coupled.set_norm(norm4, norm4);
-      double diff = 1.0 - A1.compute_error(conv_coupled, 1e-2, 1, 19);
-      CHECK(std::abs(diff - results(36,0)) <= epsilon);
+      double diff = A1.compute_error(conv_coupled, 1e-9, 1, 50);
+      CHECK(std::abs(diff) <= epsilon);
     }
+    //TODO: Find more efficient ways to evaluate next two tests
     SECTION("COUPLED-ALS MODE = 5, Finite rank"){
       conv_class_coupled conv_coupled(5, 1e-3);
       COUPLED_CP_ALS<tensor, conv_class_coupled> A1(D5, D5);

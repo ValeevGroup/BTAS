@@ -27,6 +27,7 @@ namespace btas {
   void make_tucker_factors(Tensor& A, double epsilon_svd,
                            std::vector<Tensor> &transforms, bool compute_core = false){
     using ind_t = typename Tensor::range_type::index_type::value_type;
+    using dtype = typename Tensor::numeric_type;
     auto ndim = A.rank();
     transforms.clear();
     transforms.reserve(ndim);
@@ -91,14 +92,18 @@ namespace btas {
   /// truncation value for the Truncated Tucker-SVD decomposition
   ///  \param[in, out] transforms In: An empty vector.  Out: The Tucker factor matrices.
   template<typename Tensor>
-  void sequential_tucker(Tensor& A, double epsilon_svd,
-                           std::vector<Tensor> &transforms){
+  void sequential_tucker(Tensor& A, double epsilon_svd, std::vector<Tensor> &transforms){
     using ind_t = typename Tensor::range_type::index_type::value_type;
+    using T = typename Tensor::numeric_type;
+    using RT = real_type_t<T>;
+    using RTensor = rebind_tensor_t<Tensor, RT>;
     auto ndim = A.rank();
+    T one {1.0};
+    T zero {0.0};
     transforms.clear();
     transforms.reserve(ndim);
 
-    double norm2 = dot(A,A);
+    double norm2 = std::abs(dot(A,A));
     auto threshold = epsilon_svd * epsilon_svd * norm2 / ndim;
     std::vector<size_t> left_modes, right_modes, final, core;
     final.push_back(0); final.emplace_back(ndim);
@@ -117,17 +122,16 @@ namespace btas {
       // decomposition, i.e. HOSVD)
       // Because of later algorithm, mode of interest is always the 0th mode of the tensor
       Tensor AAt;
-      contract(1.0, A, left_modes, A, right_modes, 0.0, AAt, final);
+      contract(one , A, left_modes, A.conj(), right_modes, zero, AAt, final);
 
       // compute the eigenvalue decomposition of each mode of A
       ind_t r = AAt.extent(0);
-      Tensor lambda(r); lambda.fill(0.0);
-      auto info = hereig(blas::Layout::ColMajor, lapack::Job::Vec,
-                         lapack::Uplo::Lower, r, AAt.data(), r, lambda.data());
+      RTensor lambda(r); lambda.fill(0.0);
+      auto info = hereig(blas::Layout::ColMajor, lapack::Job::Vec, lapack::Uplo::Lower, r, AAt.data(), r, lambda.data());
       if (info) BTAS_EXCEPTION("Error in computing the tucker SVD");
 
       // Find how many significant vectors are in this transformation
-      ind_t rank = 0,  zero = 0;
+      ind_t rank = 0,  zero_ind = 0;
       for(auto & eig : lambda){
         if(eig < threshold) ++rank;
       }
@@ -135,18 +139,18 @@ namespace btas {
       // Truncate the column space of the unitary factor matrix.
       ind_t kept_evals = r - rank;
       if(kept_evals == 0) BTAS_EXCEPTION("Tucker decomposition failed. Tucker transformation rank = 0");
-      lambda = Tensor(kept_evals, r);
-      auto lower_bound = {rank, zero};
+      Tensor lambda_ (kept_evals, r);
+      auto lower_bound = {rank, zero_ind};
       auto upper_bound = {r, r};
       auto view = btas::make_view(AAt.range().slice(lower_bound, upper_bound), AAt.storage());
-      std::copy(view.begin(), view.end(), lambda.begin());
+      std::copy(view.begin(), view.end(), lambda_.begin());
 
       // Push the factor matrix back as a transformation.
-      transforms.emplace_back(lambda);
+      transforms.emplace_back(lambda_);
 
       // Now use lambda to move reference tensor to the core tensor space
       AAt = Tensor();
-      contract(1.0, A, right_modes, lambda, final, 0.0, AAt, core);
+      contract(one, A, right_modes, lambda_.conj(), final, zero , AAt, core);
       A = AAt;
     }
 

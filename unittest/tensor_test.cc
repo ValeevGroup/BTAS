@@ -1,7 +1,6 @@
 #include "btas/tensor.h"
 #include <btas/btas.h>
 #include <btas/tarray.h>
-#include <random>
 #include "btas/tarray.h"
 #include "btas/tensorview.h"
 #include "test.h"
@@ -29,8 +28,8 @@ using namespace btas;
 using namespace std;
 
 double static rng() {
-  static std::mt19937 rng(std::time(NULL));
-  static auto dist = std::uniform_real_distribution<double>{0., 1.};
+  static boost::random::mt19937 rng(random_seed_accessor());
+  static auto dist = boost::random::uniform_real_distribution<double>{0., 1.};
   return dist(rng);
 }
 
@@ -58,8 +57,8 @@ void static fillEls(DTensor& T) {
 
 template <typename T>
 T randomReal() {
-  static std::mt19937 rng(std::time(NULL));
-  static auto dist = std::uniform_real_distribution<T>{0., 1.};
+  static boost::random::mt19937 rng(random_seed_accessor());
+  static auto dist = boost::random::uniform_real_distribution<T>{0., 1.};
   return dist(rng);
 }
 

@@ -61,15 +61,13 @@ namespace btas {
     }
 
     template <typename Tensor>
-    void get_fit(FitCheck<Tensor> &t, double &epsilon,
-                 bool max_iter = false) {
+    void get_fit(FitCheck<Tensor> &t, double &epsilon, bool max_iter = false) {
       epsilon = t.get_fit(max_iter);
       return;
     }
 
     template <typename Tensor>
-    void get_fit(CoupledFitCheck<Tensor> &t, double &epsilon,
-                 bool max_iter = false) {
+    void get_fit(CoupledFitCheck<Tensor> &t, double &epsilon, bool max_iter = false) {
       epsilon = t.get_fit(max_iter);
       return;
     }
@@ -117,10 +115,12 @@ namespace btas {
                                         // CP factor matrices
     \endcode
   */
+
   template <typename Tensor, class ConvClass>
   class CP {
    public:
     using ind_t = typename Tensor::range_type::index_type::value_type;
+    using dtype = typename Tensor::numeric_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
 
     /// Create a generic CP object that stores the factor matrices,
@@ -148,13 +148,11 @@ namespace btas {
     /// \param[in] SVD_rank if \c
     /// SVD_initial_guess is true specify the rank of the initial guess such that
     /// SVD_rank <= rank. default = 0
-    /// \param[in]
-    /// max_als Max number of iterations allowed to converge the ALS approximation default = 1e4
+    /// \param[in] max_als Max number of iterations allowed to converge the ALS approximation default = 1e4
     /// \param[in] fast_pI Should the pseudo inverse be computed using a fast cholesky decomposition
     /// default = true
-    /// \param[in]
-    /// calculate_epsilon Should the 2-norm error be calculated \f$ ||T_{\rm exact} -
-    /// T_{\rm approx}|| = \epsilon. \f$ Default = false.
+    /// \param[in] calculate_epsilon Should the 2-norm error be calculated
+    /// \f$ ||T_{\rm exact} - T_{\rm approx}|| = \epsilon. \f$ Default = false.
     /// \param[in] direct Should the CP decomposition be computed without
     /// calculating the Khatri-Rao product? Default = true.
     /// \return  if ConvClass = FitCheck, returns the fit as defined by fitcheck
@@ -389,6 +387,8 @@ namespace btas {
     size_t ndim;                     // Modes in the reference tensor
     std::vector<size_t> symmetries;  // Symmetries of the reference tensor
     double s = 0;          // this is a variable for rals;
+    dtype one {1.0};
+    dtype zero {0.0};
 
     /// Virtual function. Solver classes should implement a build function to
     /// generate factor matrices then compute the CP decomposition
@@ -448,7 +448,7 @@ namespace btas {
         Tensor lhs_prod(rank, rank);
         for (size_t i = 0; i < ndim; ++i) {
           if (i != n) {
-            gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i], A[i], 0.0, lhs_prod);
+            gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, A[i].conj(), A[i], 0.0, lhs_prod);
             const auto *lhs_ptr = lhs_prod.data();
             for (ord_t j = 0; j < rank2; j++) *(V_ptr + j) *= *(lhs_ptr + j);
           }
@@ -520,13 +520,13 @@ namespace btas {
       auto A_ptr = a.data();
       auto lam_ptr = lambda.data();
       for (ord_t i = 0; i < size; ++i) {
-        *(lam_ptr + i % rank) += *(A_ptr + i) * *(A_ptr + i);
+        *(lam_ptr + i % rank) += *(A_ptr + i) * btas::impl::conj(*(A_ptr + i));
       }
 
       for (ind_t col = 0; col < rank; ++col) {
         auto val = sqrt(*(lam_ptr + col));
         *(lam_ptr + col) = val;
-        val = (val < 1e-12 ? 0 : 1 / val);
+        val = (abs(val) < 1e-12 ? 0.0 : 1.0 / val);
         btas::scal(Nsize, val, (A_ptr + col), rank);
       }
 
@@ -547,13 +547,13 @@ namespace btas {
       auto Mat_ptr = Mat.data();
       auto A_ptr = A[ndim].data();
       for (ord_t i = 0; i < size; ++i) {
-        *(A_ptr + i % rank) += *(Mat_ptr + i) * *(Mat_ptr + i);
+        *(A_ptr + i % rank) += *(Mat_ptr + i) * btas::impl::conj(*(Mat_ptr + i));
       }
 
       for (ind_t i = 0; i < rank; ++i) {
         auto val = sqrt(*(A_ptr + i));
         *(A_ptr + i) = val;
-        val = (val < 1e-12 ? 0.0 : 1 / val);
+        val = (abs(val) < 1e-12 ? 0.0 : 1.0 / val);
         btas::scal(Nsize, val, (Mat_ptr + i), rank);
       }
     }
@@ -561,7 +561,7 @@ namespace btas {
     /// \param[in] Mat Calculates the 2-norm of the matrix mat
     /// \return the 2-norm.
 
-    double norm(const Tensor &Mat) { return sqrt(dot(Mat, Mat)); }
+    auto norm(const Tensor &Mat) { return sqrt(abs(dot(Mat, Mat))); }
 
     /// SVD referencing code from
     /// http://www.netlib.org/lapack/explore-html/de/ddd/lapacke_8h_af31b3cb47f7cc3b9f6541303a2968c9f.html

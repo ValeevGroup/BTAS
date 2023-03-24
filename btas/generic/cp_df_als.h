@@ -91,6 +91,10 @@ namespace btas {
     using typename CP<Tensor, ConvClass>::ind_t;
     using typename CP<Tensor, ConvClass>::ord_t;
 
+    using T = typename Tensor::value_type;
+    using RT = real_type_t<T>;
+    using RTensor = rebind_tensor_t<Tensor, RT>;
+
     /// Create a CP DF ALS object, child class of the CP object
     /// that stores the reference tensors.
     /// Reference tensor has no symmetries.
@@ -207,8 +211,8 @@ namespace btas {
             {
               auto lower_new = {zero, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(random_seed_accessor());
-              std::uniform_real_distribution<> distribution(-1.0, 1.0);
+              boost::random::mt19937 generator(random_seed_accessor());
+              boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
               for (auto iter = new_view.begin(); iter != new_view.end(); ++iter) {
                 *(iter) = distribution(generator);
               }
@@ -255,7 +259,7 @@ namespace btas {
     /// else if calculate_epsilon = true, returns 2-norm error between exact and approximate tensor
     /// else return -1
     double compute_comp_init(ind_t rank_cp3, ConvClass converge_test, size_t max_als = 1e4, bool fast_pI = true,
-                            bool calculate_epsilon = false, bool direct = true, double cp_comp_prec = 1e-2, ind_t rank_cp4 = 0,
+                             bool calculate_epsilon = false, bool direct = true, double cp_comp_prec = 1e-2, ind_t rank_cp4 = 0,
                              bool verbose = false) {
       rank_cp4 = (rank_cp4 == 0 ? rank_cp3 : rank_cp4);
       double epsilon = 0.0;
@@ -297,8 +301,8 @@ namespace btas {
         }
       } else{
         // fill the factors with random numbers
-        std::mt19937 generator(random_seed_accessor());
-        std::uniform_real_distribution<> distribution(-1.0, 1.0);
+        boost::random::mt19937 generator(random_seed_accessor());
+        boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
         for (size_t i = 1; i < ndimL; ++i) {
           auto &tensor_ref = tensor_ref_left;
           Tensor a(tensor_ref.extent(i), rank_cp4);
@@ -368,7 +372,7 @@ namespace btas {
           }
         }
       }
-      
+
       ALS(rank_cp4, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
 
       detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
@@ -445,11 +449,7 @@ namespace btas {
               } else {
                 a = Tensor(Range{tensor_ref_right.range().range(j - ndimL + 2), Range1{rank_new}});
               }
-              std::mt19937 generator(random_seed_accessor());
-              std::uniform_real_distribution<> distribution(-1.0, 1.0);
-              for(auto iter = a.begin(); iter != a.end(); ++iter) {
-                *(iter) = distribution(generator);
-              }
+              fill_random(a);
               A.push_back(a);
               normCol(j);
             }
@@ -473,11 +473,7 @@ namespace btas {
               {
                 auto lower_new = {zero, rank_old}, upper_new = {row_extent, rank_new};
                 auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-                std::mt19937 generator(random_seed_accessor());
-                std::uniform_real_distribution<> distribution(-1.0, 1.0);
-                for (auto iter = new_view.begin(); iter != new_view.end(); ++iter) {
-                  *(iter) = distribution(generator);
-                }
+                fill_random(new_view);
               }
 
               A.erase(A.begin());
@@ -538,7 +534,8 @@ namespace btas {
         right_modes[0] = ndimR;
         result_modes.push_back(0);
         result_modes.push_back(ndimR);
-        contract(1.0, tensor_ref_right, left_modes, tensor_ref_right, right_modes, 0.0, XXp, result_modes);
+        contract(this->one, tensor_ref_right, left_modes, tensor_ref_right.conj(), right_modes, this->zero, XXp,
+                 result_modes);
         left_modes.clear(); right_modes.clear();
         for (size_t i = 0; i < ndimL; i++) {
           left_modes.push_back(i);
@@ -546,7 +543,7 @@ namespace btas {
         }
         right_modes[0] = ndim + 3;
         result_modes[1] = ndim + 3;
-        contract(1.0, XXp, result_modes, tensor_ref_left, left_modes, 0.0, contracted, right_modes);
+        contract(this->one, XXp, result_modes, tensor_ref_left, left_modes, this->zero, contracted, right_modes);
         right_modes[0] = 0;
       }
 
@@ -557,27 +554,27 @@ namespace btas {
           Tensor tucker;
           *(ptrr) = ndim + 3;
           *(ptrf) = i;
-          contract(1.0, contracted, left_modes, tensor_ref_left, right_modes, 0.0, tucker, result_modes);
+          contract(this->one, contracted, left_modes, tensor_ref_left.conj(), right_modes, this->zero, tucker,
+                   result_modes);
           *(ptrr) = i;
 
           auto R = tucker.extent(0);
-          Tensor lambda(R);
+          RTensor lambda(R);
           // Find the Singular vectors of the matrix using eigenvalue decomposition
           eigenvalue_decomp(tucker, lambda);
 
           // Fill a factor matrix with the singular vectors with the largest corresponding singular
           // values
-          lambda = Tensor(R, SVD_rank);
-          lambda.fill(0.0);
+          Tensor lambda_ (R, SVD_rank);
+          lambda_.fill(this->zero);
           auto lower_bound = {0, 0};
           auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
           auto view = make_view(tucker.range().slice(lower_bound, upper_bound), tucker.storage());
-          auto l_iter = lambda.begin();
+          auto l_iter = lambda_.begin();
           for (auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter) {
             *(l_iter) = *(iter);
           }
-
-          A.push_back(lambda);
+          A.push_back(lambda_);
         }
       }
 
@@ -586,7 +583,8 @@ namespace btas {
       {
         right_modes[0] = ndim + 3;
         result_modes[0] = 0;
-        contract(1.0, tensor_ref_left, left_modes, tensor_ref_left, right_modes, 0.0, XXp, result_modes);
+        contract(this->one, tensor_ref_left, left_modes, tensor_ref_left.conj(), right_modes, this->zero, XXp,
+                 result_modes);
         left_modes.clear(); right_modes.clear();
         for (size_t i = 0; i < ndimR; ++i) {
           left_modes.push_back(i);
@@ -596,7 +594,7 @@ namespace btas {
         right_modes[0] = ndim + 3;
         result_modes[1] = ndim + 3;
         contracted = Tensor();
-        contract(1.0, XXp, result_modes, tensor_ref_right, left_modes, 0.0, contracted, right_modes);
+        contract(this->one, XXp, result_modes, tensor_ref_right, left_modes, this->zero, contracted, right_modes);
         right_modes[0] = 0;
 
         auto ptrr = right_modes.begin() + 1, ptrf = result_modes.begin();
@@ -604,41 +602,38 @@ namespace btas {
           Tensor tucker;
           *(ptrr) = ndim + 3;
           *(ptrf) = i;
-          contract(1.0, contracted, left_modes, tensor_ref_right, right_modes, 0.0, tucker, result_modes);
+          contract(this->one, contracted, left_modes, tensor_ref_right.conj(), right_modes, this->zero, tucker,
+                   result_modes);
           *(ptrr) = i;
 
           auto R = tucker.extent(0);
-          Tensor lambda(R);
+          RTensor lambda(R);
           // Find the Singular vectors of the matrix using eigenvalue decomposition
           eigenvalue_decomp(tucker, lambda);
 
           // Fill a factor matrix with the singular vectors with the largest corresponding singular
           // values
-          lambda = Tensor(R, SVD_rank);
-          lambda.fill(0.0);
+          Tensor lambda_(R, SVD_rank);
+          lambda_.fill(this->zero);
           auto lower_bound = {0, 0};
           auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
           auto view = make_view(tucker.range().slice(lower_bound, upper_bound), tucker.storage());
-          auto l_iter = lambda.begin();
+          auto l_iter = lambda_.begin();
           for (auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter) {
             *(l_iter) = *(iter);
           }
 
-          A.push_back(lambda);
+          A.push_back(lambda_);
         }
       }
 
-      std::mt19937 generator(random_seed_accessor());
-      std::uniform_real_distribution<> distribution(-1.0, 1.0);
       // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
       for (auto &i : modes_w_dim_LT_svd) {
         ind_t R = A[i].extent(0), zero = 0;
         auto lower_bound = {zero, R};
         auto upper_bound = {R, SVD_rank};
         auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
-        for (auto iter = view.begin(); iter != view.end(); ++iter) {
-          *(iter) = distribution(generator);
-        }
+        fill_random(view);
       }
 
       // Normalize the columns of the factor matrices and
@@ -672,8 +667,8 @@ namespace btas {
     /// return if \c fast_pI was successful
     void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
                       double &epsilon, bool &fast_pI) override {
-      std::mt19937 generator(random_seed_accessor());
-      std::uniform_real_distribution<> distribution(-1.0, 1.0);
+      boost::random::mt19937 generator(random_seed_accessor());
+      boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
       for (size_t i = 1; i < ndimL; ++i) {
         auto &tensor_ref = tensor_ref_left;
         Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
@@ -811,7 +806,8 @@ namespace btas {
           tensor_ref.resize(Range{Range1{sizeCurr / contract_size}, Range1{contract_size}});
 
           // Contract out the last dimension
-          gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, tensor_ref, A[contract_dim_inter], 0.0, contract_tensor);
+          gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, tensor_ref.conj(), A[contract_dim_inter].conj(), 0.0,
+               contract_tensor);
           // Resize tensor_ref back to original size
           tensor_ref.resize(R);
 
@@ -831,7 +827,7 @@ namespace btas {
             Tensor temp(idx1, rank);
             temp.fill(0.0);
 
-            const auto &a = A[contract_dim_inter];
+            const auto &a = A[contract_dim_inter].conj();
             ord_t j_times_rank = 0, j_times_cont_rank = 0;
             for (ind_t j = 0; j < idx1; ++j, j_times_rank += rank) {
               auto *temp_ptr = temp.data() + j_times_rank;
@@ -899,9 +895,9 @@ namespace btas {
         LH_size /= contract_size;
         contract_tensor.resize(Range{Range1{LH_size}, Range1{contract_size}, Range1{pseudo_rank}});
         Tensor temp(Range{Range1{LH_size}, Range1{pseudo_rank}});
-        const auto &a = A[a_dim];
+        const auto &a = A[a_dim].conj();
 
-        temp.fill(0.0);
+        temp.fill(this->zero);
 
         // If the middle dimension is the mode not being contracted, I will move
         // it to the right hand side temp((size of tensor_ref/product of
@@ -963,8 +959,8 @@ namespace btas {
         ind_t contract_size = contract_tensor.extent(0);
         Tensor temp(Range{Range1{offset}, Range1{rank}});
         contract_tensor.resize(Range{Range1{contract_size}, Range1{offset}, Range1{rank}});
-        temp.fill(0.0);
-        const auto &a = A[a_dim];
+        temp.fill(this->zero);
+        const auto &a = A[a_dim].conj();
         ord_t i_times_rank = 0, i_times_off_rank = 0;
         for (ind_t i = 0; i < contract_size; i++, i_times_rank += rank) {
           const auto *A_ptr = a.data() + i_times_rank;
@@ -990,7 +986,6 @@ namespace btas {
       // t2 = std::chrono::high_resolution_clock::now();
       // time = t2 - t1;
       // gemm_wPI += time.count();
-
       // Normalize the columns of the new factor matrix and update
       normCol(contract_tensor);
       A[n] = contract_tensor;

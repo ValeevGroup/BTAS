@@ -245,9 +245,8 @@ namespace btas{
           }
         }
 
-        //srand(3);
-        std::mt19937 generator(random_seed_accessor());
-        std::uniform_real_distribution<> distribution(-1.0, 1.0);
+        boost::random::mt19937 generator(random_seed_accessor());
+        boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
         for(auto& i: modes_w_dim_LT_svd) {
           size_t dim = i < ndimL ? i : i - ndimL + 1;
@@ -284,7 +283,7 @@ namespace btas{
           auto &tensor_ref = left ? tensor_ref_left : tensor_ref_right;
           if (i == 0) {
             Tensor a(Range{tensor_ref.range().range((left ? j : j - ndimL + 1)), Range1{rank_new}});
-            a.fill(rand());
+            fill_random(a);
             A.push_back(a);
             this->normCol(j);
           }
@@ -308,8 +307,8 @@ namespace btas{
             {
               auto lower_new = {zero, rank_old}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(random_seed_accessor());
-              std::uniform_real_distribution<> distribution(-1.0, 1.0);
+              boost::random::mt19937 generator(random_seed_accessor());
+              boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
               for(auto iter = new_view.begin(); iter != new_view.end(); ++iter){
                 *(iter) = distribution(generator);
               }

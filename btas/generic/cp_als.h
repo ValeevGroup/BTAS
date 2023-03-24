@@ -81,6 +81,10 @@ namespace btas {
   template <typename Tensor, class ConvClass = NormCheck<Tensor> >
   class CP_ALS : public CP<Tensor, ConvClass> {
    public:
+    using T = typename Tensor::value_type;
+    using RT = real_type_t<T>;
+    using RTensor = rebind_tensor_t<Tensor, RT>;
+
     using CP<Tensor, ConvClass>::A;
     using CP<Tensor, ConvClass>::ndim;
     using CP<Tensor, ConvClass>::symmetries;
@@ -188,11 +192,7 @@ namespace btas {
             {
               auto lower_new = {zero, rank}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(random_seed_accessor());
-              std::uniform_real_distribution<> distribution(-1.0, 1.0);
-              for (auto iter = new_view.begin(); iter != new_view.end(); ++iter) {
-                *(iter) = distribution(generator);
-              }
+              fill_random(new_view);
             }
 
             A.erase(A.begin());
@@ -399,41 +399,36 @@ namespace btas {
           auto tmp = symmetries[i];
           if (tmp != i) continue;
           ind_t R = tensor_ref.extent(i);
-          Tensor S(R, R), lambda(R);
+          Tensor S(R, R);
+          RTensor lambda(R);
 
           // Contract reference tensor to make it square matrix of mode i
-          gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i), 0.0, S);
+          gemm(blas::Op::NoTrans, blas::Op::Trans, 1.0, flatten(tensor_ref, i), flatten(tensor_ref, i).conj(), 0.0, S);
 
           // Find the Singular vectors of the matrix using eigenvalue decomposition
           eigenvalue_decomp(S, lambda);
 
           // Fill a factor matrix with the singular vectors with the largest corresponding singular
           // values
-          lambda = Tensor(R, SVD_rank);
-          lambda.fill(0.0);
+          Tensor lambda_(R,SVD_rank);
+          lambda_.fill(0.0);
           auto lower_bound = {0, 0};
           auto upper_bound = {R, ((R > SVD_rank) ? SVD_rank : R)};
           auto view = make_view(S.range().slice(lower_bound, upper_bound), S.storage());
-          auto l_iter = lambda.begin();
+          auto l_iter = lambda_.begin();
           for (auto iter = view.begin(); iter != view.end(); ++iter, ++l_iter) {
             *(l_iter) = *(iter);
           }
-
-          A[i] = lambda;
+          A[i] = lambda_;
         }
 
-        // srand(3);
-        std::mt19937 generator(random_seed_accessor());
         // Fill the remaining columns in the set of factor matrices with dimension < SVD_rank with random numbers
-        std::uniform_real_distribution<> distribution(-1.0, 1.0);
         for (auto &i : modes_w_dim_LT_svd) {
           ind_t R = tensor_ref.extent(i), zero = 0;
           auto lower_bound = {zero, R};
           auto upper_bound = {R, SVD_rank};
           auto view = make_view(A[i].range().slice(lower_bound, upper_bound), A[i].storage());
-          for (auto iter = view.begin(); iter != view.end(); ++iter) {
-            *(iter) = distribution(generator);
-          }
+          fill_random(view);
         }
 
         // Normalize the columns of the factor matrices and
@@ -464,12 +459,7 @@ namespace btas {
           // and create the weighting vector lambda
           if (i == 0) {
             Tensor a(Range{tensor_ref.range().range(j), Range1{rank_new}});
-            //            std::mt19937 generator(random_seed_accessor());
-            //            std::uniform_real_distribution<> distribution(-1.0, 1.0);
-            //            for(auto iter = a.begin(); iter != a.end(); ++iter) {
-            //              *(iter) = distribution(generator);
-            //            }
-            a.fill(rand());
+            fill_random(a);
             A.push_back(a);
             this->normCol(j);
           }
@@ -493,11 +483,7 @@ namespace btas {
             {
               auto lower_new = {zero, rank_old}, upper_new = {row_extent, rank_new};
               auto new_view = make_view(b.range().slice(lower_new, upper_new), b.storage());
-              std::mt19937 generator(random_seed_accessor());
-              std::uniform_real_distribution<> distribution(-1.0, 1.0);
-              for (auto iter = new_view.begin(); iter != new_view.end(); ++iter) {
-                *(iter) = distribution(generator);
-              }
+              fill_random(new_view);
             }
 
             A.erase(A.begin());
@@ -543,8 +529,8 @@ namespace btas {
     /// return if fast_pI was successful.
     void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
                       double &epsilon, bool &fast_pI) override {
-      std::mt19937 generator(random_seed_accessor());
-      std::uniform_real_distribution<> distribution(-1.0, 1.0);
+      boost::random::mt19937 generator(random_seed_accessor());
+      boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
       if(A.empty()) {
         for (size_t i = 0; i < this->ndim; ++i) {
           // If this mode is symmetric to a previous mode, set it equal to
@@ -619,14 +605,14 @@ namespace btas {
       // forms and stores partial grammian to minimize number of
       // small gemm contractions
       bool is_converged = false;
-      bool matlab = fast_pI;
+      bool matlab = true;
       if(AtA.empty())
         AtA = std::vector<Tensor>(ndim);
       auto ptr_ata = AtA.begin();
       for (size_t i = 0; i < ndim; ++i, ++ptr_ata) {
         auto &a_mat = A[i];
         *ptr_ata = Tensor();
-        contract(1.0, a_mat, {1, 2}, a_mat, {1, 3}, 0.0, *ptr_ata, {2, 3});
+        contract(this->one, a_mat, {1, 2}, a_mat.conj(), {1, 3}, this->zero, *ptr_ata, {2, 3});
       }
       // Until either the initial guess is converged or it runs out of iterations
       // update the factor matrices with or without Khatri-Rao product
@@ -644,7 +630,7 @@ namespace btas {
             update_w_KRP(i, rank, fast_pI, matlab, converge_test);
           }
           auto &ai = A[i];
-          contract(1.0, ai, {1, 2}, ai, {1, 3}, 0.0, AtA[i], {2, 3});
+          contract(this->one, ai, {1, 2}, ai.conj(), {1, 3}, this->zero, AtA[i], {2, 3});
         }
         is_converged = converge_test(A, AtA);
       }while (count < max_als && !is_converged);
@@ -700,7 +686,7 @@ namespace btas {
       }
       KRP_dims.push_back(ndim);
 
-      contract(1.0, tensor_ref, tref_indices, KhatriRao, KRP_dims, 0.0, temp, An_indices);
+      contract(this->one, tensor_ref, tref_indices, KhatriRao, KRP_dims, this->zero, temp, An_indices);
 
       // move the nth mode of the reference tensor back where it belongs
       swap_to_first(tensor_ref, n, true);
@@ -708,8 +694,7 @@ namespace btas {
 #else  // BTAS_HAS_CBLAS
       // without MKL program cannot perform the swapping algorithm, must compute
       // flattened intermediate
-      gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, flatten(tensor_ref, n), this->generate_KRP(n, rank, true), 0.0,
-           temp);
+      gemm(blas::Op::NoTrans, blas::Op::NoTrans, this->one, flatten(tensor_ref, n), this->generate_KRP(n, rank, true), this->zero, temp);
 #endif
 
       if(lambda != 0){
@@ -779,7 +764,7 @@ namespace btas {
                 Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
-      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, 1.0, tensor_ref, A[contract_dim], 0.0,
+      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, this->one , (last_dim? tensor_ref.conj():tensor_ref), A[contract_dim].conj(), this->zero,
            temp);
 
       // Resize tensor_ref
@@ -818,14 +803,14 @@ namespace btas {
         // over the middle dimension and sum over the rank.
 
         else if (contract_dim > n) {
-          middle_contract(1.0, temp, a, 0.0, contract_tensor);
+          middle_contract(this->one, temp, a.conj(), this->zero, contract_tensor);
           temp = contract_tensor;
         }
 
         // If the code has passed the mode of interest, it will contract over
         // the middle dimension and sum over rank * mode n dimension
         else {
-          middle_contract_with_pseudorank(1.0, temp, a, 0.0, contract_tensor);
+          middle_contract_with_pseudorank(this->one, temp, a.conj(), this->zero, contract_tensor);
           temp = contract_tensor;
         }
 
@@ -846,7 +831,7 @@ namespace btas {
         contract_tensor.fill(0.0);
 
         const auto &a = A[(last_dim ? 1 : 0)];
-        front_contract(1.0, temp, a, 0.0, contract_tensor);
+        front_contract(this->one, temp, a.conj(), this->zero, contract_tensor);
 
         temp = contract_tensor;
       }
@@ -891,7 +876,7 @@ namespace btas {
       // replace that contracted mode with the rank
       final_idx.emplace_back(ndim);
 
-      contract(1.0, tensor_ref, tref_idx, A[contract_mode], mat_idx, 0.0, An, final_idx);
+      contract(this->one, tensor_ref, tref_idx, A[contract_mode], mat_idx, this->zero, An, final_idx);
 
       tref_idx = final_idx;
       auto ptr = final_idx.rbegin();

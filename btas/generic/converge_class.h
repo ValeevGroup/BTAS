@@ -2,7 +2,7 @@
 #define BTAS_GENERIC_CONV_BASE_CLASS
 
 #include <vector>
-
+#include <iomanip>
 #include <btas/generic/dot_impl.h>
 #include <btas/varray/varray.h>
 
@@ -74,8 +74,10 @@ namespace btas {
   class FitCheck{
   public:
     using ind_t = typename Tensor::range_type::index_type::value_type;
+    using dtype = typename Tensor::value_type;
     using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
-
+    using RT = real_type_t<dtype>;
+    using RTensor = rebind_tensor_t<Tensor, RT>;
     /// constructor for the base convergence test object
     /// \param[in] tol tolerance for ALS convergence default = 1e-4
     explicit FitCheck(double tol = 1e-4): tol_(tol){
@@ -90,30 +92,30 @@ namespace btas {
     /// default = std::vector<Tensor>();
     bool operator()(const std::vector<Tensor> &btas_factors,
                     const std::vector<Tensor> & V = std::vector<Tensor>()) {
-      if (normT_ < 0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
+      if (normT_ < 0.0) BTAS_EXCEPTION("One must set the norm of the reference tensor");
       auto n = btas_factors.size() - 2;
       ord_t size = btas_factors[n].size();
       ind_t rank = btas_factors[n].extent(1);
       auto *ptr_A = btas_factors[n].data();
       auto *ptr_MtKRP = MtKRP_.data();
       auto lam_ptr = btas_factors[n + 1].data();
-      double iprod = 0.0;
+      dtype iprod = 0.0;
       for (ord_t i = 0; i < size; ++i) {
-        iprod += *(ptr_MtKRP + i) * *(ptr_A + i) * *(lam_ptr + i % rank);
+        iprod += *(ptr_MtKRP + i) * btas::impl::conj(*(ptr_A + i)) * *(lam_ptr + i % rank);
       }
 
       double normFactors = norm(btas_factors, V);
-      double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * iprod));
+      double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * abs(iprod)));
       double fit = 1. - (normResidual / normT_);
 
       double fitChange = abs(fitOld_ - fit);
       fitOld_ = fit;
-      if(verbose_) {
-        std::cout << fit << "\t" << fitChange << std::endl;
+      if (verbose_) {
+        std::cout << MtKRP_.extent(1) << "\t" << iter_ << "\t" << fit << "\t" << fitChange << std::endl;
       }
-      if(fitChange < tol_) {
+      if (fitChange < tol_) {
         converged_num++;
-        if(converged_num == 2){
+        if (converged_num == 2) {
           iter_ = 0;
           converged_num = 0;
           final_fit_ = fitOld_;
@@ -182,31 +184,32 @@ namespace btas {
       auto n = btas_factors.size() - 1;
       Tensor coeffMat;
       auto &temp1 = btas_factors[n];
-      ger(1.0, temp1, temp1, coeffMat);
+      typename Tensor::value_type one = 1.0;
+      ger(one, temp1.conj(), temp1, coeffMat);
 
-      auto rank2 = rank * (ord_t) rank;
+      auto rank2 = rank * (ord_t)rank;
       Tensor temp(rank, rank);
 
       auto *ptr_coeff = coeffMat.data();
-      if(V.empty()) {
+      if (V.empty()) {
         for (size_t i = 0; i < n; ++i) {
-          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, btas_factors[i], btas_factors[i], 0.0, temp);
+          gemm(blas::Op::Trans, blas::Op::NoTrans, 1.0, btas_factors[i].conj(), btas_factors[i], 0.0, temp);
           auto *ptr_temp = temp.data();
           for (ord_t j = 0; j < rank2; ++j) {
             *(ptr_coeff + j) *= *(ptr_temp + j);
           }
         }
-      } else{
-        for(size_t i = 0; i < n; ++i) {
+      } else {
+        for (size_t i = 0; i < n; ++i) {
           auto *ptr_V = V[i].data();
-          for(ord_t j = 0; j < rank2; ++j){
+          for (ord_t j = 0; j < rank2; ++j) {
             *(ptr_coeff + j) *= *(ptr_V + j);
           }
         }
       }
 
-      auto nrm = 0.0;
-      for(auto & i: coeffMat){
+      dtype nrm = 0.0;
+      for (auto &i : coeffMat) {
         nrm += i;
       }
       return sqrt(abs(nrm));
