@@ -8,6 +8,10 @@
 #include "btas/generic/gesvd_impl.h"
 #include "btas/generic/contract.h"
 
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
+#include "btas/generic/default_random_seed.h"
+
 using std::cout;
 using std::endl;
 using namespace btas;
@@ -24,7 +28,7 @@ template <typename T>
 T
 randomReal()
     {
-    static boost::random::mt19937 rng(random_seed_accessor());
+    static boost::random::mt19937 rng(btas::random_seed_accessor());
     static auto dist = boost::random::uniform_real_distribution<T>{0., 1.};
     return dist(rng);
     }
