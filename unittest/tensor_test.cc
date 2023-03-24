@@ -3,6 +3,7 @@
 #include <btas/tarray.h>
 #include "btas/tarray.h"
 #include "btas/tensorview.h"
+#include "btas/varray/allocators.h"
 #include "test.h"
 
 #include <ctime>
@@ -24,6 +25,10 @@ using btas::Range;
 using btas::Tensor;
 
 using DTensor = Tensor<double>;
+using ZTensor = Tensor<std::complex<double>>;
+template <typename T, typename A = std::allocator<T>> using ValTensor = Tensor<T, btas::DEFAULT::range, btas::varray<T, A>>;
+using DValTensor = ValTensor<double>;
+using ZValTensor = ValTensor<std::complex<double>>;
 using namespace btas;
 using namespace std;
 
@@ -158,23 +163,27 @@ TEST_CASE("Custom Tensor") {
   SECTION("Storage") {
     {
       typedef Tensor<double, btas::DEFAULT::range, std::vector<double>> Tensor;
+      static_assert(std::is_same_v<DTensor::rebind_storage_t<std::vector<double>>, Tensor>);
       Tensor T0;
       Tensor T1(2, 3, 4);
     }
     {
       typedef Tensor<double, btas::DEFAULT::range, btas::varray<double>> Tensor;
+      static_assert(std::is_same_v<DTensor::rebind_storage_t<btas::varray<double>>, Tensor>);
       Tensor T0;
       Tensor T1(2, 3, 4);
     }
     {
       typedef Tensor<double, btas::DEFAULT::range, std::array<double, 24>>
           Tensor;
+      static_assert(std::is_same_v<DTensor::rebind_storage_t<std::array<double, 24>>, Tensor>);
       Tensor T0;
       Tensor T1(2, 3, 4);
     }
     {
       typedef Tensor<double, btas::DEFAULT::range, std::valarray<double>>
           Tensor;
+      static_assert(std::is_same_v<DTensor::rebind_storage_t<std::valarray<double>>, Tensor>);
       Tensor T0;
       Tensor T1(2, 3, 4);
     }
@@ -256,6 +265,35 @@ TEST_CASE("Tensor Operations") {
                 Ctest1(i0, i2)(j0, j2) += A(i0, i1)(j0, j1) * B(i1, i2)(j1, j2);
     Ctest1 -= C;
     CHECK(dot(Ctest1, Ctest1) < eps_double);
+  }
+
+  SECTION("Rebind") {
+    using TD = DTensor;
+    using TZ = ZTensor;
+    static_assert(std::is_same_v<TD::rebind_t<std::complex<double>>, TZ>);
+    static_assert(std::is_same_v<TD::rebind_numeric_t<std::complex<double>>, TZ>);
+    using TTD = Tensor<TD>;
+    using TTZ = Tensor<TZ>;
+    static_assert(std::is_same_v<TTD::rebind_t<std::complex<double>>, TZ>);
+    static_assert(std::is_same_v<TTD::rebind_numeric_t<std::complex<double>>, TTZ>);
+
+    // now with custom storage
+    static_assert(std::is_same_v<DValTensor::rebind_t<std::complex<double>>, ZValTensor>);
+    static_assert(std::is_same_v<DValTensor::rebind_numeric_t<std::complex<double>>, ZValTensor>);
+    static_assert(std::is_same_v<ValTensor<DValTensor>::rebind_t<std::complex<double>>, ZValTensor>);
+    static_assert(std::is_same_v<ValTensor<DValTensor>::rebind_numeric_t<std::complex<double>>, ValTensor<ZValTensor>>);
+
+    // now with custom storage and allocator
+    {
+      using TD = ValTensor<double, btas::stack_allocator<double>>;
+      using TZ = ValTensor<std::complex<double>, btas::stack_allocator<std::complex<double>>>;
+      static_assert(std::is_same_v<TD::rebind_t<std::complex<double>>, TZ>);
+      static_assert(std::is_same_v<TD::rebind_numeric_t<std::complex<double>>, TZ>);
+      using TTD = Tensor<TD>;
+      using TTZ = Tensor<TZ>;
+      static_assert(std::is_same_v<TTD::rebind_t<std::complex<double>>, Tensor<std::complex<double>>>);  // N.B. outer Tensor != ValTensor
+      static_assert(std::is_same_v<TTD::rebind_numeric_t<std::complex<double>>, TTZ>);
+    }
   }
 
 #ifdef BTAS_HAS_BOOST_SERIALIZATION

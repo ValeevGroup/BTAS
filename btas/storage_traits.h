@@ -10,6 +10,8 @@
 
 #include <valarray>
 
+#include <btas/btas_fwd.h>
+
 #include <btas/index_traits.h>
 
 namespace btas {
@@ -88,6 +90,8 @@ namespace btas {
       using value_type = typename _Container::value_type;
       using pointer = typename _Container::pointer;
       using const_pointer = typename _Container::const_pointer;
+      using reference = typename _Container::reference;
+      using const_reference = typename _Container::const_reference;
       using iterator = typename _Container::iterator;
       using const_iterator = typename _Container::const_iterator;
       using size_type = typename _Container::size_type;
@@ -107,6 +111,11 @@ namespace btas {
   template <typename _T, typename _Allocator>
   struct storage_traits<varray<_T, _Allocator>> : public storage_traits_base_container<varray<_T, _Allocator>> {
       template <typename U> using rebind_t = varray<U, typename std::allocator_traits<_Allocator>::template rebind_alloc<U>>;
+  };
+
+  template <typename _T>
+  struct storage_traits<infinite_sequence_adaptor<_T>> : public storage_traits_base_container<infinite_sequence_adaptor<_T>> {
+      template <typename U> using rebind_t = infinite_sequence_adaptor<std::add_pointer<U>>;
   };
 
   // specialize to const container; N.B. T* const is not consistent of container<T> const since the latter passes constness onto values

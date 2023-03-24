@@ -76,6 +76,10 @@ namespace btas {
     template <typename _T,
       typename _Allocator = std::allocator<_T> >
     class varray;
+
+    template <typename _Ptr,
+              typename = typename std::enable_if<std::is_pointer<_Ptr>::value>::type >
+    class infinite_sequence_adaptor;
 }
 
 #endif //BTAS_BTAS_FWD_H

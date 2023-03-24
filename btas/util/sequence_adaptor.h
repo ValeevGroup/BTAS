@@ -1,13 +1,15 @@
 #ifndef __BTAS_UTIL_SEQUENCEADAPTOR_H_
 #define __BTAS_UTIL_SEQUENCEADAPTOR_H_
 
+#include <btas/btas_fwd.h>
+
 namespace btas {
 
   /// infinite_sequence_adaptor represents pointer \c ptr as a \c ptr[0] , \c ptr[1] , .. sequence.
   /// Because the sequence is infinite, several attributes of sequence are not supported (end, cend, size, resize)
   /// \tparam _Ptr pointer type
   template <typename _Ptr,
-            class = typename std::enable_if<std::is_pointer<_Ptr>::value>::type >
+            typename _Enabler>
   class infinite_sequence_adaptor {
     public:
       typedef typename std::remove_pointer<_Ptr>::type value_type;
