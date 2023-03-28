@@ -53,7 +53,7 @@ TEST_CASE("CP")
   }
   in5.close();
 
-  tensor results(43, 1);
+  tensor results(47, 1);
   std::ifstream res(__dirname + "/cp_test_results.txt");
   CHECK(res.is_open());
   for (auto &i : results) {
