@@ -83,13 +83,13 @@ TEST_CASE("CP")
     SECTION("ALS MODE = 3, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
-      double diff = A1.compute_rank(20, conv, 1, false, 0, 100, false, false, true);
+      double diff = A1.compute_rank(40, conv, 1, false, 0, 100, false, false, true);
       CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("ALS MODE = 3, Finite error"){
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
-      double diff = A1.compute_error(conv, 1e-9, 1, 20);
+      double diff = A1.compute_error(conv, 1e-9, 1, 40);
       CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
@@ -97,7 +97,7 @@ TEST_CASE("CP")
       auto d = D3;
       btas::TUCKER_CP_ALS<tensor, conv_class> A1(d, 1e-3);
       conv.set_norm(norm3);
-      double diff = A1.compute_rank(20, conv, 1, false, 0, 100, false, false, true);
+      double diff = A1.compute_rank(40, conv, 1, false, 0, 100, false, false, true);
       CHECK(std::abs(diff) <= epsilon);
     }
 #endif
@@ -114,13 +114,13 @@ TEST_CASE("CP")
     SECTION("ALS MODE = 4, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);
-      double diff = A1.compute_rank(40, conv);
+      double diff = A1.compute_rank(50, conv);
       CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("ALS MODE = 4, Finite error"){
       CP_ALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);
-      double diff = A1.compute_error(conv, 1e-9, 1, 40);
+      double diff = A1.compute_error(conv, 1e-9, 1, 50);
       CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
@@ -128,7 +128,7 @@ TEST_CASE("CP")
       auto d = D4;
       btas::TUCKER_CP_ALS<tensor, conv_class> A1(d, 1e-3);
       conv.set_norm(norm4);
-      double diff = A1.compute_rank(40, conv);
+      double diff = A1.compute_rank(50, conv);
       CHECK(std::abs(diff) <= epsilon);
     }
 #endif
@@ -178,13 +178,13 @@ TEST_CASE("CP")
     SECTION("RALS MODE = 3, Finite rank"){
       CP_RALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
-      double diff =A1.compute_rank(20, conv, 1, false, 0, 100, false, false, true);
+      double diff =A1.compute_rank(40, conv, 1, false, 0, 100, false, false, true);
       CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("RALS MODE = 3, Finite error"){
       CP_RALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
-      double diff = A1.compute_error(conv, 1e-9, 1, 20, false, 0, 1e4, false, true);
+      double diff = A1.compute_error(conv, 1e-9, 1, 40, false, 0, 1e4, false, true);
       CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
@@ -193,7 +193,7 @@ TEST_CASE("CP")
 
       btas::TUCKER_CP_RALS<tensor, conv_class > A1(d, 1e-3);
       conv.set_norm(norm3);
-      double diff = A1.compute_rank(20, conv, 1, false, 0, 100, false, false, true);
+      double diff = A1.compute_rank(40, conv, 1, false, 0, 100, false, false, true);
       CHECK(std::abs(diff) <= epsilon);
     }
 #endif
@@ -209,13 +209,13 @@ TEST_CASE("CP")
     SECTION("RALS MODE = 4, Finite rank"){
       CP_RALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);
-      double diff = A1.compute_rank(40, conv);
+      double diff = A1.compute_rank(50, conv);
       CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("RALS MODE = 4, Finite error"){
       CP_RALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);
-      double diff = A1.compute_error(conv, 1e-9, 1, 40);
+      double diff = A1.compute_error(conv, 1e-9, 1, 50);
       CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
@@ -223,7 +223,7 @@ TEST_CASE("CP")
       auto d = D4;
       btas::TUCKER_CP_RALS<tensor, conv_class > A1(d, 1e-3);
       conv.set_norm(norm4);
-      double diff = A1.compute_rank(40, conv, 1, false, 0, 100, false, false, true);
+      double diff = A1.compute_rank(50, conv, 1, false, 0, 100, false, false, true);
       CHECK(std::abs(diff) <= epsilon);
     }
 #endif
