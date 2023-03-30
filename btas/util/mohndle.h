@@ -303,6 +303,11 @@ namespace btas {
   template <typename S, Handle H>
   constexpr inline bool is_deep_copy_v<mohndle<S,H>> = false;
 
+  template <typename S, Handle H>
+  struct storage_traits<mohndle<S, H>> : public storage_traits_base_container<mohndle<S, H>> {
+    template <typename U> using rebind_t = mohndle<typename storage_traits<S>::template rebind_t<U>, H>;
+  };
+
 }  // namespace btas
 
 // serialization to/fro MADNESS archive (github.com/m-a-d-n-e-s-s/madness)

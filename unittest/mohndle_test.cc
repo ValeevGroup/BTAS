@@ -27,6 +27,9 @@ constexpr inline bool storage_is_movable<const std::array<T, N>> = false;
 TEST_CASE("mohndle")
 {
 
+  // test storage_traits
+  static_assert(std::is_same_v<typename storage_traits<mohndle<std::vector<double>>>::template rebind_t<float>, mohndle<std::vector<float>>>);
+
   SECTION("core")
   {
     auto test = [](auto&& storage) {
