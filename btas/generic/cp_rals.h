@@ -172,9 +172,9 @@ namespace btas {
             A[i] = A[tmp];
             lambda[i] = lambda[tmp];
           } else if (dir) {
-            this->direct(i, rank, fast_pI, matlab, converge_test, lambda[i]);
+            this->direct(i, rank, fast_pI, matlab, converge_test, tensor_ref, lambda[i]);
           } else {
-            update_w_KRP(i, rank, fast_pI, matlab, converge_test, lambda[i]);
+            update_w_KRP(i, rank, fast_pI, matlab, converge_test, tensor_ref, lambda[i]);
           }
           // Compute the value s after normalizing the columns
           auto & ai = A[i];
