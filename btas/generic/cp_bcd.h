@@ -192,13 +192,10 @@ namespace btas{
           std::cout << fit << "\t" << change << std::endl;
           is_converged = (change < 0.001);
           if(is_converged) {
-            auto grad = gradient - temp;
-            auto grad_ptr = grad.begin();
-            for(auto ptr = tensor_ref.begin(); ptr != tensor_ref.end(); ++ptr, ++grad_ptr)
-              *(ptr) = *(grad_ptr);
+            gradient = tensor_ref - temp;
           }
         }while(count < max_als && !is_converged);
-        std::cout << tensor_ref << std::endl;
+        std::cout << gradient << std::endl;
       }
       // Fix tensor_ref
       auto ptr = tensor_ref.begin();
