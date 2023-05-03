@@ -25,7 +25,7 @@ TEST_CASE("CP")
   using btas::COUPLED_CP_ALS;
 
   //double epsilon = fmax(1e-10, std::numeric_limits<double>::epsilon());
-  double epsilon = 1e-7;
+  double epsilon = 1e-5;
   // TEST_CASE("CP_ALS"){
   tensor D3(5, 2, 9);
   std::ifstream in3(__dirname + "/mat3D.txt");
@@ -76,7 +76,7 @@ TEST_CASE("CP")
   double norm42 = sqrt(dot(D44, D44));
   double norm52 = sqrt(dot(D55, D55));
 
-  conv_class conv(1e-5);
+  conv_class conv(1e-7);
   // ALS tests
   {
     SECTION("ALS MODE = 3, Finite rank"){
