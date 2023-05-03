@@ -381,7 +381,7 @@ namespace btas {
       return norm(btas_array);
     }
 
-    void verbose(bool verb) { verbose_ = verb }
+    void verbose(bool verb) { verbose_ = verb; }
   private:
     double tol_;
     double fitOld_ = 1.0;
