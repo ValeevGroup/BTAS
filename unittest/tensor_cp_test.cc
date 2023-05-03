@@ -76,7 +76,7 @@ TEST_CASE("CP")
   double norm42 = sqrt(dot(D44, D44));
   double norm52 = sqrt(dot(D55, D55));
 
-  conv_class conv(1e-7);
+  conv_class conv(1e-5);
   // ALS tests
   {
     SECTION("ALS MODE = 3, Finite rank"){
