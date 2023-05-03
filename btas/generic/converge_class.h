@@ -320,6 +320,9 @@ namespace btas {
 
       double fitChange = abs(fitOld_ - fit);
       fitOld_ = fit;
+      if (verbose_) {
+        std::cout << MtKRPL_.extent(1) << "\t" << iter_ << "\t" << std::setprecision(16) << fit << "\t" << fitChange << std::endl;
+      }
       if(fitChange < tol_) {
         iter_ = 0;
         final_fit_ = fitOld_;
@@ -378,6 +381,7 @@ namespace btas {
       return norm(btas_array);
     }
 
+    void verbose(bool verb) { verbose_ = verb }
   private:
     double tol_;
     double fitOld_ = 1.0;
@@ -386,6 +390,7 @@ namespace btas {
     size_t iter_ = 0;
     Tensor MtKRPL_, MtKRPR_;
     size_t ndimL_;
+    bool verbose_ = false;
 
     /// Function to compute the L2 norm of a tensors computed from the \c btas_factors
     /// \param[in] btas_factors Current set of factor matrices
