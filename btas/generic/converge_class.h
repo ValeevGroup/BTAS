@@ -111,7 +111,7 @@ namespace btas {
       double fitChange = abs(fitOld_ - fit);
       fitOld_ = fit;
       if (verbose_) {
-        std::cout << MtKRP_.extent(1) << "\t" << iter_ << "\t" << fit << "\t" << fitChange << std::endl;
+        std::cout << MtKRP_.extent(1) << "\t" << iter_ << "\t" << std::setprecision(16) << fit << "\t" << fitChange << std::endl;
       }
       if (fitChange < tol_) {
         converged_num++;
