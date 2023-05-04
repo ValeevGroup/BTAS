@@ -135,6 +135,7 @@ namespace btas{
       // copying all of A to block factors. Then we are going to take slices of A
       // that way we can leverage all of `CP_ALS` code without modification
       blockfactors = A;
+      gradient = tensor_ref;
       // this stores the factors from rank 0 to #blocks * blocksize
       std::vector<Tensor> current_grads(ndim);
       // Compute all the BCD of the full blocks
@@ -150,7 +151,7 @@ namespace btas{
 
         // Do the ALS loop
         //CP_ALS::ALS(blocksize, converge_test, dir, max_als, calculate_epsilon, epsilon, fast_pI);
-        // First do it manually so we know its right
+        // First do it manually, so we know its right
         // Compute ALS of the bth block against the gradient
         // computed by subtracting the previous blocks from the reference
         size_t count = 0;
@@ -158,6 +159,7 @@ namespace btas{
         bool matlab = true;
         auto one_over_tref = 1.0 / norm(tensor_ref);
         auto fit = 1.0, change = 0.0;
+        detail::set_norm(converge_test, norm(gradient));
         do {
           ++count;
           this->num_ALS++;
@@ -171,6 +173,8 @@ namespace btas{
             // (this will replace A at the end)
             copy_blocks(blockfactors[i], A[i], block_step, block_step + blocksize);
           }
+
+          auto grad = reconstruct(A, order, A[ndim]);
           // Copy the lambda values into the correct location in blockfactors
           size_t c = 0;
           for (auto b = block_step; b < block_step + blocksize; ++b, ++c) {
@@ -180,22 +184,22 @@ namespace btas{
           // To compute the accuracy fully compute CP approximation using blocks 0 through b.
           for (size_t i = 0; i < ndim; ++i) {
             auto & a_mat = blockfactors[i];
-            auto lower = {z, block_step}, upper = {long(a_mat.extent(0)), block_step + blocksize};
+            auto lower = {z, z}, upper = {long(a_mat.extent(0)), block_step + blocksize};
             current_grads[i] = make_view(a_mat.range().slice(lower, upper), a_mat.storage());
           }
 
           auto temp = reconstruct(current_grads, order, blockfactors[ndim]);
           auto newfit = 1.0 - norm(temp - tensor_ref) * one_over_tref;
-          std::cout << newfit << std::endl;
           change = abs(fit - newfit);
           fit = newfit;
           std::cout << fit << "\t" << change << std::endl;
           is_converged = (change < 0.001);
+
+          is_converged = converge_test(A, this->AtA);
           if(is_converged) {
             gradient = tensor_ref - temp;
           }
         }while(count < max_als && !is_converged);
-        std::cout << gradient << std::endl;
       }
       // Fix tensor_ref
       auto ptr = tensor_ref.begin();
