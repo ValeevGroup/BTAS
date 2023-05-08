@@ -98,6 +98,8 @@ namespace btas{
     Tensor gradient, block_ref;           // Stores gradient of BCD for fitting.
     ind_t blocksize;           // Size of block gradient
     std::vector<Tensor> blockfactors;
+    std::vector<size_t> order;  // convenient to write order of tensors for reconstruct
+    long z = 0;
 
     /// computed the CP decomposition using ALS to minimize the loss function for fixed rank \p rank
     /// \param[in] rank The rank of the CP decomposition.
@@ -118,7 +120,6 @@ namespace btas{
     ///       on return \c fast_pI will be true if use of Cholesky was successful
     virtual void ALS(ind_t rank, ConvClass &converge_test, bool dir, int max_als, bool calculate_epsilon, double &epsilon,
                      bool &fast_pI){
-      std::vector<size_t> order;
       for(auto i = 0; i < ndim; ++i){
         order.emplace_back(i);
       }
@@ -130,81 +131,18 @@ namespace btas{
       int n_full_blocks = int( rank / blocksize),
           last_blocksize = rank % blocksize;
 
-      long block_step = 0, z = 0;
+      long block_step = 0;
       this->AtA = std::vector<Tensor>(ndim);
       // copying all of A to block factors. Then we are going to take slices of A
       // that way we can leverage all of `CP_ALS` code without modification
       blockfactors = A;
       gradient = tensor_ref;
       // this stores the factors from rank 0 to #blocks * blocksize
-      std::vector<Tensor> current_grads(ndim);
       // Compute all the BCD of the full blocks
+      auto matlab = true;
       for (long b = 0; b < n_full_blocks; ++b, block_step += blocksize) {
-        // Take the b-th block of the factor matrix also take the
-        // find the partial grammian for the blocked factors
-        for (size_t i = 0; i < ndim; ++i){
-          auto & a_mat = A[i];
-          auto lower = {z, block_step}, upper = {long(a_mat.extent(0)), block_step + blocksize};
-          a_mat = make_view(blockfactors[i].range().slice(lower, upper), blockfactors[i].storage());
-          contract(this->one, a_mat, {1, 2}, a_mat.conj(), {1, 3}, this->zero, this->AtA[i], {2, 3});
-        }
-
-        // Do the ALS loop
-        //CP_ALS::ALS(blocksize, converge_test, dir, max_als, calculate_epsilon, epsilon, fast_pI);
-        // First do it manually, so we know its right
-        // Compute ALS of the bth block against the gradient
-        // computed by subtracting the previous blocks from the reference
-        size_t count = 0;
-        bool is_converged = false;
-        bool matlab = true;
-        auto one_over_tref = 1.0 / norm(tensor_ref);
-        auto fit = 1.0, change = 0.0;
-        detail::set_norm(converge_test, norm(gradient));
-        do {
-          ++count;
-          this->num_ALS++;
-
-          for (size_t i = 0; i < ndim; i++) {
-            this->direct(i, blocksize, fast_pI, matlab, converge_test, gradient);
-                // BCD(i, block_step, block_step + blocksize, fast_pI, matlab, converge_test);
-                auto &ai = A[i];
-            contract(this->one, ai, {1, 2}, ai.conj(), {1, 3}, this->zero, this->AtA[i], {2, 3});
-            // Copy the block computed in A to the correct portion in blockfactors
-            // (this will replace A at the end)
-            copy_blocks(blockfactors[i], A[i], block_step, block_step + blocksize);
-          }
-
-          auto grad = reconstruct(A, order, A[ndim]);
-          // Copy the lambda values into the correct location in blockfactors
-          size_t c = 0;
-          for (auto b = block_step; b < block_step + blocksize; ++b, ++c) {
-            blockfactors[ndim](b) = A[ndim](c);
-          }
-          // Test the system to see if converged. Doing the hard way first
-          // To compute the accuracy fully compute CP approximation using blocks 0 through b.
-          for (size_t i = 0; i < ndim; ++i) {
-            auto & a_mat = blockfactors[i];
-            auto lower = {z, z}, upper = {long(a_mat.extent(0)), block_step + blocksize};
-            current_grads[i] = make_view(a_mat.range().slice(lower, upper), a_mat.storage());
-          }
-
-          auto temp = reconstruct(current_grads, order, blockfactors[ndim]);
-          auto newfit = 1.0 - norm(temp - tensor_ref) * one_over_tref;
-          change = abs(fit - newfit);
-          fit = newfit;
-          std::cout << fit << "\t" << change << std::endl;
-          is_converged = (change < 0.001);
-
-          is_converged = converge_test(A, this->AtA);
-          if(is_converged) {
-            gradient = tensor_ref - temp;
-          }
-        }while(count < max_als && !is_converged);
+        BCD(block_step, block_step + blocksize, max_als, fast_pI, matlab, converge_test);
       }
-      // Fix tensor_ref
-      auto ptr = tensor_ref.begin();
-      for(auto g_ptr = gradient.begin(); g_ptr != gradient.end(); ++g_ptr, ++ptr)
-        *(ptr) = *(g_ptr);
     }
 
     void copy_blocks(Tensor & to, Tensor & from, ind_t block_start, ind_t block_end){
@@ -232,161 +170,74 @@ namespace btas{
     /// return if \c matlab was successful
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
 
-    void BCD(size_t n, ind_t block_start, ind_t block_end, bool &fast_pI, bool &matlab, ConvClass &converge_test, double lambda = 0.0) {
-      // Determine if n is the last mode, if it is first contract with first mode
-      // and transpose the product
-      bool last_dim = n == ndim - 1;
-      // product of all dimensions
-      ord_t LH_size = size;
-      size_t contract_dim = last_dim ? 0 : ndim - 1;
-      ind_t offset_dim = tensor_ref.extent(n);
-      ind_t brank = block_end - block_start;
-      ind_t pseudo_rank = brank;
-
-      // Store the dimensions which are available to hadamard contract
-      std::vector<ind_t> dimensions;
-      for (size_t i = last_dim ? 1 : 0; i < (last_dim ? ndim : ndim - 1); i++) {
-        dimensions.push_back(tensor_ref.extent(i));
+    void BCD(ind_t block_start, ind_t block_end, size_t max_als,
+             bool &fast_pI, bool &matlab, ConvClass &converge_test, double lambda = 0.0){
+      // Take the b-th block of the factor matrix also take the
+      // find the partial grammian for the blocked factors
+      auto cur_block_size = block_end - block_start;
+      for (size_t i = 0; i < ndim; ++i){
+        auto & a_mat = A[i];
+        auto lower = {z, block_start}, upper = {long(a_mat.extent(0)), block_end};
+        a_mat = make_view(blockfactors[i].range().slice(lower, upper), blockfactors[i].storage());
+        contract(this->one, a_mat, {1, 2}, a_mat.conj(), {1, 3}, this->zero, this->AtA[i], {2, 3});
       }
+      A[ndim] = Tensor(cur_block_size);
+      A[ndim].fill(0.0);
+      // Do the ALS loop
+      //CP_ALS::ALS(cur_block_size, converge_test, dir, max_als, calculate_epsilon, epsilon, fast_pI);
+      // First do it manually, so we know its right
+      // Compute ALS of the bth block against the gradient
+      // computed by subtracting the previous blocks from the reference
+      size_t count = 0;
+      bool is_converged = false;
+      auto one_over_tref = 1.0 / norm(tensor_ref);
+      auto fit = 1.0, change = 0.0;
+      detail::set_norm(converge_test, norm(gradient));
+      do {
+        ++count;
+        this->num_ALS++;
 
-      // Modifying the dimension of tensor_ref so store the range here to resize
-      Range R = tensor_ref.range();
-
-      // Resize the tensor which will store the product of tensor_ref and the first factor matrix
-      Tensor temp = Tensor(size / tensor_ref.extent(contract_dim), brank);
-      gradient.resize(
-          Range{Range1{last_dim ? tensor_ref.extent(contract_dim) : size / tensor_ref.extent(contract_dim)},
-                Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
-
-      // contract tensor ref and the first factor matrix
-      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, this->one , (last_dim? gradient.conj():gradient), blockfactors[contract_dim].conj(), this->zero,
-           temp);
-
-      // Resize tensor_ref
-      gradient.resize(R);
-      // Remove the dimension which was just contracted out
-      LH_size /= tensor_ref.extent(contract_dim);
-
-      // n tells which dimension not to contract, and contract_dim says which dimension I am trying to contract.
-      // If n == contract_dim then that mode is skipped.
-      // if n == ndim - 1, my contract_dim = 0. The gemm transposes to make rank = ndim - 1, so I
-      // move the pointer that preserves the last dimension to n = ndim -2.
-      // In all cases I want to walk through the orders in tensor_ref backward so contract_dim = ndim - 2
-      n = last_dim ? ndim - 2 : n;
-      contract_dim = ndim - 2;
-
-      while (contract_dim > 0) {
-        // Now temp is three index object where temp has size
-        // (size of tensor_ref/product of dimension contracted, dimension to be
-        // contracted, rank)
-        ord_t idx2 = dimensions[contract_dim],
-              idx1 = LH_size / idx2;
-        temp.resize(
-            Range{Range1{idx1}, Range1{idx2}, Range1{pseudo_rank}});
-        Tensor contract_tensor;
-        //Tensor contract_tensor(Range{Range1{idx1}, Range1{pseudo_rank}});
-        //contract_tensor.fill(0.0);
-        const auto &a = blockfactors[(last_dim ? contract_dim + 1 : contract_dim)];
-        // If the middle dimension is the mode not being contracted, I will move
-        // it to the right hand side temp((size of tensor_ref/product of
-        // dimension contracted, rank * mode n dimension)
-        if (n == contract_dim) {
-          pseudo_rank *= offset_dim;
+        for (size_t i = 0; i < ndim; i++) {
+          this->direct(i, cur_block_size, fast_pI, matlab, converge_test, gradient);
+          auto &ai = A[i];
+          contract(this->one, ai, {1, 2}, ai.conj(), {1, 3}, this->zero, this->AtA[i], {2, 3});
+          // Copy the block computed in A to the correct portion in blockfactors
+          // (this will replace A at the end)
+          copy_blocks(blockfactors[i], A[i], block_start, block_end);
         }
 
-        // If the code hasn't hit the mode of interest yet, it will contract
-        // over the middle dimension and sum over the rank.
-
-        else if (contract_dim > n) {
-          middle_contract(this->one, temp, a.conj(), this->zero, contract_tensor);
-          temp = contract_tensor;
+        // Copy the lambda values into the correct location in blockfactors
+        size_t c = 0;
+        for (auto b = block_start; b < block_end; ++b, ++c) {
+          blockfactors[ndim](b) = A[ndim](c);
         }
-
-        // If the code has passed the mode of interest, it will contract over
-        // the middle dimension and sum over rank * mode n dimension
-        else {
-          middle_contract_with_pseudorank(this->one, temp, a.conj(), this->zero, contract_tensor);
-          temp = contract_tensor;
-        }
-
-        LH_size /= idx2;
-        contract_dim--;
-      }
-      n = last_dim ? n+1 : n;
-
-      // If the mode of interest is the 0th mode, then the while loop above
-      // contracts over all other dimensions and resulting temp is of the
-      // correct dimension If the mode of interest isn't 0th mode, must contract
-      // out the 0th mode here, the above algorithm can't perform this
-      // contraction because the mode of interest is coupled with the rank
-      if (n != 0) {
-        ind_t idx1 = dimensions[0];
-        temp.resize(Range{Range1{idx1}, Range1{offset_dim}, Range1{brank}});
-        Tensor contract_tensor(Range{Range1{offset_dim}, Range1{brank}});
-        contract_tensor.fill(0.0);
-
-        const auto &a = blockfactors[(last_dim ? 1 : 0)];
-        front_contract(this->one, temp, a.conj(), this->zero, contract_tensor);
-
-        temp = contract_tensor;
-      }
-
-      // Add lambda to factor matrices if RALS
-      if(lambda !=0){
-        auto LamA = blockfactors[n];
-        scal(lambda, LamA);
-        temp += LamA;
-      }
-
-      // multiply resulting matrix temp by pseudoinverse to calculate optimized
-      // factor matrix
-      pseudoinverse_block(n, brank, fast_pI, matlab, temp, lambda);
-
-      // Normalize the columns of the new factor matrix and update
-      this->normCol(temp, block_start);
-      auto ptr = temp.data();
-      blockfactors[n] = temp;
-      {
-        auto tref_dim = tensor_ref.extent(n);
-        auto A_ptr = A[n].data();
-        auto rank = A[n].extent(1);
-        auto temp_pos = 0;
-        for (ind_t i = 0, skip = 0; i < tref_dim; ++i, skip += rank){
-          for (auto b = block_start; b < block_end; ++b, ++temp_pos){
-            *(A_ptr + skip + b) = *(ptr + temp_pos);
+        // Test the system to see if converged. Doing the hard way first
+        // To compute the accuracy fully compute CP approximation using blocks 0 through b.
+        bool compute_full_fit = true;
+        Tensor temp;
+        if(compute_full_fit) {
+          std::vector<Tensor> current_grads(ndim);
+          for (size_t i = 0; i < ndim; ++i) {
+            auto &a_mat = blockfactors[i];
+            auto lower = {z, z}, upper = {long(a_mat.extent(0)), block_end};
+            current_grads[i] = make_view(a_mat.range().slice(lower, upper), a_mat.storage());
           }
+
+          temp = reconstruct(current_grads, order, blockfactors[ndim]);
+          auto newfit = 1.0 - norm(temp - tensor_ref) * one_over_tref;
+          change = abs(fit - newfit);
+          fit = newfit;
+          std::cout << block_end << "\t";
+          std::cout << fit << "\t" << change << std::endl;
         }
-      }
-    }
 
-    /// Calculates the column norms of a matrix and saves the norm values into
-    /// lambda tensor (last matrix in the A)
-
-    /// \param[in, out] Mat The matrix whose column will be normalized, return
-    /// \c Mat with all columns normalized
-
-    void normCol(Tensor &Mat, ord_t block_start) {
-      if (Mat.rank() > 2) BTAS_EXCEPTION("normCol with rank > 2 not yet supported");
-      ind_t rank = Mat.extent(1),
-            Nsize = Mat.extent(0);
-      ord_t size = Mat.size();
-
-      auto Mat_ptr = Mat.data();
-      std::vector<T> lambda;
-      for(auto i = 0; i < rank; ++i) lambda.emplace_back(T(0.0));
-
-      auto lam_ptr = lambda.data();
-      for (ord_t i = 0; i < size; ++i) {
-        *(lam_ptr + i % rank) += *(Mat_ptr + i) * btas::impl::conj(*(Mat_ptr + i));
-      }
-
-      auto A_ptr = A[ndim].data() + block_start;
-      for (ind_t i = 0; i < rank; ++i) {
-        auto val = sqrt(*(lam_ptr + i));
-        *(A_ptr + i) = val;
-        val = (abs(val) < 1e-12 ? 0.0 : 1.0 / val);
-        btas::scal(Nsize, val, (Mat_ptr + i), rank);
-      }
+        is_converged = converge_test(A, this->AtA);
+        if(1.0 - fit < 1e-8) is_converged = true;
+        if(is_converged) {
+          gradient -= reconstruct(A, order, A[ndim]);
+          std::cout << norm(gradient - (tensor_ref - temp)) << std::endl;
+        }
+      }while(count < max_als && !is_converged);
     }
 
   };
