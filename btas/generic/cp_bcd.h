@@ -140,9 +140,50 @@ namespace btas{
       // this stores the factors from rank 0 to #blocks * blocksize
       // Compute all the BCD of the full blocks
       auto matlab = true;
+      auto one_over_tref = 1.0 / norm(tensor_ref);
+      auto fit = 1.0, change = 0.0;
+      bool compute_full_fit = true;
       for (long b = 0; b < n_full_blocks; ++b, block_step += blocksize) {
         BCD(block_step, block_step + blocksize, max_als, fast_pI, matlab, converge_test);
+        // Test the system to see if converged. Doing the hard way first
+        // To compute the accuracy fully compute CP approximation using blocks 0 through b.
+        if(compute_full_fit) {
+          std::vector<Tensor> current_grads(ndim);
+          for (size_t i = 0; i < ndim; ++i) {
+            auto &a_mat = blockfactors[i];
+            auto lower = {z, z}, upper = {long(a_mat.extent(0)), block_step + blocksize};
+            current_grads[i] = make_view(a_mat.range().slice(lower, upper), a_mat.storage());
+          }
+
+          auto temp = reconstruct(current_grads, order, blockfactors[ndim]);
+          auto newfit = 1.0 - norm(temp - tensor_ref) * one_over_tref;
+          change = abs(fit - newfit);
+          fit = newfit;
+          std::cout << block_step + blocksize << "\t";
+          std::cout << fit << "\t" << change << std::endl;
+        }
       }
+      if(last_blocksize != 0) {
+        this->AtA = std::vector<Tensor>(ndim);
+        block_step = n_full_blocks * blocksize;
+        BCD(block_step, block_step + last_blocksize, max_als, fast_pI, matlab, converge_test);
+        if(compute_full_fit) {
+          std::vector<Tensor> current_grads(ndim);
+          for (size_t i = 0; i < ndim; ++i) {
+            auto &a_mat = blockfactors[i];
+            auto lower = {z, z}, upper = {long(a_mat.extent(0)), block_step + last_blocksize};
+            current_grads[i] = make_view(a_mat.range().slice(lower, upper), a_mat.storage());
+          }
+
+          auto temp = reconstruct(current_grads, order, blockfactors[ndim]);
+          auto newfit = 1.0 - norm(temp - tensor_ref) * one_over_tref;
+          change = abs(fit - newfit);
+          fit = newfit;
+          std::cout << block_step + blocksize << "\t";
+          std::cout << fit << "\t" << change << std::endl;
+        }
+      }
+      A = blockfactors;
     }
 
     void copy_blocks(Tensor & to, Tensor & from, ind_t block_start, ind_t block_end){
@@ -190,8 +231,6 @@ namespace btas{
       // computed by subtracting the previous blocks from the reference
       size_t count = 0;
       bool is_converged = false;
-      auto one_over_tref = 1.0 / norm(tensor_ref);
-      auto fit = 1.0, change = 0.0;
       detail::set_norm(converge_test, norm(gradient));
       do {
         ++count;
@@ -211,31 +250,10 @@ namespace btas{
         for (auto b = block_start; b < block_end; ++b, ++c) {
           blockfactors[ndim](b) = A[ndim](c);
         }
-        // Test the system to see if converged. Doing the hard way first
-        // To compute the accuracy fully compute CP approximation using blocks 0 through b.
-        bool compute_full_fit = true;
-        Tensor temp;
-        if(compute_full_fit) {
-          std::vector<Tensor> current_grads(ndim);
-          for (size_t i = 0; i < ndim; ++i) {
-            auto &a_mat = blockfactors[i];
-            auto lower = {z, z}, upper = {long(a_mat.extent(0)), block_end};
-            current_grads[i] = make_view(a_mat.range().slice(lower, upper), a_mat.storage());
-          }
-
-          temp = reconstruct(current_grads, order, blockfactors[ndim]);
-          auto newfit = 1.0 - norm(temp - tensor_ref) * one_over_tref;
-          change = abs(fit - newfit);
-          fit = newfit;
-          std::cout << block_end << "\t";
-          std::cout << fit << "\t" << change << std::endl;
-        }
 
         is_converged = converge_test(A, this->AtA);
-        if(1.0 - fit < 1e-8) is_converged = true;
         if(is_converged) {
           gradient -= reconstruct(A, order, A[ndim]);
-          std::cout << norm(gradient - (tensor_ref - temp)) << std::endl;
         }
       }while(count < max_als && !is_converged);
     }
