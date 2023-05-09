@@ -93,8 +93,9 @@ TEST_CASE("ZCP") {
       auto d = Z3;
       btas::TUCKER_CP_ALS<ztensor, zconv_class> A1(d, 1e-3);
       conv.set_norm(norm3.real());
-      double diff = A1.compute_rank(11, conv, 1, false, 0, 100);
+      double diff = A1.compute_rank(6, conv, 1, false, 0, 100);
       CHECK(std::abs(diff) <= epsilon);
+      conv.verbose(false);
     }
 #endif
     SECTION("ALS MODE = 4, Finite error") {
