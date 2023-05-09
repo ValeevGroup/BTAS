@@ -79,13 +79,13 @@ TEST_CASE("ZCP") {
     SECTION("ALS MODE = 3, Finite error") {
       CP_ALS<ztensor, zconv_class> A1(Z3);
       conv.set_norm(norm3.real());
-      double diff = A1.compute_error(conv, 1e-4, 1, 11);
+      double diff = A1.compute_error(conv, 1e-6, 1, 11,false,0,100);
       CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("ALS MODE = 3, Finite rank") {
       CP_ALS<ztensor, zconv_class> A1(Z3);
       conv.set_norm(norm3.real());
-      double diff = A1.compute_rank(9, conv);
+      double diff = A1.compute_rank(11, conv, 1, false, 0, 100);
       CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
@@ -93,11 +93,10 @@ TEST_CASE("ZCP") {
       auto d = Z3;
       btas::TUCKER_CP_ALS<ztensor, zconv_class> A1(d, 1e-3);
       conv.set_norm(norm3.real());
-      double diff = A1.compute_rank(9, conv);
+      double diff = A1.compute_rank(11, conv, 1, false, 0, 100);
       CHECK(std::abs(diff) <= epsilon);
     }
 #endif
-
     SECTION("ALS MODE = 4, Finite error") {
       CP_ALS<ztensor, zconv_class> A1(Z4);
       conv.set_norm(norm4.real());
