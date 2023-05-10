@@ -68,13 +68,13 @@ if (TARGET Boost::serialization)
   endif(NOT _boost_serialization_is_imported)
 endif (TARGET Boost::serialization)
 target_link_libraries(BTAS INTERFACE ${Boost_LIBRARIES})
+target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BOOST_ITERATOR=1 -DBTAS_HAS_BOOST_CONTAINER=1 -DBTAS_DEFAULT_TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK})
 
 # If building unit tests, perform a compile check with Boost
 # this is only possible, though, if did not build Boost from source,
 # since only imported targets can be used in CMAKE_REQUIRED_LIBRARIES
 if (BUILD_TESTING AND NOT BTAS_BUILT_BOOST_FROM_SOURCE)
   list(APPEND CMAKE_REQUIRED_LIBRARIES ${Boost_LIBRARIES})
-  target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BOOST_ITERATOR=1 -DBTAS_HAS_BOOST_CONTAINER=1 -DBTAS_TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK})
 
   set(_btas_boostcheck_source "
     #define BOOST_TEST_MAIN main_tester
