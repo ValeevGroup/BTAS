@@ -140,9 +140,9 @@ namespace btas{
       // this stores the factors from rank 0 to #blocks * blocksize
       // Compute all the BCD of the full blocks
       auto matlab = true;
-      auto one_over_tref = 1.0 / norm(tensor_ref);
+      auto one_over_tref = 1.0 / this->norm(tensor_ref);
       auto fit = 1.0, change = 0.0;
-      bool compute_full_fit = true;
+      bool compute_full_fit = false;
       for (long b = 0; b < n_full_blocks; ++b, block_step += blocksize) {
         BCD(block_step, block_step + blocksize, max_als, fast_pI, matlab, converge_test);
         // Test the system to see if converged. Doing the hard way first
@@ -156,7 +156,7 @@ namespace btas{
           }
 
           auto temp = reconstruct(current_grads, order, blockfactors[ndim]);
-          auto newfit = 1.0 - norm(temp - tensor_ref) * one_over_tref;
+          auto newfit = 1.0 - this->norm(temp - tensor_ref) * one_over_tref;
           change = abs(fit - newfit);
           fit = newfit;
           std::cout << block_step + blocksize << "\t";
@@ -176,13 +176,16 @@ namespace btas{
           }
 
           auto temp = reconstruct(current_grads, order, blockfactors[ndim]);
-          auto newfit = 1.0 - norm(temp - tensor_ref) * one_over_tref;
+          auto newfit = 1.0 - this->norm(temp - tensor_ref) * one_over_tref;
           change = abs(fit - newfit);
           fit = newfit;
-          std::cout << block_step + blocksize << "\t";
+          std::cout << block_step + last_blocksize << "\t";
           std::cout << fit << "\t" << change << std::endl;
         }
       }
+      epsilon = (compute_full_fit == false ? 
+                      this->norm(tensor_ref - reconstruct(blockfactors, order, blockfactors[ndim]))
+                      : 1.0 - fit);
       A = blockfactors;
     }
 
@@ -231,7 +234,7 @@ namespace btas{
       // computed by subtracting the previous blocks from the reference
       size_t count = 0;
       bool is_converged = false;
-      detail::set_norm(converge_test, norm(gradient));
+      detail::set_norm(converge_test, this->norm(gradient));
       do {
         ++count;
         this->num_ALS++;
@@ -252,10 +255,8 @@ namespace btas{
         }
 
         is_converged = converge_test(A, this->AtA);
-        if(is_converged) {
-          gradient -= reconstruct(A, order, A[ndim]);
-        }
       }while(count < max_als && !is_converged);
+      gradient -= reconstruct(A, order, A[ndim]);
     }
 
   };
