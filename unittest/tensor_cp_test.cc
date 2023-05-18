@@ -20,6 +20,7 @@ TEST_CASE("CP")
   using conv_class = btas::FitCheck<tensor>;
   using conv_class_coupled = btas::CoupledFitCheck<tensor>;
   using btas::CP_ALS;
+  using btas::CP_BCD;
   using btas::CP_RALS;
   using btas::CP_DF_ALS;
   using btas::COUPLED_CP_ALS;
@@ -374,7 +375,28 @@ TEST_CASE("CP")
      double diff = 1.0 - A1.compute_error(conv_coupled, 1e-2, 1, 19);
      CHECK(std::abs(diff - results(38,0)) <= epsilon);
    }
-     */
+  */
+  }
+  // Block Coodirnate descent test
+  {
+      SECTION("BCD MODE = 3, Finite rank"){
+      CP_BCD<tensor, conv_class> A1(D3, 9);
+      conv.set_norm(norm3);
+      double diff = A1.compute_rank_random(13, conv, 100);
+      CHECK(std::abs(diff) <= epsilon);
+    }
+    SECTION("BCD MODE = 4, Finite rank"){
+      CP_BCD<tensor, conv_class> A1(D4, 37);
+      conv.set_norm(norm4);
+      double diff = A1.compute_rank_random(55, conv, 100);
+      CHECK(std::abs(diff) <= epsilon);
+    }
+    SECTION("BCD MODE = 5, Finite rank"){
+      CP_BCD<tensor, conv_class> A1(D5, 26);
+      conv.set_norm(norm5);
+      double diff = A1.compute_rank_random(60, conv, 100);
+      CHECK(std::abs(diff) <= epsilon);
+    }
   }
 }
 #endif
