@@ -28,7 +28,11 @@ namespace DEFAULT {
 /// default index type
 #ifdef BTAS_HAS_BOOST_CONTAINER
 #ifndef BTAS_TARGET_MAX_INDEX_RANK
-#define BTAS_TARGET_MAX_INDEX_RANK 6
+#  ifdef BTAS_DEFAULT_TARGET_MAX_INDEX_RANK
+#    define BTAS_TARGET_MAX_INDEX_RANK BTAS_DEFAULT_TARGET_MAX_INDEX_RANK
+#  else
+#    define BTAS_TARGET_MAX_INDEX_RANK 6
+#endif
 #endif
 template <typename Integer>
 using index =
