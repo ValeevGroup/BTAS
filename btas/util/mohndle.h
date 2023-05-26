@@ -229,6 +229,7 @@ namespace btas {
     }
     Storage* get() { return const_cast<Storage*>(const_cast<const mohndle*>(this)->get()); }
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
     template <typename Archive>
     void serialize(Archive& ar, const unsigned int /* version */) {
       constexpr bool writing = std::is_base_of_v<boost::archive::detail::basic_oarchive, Archive>;
@@ -255,6 +256,7 @@ namespace btas {
       else
         variant_load_impl(ar, this->base(), index, serializable_index);
     }
+#endif
 
     auto& base() { return static_cast<base_type&>(*this); }
     const auto& base() const { return static_cast<const base_type&>(*this); }
@@ -267,6 +269,7 @@ namespace btas {
     template <typename Storage_, typename>
     friend void swap(mohndle<Storage_>& first, mohndle<Storage_>& second);
 
+#ifdef BTAS_HAS_BOOST_SERIALIZATION
     // utility for serializing select members of variant
     template <typename Archive, typename... Ts, std::size_t I0, std::size_t... Is>
     static Archive& variant_load_impl(Archive& ar, std::variant<Ts...>& v, std::size_t which, std::index_sequence<I0, Is...>) {
@@ -289,6 +292,7 @@ namespace btas {
       }
       return ar;
     }
+#endif
 
     inline static Storage null_storage_ = {};  // used if this is null
   };
