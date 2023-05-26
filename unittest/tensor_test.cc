@@ -208,6 +208,10 @@ TEST_CASE("Tensor Operations") {
   SECTION("Element Access") {
     CHECK(T3(2,1,3) == 1213);
     CHECK(T3({2,1,3}) == 1213);
+    CHECK(T3.at(2,1,3) == 1213);
+    CHECK(T3.at(std::array{2,1,3}) == 1213);
+    CHECK(T3[2 * T3.range().stride_data()[0] + 1*T3.range().stride_data()[1] + 3 * T3.range().stride_data()[2]] == 1213);
+    CHECK(T3.at_ordinal(2 * T3.range().stride_data()[0] + 1*T3.range().stride_data()[1] + 3 * T3.range().stride_data()[2]) == 1213);
   }
 
   SECTION("Conversion to Scalar") {

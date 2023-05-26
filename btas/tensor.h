@@ -377,8 +377,8 @@ namespace btas {
     /// @{
 
     /// accesses element using its index, given as a pack of integers
-    template <typename... Index>
-    typename std::enable_if<not is_index<typename std::decay<Index>::type...>::value, const_reference>::type operator()(
+    template <typename... Index, typename = std::enable_if_t<(std::is_integral_v<typename std::decay_t<Index>> && ...)>>
+    typename std::enable_if<not is_index<typename std::decay_t<Index>...>::value, const_reference>::type operator()(
         Index&&... idx) const {
       return storage_[range_.ordinal(std::forward<Index>(idx)...)];
     }
@@ -406,10 +406,24 @@ namespace btas {
       typename std::enable_if<std::is_integral<IndexOrdinal>::value, const_reference>::type
       operator[] (const IndexOrdinal& indexord) const
       {
+        // can't distinguish between operator[](Index) and operator[](ordinal)
+        // thus assume at_ordinal() if this->rank()==1
+        BTAS_ASSERT(this->range_.rank() != 1 &&
+                    "use btas::Tensor::operator[](index) or "
+                    "btas::Tensor::at_ordinal(index_ordinal) if this->range().rank()==1");
+        return at_ordinal(indexord);
+      }
+
+      /// accesses element using its ordinal value
+      /// \param indexord ordinal value of the index
+      template <typename IndexOrdinal>
+      typename std::enable_if<std::is_integral<IndexOrdinal>::value, const_reference>::type
+      at_ordinal(const IndexOrdinal& indexord) const
+      {
         return storage_[indexord];
       }
 
-    template <typename... Index>
+    template <typename... Index, typename = std::enable_if_t<(std::is_integral_v<typename std::decay_t<Index>> && ...)>>
     typename std::enable_if<not is_index<typename std::decay<Index>::type...>::value, reference>::type operator()(
         Index&&... idx) {
       return storage_[range_.ordinal(std::forward<Index>(idx)...)];
@@ -438,6 +452,20 @@ namespace btas {
       typename std::enable_if<std::is_integral<IndexOrdinal>::value, reference>::type
       operator[] (const IndexOrdinal& indexord)
       {
+        // can't distinguish between operator[](Index) and operator[](ordinal)
+        // thus assume at_ordinal() if this->rank()==1
+        BTAS_ASSERT(this->range_.rank() != 1 &&
+                    "use btas::Tensor::operator[](index) or "
+                    "btas::Tensor::at_ordinal(index_ordinal) if this->range().rank()==1");
+        return at_ordinal(indexord);
+      }
+
+      /// accesses element using its ordinal value
+      /// \param indexord ordinal value of the index
+      template <typename IndexOrdinal>
+      typename std::enable_if<std::is_integral<IndexOrdinal>::value, reference>::type
+      at_ordinal(const IndexOrdinal& indexord)
+      {
         return storage_[indexord];
       }
 
@@ -447,15 +475,16 @@ namespace btas {
     /// @{
 
     /// accesses element using its index, given as a pack of integers
-    template <typename... Index>
+    template <typename... Index, typename = std::enable_if_t<(std::is_integral_v<typename std::decay_t<Index>> && ...)>>
     const_reference at(Index&&... idx) const {
       assert(sizeof...(idx) == range_.rank());
-      assert(range_.includes(std::forward<Index>(idx)...));
+      assert(range_.includes(std::array{std::forward<Index>(idx)...}));
       return storage_[range_.ordinal(std::forward<Index>(idx)...)];
     }
 
     template <typename Index>
     typename std::enable_if<is_index<Index>::value, const_reference>::type at(const Index& index) const {
+      using std::size;
       assert(size(index) == range_.rank());
       assert(range_.includes(index));
       return storage_[range_.ordinal(index)];
@@ -472,15 +501,16 @@ namespace btas {
     //      }
 
     /// accesses element using its index, given as a pack of integers
-    template <typename... Index>
+    template <typename... Index, typename = std::enable_if_t<(std::is_integral_v<typename std::decay_t<Index>> && ...)>>
     reference at(Index&&... idx) {
       assert(sizeof...(idx) == range_.rank());
-      assert(range_.includes(std::forward<Index>(idx)...));
+      assert(range_.includes(std::array{std::forward<Index>(idx)...}));
       return storage_[range_.ordinal(std::forward<Index>(idx)...)];
     }
 
     template <typename Index>
     typename std::enable_if<is_index<Index>::value, reference>::type at(const Index& index) {
+      using std::size;
       assert(size(index) == range_.rank());
       assert(range_.includes(index));
       return storage_[range_.ordinal(index)];
