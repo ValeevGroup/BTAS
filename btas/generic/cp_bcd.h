@@ -196,7 +196,8 @@ namespace btas{
         auto tref_dim = to.extent(0);
         auto to_rank = to.extent(1), from_rank = from.extent(1);
 
-        auto to_ptr = to.data(), from_ptr = from.data();
+        auto to_ptr = to.data();
+        auto from_ptr = from.data();
         ind_t from_pos = 0;
         for (ind_t i = 0, skip = 0; i < tref_dim; ++i, skip += to_rank){
           for (auto b = block_start; b < block_end; ++b, ++from_pos){
