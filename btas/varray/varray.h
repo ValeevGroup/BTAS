@@ -127,8 +127,6 @@ private:
    [[deprecated("use varray::get_allocator()")]] allocator_type& alloc() { return static_cast<allocator_type&>(*this); }
    [[deprecated("use varray::get_allocator()")]] const allocator_type& alloc() const { return static_cast<const allocator_type&>(*this); }
 
-   constexpr allocator_type get_allocator() const noexcept { return static_cast<const allocator_type&>(*this); }
-
 #ifdef BTAS_HAS_BOOST_SERIALIZATION
    friend class boost::serialization::access;
 #endif
@@ -243,6 +241,8 @@ public:
        }
        return *this;
    }
+
+   constexpr allocator_type get_allocator() const noexcept { return static_cast<const allocator_type&>(*this); }
 
    iterator begin () noexcept
    {
@@ -429,22 +429,30 @@ namespace boost {
   namespace serialization {
 
   /// boost serialization for varray
-  template<class Archive, typename T>
-  void serialize (Archive& ar, btas::varray<T>& x, const unsigned int version)
+  /// @warning Boost.Serialization does not know how to serialize std::allocator so assume stateless allocators only here
+  template<class Archive, typename T, typename A>
+  void serialize (Archive& ar, btas::varray<T, A>& x, const unsigned int version)
   {
       boost::serialization::split_free(ar, x, version);
   }
-  template<class Archive, typename T>
-  void save (Archive& ar, const btas::varray<T>& x, const unsigned int version)
+  template<class Archive, typename T, typename A>
+  void save (Archive& ar, const btas::varray<T, A>& x, const unsigned int version)
   {
+      // TODO : implement allocator serialization
+//      const auto alloc = x.get_allocator();
+//      ar << BOOST_SERIALIZATION_NVP(alloc);
       const boost::serialization::collection_size_type count(x.size());
       ar << BOOST_SERIALIZATION_NVP(count);
       if (count != decltype(count)(0))
         ar << boost::serialization::make_array(x.data(), count);
   }
-  template<class Archive, typename T>
-  void load (Archive& ar, btas::varray<T>& x, const unsigned int version)
+  template<class Archive, typename T, typename A>
+  void load (Archive& ar, btas::varray<T, A>& x, const unsigned int version)
   {
+      // TODO : implement allocator serialization
+//      A allocator;
+//      ar >> BOOST_SERIALIZATION_NVP(allocator);
+//      x = btas::varray<T, A>(allocator);
       boost::serialization::collection_size_type count;
       ar >> BOOST_SERIALIZATION_NVP(count);
       x.resize(count);
@@ -460,20 +468,23 @@ namespace boost {
 namespace madness {
   namespace archive {
 
-    template <class Archive, typename T>
-    struct ArchiveLoadImpl<Archive, btas::varray<T>> {
-      static inline void load(const Archive& ar, btas::varray<T>& x) {
-        typename btas::varray<T>::size_type n{};
+    template <class Archive, typename T, typename A>
+    struct ArchiveLoadImpl<Archive, btas::varray<T, A>> {
+      static inline void load(const Archive& ar, btas::varray<T, A>& x) {
+        A allocator;
+        ar & allocator;
+        x = btas::varray<T, A>(allocator);
+        typename btas::varray<T, A>::size_type n{};
         ar& n;
         x.resize(n);
         for (typename btas::varray<T>::value_type& xi : x) ar& xi;
       }
     };
 
-    template <class Archive, typename T>
-    struct ArchiveStoreImpl<Archive, btas::varray<T>> {
+    template <class Archive, typename T, typename A>
+    struct ArchiveStoreImpl<Archive, btas::varray<T, A>> {
       static inline void store(const Archive& ar, const btas::varray<T>& x) {
-        ar& x.size();
+        ar& x.get_allocator() & x.size();
         for (const typename btas::varray<T>::value_type& xi : x) ar& xi;
       }
     };
@@ -481,15 +492,15 @@ namespace madness {
   }  // namespace archive
 }  // namespace madness
 
-template <typename T>
-inline bool operator== (const btas::varray<T>& a,
-                        const btas::varray<T>& b) {
+template <typename T, typename A>
+inline bool operator== (const btas::varray<T, A>& a,
+                        const btas::varray<T, A>& b) {
   return std::equal(a.begin(), a.end(), b.begin());
 }
 
-template <typename T>
-inline bool operator!= (const btas::varray<T>& a,
-                        const btas::varray<T>& b) {
+template <typename T, typename A>
+inline bool operator!= (const btas::varray<T, A>& a,
+                        const btas::varray<T, A>& b) {
   return not (a == b);
 }
 
