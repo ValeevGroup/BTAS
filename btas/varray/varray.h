@@ -471,9 +471,11 @@ namespace madness {
     template <class Archive, typename T, typename A>
     struct ArchiveLoadImpl<Archive, btas::varray<T, A>> {
       static inline void load(const Archive& ar, btas::varray<T, A>& x) {
-        A allocator;
-        ar & allocator;
-        x = btas::varray<T, A>(allocator);
+        if constexpr (!std::allocator_traits<A>::is_always_equal::value) {
+          A allocator;
+          ar & allocator;
+          x = btas::varray<T, A>(allocator);
+        }
         typename btas::varray<T, A>::size_type n{};
         ar& n;
         x.resize(n);
@@ -484,7 +486,10 @@ namespace madness {
     template <class Archive, typename T, typename A>
     struct ArchiveStoreImpl<Archive, btas::varray<T, A>> {
       static inline void store(const Archive& ar, const btas::varray<T, A>& x) {
-        ar& x.get_allocator() & x.size();
+        if constexpr (!std::allocator_traits<A>::is_always_equal::value) {
+          ar & x.get_allocator();
+        }
+        ar & x.size();
         for (const typename btas::varray<T, A>::value_type& xi : x) ar& xi;
       }
     };
