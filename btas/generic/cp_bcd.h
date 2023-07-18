@@ -150,19 +150,7 @@ namespace btas{
           // Test the system to see if converged. Doing the hard way first
           // To compute the accuracy fully compute CP approximation using blocks 0 through b.
           if(compute_full_fit) {
-            std::vector<Tensor> current_grads(ndim);
-            for (size_t i = 0; i < ndim; ++i) {
-              auto &a_mat = blockfactors[i];
-              auto lower = {z, z}, upper = {long(a_mat.extent(0)), block_step + blocksize};
-              current_grads[i] = make_view(a_mat.range().slice(lower, upper), a_mat.storage());
-            }
-
-            auto temp = reconstruct(current_grads, order, blockfactors[ndim]);
-            auto newfit = 1.0 - this->norm(temp - tensor_ref) * one_over_tref;
-            change = abs(fit - newfit);
-            fit = newfit;
-            std::cout << block_step + blocksize << "\t";
-            std::cout << fit << "\t" << change << std::endl;
+            compute_full(long(blockfactors.extent(0)), block_step + blocksize, one_over_tref, change, fit);
           }
         }
         if(last_blocksize != 0) {
@@ -170,24 +158,13 @@ namespace btas{
           block_step = n_full_blocks * blocksize;
           BCD(block_step, block_step + last_blocksize, max_als, fast_pI, matlab, converge_test, s);
           if(compute_full_fit) {
-            std::vector<Tensor> current_grads(ndim);
-            for (size_t i = 0; i < ndim; ++i) {
-              auto &a_mat = blockfactors[i];
-              auto lower = {z, z}, upper = {long(a_mat.extent(0)), block_step + last_blocksize};
-              current_grads[i] = make_view(a_mat.range().slice(lower, upper), a_mat.storage());
-            }
-
-            auto temp = reconstruct(current_grads, order, blockfactors[ndim]);
-            auto newfit = 1.0 - this->norm(temp - tensor_ref) * one_over_tref;
-            change = abs(fit - newfit);
-            fit = newfit;
-            std::cout << block_step + last_blocksize << "\t";
-            std::cout << fit << "\t" << change << std::endl;
+            compute_full(long(blockfactors.extent(0)), block_step + last_blocksize, one_over_tref, change, fit);
           }
         }
         epsilon = (compute_full_fit == false ? 
-                        this->norm(tensor_ref - reconstruct(blockfactors, order, blockfactors[ndim]))
+                        this->norm(gradient) * one_over_tref
                         : 1.0 - fit);
+        std::cout << epsilon << std::endl;
       }
       A = blockfactors;
     }
@@ -204,6 +181,22 @@ namespace btas{
             *(to_ptr + skip + b) = *(from_ptr + from_pos);
           }
         }
+    }
+
+    void compute_full(long extent, long block_end, T one_over_tref, T & change, T& fit){
+      std::vector<Tensor> current_grads(ndim);
+      for (size_t i = 0; i < ndim; ++i) {
+        auto &a_mat = blockfactors[i];
+        auto lower = {z, z}, upper = {extent, block_end};
+        current_grads[i] = make_view(a_mat.range().slice(lower, upper), a_mat.storage());
+      }
+
+      auto temp = reconstruct(current_grads, order, blockfactors[ndim]);
+      auto newfit = 1.0 - this->norm(temp - tensor_ref) * one_over_tref;
+      change = abs(fit - newfit);
+      fit = newfit;
+      std::cout << block_end << "\t";
+      std::cout << fit << "\t" << change << std::endl;
     }
     /// Computes an optimized factor matrix holding all others constant.
     /// No Khatri-Rao product computed, immediate contraction
