@@ -195,7 +195,7 @@ namespace btas {
           [](auto&& v) -> const Storage* {
             using v_t = std::remove_reference_t<decltype(v)>;
             if constexpr (std::is_same_v<v_t, std::monostate> || std::is_same_v<v_t, std::monostate const>) {
-              return &null_storage_;
+              return &null_storage();
             } else if constexpr (std::is_same_v<v_t, Storage>) {
               return &v;
             } else if constexpr (std::is_same_v<v_t, Storage const>) {
@@ -294,7 +294,11 @@ namespace btas {
     }
 #endif
 
-    inline static Storage null_storage_ = {};  // used if this is null
+    /// delays construction of null storage object until first use
+    static Storage& null_storage() {
+      static Storage null = {};
+      return null;
+    }
   };
 
   template <typename Storage, typename = std::enable_if_t<!std::is_const_v<Storage>>>
