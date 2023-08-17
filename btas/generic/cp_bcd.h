@@ -74,7 +74,10 @@ namespace btas{
     /// that stores the reference tensor.
     /// Reference tensor has no symmetries.
     /// \param[in] tensor the reference tensor to be decomposed.
-    CP_BCD(Tensor &tensor, ind_t block_size = 1, size_t sweeps=1) : CP_ALS<Tensor, ConvClass>(tensor), blocksize(block_size), nsweeps(sweeps){
+    CP_BCD(Tensor &tensor, ind_t block_size = 1, size_t sweeps=1, std::vector<size_t> bs = std::vector<size_t>()) : CP_ALS<Tensor, ConvClass>(tensor), blocksize(block_size), nsweeps(sweeps){
+      if(!bs.empty()){
+        block_sizes = bs;
+      }
     }
 
     /// Create a CP BCD object, child class of the CP object
@@ -94,6 +97,11 @@ namespace btas{
 
     ~CP_BCD() = default;
 
+    void set_block_sizes(size_t rank, std::vector<size_t> bs){
+      BTAS_ASSERT(bs[bs.size() - 1] == rank);
+      block_sizes = bs;
+      return;
+    }
    protected:
     Tensor gradient, block_ref;           // Stores gradient of BCD for fitting.
     ind_t blocksize;           // Size of block gradient
@@ -101,6 +109,7 @@ namespace btas{
     std::vector<size_t> order;  // convenient to write order of tensors for reconstruct
     long z = 0;
     size_t nsweeps;
+    std::vector<size_t> block_sizes;
 
     /// computed the CP decomposition using ALS to minimize the loss function for fixed rank \p rank
     /// \param[in] rank The rank of the CP decomposition.
@@ -128,10 +137,19 @@ namespace btas{
       block_ref = tensor_ref;
 
       // Number of full blocks with rank blocksize
-      // plus one more block with rank rank % blocksize
+      // plus one more block with rank: rank % blocksize
       int n_full_blocks = int( rank / blocksize),
           last_blocksize = rank % blocksize;
 
+      if(block_sizes.empty()) {
+        size_t index = 0;
+        block_sizes.emplace_back(index);
+        for(size_t i = 0; i < n_full_blocks; ++i) {
+          index += blocksize;
+          block_sizes.emplace_back(index);
+        }
+        if(last_blocksize != 0) block_sizes.emplace_back(index + last_blocksize);
+      }
       // copying all of A to block factors. Then we are going to take slices of A
       // that way we can leverage all of `CP_ALS` code without modification
       blockfactors = A;
@@ -142,31 +160,49 @@ namespace btas{
       auto one_over_tref = 1.0 / this->norm(tensor_ref);
       auto fit = 1.0, change = 0.0;
       bool compute_full_fit = false;
+      size_t n_blocks = block_sizes.size();
       for(auto s = 0; s < nsweeps; ++s){
         long block_step = 0;
         this->AtA = std::vector<Tensor>(ndim);
-        for (long b = 0; b < n_full_blocks; ++b, block_step += blocksize) {
-          BCD(block_step, block_step + blocksize, max_als, fast_pI, matlab, converge_test, s);
+
+        // E - A1 - A2 - ... = gradient
+        // initial : gradient = E
+        // gradient = E - A1
+        for (long b = 1; b < n_blocks; ++b) {
+          std::cout << "\tnorm (remainder) / tref: " << norm(gradient) / norm(tensor_ref) << std::endl;
+          this->AtA = std::vector<Tensor>(ndim);
+          BCD(block_sizes[b - 1], block_sizes[b], max_als, fast_pI, matlab, converge_test, s);
           // Test the system to see if converged. Doing the hard way first
           // To compute the accuracy fully compute CP approximation using blocks 0 through b.
           if(compute_full_fit) {
-            compute_full(long(blockfactors.extent(0)), block_step + blocksize, one_over_tref, change, fit);
+            compute_full(block_step + blocksize, one_over_tref, change, fit);
           }
         }
-        if(last_blocksize != 0) {
-          this->AtA = std::vector<Tensor>(ndim);
-          block_step = n_full_blocks * blocksize;
-          BCD(block_step, block_step + last_blocksize, max_als, fast_pI, matlab, converge_test, s);
-          if(compute_full_fit) {
-            compute_full(long(blockfactors.extent(0)), block_step + last_blocksize, one_over_tref, change, fit);
-          }
-        }
+//        if(last_blocksize != 0) {
+//          std::cout << "\t\tnorm grad / tref: " << norm(gradient) / norm(tensor_ref) << std::endl;
+//          this->AtA = std::vector<Tensor>(ndim);
+//          block_step = n_full_blocks * blocksize;
+//          BCD(block_step, block_step + last_blocksize, max_als, fast_pI, matlab, converge_test, s);
+//          if(compute_full_fit) {
+//            compute_full(block_step + last_blocksize, one_over_tref, change, fit);
+//          }
+//        }
+        std::cout << "\t\tnorm grad / tref: " << norm(gradient) / norm(tensor_ref) << std::endl;
         epsilon = (compute_full_fit == false ? 
-                        this->norm(gradient) * one_over_tref
-                        : 1.0 - fit);
-        std::cout << epsilon << std::endl;
+                        1.0 - this->norm(gradient) * one_over_tref
+                        : fit);
+        std::cout << epsilon << "\n" << std::endl;
       }
+      detail::set_norm(converge_test, this->norm(tensor_ref));
+      converge_test.verbose(true);
       A = blockfactors;
+      this->AtA = std::vector<Tensor>(ndim);
+      for (size_t i = 0; i < ndim; ++i) {
+        auto &a_mat = A[i];
+        contract(this->one, a_mat, {1, 2}, a_mat.conj(), {1, 3}, this->zero, this->AtA[i], {2, 3});
+      }
+      gradient = reconstruct(A, order, A[ndim]);
+      std::cout << norm(tensor_ref - gradient) * one_over_tref << std::endl;
     }
 
     void copy_blocks(Tensor & to, const Tensor & from, ind_t block_start, ind_t block_end){
@@ -183,11 +219,11 @@ namespace btas{
         }
     }
 
-    void compute_full(long extent, long block_end, T one_over_tref, T & change, T& fit){
+    void compute_full(long block_end, T one_over_tref, T & change, T& fit){
       std::vector<Tensor> current_grads(ndim);
       for (size_t i = 0; i < ndim; ++i) {
         auto &a_mat = blockfactors[i];
-        auto lower = {z, z}, upper = {extent, block_end};
+        auto lower = {z, z}, upper = {long(a_mat.extent(0)), block_end};
         current_grads[i] = make_view(a_mat.range().slice(lower, upper), a_mat.storage());
       }
 
@@ -229,9 +265,11 @@ namespace btas{
         auto lam_full_ptr = blockfactors[ndim].data(), new_lam_ptr = A[ndim].data();
         for(auto b = block_start; b < block_end; ++b, ++c)
           *(new_lam_ptr + c) = *(lam_full_ptr + b);
-        
+
         gradient += reconstruct(A, order, A[ndim]);
+
       }
+      std::cout << "\t\tnorm(remainder + hat{T}_block) / tref: " << norm(gradient) / norm(tensor_ref) << std::endl;
       // Do the ALS loop
       //CP_ALS::ALS(cur_block_size, converge_test, dir, max_als, calculate_epsilon, epsilon, fast_pI);
       // First do it manually, so we know its right
@@ -240,6 +278,7 @@ namespace btas{
       size_t count = 0;
       bool is_converged = false;
       detail::set_norm(converge_test, this->norm(gradient));
+      converge_test.verbose(true);
       do {
         ++count;
         this->num_ALS++;
