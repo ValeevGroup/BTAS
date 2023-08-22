@@ -169,9 +169,9 @@ namespace btas{
         // initial : gradient = E
         // gradient = E - A1
         for (long b = 1; b < n_blocks; ++b) {
-          std::cout << "\tnorm (remainder) / tref: " << norm(gradient) / norm(tensor_ref) << std::endl;
           this->AtA = std::vector<Tensor>(ndim);
           BCD(block_sizes[b - 1], block_sizes[b], max_als, fast_pI, matlab, converge_test, s);
+          std::cout << "\tnorm (remainder) / tref: " << norm(gradient) / norm(tensor_ref) << std::endl;
           // Test the system to see if converged. Doing the hard way first
           // To compute the accuracy fully compute CP approximation using blocks 0 through b.
           if(compute_full_fit) {
@@ -187,7 +187,7 @@ namespace btas{
 //            compute_full(block_step + last_blocksize, one_over_tref, change, fit);
 //          }
 //        }
-        std::cout << "\t\tnorm grad / tref: " << norm(gradient) / norm(tensor_ref) << std::endl;
+        //std::cout << "\t\tnorm grad / tref: " << norm(gradient) / norm(tensor_ref) << std::endl;
         epsilon = (compute_full_fit == false ? 
                         1.0 - this->norm(gradient) * one_over_tref
                         : fit);
@@ -269,7 +269,7 @@ namespace btas{
         gradient += reconstruct(A, order, A[ndim]);
 
       }
-      std::cout << "\t\tnorm(remainder + hat{T}_block) / tref: " << norm(gradient) / norm(tensor_ref) << std::endl;
+      //std::cout << "\t\tnorm(remainder + hat{T}_block) / tref: " << norm(gradient) / norm(tensor_ref) << std::endl;
       // Do the ALS loop
       //CP_ALS::ALS(cur_block_size, converge_test, dir, max_als, calculate_epsilon, epsilon, fast_pI);
       // First do it manually, so we know its right
@@ -278,7 +278,7 @@ namespace btas{
       size_t count = 0;
       bool is_converged = false;
       detail::set_norm(converge_test, this->norm(gradient));
-      converge_test.verbose(true);
+      converge_test.verbose(false);
       do {
         ++count;
         this->num_ALS++;
