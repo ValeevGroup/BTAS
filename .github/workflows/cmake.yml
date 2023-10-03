@@ -74,14 +74,12 @@ jobs:
         fi
         # install MKL if want vendor linalg
         if [ "${{matrix.linalg}}" = "vendor" ]; then
-          wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB 
-          sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB
-          rm GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB
-          sudo sh -c 'echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources.list.d/intel-mkl.list'
-          sudo apt-get update
-          sudo apt-get install intel-mkl-64bit-2019.4-070
+          sudo sh -c 'wget -O - https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor > /usr/share/keyrings/oneapi-archive-keyring.gpg'
+          sudo sh -c 'echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" > /etc/apt/sources.list.d/oneAPI.list'
+          sudo apt-get -yq update
+          sudo apt-get install intel-oneapi-mkl-devel
           echo "BLAS_PREFERENCE_LIST=IntelMKL" >> $GITHUB_ENV
-          echo "MKLROOT=/opt/intel/mkl" >> $GITHUB_ENV
+          echo "MKLROOT=/opt/intel/oneapi/mkl/latest" >> $GITHUB_ENV
         else
           echo "BLAS_PREFERENCE_LIST=ReferenceBLAS" >> $GITHUB_ENV
         fi
