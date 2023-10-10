@@ -110,19 +110,13 @@ struct dotc_impl<true> {
             _IteratorY itrY, const iterator_difference_t<_IteratorY>& incY,
       blas_lapack_impl_tag)
   {
-
-      using x_traits = std::iterator_traits<_IteratorX>;
-      using y_traits = std::iterator_traits<_IteratorY>;
-
-      using x_value_type = typename x_traits::value_type;
-      using y_value_type = typename y_traits::value_type;
-
-      using x_ptr_type = const x_value_type*;
-      using y_ptr_type = const y_value_type*;
+      static_assert(std::is_same_v<iterator_value_t<_IteratorX>,iterator_value_t<_IteratorY>>,
+                    "mismatching iterator value types");
+      using T = iterator_value_t<_IteratorX>;
 
       // XXX: DOTC == DOT in BLASPP
-      return blas::dot( Nsize, static_cast<x_ptr_type>(&(*itrX)), incX,
-                               static_cast<y_ptr_type>(&(*itrY)), incY );
+      return blas::dot( Nsize, static_cast<const T*>(&(*itrX)), incX,
+                               static_cast<const T*>(&(*itrY)), incY );
 
   }
 #endif
@@ -172,17 +166,12 @@ struct dotu_impl<true> {
       blas_lapack_impl_tag)
   {
 
-      using x_traits = std::iterator_traits<_IteratorX>;
-      using y_traits = std::iterator_traits<_IteratorY>;
+      static_assert(std::is_same_v<iterator_value_t<_IteratorX>,iterator_value_t<_IteratorY>>,
+                    "mismatching iterator value types");
+      using T = iterator_value_t<_IteratorX>;
 
-      using x_value_type = typename x_traits::value_type;
-      using y_value_type = typename y_traits::value_type;
-
-      using x_ptr_type = const x_value_type*;
-      using y_ptr_type = const y_value_type*;
-
-      return blas::dotu( Nsize, static_cast<x_ptr_type>(&(*itrX)), incX,
-                                static_cast<y_ptr_type>(&(*itrY)), incY );
+      return blas::dotu( Nsize, static_cast<const T*>(&(*itrX)), incX,
+                                static_cast<const T*>(&(*itrY)), incY );
 
   }
 #endif

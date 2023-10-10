@@ -112,7 +112,7 @@ TEST_CASE("Tensor Scal")
         Tensor<double> T(4,2,6,5);
         T.generate([](){ return randomReal<double>(); });
         Tensor<double> Tbak=T;
-        double d = randomReal<double>();
+        const auto d = randomReal<float>();  // N.B. use different types for scalar and tensor
         scal(d,T);
         double res=0;
         for(auto i : T.range()) res+=std::abs(T(i)-Tbak(i)*d);
@@ -136,10 +136,11 @@ TEST_CASE("Tensor Scal")
         Tensor<std::complex<double>> T(4,2,6,5);
         T.generate([](){ return randomCplx<double>(); });
         Tensor<std::complex<double>> Tbak=T;
-        std::complex<double> d = randomCplx<double>();
+        const auto d = randomCplx<float>();  // N.B. use different types for scalar and tensor
         scal(d,T);
         double res=0;
-        for(auto i : T.range()) res+=std::abs(T(i)-Tbak(i)*d);
+        std::complex<double> d_double(d);
+        for(auto i : T.range()) res+=std::abs(T(i)-Tbak(i)*d_double);
         CHECK(res < eps_double);
         }
 
@@ -166,7 +167,7 @@ TEST_CASE("Tensor Axpy")
         X.generate([](){ return randomReal<double>(); });
         Y.generate([](){ return randomReal<double>(); });
         Tensor<double> Ybak=Y;
-        double alpha = randomReal<double>();
+        const auto alpha = randomReal<float>();  // N.B. use different types for scalar and tensor
         axpy(alpha,X,Y);
         double res=0;
         for(auto i : Y.range()) res+=std::abs(Ybak(i)+X(i)*alpha-Y(i));
@@ -228,7 +229,7 @@ TEST_CASE("Tensor Ger")
         X.generate([](){ return randomReal<double>(); });
         Y.generate([](){ return randomReal<double>(); });
         Tensor<double> Abak=A;
-        double a = randomReal<double>();
+        const auto a = randomReal<float>();  // N.B. use different types for scalar and tensor
         ger(a,X,Y,A);
         double res=0;
         for(auto i : A.range()) res+=std::abs(a*X(i[0],i[1])*Y(i[2],i[3])+Abak(i)-A(i));
@@ -296,8 +297,8 @@ TEST_CASE("Tensor Gemv")
         A.generate([](){ return randomReal<double>(); });
         X.generate([](){ return randomReal<double>(); });
         Y.generate([](){ return randomReal<double>(); });
-        double alpha = randomReal<double>();
-        double beta = randomReal<double>();
+        const auto alpha = randomReal<float>();  // N.B. use different types for scalar and tensor
+        const auto beta = randomReal<float>();  // N.B. use different types for scalar and tensor
         Tensor<double> Ytest=Y;
         scal(beta,Ytest);
         for(long i=0;i<A.extent(0);i++)
@@ -681,8 +682,8 @@ TEST_CASE("Contraction")
         A.generate([](){ return randomReal<double>(); });
         B.generate([](){ return randomReal<double>(); });
         C.generate([](){ return randomReal<double>(); });
-        double alpha = randomReal<double>();
-        double beta = randomReal<double>();
+        const auto alpha = randomReal<float>();  // N.B. use different types for scalar and tensor
+        const auto beta = randomReal<float>();  // N.B. use different types for scalar and tensor
         Ctest=C;
         scal(beta,Ctest);
         contract(alpha,A,{'i','j','k'},B,{'k','j','l','m'},beta,C,{'i','m','l'});
@@ -700,7 +701,7 @@ TEST_CASE("Contraction")
         Tensor<double> D;
         Tensor<double> Dtest(2,4,6);
         Dtest.fill(0.0);
-        contract(alpha,A,{'i','j','k'},B,{'k','j','l','m'},0.0,D,{'i','m','l'});
+        contract(alpha,A,{'i','j','k'},B,{'k','j','l','m'},static_cast<decltype(alpha)>(0.0),D,{'i','m','l'});
         for(long i=0;i<A.extent(0);i++)
         for(long j=0;j<A.extent(1);j++)
         for(long k=0;k<A.extent(2);k++)
