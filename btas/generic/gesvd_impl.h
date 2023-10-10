@@ -73,8 +73,6 @@ template<> struct gesvd_impl<true>
      if( inplaceU and inplaceVt ) 
        BTAS_EXCEPTION("SVD cannot return both vectors inplace");
 
-
-
      value_type dummy;
      value_type* A = static_cast<value_type*>(&(*itrA));
      value_type* U = (needU and not inplaceU) ?

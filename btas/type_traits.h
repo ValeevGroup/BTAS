@@ -275,6 +275,9 @@ namespace btas {
 
   // Convienience traits
   template <typename _Iterator>
+  using iterator_value_t =
+      typename std::iterator_traits<_Iterator>::value_type;
+  template <typename _Iterator>
   using iterator_difference_t = 
     typename std::iterator_traits<_Iterator>::difference_type;
 

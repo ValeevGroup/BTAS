@@ -252,24 +252,16 @@ template<> struct gemm_impl<true>
       const unsigned long& LDC,
       blas_lapack_impl_tag)
    {
+      static_assert(std::is_same_v<iterator_value_t<_IteratorA>,iterator_value_t<_IteratorB>> &&
+                    std::is_same_v<iterator_value_t<_IteratorA>,iterator_value_t<_IteratorC>>,
+                    "mismatching iterator value types");
+      using T = iterator_value_t<_IteratorA>;
 
-      using a_traits = std::iterator_traits<_IteratorA>;
-      using b_traits = std::iterator_traits<_IteratorB>;
-      using c_traits = std::iterator_traits<_IteratorC>;
-
-      using a_value_type = typename a_traits::value_type;
-      using b_value_type = typename b_traits::value_type;
-      using c_value_type = typename c_traits::value_type;
-
-      using a_ptr_type = const a_value_type*;
-      using b_ptr_type = const b_value_type*;
-      using c_ptr_type =       c_value_type*;
-
-      blas::gemm( order, transA, transB, Msize, Nsize, Ksize, alpha,
-                  static_cast<a_ptr_type>(&(*itrA)), LDA,
-                  static_cast<b_ptr_type>(&(*itrB)), LDB,
-                  beta,
-                  static_cast<c_ptr_type>(&(*itrC)), LDC );
+      blas::gemm( order, transA, transB, Msize, Nsize, Ksize, static_cast<T>(alpha),
+                  static_cast<const T*>(&(*itrA)), LDA,
+                  static_cast<const T*>(&(*itrB)), LDB,
+                  static_cast<T>(beta),
+                  static_cast<T*>(&(*itrC)), LDC );
     }
 #endif
 

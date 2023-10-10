@@ -44,7 +44,8 @@ template<> struct scal_impl<true>
             _IteratorX itrX, const iterator_difference_t<_IteratorX>& incX,
             blas_lapack_impl_tag)
    {
-     blas::scal( Nsize, alpha, static_cast<_T*>(&(*itrX)), incX );
+     using T = iterator_value_t<_IteratorX>;
+     blas::scal( Nsize, static_cast<T>(alpha), static_cast<T*>(&(*itrX)), incX );
    }
 #endif
 

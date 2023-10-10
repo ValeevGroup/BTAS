@@ -151,11 +151,16 @@ template<> struct gemv_impl<true>
       blas_lapack_impl_tag)
    {
 
-     blas::gemv( order, transA, Msize, Nsize, alpha,
-                 static_cast<const _T*>(&(*itrA)), LDA,
-                 static_cast<const _T*>(&(*itrX)), incX,
-                 beta,
-                 static_cast<      _T*>(&(*itrY)), incY );
+     static_assert(std::is_same_v<iterator_value_t<_IteratorX>,iterator_value_t<_IteratorY>> &&
+                   std::is_same_v<iterator_value_t<_IteratorX>,iterator_value_t<_IteratorA>>,
+                   "mismatching iterator value types");
+     using T = iterator_value_t<_IteratorX>;
+
+     blas::gemv( order, transA, Msize, Nsize, static_cast<T>(alpha),
+                 static_cast<const T*>(&(*itrA)), LDA,
+                 static_cast<const T*>(&(*itrX)), incX,
+                 static_cast<T>(beta),
+                 static_cast<      T*>(&(*itrY)), incY );
                 
    }
 #endif
