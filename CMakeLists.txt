@@ -2,6 +2,9 @@
 
 cmake_minimum_required (VERSION 3.14.0)  # FetchContent_MakeAvailable
 
+# Preload versions/tags of all dependencies ====================================
+include(external/versions.cmake)
+
 ###############################################################################
 # CMake defaults to address key pain points
 ###############################################################################
@@ -24,6 +27,7 @@ FetchContent_Declare(
         vg_cmake_kit
         QUIET
         GIT_REPOSITORY      https://github.com/ValeevGroup/kit-cmake.git
+        GIT_TAG             ${BTAS_TRACKED_VGCMAKEKIT_TAG}
         SOURCE_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg
         BINARY_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg-build
         SUBBUILD_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg-subbuild
