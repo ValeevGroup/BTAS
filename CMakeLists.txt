@@ -2,6 +2,9 @@
 
 cmake_minimum_required (VERSION 3.14.0)  # FetchContent_MakeAvailable
 
+# Preload versions/tags of all dependencies ====================================
+include(external/versions.cmake)
+
 ###############################################################################
 # CMake defaults to address key pain points
 ###############################################################################
@@ -24,6 +27,7 @@ FetchContent_Declare(
         vg_cmake_kit
         QUIET
         GIT_REPOSITORY      https://github.com/ValeevGroup/kit-cmake.git
+        GIT_TAG             ${BTAS_TRACKED_VGCMAKEKIT_TAG}
         SOURCE_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg
         BINARY_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg-build
         SUBBUILD_DIR ${${VG_CMAKE_KIT_PREFIX_DIR}}/cmake/vg-subbuild
@@ -60,6 +64,7 @@ include(FeatureSummary)
 include(RedefaultableOption)
 include(CMakePackageConfigHelpers)
 include(AddCustomTargetSubproject)
+include(CMakePushCheckState)
 include(CTest) # defines BUILD_TESTING option
 
 # Configure options
@@ -77,28 +82,27 @@ add_feature_info("TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK}" TRUE "default 
 
 set(TARGET_ARCH "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 
-include(CMakePushCheckState)
+##########################
+# INSTALL variables
+##########################
 include(GNUInstallDirs)
-include(AppendFlags)
+set(BTAS_INSTALL_BINDIR "${CMAKE_INSTALL_BINDIR}"
+    CACHE PATH "BTAS BIN install directory")
+set(BTAS_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}"
+    CACHE PATH "BTAS INCLUDE install directory")
+set(BTAS_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}"
+    CACHE PATH "BTAS LIB install directory")
+set(BTAS_INSTALL_DATADIR "${CMAKE_INSTALL_DATAROOTDIR}/BTAS/${BTAS_EXT_VERSION}"
+    CACHE PATH "BTAS DATA install directory")
+set(BTAS_INSTALL_DOCDIR "${BTAS_INSTALL_DATADIR}/doc"
+    CACHE PATH "BTAS DOC install directory")
+set(BTAS_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/BTAS"
+    CACHE PATH "BTAS CMAKE install directory")
 
 ##########################
 # Standard build variables
 ##########################
-set(BTAS_INSTALL_BINDIR "bin"
-    CACHE PATH "BTAS BIN install directory")
-set(BTAS_INSTALL_INCLUDEDIR "include"
-    CACHE PATH "BTAS INCLUDE install directory")
-set(BTAS_INSTALL_LIBDIR "lib"
-    CACHE PATH "BTAS LIB install directory")
-set(BTAS_INSTALL_SHAREDIR "share/BTAS/${BTAS_MAJOR_VERSION}.${BTAS_MINOR_VERSION}.${BTAS_MICRO_VERSION}"
-    CACHE PATH "BTAS SHARE install directory")
-set(BTAS_INSTALL_DATADIR "${BTAS_INSTALL_SHAREDIR}/data"
-    CACHE PATH "BTAS DATA install directory")
-set(BTAS_INSTALL_DOCDIR "${BTAS_INSTALL_SHAREDIR}/doc"
-    CACHE PATH "BTAS DOC install directory")
-set(BTAS_INSTALL_CMAKEDIR "lib/cmake/BTAS"
-    CACHE PATH "BTAS CMAKE install directory")
-
+include(AppendFlags)
 # Get standard build variables from the environment if they have not already been set
 if(NOT CMAKE_C_FLAGS OR NOT DEFINED CMAKE_C_FLAGS)
   set(CMAKE_C_FLAGS "$ENV{CPPFLAGS}")
