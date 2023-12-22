@@ -79,11 +79,15 @@ template<> struct ger_impl<true>
       const unsigned long& LDA,
       blas_lapack_impl_tag)
    {
+     static_assert(std::is_same_v<iterator_value_t<_IteratorX>,iterator_value_t<_IteratorY>> &&
+                   std::is_same_v<iterator_value_t<_IteratorX>,iterator_value_t<_IteratorA>>,
+                   "mismatching iterator value types");
+     using T = iterator_value_t<_IteratorX>;
 
-     blas::geru( order, Msize, Nsize, alpha,
-                 static_cast<const _T*>(&(*itrX)), incX,
-                 static_cast<const _T*>(&(*itrY)), incY,
-                 static_cast<      _T*>(&*(itrA)), LDA );
+     blas::geru( order, Msize, Nsize, static_cast<T>(alpha),
+                 static_cast<const T*>(&(*itrX)), incX,
+                 static_cast<const T*>(&(*itrY)), incY,
+                 static_cast<      T*>(&*(itrA)), LDA );
    }
 #endif
 
