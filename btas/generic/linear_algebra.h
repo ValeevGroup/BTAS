@@ -260,6 +260,7 @@ Tensor pseudoInverse(Tensor & A, bool & fast_pI) {
     // Compute the matrix A^-1 from the inverted singular values and the U and
     // V^T provided by the SVD
     gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, U, s_inv, 0.0, s_);
+    U = Tensor(Range{Range1{row}, Range1{col}});
     gemm(blas::Op::NoTrans, blas::Op::NoTrans, 1.0, s_, Vt, 0.0, U);
 
     return U;
