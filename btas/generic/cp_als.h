@@ -692,9 +692,36 @@ namespace btas {
       swap_to_first(tensor_ref, n, true);
 
 #else  // BTAS_HAS_CBLAS
+//      // Computes the Khatri-Rao product intermediate
+      auto KhatriRao = this->generate_KRP(n, rank, true);
+
+      // moves mode n of the reference tensor to the front to simplify contraction
+      std::vector<ind_t> tref_indices, KRP_dims, An_indices;
+
+      // resize the Khatri-Rao product to the proper dimensions
+      for (size_t i = 0; i < ndim; i++) {
+        tref_indices.push_back(i);
+        if(i == n)
+          continue;
+        KRP_dims.push_back(tensor_ref.extent(i));
+      }
+      KRP_dims.push_back(rank);
+      KhatriRao.resize(KRP_dims);
+      KRP_dims.clear();
+
+      An_indices.push_back(n);
+      An_indices.push_back(ndim);
+      for (size_t i = 0; i < ndim; i++) {
+        if(i == n)
+          continue;
+        KRP_dims.push_back(i);
+      }
+      KRP_dims.push_back(ndim);
+      contract(this->one, tensor_ref, tref_indices, KhatriRao, KRP_dims, this->zero, temp, An_indices);
+
       // without MKL program cannot perform the swapping algorithm, must compute
       // flattened intermediate
-      gemm(blas::Op::NoTrans, blas::Op::NoTrans, this->one, flatten(tensor_ref, n), this->generate_KRP(n, rank, true), this->zero, temp);
+//      gemm(blas::Op::NoTrans, blas::Op::NoTrans, this->one, new_flatten(tensor_ref, n), this->generate_KRP(n, rank, true), this->zero, temp);
 #endif
 
       if(lambda != 0){
