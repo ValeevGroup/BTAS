@@ -40,6 +40,32 @@ int64_t getrf( blas::Layout order, int64_t M, int64_t N, T* A, int64_t LDA,
 
 }
 
+template <typename T, typename Alloc = std::allocator<T>>
+int64_t geqp3_pivot( blas::Layout order, int64_t M, int64_t N, T* A, int64_t LDA,
+              int64_t* IPIV, T* tau, Alloc alloc = Alloc() ) {
+
+  //std::cout << "IN GETRF IMPL" << std::endl;
+  if( order == blas::Layout::ColMajor ) {
+    return lapack::geqp3( M, N, A, LDA, IPIV, tau);
+  } else {
+
+    // Transpose input
+    auto* A_transpose = alloc.allocate(M*N);
+    transpose( N, M, A, LDA, A_transpose, M );
+
+    // A -> LU
+    auto info = lapack::geqp3( M, N, A_transpose, M, IPIV, tau);
+
+    // Transpose output + cleanup
+    if(!info)
+      transpose( M, N, A_transpose, M, A, LDA );
+    alloc.deallocate( A_transpose, M*N );
+
+    return info;
+  }
+
+}
+
 template <typename T, typename Alloc = std::allocator<T>, 
           typename IntAlloc = std::allocator<int64_t> >
 int64_t gesv( blas::Layout order, int64_t N, int64_t NRHS, T* A, int64_t LDA,

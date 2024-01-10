@@ -339,6 +339,7 @@ namespace btas {
     Tensor &tensor_ref;        // Tensor to be decomposed
     ord_t size;                // Total number of elements
     bool factors_set = false;  // Are the factors preset (not implemented yet).
+    std::vector<std::vector<int64_t>> pivs;
 
     /// Creates an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
@@ -659,6 +660,87 @@ namespace btas {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
+      // Testing the code to see if pivoted QR can help
+      if(false){
+        // First create a Pivot matrix from the flattened tensor_ref
+        auto f = flatten(tensor_ref, n);
+        auto square_dim = f.extent(0), full = f.extent(1);
+        auto scale_factor = double(full) / double(square_dim);
+        auto extended = (scale_factor > 2.0 ? square_dim * (scale_factor - 1.0) : full);
+        std::vector<int64_t> piv;
+        if(pivs.size() < (n + 1)) {
+          piv = std::vector<int64_t>(f.extent(1));
+          std::vector<T> tau(f.extent(1));
+          btas::geqp3_pivot(blas::Layout::RowMajor, f.extent(0), f.extent(1), f.data(), f.extent(1), piv.data(),
+                            tau.data());
+          Tensor R(full, square_dim);
+          R.fill(0.0);
+          for(auto i = 0; i < square_dim; ++i) {
+            for (auto j = i; j < square_dim; ++j) {
+
+            }
+          }
+          f = flatten(tensor_ref, n);
+          pivs.emplace_back(piv);
+        } else {
+          piv = pivs[n];
+        }
+
+        auto K = this->generate_KRP(n, rank, true);
+        // For reference I compute the Matricized tensor times khatri rao product
+        gemm(blas::Op::NoTrans, blas::Op::NoTrans, this->one, f, K, this->zero, temp);
+        detail::set_MtKRP(converge_test, temp);
+
+        Tensor Fp(square_dim, square_dim);
+        {
+          Tensor t(square_dim, full);
+          for (auto i = 0; i < square_dim; ++i) {
+            for (auto j = 0; j < full; ++j) {
+              int v = pivs[n][j];
+              t(i, j) = f(i, v);
+            }
+          }
+
+          for (auto i = 0; i < square_dim; ++i) {
+            for (auto j = 0; j < square_dim; ++j) {
+              Fp(i, j) = t(i, j);
+            }
+          }
+        }
+
+        Tensor Kp(square_dim, rank);
+        {
+          Tensor t(full, rank);
+          for(auto j = 0; j < full; ++j) {
+            int v = pivs[n][j];
+            for (auto r = 0; r < rank; ++r) {
+              t(j, r) = K(v, r);
+            }
+          }
+
+          for(auto j = 0; j < square_dim; ++j) {
+            for (auto r = 0; r < rank; ++r) {
+              Kp(j, r) = t(j, r);
+            }
+          }
+        }
+
+        // contract the product from above with the pseudoinverse of the Hadamard
+        // produce an optimize factor matrix
+        fast_pI = false;
+        auto pInv = pseudoInverse(Kp, fast_pI);
+
+        Tensor t;
+        gemm(blas::Op::NoTrans, blas::Op::NoTrans, this->one, Fp, pInv, this->zero, temp);
+
+        // compute the difference between this new factor matrix and the previous
+        // iteration
+        this->normCol(temp);
+
+        // Replace the old factor matrix with the new optimized result
+        A[n] = temp;
+        return;
+      }
 #ifdef BTAS_HAS_INTEL_MKL
 
       // Computes the Khatri-Rao product intermediate
