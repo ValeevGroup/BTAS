@@ -225,8 +225,11 @@ add_custom_target_subproject(btas install-config
     COMMAND ${CMAKE_COMMAND} -DCOMPONENT=btas-config -P ${PROJECT_BINARY_DIR}/cmake_install.cmake
     COMMENT "Installing BTAS config components")
 
-feature_summary(WHAT ALL
-    DESCRIPTION "=== BTAS Package/Feature Info ===")
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+  feature_summary(WHAT ALL
+          DESCRIPTION "=== BTAS Package/Feature Info ===")
+  feature_summary(FILENAME ${CMAKE_CURRENT_BINARY_DIR}/features.log WHAT ALL)
+endif()
 
 ###############################################################################
 # appendix: misc details
