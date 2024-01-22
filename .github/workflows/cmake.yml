@@ -58,7 +58,7 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-20.04' }}
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build g++-9 liblapack-dev libboost-dev libboost-serialization-dev libeigen3-dev openmpi-bin libopenmpi-dev libtbb-dev ccache
+        sudo apt-get install ninja-build g++-9 liblapack-dev libboost-dev libboost-serialization-dev libboost-random-dev libeigen3-dev openmpi-bin libopenmpi-dev libtbb-dev ccache
         if [ "${{matrix.build_type}}" = "Release" ]; then
           sudo apt-get install libclang1-9 libclang-cpp9 graphviz fonts-liberation
           cd ${{github.workspace}}/build

@@ -16,44 +16,7 @@ set(BTAS_EXT_VERSION "@BTAS_EXT_VERSION@")
 
 @PACKAGE_INIT@
 
-# import boost components, if any missing
-set(Boost_BTAS_DEPS_LIBRARIES @Boost_BTAS_DEPS_LIBRARIES@)
-foreach(_deplib ${Boost_BTAS_DEPS_LIBRARIES})
-  if (DEFINED Boost_BTAS_DEPS_LIBRARIES_NOT_FOUND_CHECK)
-    list(APPEND Boost_BTAS_DEPS_LIBRARIES_NOT_FOUND_CHECK OR)
-  endif()
-  list(APPEND Boost_BTAS_DEPS_LIBRARIES_NOT_FOUND_CHECK "NOT;TARGET;Boost::${_deplib}")
-endforeach(_deplib)
-if (NOT DEFINED Boost_BTAS_DEPS_LIBRARIES_NOT_FOUND_CHECK)
-  list(APPEND Boost_BTAS_DEPS_LIBRARIES_NOT_FOUND_CHECK "NOT;TARGET;Boost::boost")
-endif (NOT DEFINED Boost_BTAS_DEPS_LIBRARIES_NOT_FOUND_CHECK)
-
-if(${Boost_BTAS_DEPS_LIBRARIES_NOT_FOUND_CHECK})
-  set(Boost_USE_CONFIG @Boost_USE_CONFIG@)
-  # OPTIONAL_COMPONENTS in FindBoost available since 3.11
-  cmake_minimum_required(VERSION 3.11.0)
-  if (Boost_USE_CONFIG)
-    set(Boost_CONFIG @Boost_CONFIG@)
-    if (NOT Boost_CONFIG OR NOT EXISTS ${Boost_CONFIG})
-      message(FATAL_ERROR "Expected Boost config file at ${Boost_CONFIG}; directory moved since BTAS configuration?")
-    endif()
-    get_filename_component(Boost_DIR ${Boost_CONFIG} DIRECTORY)
-    find_package(Boost CONFIG QUIET REQUIRED OPTIONAL_COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES} PATHS ${Boost_DIR} NO_DEFAULT_PATH)
-  else (Boost_USE_CONFIG)
-    set(BOOST_INCLUDEDIR @Boost_INCLUDE_DIR@)
-    set(BOOST_LIBRARYDIR @Boost_LIBRARY_DIR_RELEASE@)
-    if (NOT BOOST_LIBRARYDIR OR NOT EXISTS ${BOOST_LIBRARYDIR})
-      set(BOOST_LIBRARYDIR @Boost_LIBRARY_DIR_DEBUG@)
-    endif()
-    set(Boost_NO_SYSTEM_PATHS OFF)
-    if (BOOST_LIBRARYDIR AND BOOST_INCLUDEDIR)
-      if (EXISTS ${BOOST_LIBRARYDIR} AND EXISTS ${BOOST_INCLUDEDIR})
-        set(Boost_NO_SYSTEM_PATHS ON)
-      endif()
-    endif()
-    find_package(Boost QUIET REQUIRED OPTIONAL_COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
-  endif (Boost_USE_CONFIG)
-endif(${Boost_BTAS_DEPS_LIBRARIES_NOT_FOUND_CHECK})
+@Boost_CONFIG_FILE_CONTENTS@
 
 # find linalgpp dependencies
 if(NOT TARGET blaspp)
