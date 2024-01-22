@@ -6,16 +6,15 @@
 #define BTAS_GENERIC_HDF5_READ_WRITE_H
 
 #ifdef BTAS_HAS_HighFive
-using <highfive.cpp>
+#include <highfive/highfive.hpp>
 namespace btas {
   template<typename Tensor>
-  read_hdf5_to_tensor(std::string filename){
+  Tensor read_hdf5_to_tensor(std::string& filename){
+    auto File = HighFive::File(filename);
 
 
   }
-
-  write_tensor_to_hdf5(std::string filename)
-}
+} // namespace btas
 #endif //BTAS_HAS_HighFive
 
 #endif  // BTAS_GENERIC_HDF5_READ_WRITE_H
