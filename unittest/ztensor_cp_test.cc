@@ -98,20 +98,16 @@ TEST_CASE("ZCP") {
       conv.verbose(false);
     }
 #endif
-    std::cout.precision(16);
     SECTION("ALS MODE = 4, Finite error") {
       CP_ALS<ztensor, zconv_class> A1(Z4);
       conv.set_norm(norm4.real());
-      double diff = A1.compute_error(conv, 1e-5, 1, 100, true, 57);
-      std::cout << diff << std::endl;
-      std::cout << epsilon << std::endl;
-      std::cout << A1.get_factor_matrices()[1].extent(1) << std::endl;
+      double diff = A1.compute_error(conv, 1e-2, 1, 100, true, 57);
       CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("ALS MODE = 4, Finite rank") {
       CP_ALS<ztensor, zconv_class> A1(Z4);
       conv.set_norm(norm4.real());
-      double diff = A1.compute_rank(80, conv, 1, true, 80);
+      double diff = A1.compute_rank(57, conv, 1, true, 57);
       CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
@@ -156,7 +152,11 @@ TEST_CASE("ZCP") {
    SECTION("RALS MODE = 4, Finite error"){
      CP_RALS<ztensor, zconv_class> A1(Z4);
      conv.set_norm(norm4.real());
-     double diff = A1.compute_error(conv, 1e-2, 1, 67, true, 65);
+     double diff = A1.compute_error(conv, 1e-5, 1, 100, true, 65);
+     std::cout.precision(16);
+     std::cout << diff << std::endl;
+     std::cout << epsilon << std::endl;
+     std::cout << A1.get_factor_matrices()[1].extent(1) << std::endl;
      CHECK(std::abs(diff) <= epsilon);
    }
 #if BTAS_ENABLE_TUCKER_CP_UT
