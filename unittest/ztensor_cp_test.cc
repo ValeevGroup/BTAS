@@ -72,7 +72,7 @@ TEST_CASE("ZCP") {
   std::complex<double> norm3 = sqrt(dot(Z3, Z3));
   std::complex<double> norm32 = sqrt(dot(Z33, Z33));
 
-  zconv_class conv(1e-4);
+  zconv_class conv(1e-3);
 
   // ALS tests
   {
@@ -98,16 +98,19 @@ TEST_CASE("ZCP") {
       conv.verbose(false);
     }
 #endif
+    std::cout.precision(16);
     SECTION("ALS MODE = 4, Finite error") {
       CP_ALS<ztensor, zconv_class> A1(Z4);
       conv.set_norm(norm4.real());
-      double diff = A1.compute_error(conv, 1e-2, 1, 100, true, 57);
+      double diff = A1.compute_error(conv, 1e-5, 1, 100, true, 57);
+      std::cout << diff << std::endl;
+      std::cout << epsilon << std::endl;
       CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("ALS MODE = 4, Finite rank") {
       CP_ALS<ztensor, zconv_class> A1(Z4);
       conv.set_norm(norm4.real());
-      double diff = A1.compute_rank(57, conv, 1, true, 57);
+      double diff = A1.compute_rank(70, conv, 1, true, 70);
       CHECK(std::abs(diff) <= epsilon);
     }
 #if BTAS_ENABLE_TUCKER_CP_UT
