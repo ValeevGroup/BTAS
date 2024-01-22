@@ -1,63 +1,41 @@
 # -*- mode: cmake -*-
 
-# Limit scope of the search if BOOST_ROOT or BOOST_INCLUDEDIR is provided.
-if (BOOST_ROOT OR BOOST_INCLUDEDIR)
-  set(Boost_NO_SYSTEM_PATHS TRUE)
+# Boost can be discovered by every (sub)package but only the top package can build it ...
+# if we are the top package need to include the list of Boost components to be built
+if("${CMAKE_PROJECT_NAME}" STREQUAL "${PROJECT_NAME}")
+  set(required_components
+          headers           # BTAS
+          container         # BTAS
+          iterator          # BTAS
+          random            # BTAS
+  )
+  if (DEFINED Boost_REQUIRED_COMPONENTS)
+    list(APPEND Boost_REQUIRED_COMPONENTS ${required_components})
+    list(REMOVE_DUPLICATES Boost_REQUIRED_COMPONENTS)
+  else()
+    set(Boost_REQUIRED_COMPONENTS "${required_components}" CACHE STRING "Required components of Boost to discovered or built")
+  endif()
+  set(optional_components
+          serialization # BTAS
+  )
+  if (DEFINED Boost_OPTIONAL_COMPONENTS)
+    list(APPEND Boost_OPTIONAL_COMPONENTS ${optional_components})
+    list(REMOVE_DUPLICATES Boost_OPTIONAL_COMPONENTS)
+  else()
+    set(Boost_OPTIONAL_COMPONENTS "${optional_components}" CACHE STRING "Optional components of Boost to discovered or built")
+  endif()
 endif()
 
-# make sure Boost::boost is available, and look for optional serialization component
-if (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
-  list(APPEND Boost_BTAS_DEPS_LIBRARIES serialization)
-
-  # detect which Boost targets I already have
-  foreach(tgt boost;headers;${Boost_BTAS_DEPS_LIBRARIES})
-    if (TARGET Boost::${tgt})
-      set(btas_imported_boost_${tgt} 0)
-    else()
-      set(btas_imported_boost_${tgt} 1)
-    endif()
-  endforeach()
-
-  # try config first
-  # OPTIONAL_COMPONENTS in FindBoost available since 3.11
-  cmake_minimum_required(VERSION 3.11.0)
-  find_package(Boost ${BTAS_TRACKED_BOOST_VERSION} CONFIG OPTIONAL_COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
-  if (NOT TARGET Boost::boost)
-    find_package(Boost ${BTAS_TRACKED_BOOST_VERSION} OPTIONAL_COMPONENTS ${Boost_BTAS_DEPS_LIBRARIES})
-    if (TARGET Boost::boost)
-      set(Boost_USE_CONFIG FALSE)
-    endif(TARGET Boost::boost)
-  else()
-    set(Boost_USE_CONFIG TRUE)
-  endif()
-
-  # Boost::* targets by default are not GLOBAL, so to allow users of LINALG_LIBRARIES to safely use them we need to make them global
-  # more discussion here: https://gitlab.kitware.com/cmake/cmake/-/issues/17256
-  foreach(tgt boost;headers;${Boost_BTAS_DEPS_LIBRARIES})
-    if (TARGET Boost::${tgt} AND btas_imported_boost_${tgt})
-      get_target_property(_boost_tgt_${tgt}_is_imported_global Boost::${tgt} IMPORTED_GLOBAL)
-      if (NOT _boost_tgt_${tgt}_is_imported_global)
-        set_target_properties(Boost::${tgt} PROPERTIES IMPORTED_GLOBAL TRUE)
-      endif()
-      unset(_boost_tgt_${tgt}_is_imported_global)
-    endif()
-  endforeach()
-
-endif (NOT TARGET Boost::boost OR NOT TARGET Boost::serialization)
-
-# if Boost not found, and BTAS_BUILD_DEPS_FROM_SOURCE=ON, use FetchContent to build it
-set(BTAS_BUILT_BOOST_FROM_SOURCE 0)
-if (NOT TARGET Boost::boost)
-  if (BTAS_BUILD_DEPS_FROM_SOURCE)
-    include(${PROJECT_SOURCE_DIR}/cmake/modules/FindOrFetchBoost.cmake)
-    set(BTAS_BUILT_BOOST_FROM_SOURCE 1)
-  else(BTAS_BUILD_DEPS_FROM_SOURCE)
-    message(FATAL_ERROR "Boost is a required prerequisite of BTAS, but not found; install Boost or set BTAS_BUILD_DEPS_FROM_SOURCE=ON to obtain from source")
-  endif(BTAS_BUILD_DEPS_FROM_SOURCE)
-endif (NOT TARGET Boost::boost)
+if (BTAS_BUILD_DEPS_FROM_SOURCE AND NOT DEFINED Boost_FETCH_IF_MISSING)
+  set(Boost_FETCH_IF_MISSING 1)
+endif()
+include(${vg_cmake_kit_SOURCE_DIR}/modules/FindOrFetchBoost.cmake)
+if (DEFINED Boost_SOURCE_DIR)
+  set(BTAS_BUILT_BOOST_FROM_SOURCE 1)
+endif()
 
 # make BTAS depend on Boost
-set(Boost_LIBRARIES Boost::boost)
+set(Boost_LIBRARIES Boost::headers;Boost::random)
 if (TARGET Boost::serialization)
   list(APPEND Boost_LIBRARIES Boost::serialization)
   target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BOOST_SERIALIZATION=1)
