@@ -76,6 +76,8 @@ redefaultable_option(BTAS_USE_BLAS_LAPACK "Whether to enable BLAS/LAPACK binding
 add_feature_info(USE_BLAS_LAPACK BTAS_USE_BLAS_LAPACK "Will use BLAS and LAPACK linear algebra distributions via their BLAS++/LAPACK++ interfaces" )
 option(ENABLE_WFN91_LINALG_DISCOVERY_KIT "Use linear algebra discovery kit from github.com/wavefunction91 [recommended]" ON)
 add_feature_info(WFN91LinearAlgebraDiscoveryKit ENABLE_WFN91_LINALG_DISCOVERY_KIT "Linear algebra discovery kit from github.com/wavefunction91 supports many more corner cases than the default CMake modules and/or ICL's BLAS++/LAPACK++ modules")
+option(BTAS_ENABLE_HIGHFIVE "Add the optional HDF5 read/writer package to read tensors from source" OFF)
+add_feature_info(BTAS_ENABLE_HIGHFIVE BTAS_ENABLE_HIGHFIVE "Add the optional HDF5 read/writer package to read tensors from source https://github.com/BlueBrain/HighFive")
 
 set(TARGET_MAX_INDEX_RANK 6 CACHE STRING "Determines the rank for which the default BTAS index type will use stack (default: 6); this requires Boost.Container")
 add_feature_info("TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK}" TRUE "default BTAS index type will use stack for rank<=${TARGET_MAX_INDEX_RANK}")
@@ -162,6 +164,9 @@ install(DIRECTORY btas
 if( BTAS_USE_BLAS_LAPACK )
   include(external/linalgpp.cmake)
 endif()
+if(BTAS_ENABLE_HIGHFIVE)
+  include(external/highfive.cmake)
+endif(BTAS_ENABLE_HIGHFIVE)
 include(external/boost.cmake)
 
 ##########################
