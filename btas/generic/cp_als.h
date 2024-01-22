@@ -659,6 +659,7 @@ namespace btas {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
 
+          }
 #ifdef BTAS_HAS_INTEL_MKL
 
       // Computes the Khatri-Rao product intermediate

@@ -146,17 +146,14 @@ TEST_CASE("ZCP") {
     SECTION("RALS MODE = 4, Finite rank") {
       CP_RALS<ztensor, zconv_class> A1(Z4);
       conv.set_norm(norm4.real());
-      double diff = A1.compute_rank(65, conv, 1, true, 65);
+      double diff = A1.compute_rank(67, conv, 1, true, 65);
       CHECK(std::abs(diff) <= epsilon);
     }
    SECTION("RALS MODE = 4, Finite error"){
      CP_RALS<ztensor, zconv_class> A1(Z4);
      conv.set_norm(norm4.real());
-     double diff = A1.compute_error(conv, 1e-5, 1, 100, true, 65);
-     std::cout.precision(16);
-     std::cout << diff << std::endl;
-     std::cout << epsilon << std::endl;
-     std::cout << A1.get_factor_matrices()[1].extent(1) << std::endl;
+     conv.verbose(true);
+     double diff = A1.compute_error(conv, 1e-5, 1, 67, true, 65);
      CHECK(std::abs(diff) <= epsilon);
    }
 #if BTAS_ENABLE_TUCKER_CP_UT
