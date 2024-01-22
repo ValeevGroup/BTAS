@@ -152,7 +152,6 @@ TEST_CASE("ZCP") {
    SECTION("RALS MODE = 4, Finite error"){
      CP_RALS<ztensor, zconv_class> A1(Z4);
      conv.set_norm(norm4.real());
-     conv.verbose(true);
      double diff = A1.compute_error(conv, 1e-5, 1, 67, true, 65);
      CHECK(std::abs(diff) <= epsilon);
    }
