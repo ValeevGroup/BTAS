@@ -661,25 +661,20 @@ namespace btas {
       Tensor an(A[n].range());
 
       // Testing the code to see if pivoted QR can help
-      if(false){
+      if (false) {
         // First create a Pivot matrix from the flattened tensor_ref
         auto f = flatten(tensor_ref, n);
         auto square_dim = f.extent(0), full = f.extent(1);
         auto scale_factor = double(full) / double(square_dim);
         auto extended = (scale_factor > 2.0 ? square_dim * (scale_factor - 1.0) : full);
         std::vector<int64_t> piv;
-        if(pivs.size() < (n + 1)) {
+        if (pivs.size() < (n + 1)) {
           piv = std::vector<int64_t>(f.extent(1));
           std::vector<T> tau(f.extent(1));
           btas::geqp3_pivot(blas::Layout::RowMajor, f.extent(0), f.extent(1), f.data(), f.extent(1), piv.data(),
                             tau.data());
           Tensor R(full, square_dim);
           R.fill(0.0);
-          for(auto i = 0; i < square_dim; ++i) {
-            for (auto j = i; j < square_dim; ++j) {
-
-            }
-          }
           f = flatten(tensor_ref, n);
           pivs.emplace_back(piv);
         } else {
@@ -711,14 +706,14 @@ namespace btas {
         Tensor Kp(square_dim, rank);
         {
           Tensor t(full, rank);
-          for(auto j = 0; j < full; ++j) {
+          for (auto j = 0; j < full; ++j) {
             int v = pivs[n][j];
             for (auto r = 0; r < rank; ++r) {
               t(j, r) = K(v, r);
             }
           }
 
-          for(auto j = 0; j < square_dim; ++j) {
+          for (auto j = 0; j < square_dim; ++j) {
             for (auto r = 0; r < rank; ++r) {
               Kp(j, r) = t(j, r);
             }
