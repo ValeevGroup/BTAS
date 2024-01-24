@@ -58,7 +58,7 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-20.04' }}
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build g++-9 liblapack-dev libboost-dev libboost-serialization-dev libeigen3-dev openmpi-bin libopenmpi-dev libtbb-dev ccache
+        sudo apt-get install ninja-build g++-9 liblapack-dev libboost-dev libboost-serialization-dev libboost-random-dev libeigen3-dev openmpi-bin libopenmpi-dev libtbb-dev ccache
         if [ "${{matrix.build_type}}" = "Release" ]; then
           sudo apt-get install libclang1-9 libclang-cpp9 graphviz fonts-liberation
           cd ${{github.workspace}}/build
@@ -80,6 +80,7 @@ jobs:
           sudo apt-get install intel-oneapi-mkl-devel
           echo "BLAS_PREFERENCE_LIST=IntelMKL" >> $GITHUB_ENV
           echo "MKLROOT=/opt/intel/oneapi/mkl/latest" >> $GITHUB_ENV
+          echo "MKL_NUM_THREADS=1" >> $GITHUB_ENV
         else
           echo "BLAS_PREFERENCE_LIST=ReferenceBLAS" >> $GITHUB_ENV
         fi

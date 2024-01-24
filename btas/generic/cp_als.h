@@ -659,7 +659,6 @@ namespace btas {
                       double lambda = 0) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
-
       // Testing the code to see if pivoted QR can help
       if (false) {
         // First create a Pivot matrix from the flattened tensor_ref
@@ -795,10 +794,6 @@ namespace btas {
       }
       KRP_dims.push_back(ndim);
       contract(this->one, tensor_ref, tref_indices, KhatriRao, KRP_dims, this->zero, temp, An_indices);
-
-      // without MKL program cannot perform the swapping algorithm, must compute
-      // flattened intermediate
-//      gemm(blas::Op::NoTrans, blas::Op::NoTrans, this->one, new_flatten(tensor_ref, n), this->generate_KRP(n, rank, true), this->zero, temp);
 #endif
 
       if(lambda != 0){
