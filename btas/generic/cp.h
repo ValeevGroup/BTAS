@@ -71,6 +71,16 @@ namespace btas {
       epsilon = t.get_fit(max_iter);
       return;
     }
+
+    template <typename T>
+    void set_norm(T &t, double norm){
+      return;
+    }
+
+    template <typename Tensor>
+    void set_norm(FitCheck<Tensor> &t, double norm){
+      t.set_norm(norm);
+    }
   }  // namespace detail
 
   /** \brief Base class to compute the Canonical Product (CP) decomposition of an order-N

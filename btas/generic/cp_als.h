@@ -625,7 +625,7 @@ namespace btas {
           if (tmp != i) {
             A[i] = A[tmp];
           } else if (dir) {
-            direct(i, rank, fast_pI, matlab, converge_test);
+            direct(i, rank, fast_pI, matlab, converge_test, tensor_ref);
           } else {
             update_w_KRP(i, rank, fast_pI, matlab, converge_test);
           }
@@ -658,7 +658,7 @@ namespace btas {
                       double lambda = 0) {
       Tensor temp(A[n].extent(0), rank);
       Tensor an(A[n].range());
-
+      
 #ifdef BTAS_HAS_INTEL_MKL
 
       // Computes the Khatri-Rao product intermediate
@@ -692,9 +692,32 @@ namespace btas {
       swap_to_first(tensor_ref, n, true);
 
 #else  // BTAS_HAS_CBLAS
-      // without MKL program cannot perform the swapping algorithm, must compute
-      // flattened intermediate
-      gemm(blas::Op::NoTrans, blas::Op::NoTrans, this->one, flatten(tensor_ref, n), this->generate_KRP(n, rank, true), this->zero, temp);
+//      // Computes the Khatri-Rao product intermediate
+      auto KhatriRao = this->generate_KRP(n, rank, true);
+
+      // moves mode n of the reference tensor to the front to simplify contraction
+      std::vector<ind_t> tref_indices, KRP_dims, An_indices;
+
+      // resize the Khatri-Rao product to the proper dimensions
+      for (size_t i = 0; i < ndim; i++) {
+        tref_indices.push_back(i);
+        if(i == n)
+          continue;
+        KRP_dims.push_back(tensor_ref.extent(i));
+      }
+      KRP_dims.push_back(rank);
+      KhatriRao.resize(KRP_dims);
+      KRP_dims.clear();
+
+      An_indices.push_back(n);
+      An_indices.push_back(ndim);
+      for (size_t i = 0; i < ndim; i++) {
+        if(i == n)
+          continue;
+        KRP_dims.push_back(i);
+      }
+      KRP_dims.push_back(ndim);
+      contract(this->one, tensor_ref, tref_indices, KhatriRao, KRP_dims, this->zero, temp, An_indices);
 #endif
 
       if(lambda != 0){
@@ -737,52 +760,52 @@ namespace btas {
     /// return if \c matlab was successful
     /// \param[in, out] converge_test Test to see if ALS is converged, holds the value of fit. test to see if the ALS is converged
 
-    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test, double lambda = 0.0) {
+    void direct(size_t n, ind_t rank, bool &fast_pI, bool &matlab, ConvClass &converge_test, Tensor& target, double lambda = 0.0) {
       // Determine if n is the last mode, if it is first contract with first mode
       // and transpose the product
       bool last_dim = n == ndim - 1;
       // product of all dimensions
       ord_t LH_size = size;
       size_t contract_dim = last_dim ? 0 : ndim - 1;
-      ind_t offset_dim = tensor_ref.extent(n);
+      ind_t offset_dim = target.extent(n);
       ind_t pseudo_rank = rank;
 
       // Store the dimensions which are available to hadamard contract
       std::vector<ind_t> dimensions;
       for (size_t i = last_dim ? 1 : 0; i < (last_dim ? ndim : ndim - 1); i++) {
-        dimensions.push_back(tensor_ref.extent(i));
+        dimensions.push_back(target.extent(i));
       }
 
-      // Modifying the dimension of tensor_ref so store the range here to resize
-      Range R = tensor_ref.range();
+      // Modifying the dimension of target so store the range here to resize
+      Range R = target.range();
       //Tensor an(A[n].range());
 
-      // Resize the tensor which will store the product of tensor_ref and the first factor matrix
-      Tensor temp = Tensor(size / tensor_ref.extent(contract_dim), rank);
-      tensor_ref.resize(
-          Range{Range1{last_dim ? tensor_ref.extent(contract_dim) : size / tensor_ref.extent(contract_dim)},
-                Range1{last_dim ? size / tensor_ref.extent(contract_dim) : tensor_ref.extent(contract_dim)}});
+      // Resize the tensor which will store the product of target and the first factor matrix
+      Tensor temp = Tensor(size / target.extent(contract_dim), rank);
+      target.resize(
+          Range{Range1{last_dim ? target.extent(contract_dim) : size / target.extent(contract_dim)},
+                Range1{last_dim ? size / target.extent(contract_dim) : target.extent(contract_dim)}});
 
       // contract tensor ref and the first factor matrix
-      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, this->one , (last_dim? tensor_ref.conj():tensor_ref), A[contract_dim].conj(), this->zero,
+      gemm((last_dim ? blas::Op::Trans : blas::Op::NoTrans), blas::Op::NoTrans, this->one , (last_dim? target.conj():target), A[contract_dim].conj(), this->zero,
            temp);
 
-      // Resize tensor_ref
-      tensor_ref.resize(R);
+      // Resize target
+      target.resize(R);
       // Remove the dimension which was just contracted out
-      LH_size /= tensor_ref.extent(contract_dim);
+      LH_size /= target.extent(contract_dim);
 
       // n tells which dimension not to contract, and contract_dim says which dimension I am trying to contract.
       // If n == contract_dim then that mode is skipped.
       // if n == ndim - 1, my contract_dim = 0. The gemm transposes to make rank = ndim - 1, so I
       // move the pointer that preserves the last dimension to n = ndim -2.
-      // In all cases I want to walk through the orders in tensor_ref backward so contract_dim = ndim - 2
+      // In all cases I want to walk through the orders in target backward so contract_dim = ndim - 2
       n = last_dim ? ndim - 2 : n;
       contract_dim = ndim - 2;
 
       while (contract_dim > 0) {
         // Now temp is three index object where temp has size
-        // (size of tensor_ref/product of dimension contracted, dimension to be
+        // (size of target/product of dimension contracted, dimension to be
         // contracted, rank)
         ord_t idx2 = dimensions[contract_dim],
               idx1 = LH_size / idx2;
@@ -793,7 +816,7 @@ namespace btas {
         //contract_tensor.fill(0.0);
         const auto &a = A[(last_dim ? contract_dim + 1 : contract_dim)];
         // If the middle dimension is the mode not being contracted, I will move
-        // it to the right hand side temp((size of tensor_ref/product of
+        // it to the right hand side temp((size of target/product of
         // dimension contracted, rank * mode n dimension)
         if (n == contract_dim) {
           pseudo_rank *= offset_dim;
