@@ -1,29 +1,27 @@
 # -*- mode: cmake -*-
 
-# Boost can be discovered by every (sub)package but only the top package can build it ...
-# if we are the top package need to include the list of Boost components to be built
-if("${CMAKE_PROJECT_NAME}" STREQUAL "${PROJECT_NAME}")
-  set(required_components
-          headers           # BTAS
-          container         # BTAS
-          iterator          # BTAS
-          random            # BTAS
-  )
-  if (DEFINED Boost_REQUIRED_COMPONENTS)
-    list(APPEND Boost_REQUIRED_COMPONENTS ${required_components})
-    list(REMOVE_DUPLICATES Boost_REQUIRED_COMPONENTS)
-  else()
-    set(Boost_REQUIRED_COMPONENTS "${required_components}" CACHE STRING "Required components of Boost to discovered or built")
-  endif()
-  set(optional_components
-          serialization # BTAS
-  )
-  if (DEFINED Boost_OPTIONAL_COMPONENTS)
-    list(APPEND Boost_OPTIONAL_COMPONENTS ${optional_components})
-    list(REMOVE_DUPLICATES Boost_OPTIONAL_COMPONENTS)
-  else()
-    set(Boost_OPTIONAL_COMPONENTS "${optional_components}" CACHE STRING "Optional components of Boost to discovered or built")
-  endif()
+# Boost can be discovered by every (sub)package but only the top package can *build* it ...
+# in either case must declare the components used by BTAS
+set(required_components
+        headers           # BTAS
+        container         # BTAS
+        iterator          # BTAS
+        random            # BTAS
+)
+if (DEFINED Boost_REQUIRED_COMPONENTS)
+  list(APPEND Boost_REQUIRED_COMPONENTS ${required_components})
+  list(REMOVE_DUPLICATES Boost_REQUIRED_COMPONENTS)
+else()
+  set(Boost_REQUIRED_COMPONENTS "${required_components}" CACHE STRING "Required components of Boost to discovered or built")
+endif()
+set(optional_components
+        serialization # BTAS
+)
+if (DEFINED Boost_OPTIONAL_COMPONENTS)
+  list(APPEND Boost_OPTIONAL_COMPONENTS ${optional_components})
+  list(REMOVE_DUPLICATES Boost_OPTIONAL_COMPONENTS)
+else()
+  set(Boost_OPTIONAL_COMPONENTS "${optional_components}" CACHE STRING "Optional components of Boost to discovered or built")
 endif()
 
 if (BTAS_BUILD_DEPS_FROM_SOURCE AND NOT DEFINED Boost_FETCH_IF_MISSING)
