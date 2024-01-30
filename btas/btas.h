@@ -9,9 +9,11 @@
 
 #include <btas/generic/cp_als.h>
 #include <btas/generic/cp_rals.h>
+//#include <btas/generic/cp_id.h>
 #include <btas/generic/cp_df_als.h>
 #include <btas/generic/tuck_cp_als.h>
 #include <btas/generic/coupled_cp_als.h>
+#include <btas/generic/cp_bcd.h>
 #include <btas/generic/dot_impl.h>
 #include <btas/generic/scal_impl.h>
 #include <btas/generic/axpy_impl.h>
