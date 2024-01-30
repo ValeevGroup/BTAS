@@ -1,4 +1,4 @@
-set(BTAS_TRACKED_VGCMAKEKIT_TAG e0d04e91a84b7e71d9b87682c46c518e9966bd78)
+set(BTAS_TRACKED_VGCMAKEKIT_TAG 9b541a5f3708a58dce59d00f3c47ac030ef4d8b4)
 
 # likely can use earlier, but
 # - as of oct 2023 tested with 1.71 and up only
