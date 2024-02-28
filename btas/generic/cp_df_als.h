@@ -382,12 +382,18 @@ namespace btas {
     std::tuple<std::vector<Tensor>, std::vector<Tensor>> get_init_factors(){
       return std::make_tuple(init_factors_left, init_factors_right);
     }
+
+    void set_init_factors(std::vector<Tensor> init){
+      factors_set = true;
+      this->A = init;
+    }
    protected:
     Tensor &tensor_ref_left;   // Left connected tensor
     Tensor &tensor_ref_right;  // Right connected tensor
     size_t ndimL;              // Number of dimensions in left tensor
     size_t ndimR;              // number of dims in the right tensor
     bool lastLeft = false;
+    bool factors_set = false;
     Tensor leftTimesRight;
     std::vector<size_t> dims;
     std::vector<Tensor> init_factors_left;
@@ -422,7 +428,6 @@ namespace btas {
     void build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon, ind_t step,
                double &epsilon, bool SVD_initial_guess, ind_t SVD_rank, bool &fast_pI) override {
       {
-        bool factors_set = false;
         // If its the first time into build and SVD_initial_guess
         // build and optimize the initial guess based on the left
         // singular vectors of the reference tensor.
@@ -667,33 +672,34 @@ namespace btas {
     /// return if \c fast_pI was successful
     void build_random(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon,
                       double &epsilon, bool &fast_pI) override {
-      boost::random::mt19937 generator(random_seed_accessor());
-      boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
-      for (size_t i = 1; i < ndimL; ++i) {
-        auto &tensor_ref = tensor_ref_left;
-        Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
-        for (auto iter = a.begin(); iter != a.end(); ++iter) {
-          *(iter) = distribution(generator);
+      if(!factors_set) {
+        boost::random::mt19937 generator(random_seed_accessor());
+        boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
+        for (size_t i = 1; i < ndimL; ++i) {
+          auto &tensor_ref = tensor_ref_left;
+          Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
+          for (auto iter = a.begin(); iter != a.end(); ++iter) {
+            *(iter) = distribution(generator);
+          }
+          A.push_back(a);
         }
-        A.push_back(a);
-      }
-      for (size_t i = 1; i < ndimR; ++i) {
-        auto &tensor_ref = tensor_ref_right;
+        for (size_t i = 1; i < ndimR; ++i) {
+          auto &tensor_ref = tensor_ref_right;
 
-        Tensor a(tensor_ref.extent(i), rank);
-        for (auto iter = a.begin(); iter != a.end(); ++iter) {
-          *(iter) = distribution(generator);
+          Tensor a(tensor_ref.extent(i), rank);
+          for (auto iter = a.begin(); iter != a.end(); ++iter) {
+            *(iter) = distribution(generator);
+          }
+          this->A.push_back(a);
         }
-        this->A.push_back(a);
-      }
 
-      Tensor lambda(rank);
-      lambda.fill(0.0);
-      this->A.push_back(lambda);
-      for (size_t i = 0; i < ndim; ++i) {
-        normCol(i);
+        Tensor lambda(rank);
+        lambda.fill(0.0);
+        this->A.push_back(lambda);
+        for (size_t i = 0; i < ndim; ++i) {
+          normCol(i);
+        }
       }
-
       ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
     }
 

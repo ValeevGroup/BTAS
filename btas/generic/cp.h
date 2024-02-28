@@ -54,7 +54,7 @@ namespace btas {
     // \hat{X} is the CP approximation (epsilon), if
     // converge_class object isn't FitCheck do nothing
     template <typename T>
-    void get_fit(T &t, double &epsilon) {
+    void get_fit(T &t, double &epsilon, bool max_iter = false) {
       // epsilon = epsilon;
       epsilon = -1;
       return;

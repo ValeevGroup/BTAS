@@ -23,7 +23,7 @@ namespace btas {
   public:
     /// constructor for the base convergence test object
     /// \param[in] tol tolerance for ALS convergence
-    explicit NormCheck(double tol = 1e-3) : tol_(tol) {
+    explicit NormCheck(double tol = 1e-3) : tol_(tol), iter_(0){
     }
 
     ~NormCheck() = default;
@@ -50,10 +50,25 @@ namespace btas {
         prev[r] = btas_factors[r];
       }
 
+      if (verbose_) {
+        std::cout << rank_ << "\t" << iter_ << "\t" << std::setprecision(16) << diff << std::endl;
+      }
       if (diff < this->tol_) {
         return true;
       }
+      ++iter_;
+
       return false;
+    }
+
+    /// Option to print fit and change in fit in the () operator call
+    /// \param[in] verb bool which turns off/on fit printing.
+    void verbose(bool verb) {
+      verbose_ = verb;
+    }
+
+    double get_fit(bool hit_max_iters = false){
+
     }
 
   private:
@@ -61,6 +76,8 @@ namespace btas {
     std::vector<Tensor> prev;     // Set of previous factor matrices
     size_t ndim;                     // Number of factor matrices
     ind_t rank_;               // Rank of the CP problem
+    bool verbose_ = false;
+    size_t iter_;
   };
 
   /**
@@ -420,6 +437,47 @@ namespace btas {
       }
       return sqrt(abs(nrm));
     }
+  };
+
+  template <typename Tensor>
+  class NoCheck {
+    using ind_t = typename Tensor::range_type::index_type::value_type;
+    using ord_t = typename range_traits<typename Tensor::range_type>::ordinal_type;
+
+   public:
+    /// constructor for the base convergence test object
+    /// \param[in] tol tolerance for ALS convergence
+    explicit NoCheck(double tol = 1e-3) : iter_(0){
+    }
+
+    ~NoCheck() = default;
+
+    /// Function to check convergence of the ALS problem
+    /// convergence when \f$ \sum_n^{ndim} \frac{\|A^{i}_n - A^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
+    /// \param[in] btas_factors Current set of factor matrices
+    bool operator () (const std::vector<Tensor> & btas_factors){
+      auto rank_ = btas_factors[1].extent(1);
+      if (verbose_) {
+        std::cout << rank_ << "\t" << iter_ << std::endl;
+      }
+      ++iter_;
+
+      return false;
+    }
+
+    /// Option to print fit and change in fit in the () operator call
+    /// \param[in] verb bool which turns off/on fit printing.
+    void verbose(bool verb) {
+      verbose_ = verb;
+    }
+
+    double get_fit(bool hit_max_iters = false){
+    }
+
+   private:
+    double tol_;
+    bool verbose_ = false;
+    size_t iter_;
   };
 } //namespace btas
 #endif  // BTAS_GENERIC_CONV_BASE_CLASS
