@@ -705,6 +705,7 @@ namespace btas {
           ind_t col_dim = a_prev.extent(0);
           ind_t prev_rank = a_prev.extent(1), smaller_rank = (prev_rank < rank ? prev_rank : rank),
                 larger_rank = (smaller_rank == prev_rank ? rank : prev_rank);
+          // If the new factor is bigger than the last add random cols
           if (larger_rank > smaller_rank) {
             Tensor a(col_dim, larger_rank);
             for (auto iter = a.begin(); iter != a.end(); ++iter) {
@@ -712,15 +713,16 @@ namespace btas {
             }
             auto lo_bound = {0l, 0l}, up_bound = {col_dim, smaller_rank};
             auto view = make_view(a.range().slice(lo_bound, up_bound), a.storage());
-            //std::copy(view.begin(), view.end(), a_prev.begin());
+            // std::copy(view.begin(), view.end(), a_prev.begin());
             auto old = a_prev.begin();
-            for(auto iter = view.begin(); iter != view.end(); ++iter, ++old)
-              *(iter) += *(old);
+            for (auto iter = view.begin(); iter != view.end(); ++iter, ++old) *(iter) += *(old);
             a_prev = a;
-          } else{
-            for(auto & el : a_prev)
-              el +=  distribution(generator);
           }
+          // Optional add a bump to the previous factors
+//          } else{
+//            for(auto & el : a_prev)
+//              el +=  distribution(generator);
+//          }
         }
         A.pop_back();
         Tensor lambda(rank);
@@ -761,8 +763,17 @@ namespace btas {
       Tensor MtKRP(A[ndim - 1].extent(0), rank);
       leftTimesRight = Tensor(1);
       leftTimesRight.fill(0.0);
-      // std::cout << "count\tfit\tchange" << std::endl;
-      while (count < max_als && !is_converged) {
+
+      if(this->AtA.empty())
+        this->AtA = std::vector<Tensor>(ndim);
+      auto ptr_ata = this->AtA.begin();
+      for (size_t i = 0; i < ndim; ++i, ++ptr_ata) {
+        auto &a_mat = A[i];
+        *ptr_ata = Tensor();
+        contract(this->one, a_mat, {1, 2}, a_mat.conj(), {1, 3}, this->zero, *ptr_ata, {2, 3});
+      }
+
+      do {
         count++;
         this->num_ALS++;
         for (size_t i = 0; i < ndim; i++) {
@@ -774,9 +785,10 @@ namespace btas {
           } else {
             BTAS_EXCEPTION("Incorrectly defined symmetry");
           }
+          contract(this->one, A[i], {1, 2}, A[i].conj(), {1, 3}, this->zero, this->AtA[i], {2, 3});
         }
         is_converged = converge_test(A);
-      }
+      }while (count < max_als && !is_converged);
 
       // Checks loss function if required
       detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
