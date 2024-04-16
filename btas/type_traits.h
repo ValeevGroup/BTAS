@@ -125,10 +125,22 @@ namespace btas {
   template <typename T>
   constexpr inline bool has_squarebraket_v = has_squarebraket<T>::value;
 
-  template <typename S, typename Enabler = void>
-  constexpr static bool has_data_v = false;
-  template <typename S>
-  constexpr static bool has_data_v<S, std::void_t<decltype(std::declval<S&>().data())>> = true;
+  /// test T has data() member
+  /// this will be used to detect whether or not the storage is consecutive
+  template<class T>
+  class has_data {
+    /// true case
+    template<class U>
+    static auto __test(U* p) -> decltype(p->data(), std::true_type());
+    /// false case
+    template<class>
+    static std::false_type __test(...);
+  public:
+    static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
+  };
+
+  template <typename T>
+  inline constexpr bool has_data_v = has_data<T>::value;
 
   template <typename S, typename Enabler = void>
   constexpr static bool has_size_v = false;

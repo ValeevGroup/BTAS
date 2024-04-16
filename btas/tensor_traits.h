@@ -9,20 +9,6 @@
 
 namespace btas {
 
-/// test T has data() member
-/// this will be used to detect whether or not the storage is consecutive
-template<class T>
-class has_data {
-   /// true case
-   template<class U>
-   static auto __test(U* p) -> decltype(p->data(), std::true_type());
-   /// false case
-   template<class>
-   static std::false_type __test(...);
-public:
-   static constexpr const bool value = std::is_same<std::true_type, decltype(__test<T>(0))>::value;
-};
-
 /// test T has range_type
 template<class T>
 class has_range_type {
