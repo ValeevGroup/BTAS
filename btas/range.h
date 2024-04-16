@@ -961,22 +961,8 @@ namespace btas {
       /// \param index The index to be converted to an ordinal index
       /// \return The ordinal index of \c index
       /// \throw When \c index is not included in this range.
-      template <typename Index>
-      typename std::enable_if<btas::is_index<Index>::value, ordinal_type>::type
-      ordinal(const Index& index) const {
-        return ordinal_(index);
-      }
-
-      /// calculates the ordinal value of \c i
-
-      /// Convert an index to its ordinal.
-      /// \tparam Index A coordinate index type (array type)
-      /// \param index The index to be converted to an ordinal index
-      /// \return The ordinal index of \c index
-      /// \throw When \c index is not included in this range.
       template <typename ... Index>
-      typename std::enable_if<not btas::is_index<typename std::decay<Index>::type...>::value, ordinal_type>::type
-      ordinal(Index&& ... index) const {
+      ordinal_type ordinal(Index&& ... index) const {
         return ordinal_(std::forward<Index>(index)...);
       }
 
