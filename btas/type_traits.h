@@ -131,29 +131,29 @@ namespace btas {
   constexpr static bool has_data_v<S, std::void_t<decltype(std::declval<S&>().data())>> = true;
 
   template <typename S, typename Enabler = void>
-  constexpr static bool has_size_v = false;
+  inline constexpr bool has_size_v = false;
   template <typename S>
-  constexpr static bool has_size_v<S, std::void_t<decltype(std::declval<const S&>().size())>> = true;
+  inline constexpr bool has_size_v<S, std::void_t<decltype(std::declval<const S&>().size())>> = true;
 
   template <typename S, typename Enabler = void>
-  constexpr static bool has_nonmember_begin_v = has_begin_v<S>;  // if have member begin, std::begin will apply
+  inline constexpr bool has_nonmember_begin_v = has_begin_v<S>;  // if have member begin, std::begin will apply
   template <typename S>
-  constexpr static bool has_nonmember_begin_v<S, std::void_t<decltype(begin(std::declval<S&>()))>> = true;
+  inline constexpr bool has_nonmember_begin_v<S, std::void_t<decltype(begin(std::declval<S&>()))>> = true;
 
   template <typename S, typename Enabler = void>
-  constexpr static bool has_nonmember_end_v = has_end_v<S>;  // if have member end, std::end will apply
+  inline constexpr bool has_nonmember_end_v = has_end_v<S>;  // if have member end, std::end will apply
   template <typename S>
-  constexpr static bool has_nonmember_end_v<S, std::void_t<decltype(end(std::declval<S&>()))>> = true;
+  inline constexpr bool has_nonmember_end_v<S, std::void_t<decltype(end(std::declval<S&>()))>> = true;
 
   template <typename S, typename Enabler = void>
-  constexpr static bool has_nonmember_data_v = has_data_v<S>;  // if have member data, std::data will apply
+  inline constexpr bool has_nonmember_data_v = has_data_v<S>;  // if have member data, std::data will apply
   template <typename S>
-  constexpr static bool has_nonmember_data_v<S, std::void_t<decltype(data(std::declval<S&>()))>> = true;
+  inline constexpr bool has_nonmember_data_v<S, std::void_t<decltype(data(std::declval<S&>()))>> = true;
 
   template <typename S, typename Enabler = void>
-  constexpr static bool has_nonmember_size_v = has_end_v<S>;  // if have member size, std::size will apply
+  inline constexpr bool has_nonmember_size_v = has_end_v<S>;  // if have member size, std::size will apply
   template <typename S>
-  constexpr static bool has_nonmember_size_v<S, std::void_t<decltype(size(std::declval<const S&>()))>> = true;
+  inline constexpr bool has_nonmember_size_v<S, std::void_t<decltype(size(std::declval<const S&>()))>> = true;
 
   // Checks if an iterator is random access
   template <typename _Iterator>
