@@ -50,6 +50,10 @@ namespace btas {
       t.set_MtKRPR(tensor);
     }
 
+    template <typename Tensor>
+    void set_MtKRP(DiffFitCheck<Tensor> &t, Tensor &tensor){
+      t.set_MtKRP(tensor);
+    }
     // Functions that can get the fit \|X - \hat{X}\|_F where
     // \hat{X} is the CP approximation (epsilon), if
     // converge_class object isn't FitCheck do nothing
