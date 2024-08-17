@@ -125,7 +125,7 @@ namespace btas {
       }
 
       double normFactors = norm(btas_factors, V);
-      double normResidual = sqrt(abs(normT_ * normT_ + normFactors * normFactors - 2 * abs(iprod)));
+      double normResidual = sqrt(abs(normT_ * normT_ + normFactors - 2 * abs(iprod)));
       double fit = 1. - (normResidual / normT_);
 
       double fitChange = abs(fitOld_ - fit);
@@ -232,7 +232,7 @@ namespace btas {
       for (auto &i : coeffMat) {
         nrm += i;
       }
-      return sqrt(abs(nrm));
+      return nrm;
     }
   };
 
@@ -515,7 +515,8 @@ namespace btas {
 
       auto fit = 0.0;
       if(iter_ == 0) {
-        fit_prev_ = norm(btas_factors, btas_factors, rank_);
+        fit_prev_ = sqrt(norm(btas_factors, btas_factors, rank_));
+        norm_prev_ = fit_prev_;
         prev_factors = btas_factors;
 //        diff = reconstruct(btas_factors, orders);
         if (verbose_) {
@@ -526,10 +527,11 @@ namespace btas {
       }
 
       auto curr_norm = norm(btas_factors, btas_factors, rank_);
-      fit = sqrt(fit_prev_ - 2 * norm(prev_factors, btas_factors, rank_) + curr_norm);
+      fit = sqrt(fit_prev_ - 2 * norm(prev_factors, btas_factors, rank_) + curr_norm) / norm_prev_;
 //      fit = norm(diff);
 //      diff = tnew;
       fit_prev_ = curr_norm;
+      norm_prev_ = curr_norm;
       prev_factors = btas_factors;
 
       if (verbose_) {
@@ -552,7 +554,7 @@ namespace btas {
    private:
     double tol_;
     bool verbose_ = false;
-    double fit_prev_;
+    double fit_prev_, norm_prev_;
     std::vector<size_t> orders;
     std::vector<Tensor> prev_factors;
 //    Tensor diff;
