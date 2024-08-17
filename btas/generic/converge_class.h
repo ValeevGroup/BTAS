@@ -515,8 +515,8 @@ namespace btas {
 
       auto fit = 0.0;
       if(iter_ == 0) {
-        fit_prev_ = sqrt(norm(btas_factors, btas_factors, rank_));
-        norm_prev_ = fit_prev_;
+        fit_prev_ = (norm(btas_factors, btas_factors, rank_));
+        norm_prev_ = sqrt(fit_prev_);
         prev_factors = btas_factors;
 //        diff = reconstruct(btas_factors, orders);
         if (verbose_) {
@@ -531,7 +531,7 @@ namespace btas {
 //      fit = norm(diff);
 //      diff = tnew;
       fit_prev_ = curr_norm;
-      norm_prev_ = curr_norm;
+      norm_prev_ = sqrt(curr_norm);
       prev_factors = btas_factors;
 
       if (verbose_) {
