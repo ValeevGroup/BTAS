@@ -201,7 +201,11 @@ namespace btas {
     /// copy constructor
     /// It will accept Tensors and TensorViews
     template <class _Tensor, class = typename std::enable_if<is_boxtensor<_Tensor>::value>::type>
-    Tensor(const _Tensor& x) : range_(x.range().lobound(), x.range().upbound()), storage_(x.cbegin(), x.cend()) {}
+    Tensor(const _Tensor& x) : range_(x.range().lobound(), x.range().upbound()){
+      auto size = range_.area();
+      array_adaptor<storage_type>::resize(storage_, size);
+      std::copy(x.cbegin(), x.cend(), storage_.begin());
+    }
 
     /// copy constructor
     /// @note this makes a shallow copy of @п х if `storage_type` has shallow-copy semantics; if need a deep copy
