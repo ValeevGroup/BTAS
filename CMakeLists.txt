@@ -159,12 +159,7 @@ install(DIRECTORY btas
 ##########################
 # external dependencies
 ##########################
-if( BTAS_USE_BLAS_LAPACK )
-  include(external/linalgpp.cmake)
-endif()
-include(external/boost.cmake)
-
-# optional dependency: ccache
+# optional dependency: ccache, but need to be defined first so that mandatory dependencies can inherit it
 find_program(CCACHE ccache)
 if(CCACHE)
   mark_as_advanced(CCACHE)
@@ -172,6 +167,11 @@ if(CCACHE)
   set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE}" CACHE STRING "Compiler launcher to use for compiling C++")
   set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE}" CACHE STRING "Compiler launcher to use for compiling C")
 endif(CCACHE)
+
+if( BTAS_USE_BLAS_LAPACK )
+  include(external/linalgpp.cmake)
+endif()
+include(external/boost.cmake)
 
 ##########################
 # configure BTAS_ASSERT
