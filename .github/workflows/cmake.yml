@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       CXX : ${{ matrix.cxx }}
-      DOXYGEN_VERSION : 1.9.2
+      DOXYGEN_VERSION : 1.12.0
       CCACHE_DIR : ${{github.workspace}}/build/.ccache
       CCACHE_COMPRESS : true
       CCACHE_COMPRESSLEVEL : 6
@@ -62,12 +62,12 @@ jobs:
         sudo apt-get update
         sudo apt-get install ninja-build g++-12 liblapack-dev libboost-dev libboost-serialization-dev libboost-random-dev libeigen3-dev openmpi-bin libopenmpi-dev libtbb-dev ccache
         if [ "${{matrix.build_type}}" = "Release" ]; then
-          sudo apt-get install libclang1-9 libclang-cpp9 graphviz fonts-liberation
+          sudo apt-get install graphviz fonts-liberation
           cd ${{github.workspace}}/build
           # If we fail getting doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz from sourceforge,
           # use EFV's gdrive mirror of 1.9.2 to work around the unreliable sourceforge
           # the sharing link: https://drive.google.com/file/d/16GXpH4YOEUxGXQrXOKdAIibhdfzATY0d/view?usp=sharing
-          wget https://downloads.sourceforge.net/project/doxygen/rel-${DOXYGEN_VERSION}/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz || wget -4 --no-check-certificate -O doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz "https://drive.google.com/uc?export=download&id=16GXpH4YOEUxGXQrXOKdAIibhdfzATY0d"
+          wget https://www.doxygen.nl/files/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz
           tar xzf ./doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz
           export DOXYGEN_DIR=${{github.workspace}}/build/doxygen-${DOXYGEN_VERSION}
           ${DOXYGEN_DIR}/bin/doxygen --version
