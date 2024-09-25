@@ -164,6 +164,15 @@ if( BTAS_USE_BLAS_LAPACK )
 endif()
 include(external/boost.cmake)
 
+# optional dependency: ccache
+find_program(CCACHE ccache)
+if(CCACHE)
+  mark_as_advanced(CCACHE)
+  message (STATUS "Found ccache: ${CCACHE}")
+  set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE}" CACHE STRING "Compiler launcher to use for compiling C++")
+  set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE}" CACHE STRING "Compiler launcher to use for compiling C")
+endif(CCACHE)
+
 ##########################
 # configure BTAS_ASSERT
 ##########################
