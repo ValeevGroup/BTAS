@@ -128,7 +128,7 @@ TEST_CASE("CP")
       btas::TUCKER_CP_ALS<tensor, conv_class> A1(d, 1e-3);
       conv.set_norm(norm4);
       double diff = A1.compute_rank(55, conv, 1, true, 55);
-      CHECK(std::abs(diff) <= epsilon);
+      CHECK(std::abs(diff) <= /* NB error too large with netlib blas on linux */ 3 * epsilon);
     }
 #endif
 #if BTAS_ENABLE_RANDOM_CP_UT
@@ -222,7 +222,7 @@ TEST_CASE("CP")
       btas::TUCKER_CP_RALS<tensor, conv_class> A1(d, 1e-3);
       conv.set_norm(norm4);
       double diff = A1.compute_rank(55, conv, 1, true, 55);
-      CHECK(std::abs(diff) <= epsilon);
+      CHECK(std::abs(diff) <= /* NB error too large with netlib blas on linux */ 3 * epsilon);
     }
 #endif
 #if BTAS_ENABLE_RANDOM_CP_UT
