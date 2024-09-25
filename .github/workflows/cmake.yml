@@ -87,20 +87,10 @@ jobs:
           echo "BLAS_PREFERENCE_LIST=ReferenceBLAS" >> $GITHUB_ENV
         fi
 
-    - name: Prepare ccache timestamp
-      id: ccache_cache_timestamp
-      shell: cmake -P {0}
-      run: |
-        string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-        message("::set-output name=timestamp::${current_date}")
-
-    - name: Setup ccache cache files
-      uses: actions/cache@v4
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2
       with:
-        path: ${{github.workspace}}/build/.ccache
-        key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
-        restore-keys: |
-          ${{ matrix.config.name }}-ccache-
+        key: ccache-${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.linalg }}
 
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable
