@@ -32,6 +32,8 @@ namespace btas {
       static array construct(std::size_t n) {
         assert(n <= N);
         array result;
+        // fill elements n+1 ... N-1 with zeroes
+        std::fill_n(result.begin() + n, N - n, value_type{});
         return result;
       }
       static array construct(std::size_t n, T value) {
