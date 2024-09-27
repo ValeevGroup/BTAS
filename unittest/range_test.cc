@@ -70,6 +70,10 @@ TEST_CASE("Range")
         typedef RangeNd<blas::Layout::RowMajor, std::array<size_t, 3>> Range3d;
         Range3d x;
         CHECK(x.rank()== 3);
+        CHECK(x.area()== 0);
+        Range3d x1(std::array<int,0>{},std::array<int,0>{});
+        CHECK(x1.rank()== 3);
+        CHECK(x1.area()== 0);
         }
     SECTION("Col-major std::vector-based Range")
         {
