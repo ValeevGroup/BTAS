@@ -26,7 +26,7 @@ public:
 /// test _Index conforms the TWG.Index concept
 /// check only value_type and operator[]
 template<typename ...>
-class is_index;
+class is_index : public std::false_type {};
 
 template<typename _Index>
 class is_index<_Index> {
