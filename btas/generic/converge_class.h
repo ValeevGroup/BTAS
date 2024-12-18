@@ -228,9 +228,9 @@ namespace btas {
         }
       }
 
-      dtype nrm = 0.0;
+      RT nrm = 0.0;
       for (auto &i : coeffMat) {
-        nrm += i;
+        nrm += std::real(i);
       }
       return nrm;
     }
