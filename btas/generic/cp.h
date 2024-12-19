@@ -525,11 +525,7 @@ namespace btas {
 
     template<typename Generator, typename Distribution>
     Tensor make_random_factor(ind_t row, ind_t col, Generator gen, Distribution dist){
-      Tensor a(row, col);
-      for (auto iter = a.begin(); iter != a.end(); ++iter) {
-        *(iter) = dist(gen);
-      }
-      return a;
+      return fill_random(Tensor(row, col), gen, dist);
     }
 
     /// \param[in] factor Which factor matrix to normalize, returns
