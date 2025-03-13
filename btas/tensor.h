@@ -585,6 +585,24 @@ namespace btas {
       return y; /* automatically called move semantics */
     }
 
+    /// adds a number to every element
+    Tensor operator+(const value_type& x) const {
+      Tensor y = this->clone();
+      y += x;
+      return y; /* automatically called move semantics */
+    }
+
+    /// adds a number to every element
+    Tensor& operator+=(const value_type& x) {
+      using std::begin;
+      using std::cbegin;
+      using std::cend;
+      std::transform(cbegin(storage_), cend(storage_), begin(storage_), [x](const auto& v) {
+        return v+x;
+      });
+      return *this;
+    }
+
     /// subtraction assignment
     Tensor& operator-=(const Tensor& x) {
       using std::begin;
@@ -601,6 +619,24 @@ namespace btas {
       Tensor y = this->clone();
       y -= x;
       return y; /* automatically called move semantics */
+    }
+
+    /// subtracts a number from every element
+    Tensor operator-(const value_type& x) const {
+      Tensor y = this->clone();
+      y -= x;
+      return y; /* automatically called move semantics */
+    }
+
+    /// subtracts a number from every element
+    Tensor& operator-=(const value_type& x) {
+      using std::begin;
+      using std::cbegin;
+      using std::cend;
+      std::transform(cbegin(storage_), cend(storage_), begin(storage_), [x](const auto& v) {
+        return v-x;
+      });
+      return *this;
     }
 
     /// \return bare const pointer to the first element of data_
