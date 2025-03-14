@@ -50,11 +50,15 @@ namespace btas {
       t.set_MtKRPR(tensor);
     }
 
+    template <typename Tensor>
+    void set_MtKRP(DiffFitCheck<Tensor> &t, Tensor &tensor){
+      t.set_MtKRP(tensor);
+    }
     // Functions that can get the fit \|X - \hat{X}\|_F where
     // \hat{X} is the CP approximation (epsilon), if
     // converge_class object isn't FitCheck do nothing
     template <typename T>
-    void get_fit(T &t, double &epsilon) {
+    void get_fit(T &t, double &epsilon, bool max_iter = false) {
       // epsilon = epsilon;
       epsilon = -1;
       return;
@@ -514,6 +518,16 @@ namespace btas {
         }
       }
       return left_side_product;
+    }
+
+    /// Create a rank \c rank initial guess using
+    /// random numbers from a uniform distribution
+
+    template<typename Generator, typename Distribution>
+    Tensor make_random_factor(ind_t row, ind_t col, Generator gen, Distribution dist){
+      Tensor T(row, col);
+      fill_random(T, gen, dist);
+      return T;
     }
 
     /// \param[in] factor Which factor matrix to normalize, returns
