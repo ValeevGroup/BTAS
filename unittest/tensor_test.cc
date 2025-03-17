@@ -219,6 +219,14 @@ TEST_CASE("Tensor Operations") {
     CHECK_NOTHROW( static_cast<double>(T0) == 11);
   }
 
+  SECTION("Add/subtract constant") {
+    T3.fill(1.);
+    auto T3_plus_1 = T3 + 1.;
+    for (auto x : T3_plus_1) CHECK(x == 2.);
+    T3_plus_1 -= 1.;
+    for (auto x : T3_plus_1) CHECK(x == 1.);
+  }
+
   SECTION("Generate") {
     std::vector<double> data(T3.size());
     for (auto& x : data) x = rng();
