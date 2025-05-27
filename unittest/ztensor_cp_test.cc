@@ -146,7 +146,6 @@ TEST_CASE("ZCP") {
     SECTION("RALS MODE = 4, Finite rank") {
       CP_RALS<ztensor, zconv_class> A1(Z4);
       conv.set_norm(norm4.real());
-      conv.verbose(true);
       double diff = A1.compute_rank(70, conv, 1, true, 65);
       CHECK(std::abs(diff) <= epsilon);
     }
