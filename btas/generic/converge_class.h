@@ -463,7 +463,8 @@ namespace btas {
     /// Function to check convergence of the ALS problem
     /// convergence when \f$ \sum_n^{ndim} \frac{\|A^{i}_n - A^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
     /// \param[in] btas_factors Current set of factor matrices
-    bool operator () (const std::vector<Tensor> & btas_factors){
+    bool operator () (const std::vector<Tensor> &btas_factors,
+                    const std::vector<Tensor> & V = std::vector<Tensor>()){
       auto rank_ = btas_factors[1].extent(1);
       if (verbose_) {
         std::cout << rank_ << "\t" << iter_ << std::endl;
@@ -510,7 +511,8 @@ namespace btas {
     /// convergence when \f$ \sum_n^{ndim} \frac{\|A^{i}_n - A^{i+1}_n\|}{dim(A^{i}_n} \leq \epsilon \f$
     /// \param[in] btas_factors Current set of factor matrices
 
-    bool operator () (std::vector<Tensor> & btas_factors) {
+    bool operator () (std::vector<Tensor> & btas_factors,
+                    const std::vector<Tensor> & V = std::vector<Tensor>()) {
       auto rank_ = btas_factors[1].extent(1);
 
       auto fit = 0.0;
@@ -541,6 +543,7 @@ namespace btas {
       if (fit < tol_) {
         ++converged_num;
         if(converged_num > 1) {
+          iter_ = 0;
           return true;
         }
       }
