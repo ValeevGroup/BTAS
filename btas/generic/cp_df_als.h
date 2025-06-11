@@ -709,39 +709,6 @@ namespace btas {
           normCol(i);
         }
       }
-//      else{
-        /*for(size_t i = 0; i < this->ndim; ++i) {
-          auto &a_prev = this->A[i];
-          ind_t col_dim = a_prev.extent(0);
-          ind_t prev_rank = a_prev.extent(1), smaller_rank = (prev_rank < rank ? prev_rank : rank),
-                larger_rank = (smaller_rank == prev_rank ? rank : prev_rank);
-          // If the new factor is bigger than the last add random cols
-          if (larger_rank > smaller_rank) {
-            Tensor a(col_dim, larger_rank);
-            for (auto iter = a.begin(); iter != a.end(); ++iter) {
-              *(iter) = distribution(generator);
-            }
-            auto lo_bound = {0l, 0l}, up_bound = {col_dim, smaller_rank};
-            auto view = make_view(a.range().slice(lo_bound, up_bound), a.storage());
-            // std::copy(view.begin(), view.end(), a_prev.begin());
-            auto old = a_prev.begin();
-            for (auto iter = view.begin(); iter != view.end(); ++iter, ++old) *(iter) += *(old);
-            a_prev = a;
-          }*/
-          // Optional add a bump to the previous factors
-//          } else{
-//            for(auto & el : a_prev)
-//              el +=  distribution(generator);
-//          }
-        //}
-        /*A.pop_back();
-        Tensor lambda(rank);
-        lambda.fill(0.0);
-        this->A.push_back(lambda);
-        for (size_t i = 0; i < ndim; ++i) {
-          normCol(i);
-        }*/
-//      }
       factors_set = true;
       ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
     }
@@ -801,7 +768,7 @@ namespace btas {
         is_converged = converge_test(A, this->AtA);
         if(count == 10)
           close_to_end_factors = this->A;
-      }while (count < max_als && !is_converged);
+      } while (count < max_als && !is_converged);
 
       // Checks loss function if required
       detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));

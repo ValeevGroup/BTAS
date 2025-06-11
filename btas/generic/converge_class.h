@@ -26,7 +26,7 @@ namespace btas {
   public:
     /// constructor for the base convergence test object
     /// \param[in] tol tolerance for ALS convergence
-    explicit NormCheck(double tol = 1e-3) : tol_(tol), iter_(0){
+    explicit NormCheck(double tol = 1e-3) : tol_(tol), iter_(0) {
     }
 
     ~NormCheck() = default;

@@ -207,7 +207,7 @@ namespace btas{
           contract(this->one, tucker_factors[i], {1, 2}, ai.conj(), {2, 3}, this->zero, transformed_A[i], {1, 3});
         }
         is_converged = converge_test(A, AtA);
-      }while (count < max_als && !is_converged);
+      } while (count < max_als && !is_converged);
 
       detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
       epsilon = 1.0 - epsilon;

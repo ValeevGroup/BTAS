@@ -633,7 +633,7 @@ namespace btas {
           contract(this->one, ai, {1, 2}, ai.conj(), {1, 3}, this->zero, AtA[i], {2, 3});
         }
         is_converged = converge_test(A, AtA);
-      }while (count < max_als && !is_converged);
+      } while (count < max_als && !is_converged);
 
       detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
       epsilon = 1.0 - epsilon;
