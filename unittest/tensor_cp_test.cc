@@ -18,6 +18,9 @@ TEST_CASE("CP")
 {
   typedef btas::Tensor<double> tensor;
   using conv_class = btas::FitCheck<tensor>;
+  using nocheck_conv = btas::NoCheck<tensor>;
+  using appx_conv = btas::ApproxFitCheck<tensor>;
+  using diff_conv = btas::DiffFitCheck<tensor>;
   using conv_class_coupled = btas::CoupledFitCheck<tensor>;
   using btas::CP_ALS;
   using btas::CP_RALS;
@@ -77,12 +80,36 @@ TEST_CASE("CP")
   double norm52 = sqrt(dot(D55, D55));
 
   conv_class conv(1e-7);
+  nocheck_conv nocheck(1e-7);
+  appx_conv appxcheck(1e-3);
+  diff_conv diffcheck(1e-3);
   // ALS tests
   {
     SECTION("ALS MODE = 3, Finite rank"){
       CP_ALS<tensor, conv_class> A1(D3);
       conv.set_norm(norm3);
       double diff = A1.compute_rank(10, conv, 1, false, 0, 100, false, false, true);
+      CHECK(std::abs(diff) <= epsilon);
+    }
+    SECTION("ALS Mode = 3, Finite rank, no check"){
+      CP_ALS<tensor, nocheck_conv> A1(D3);
+      A1.compute_rank(10, nocheck, 1, false, 0, 100, false, false, true);
+      auto apx = A1.reconstruct() - D3;
+      auto diff =  sqrt(btas::dot(apx, apx)) / norm3;
+      CHECK(std::abs(diff) <= epsilon);
+    }
+    SECTION("ALS Mode = 3, Finite rank, approx check"){
+      CP_ALS<tensor, appx_conv> A1(D3);
+      A1.compute_rank(10, appxcheck, 1, false, 0, 100, false, false, true);
+      auto apx = A1.reconstruct() - D3;
+      auto diff =  sqrt(btas::dot(apx, apx)) / norm3;
+      CHECK(std::abs(diff) <= epsilon);
+    }
+    SECTION("ALS Mode = 3, Finite rank, diff fit check"){
+      CP_ALS<tensor, diff_conv> A1(D3);
+      A1.compute_rank(10, diffcheck, 1, false, 0, 100, false, false, true);
+      auto apx = A1.reconstruct() - D3;
+      auto diff =  sqrt(btas::dot(apx, apx)) / norm3;
       CHECK(std::abs(diff) <= epsilon);
     }
     SECTION("ALS MODE = 3, Finite error"){
@@ -116,6 +143,28 @@ TEST_CASE("CP")
       double diff = A1.compute_rank(55, conv, 1, true, 55);
       CHECK(std::abs(diff) <= epsilon);
     }
+    SECTION("ALS Mode = 4, Finite rank, no check"){
+      CP_ALS<tensor, nocheck_conv> A1(D4);
+      A1.compute_rank(55, nocheck, 1, true, 55, 50);
+      auto apx = A1.reconstruct() - D4;
+      auto diff =  sqrt(btas::dot(apx, apx)) / norm4;
+      CHECK(std::abs(diff) <= epsilon);
+    }
+    SECTION("ALS Mode = 3, Finite rank, approx check"){
+      CP_ALS<tensor, appx_conv> A1(D4);
+      A1.compute_rank(55, appxcheck, 1, true, 55, 50);
+      auto apx = A1.reconstruct() - D4;
+      auto diff =  sqrt(btas::dot(apx, apx)) / norm4;
+      CHECK(std::abs(diff) <= epsilon);
+    }
+    SECTION("ALS Mode = 3, Finite rank, diff fit check"){
+      CP_ALS<tensor, diff_conv> A1(D4);
+      A1.compute_rank(55, diffcheck, 1, true, 55, 50);
+      auto apx = A1.reconstruct() - D4;
+      auto diff =  sqrt(btas::dot(apx, apx)) / norm4;
+      CHECK(std::abs(diff) <= epsilon);
+    }
+
     SECTION("ALS MODE = 4, Finite error"){
       CP_ALS<tensor, conv_class> A1(D4);
       conv.set_norm(norm4);

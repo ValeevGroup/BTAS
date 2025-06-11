@@ -382,16 +382,31 @@ namespace btas {
     std::tuple<std::vector<Tensor>, std::vector<Tensor>> get_init_factors(){
       return std::make_tuple(init_factors_left, init_factors_right);
     }
+
+    void set_init_factors(std::vector<Tensor> init){
+      factors_set = true;
+      this->A = init;
+    }
+
+    void use_old_factors(){
+      factors_set = true;
+    }
+
+    std::vector<Tensor> get_close_to_end_factors(){
+      return close_to_end_factors;
+    }
    protected:
     Tensor &tensor_ref_left;   // Left connected tensor
     Tensor &tensor_ref_right;  // Right connected tensor
     size_t ndimL;              // Number of dimensions in left tensor
     size_t ndimR;              // number of dims in the right tensor
     bool lastLeft = false;
+    bool factors_set = false;
     Tensor leftTimesRight;
     std::vector<size_t> dims;
     std::vector<Tensor> init_factors_left;
     std::vector<Tensor> init_factors_right;
+    std::vector<Tensor> close_to_end_factors;
 
     /// Creates an initial guess by computing the SVD of each mode
     /// If the rank of the mode is smaller than the CP rank requested
@@ -422,7 +437,6 @@ namespace btas {
     void build(ind_t rank, ConvClass &converge_test, bool direct, ind_t max_als, bool calculate_epsilon, ind_t step,
                double &epsilon, bool SVD_initial_guess, ind_t SVD_rank, bool &fast_pI) override {
       {
-        bool factors_set = false;
         // If its the first time into build and SVD_initial_guess
         // build and optimize the initial guess based on the left
         // singular vectors of the reference tensor.
@@ -669,31 +683,33 @@ namespace btas {
                       double &epsilon, bool &fast_pI) override {
       boost::random::mt19937 generator(random_seed_accessor());
       boost::random::uniform_real_distribution<> distribution(-1.0, 1.0);
-      for (size_t i = 1; i < ndimL; ++i) {
-        auto &tensor_ref = tensor_ref_left;
-        Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
-        for (auto iter = a.begin(); iter != a.end(); ++iter) {
-          *(iter) = distribution(generator);
+      if(!factors_set) {
+        for (size_t i = 1; i < ndimL; ++i) {
+          auto &tensor_ref = tensor_ref_left;
+          Tensor a(Range{Range1{tensor_ref.extent(i)}, Range1{rank}});
+          for (auto iter = a.begin(); iter != a.end(); ++iter) {
+            *(iter) = distribution(generator);
+          }
+          A.push_back(a);
         }
-        A.push_back(a);
-      }
-      for (size_t i = 1; i < ndimR; ++i) {
-        auto &tensor_ref = tensor_ref_right;
+        for (size_t i = 1; i < ndimR; ++i) {
+          auto &tensor_ref = tensor_ref_right;
 
-        Tensor a(tensor_ref.extent(i), rank);
-        for (auto iter = a.begin(); iter != a.end(); ++iter) {
-          *(iter) = distribution(generator);
+          Tensor a(tensor_ref.extent(i), rank);
+          for (auto iter = a.begin(); iter != a.end(); ++iter) {
+            *(iter) = distribution(generator);
+          }
+          this->A.push_back(a);
         }
-        this->A.push_back(a);
-      }
 
-      Tensor lambda(rank);
-      lambda.fill(0.0);
-      this->A.push_back(lambda);
-      for (size_t i = 0; i < ndim; ++i) {
-        normCol(i);
+        Tensor lambda(rank);
+        lambda.fill(0.0);
+        this->A.push_back(lambda);
+        for (size_t i = 0; i < ndim; ++i) {
+          normCol(i);
+        }
       }
-
+      factors_set = true;
       ALS(rank, converge_test, max_als, calculate_epsilon, epsilon, fast_pI);
     }
 
@@ -722,11 +738,20 @@ namespace btas {
       // intermediate
       bool is_converged = false;
       bool matlab = fast_pI;
-      Tensor MtKRP(A[ndim - 1].extent(0), rank);
+//      Tensor MtKRP(A[ndim - 1].extent(0), rank);
       leftTimesRight = Tensor(1);
       leftTimesRight.fill(0.0);
-      // std::cout << "count\tfit\tchange" << std::endl;
-      while (count < max_als && !is_converged) {
+
+      if(this->AtA.empty())
+        this->AtA = std::vector<Tensor>(ndim);
+      auto ptr_ata = this->AtA.begin();
+      for (size_t i = 0; i < ndim; ++i, ++ptr_ata) {
+        auto &a_mat = A[i];
+        *ptr_ata = Tensor();
+        contract(this->one, a_mat, {1, 2}, a_mat.conj(), {1, 3}, this->zero, *ptr_ata, {2, 3});
+      }
+
+      do {
         count++;
         this->num_ALS++;
         for (size_t i = 0; i < ndim; i++) {
@@ -738,13 +763,17 @@ namespace btas {
           } else {
             BTAS_EXCEPTION("Incorrectly defined symmetry");
           }
+          contract(this->one, A[i], {1, 2}, A[i].conj(), {1, 3}, this->zero, this->AtA[i], {2, 3});
         }
-        is_converged = converge_test(A);
-      }
+        is_converged = converge_test(A, this->AtA);
+        if(count == 10)
+          close_to_end_factors = this->A;
+      } while (count < max_als && !is_converged);
 
       // Checks loss function if required
       detail::get_fit(converge_test, epsilon, (this->num_ALS == max_als));
       epsilon = 1.0 - epsilon;
+      this->AtA.clear();
       // Checks loss function if required
       if (calculate_epsilon && epsilon == 2) {
         // TODO make this work for non-FitCheck convergence_classes
