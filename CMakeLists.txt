@@ -122,15 +122,15 @@ endif()
 set(CMAKE_SKIP_RPATH FALSE)
 
 ##########################
-# We use C++17 features
+# We use C++20 features
 ##########################
 # but insist on strict standard
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ ISO Standard version")
-if (NOT(CMAKE_CXX_STANDARD EQUAL 17 OR CMAKE_CXX_STANDARD EQUAL 20))
-  message(FATAL_ERROR "C++ 2017 ISO Standard or higher is required to compile BTAS")
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ ISO Standard version")
+if (CMAKE_CXX_STANDARD LESS 20)
+  message(FATAL_ERROR "C++ 2020 ISO Standard or higher is required to compile BTAS")
 endif()
 # C++20 is only configurable via compile features with cmake 3.12 and older
-if (CMAKE_CXX_STANDARD EQUAL 20 AND CMAKE_VERSION VERSION_LESS 3.12.0)
+if (CMAKE_VERSION VERSION_LESS 3.12.0)
   cmake_minimum_required (VERSION 3.12.0)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -145,7 +145,7 @@ check_type_size("long long" BTAS_HAS_LONG_LONG)
 # create exportable BTAS library target
 #######################################
 add_library(BTAS INTERFACE)
-target_compile_features(BTAS INTERFACE "cxx_std_17")
+target_compile_features(BTAS INTERFACE "cxx_std_20")
 target_include_directories(BTAS INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${BTAS_INSTALL_INCLUDEDIR}>)
 install(TARGETS BTAS EXPORT btas COMPONENT BTAS)
