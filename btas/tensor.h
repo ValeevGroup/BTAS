@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cassert>
 #include <functional>
+#include <iterator>
 #include <type_traits>
 #include <vector>
 
@@ -133,19 +134,21 @@ namespace btas {
     }
 
     /// construct from \c range object, copy elements from \c vec
-    template <typename Range, typename U>
-    Tensor(const Range& range, U* vec, typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0)
+    template <typename Range, std::input_or_output_iterator U>
+    Tensor(const Range& range, U input_it, typename std::enable_if<btas::is_boxrange<Range>::value>::type* = 0)
         : range_(range.lobound(), range.upbound()) {
       const auto size = range_.area();
       array_adaptor<storage_type>::resize(storage_, size);
-      std::copy(vec, vec + size, begin());
+      for (auto output_it = begin(); output_it != end(); ++output_it, ++input_it) {
+        *output_it = *input_it;
+      }
     }
 
     /// construct from \c range and \c storage
     template <typename Range, typename Storage>
     Tensor(const Range& range, const Storage& storage,
            typename std::enable_if<btas::is_boxrange<Range>::value & not std::is_same<Range, range_type>::value &
-                                   not std::is_same<Storage, storage_type>::value>::type* = 0)
+                                   btas::is_storage<Storage>::value & not std::is_same<Storage, storage_type>::value>::type* = 0)
         : range_(range.lobound(), range.upbound()), storage_(storage) {
       using std::size;
       if (size(storage_) != range_.area()) array_adaptor<storage_type>::resize(storage_, range_.area());

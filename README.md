@@ -6,7 +6,7 @@ Basic Tensor Algebra Subroutines (BTAS) is a C++ library for tensor algebra. BTA
 Prerequisites
 =============
 
-* C++17 compiler
+* C++20 compiler
 * CMake
 * Boost C++ libraries
   - (required) Container, Iterator, Random

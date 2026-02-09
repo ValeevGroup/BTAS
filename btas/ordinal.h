@@ -106,17 +106,11 @@ namespace btas {
         return stride_;
       }
 
-      // no easy way without C++14 to invoke data(stride) in ADL-capable way
-#if __cplusplus < 201402L
-      auto stride_data() const -> decltype(std::data(this->stride())) {
-        return std::data(stride_);
-      }
-#else
       auto stride_data() const {
         using std::data;
         return data(stride_);
       }
-#endif
+
       value_type offset() const {
         return offset_;
       }

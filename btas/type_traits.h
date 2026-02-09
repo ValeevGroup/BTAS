@@ -4,27 +4,6 @@
 #include <type_traits>
 #include <complex>
 
-// C++20 extensions
-#if __cplusplus <= 201703L
-namespace std {
-  template< class T >
-  struct remove_cvref {
-      typedef std::remove_cv_t<std::remove_reference_t<T>> type;
-  };
-
-  template< class T>
-  using remove_cvref_t = typename remove_cvref<T>::type;
-
-  template< class T >
-  struct type_identity {
-    using type = T;
-  };
-
-  template< class T >
-  using type_identity_t = typename type_identity<T>::type;
-}
-#endif
-
 namespace btas {
 
   template <typename... Ts>

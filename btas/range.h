@@ -299,7 +299,7 @@ namespace btas {
 
       const static blas::Layout order = range_traits<_Derived>::order;
       typedef typename range_traits<_Derived>::index_type index_type; ///< index type
-      typedef typename std::make_unsigned<index_type>::type extent_type;    ///< Range extent type
+      typedef typename replace_value_type<index_type, std::make_unsigned_t<typename index_type::value_type>>::type extent_type;    ///< Range extent type
       typedef std::size_t size_type; ///< Size type
 
       typedef typename index_type::value_type index_element_type;
