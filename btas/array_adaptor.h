@@ -156,38 +156,6 @@ namespace btas {
 
 }
 
-namespace std {
-
-  template <typename T>
-  struct make_unsigned<std::vector<T> > {
-      typedef std::vector<typename make_unsigned<T>::type > type;
-  };
-  template <typename T>
-  struct make_unsigned<std::initializer_list<T> > {
-      typedef std::initializer_list<typename make_unsigned<T>::type > type;
-  };
-  template <typename T, size_t N>
-  struct make_unsigned<std::array<T, N> > {
-      typedef std::array<typename make_unsigned<T>::type, N> type;
-  };
-  template <typename T>
-  struct make_unsigned<btas::varray<T> > {
-      typedef btas::varray<typename make_unsigned<T>::type > type;
-  };
-#ifdef BTAS_HAS_BOOST_CONTAINER
-  template <typename T, size_t N>
-  struct make_unsigned<boost::container::small_vector<T,N> > {
-      typedef boost::container::small_vector<typename make_unsigned<T>::type,N> type;
-  };
-#endif
-  template <typename T, size_t N>
-  struct make_unsigned<T[N]> {
-      typedef typename make_unsigned<T>::type uT;
-      typedef uT (type)[N];
-  };
-
-}
-
 namespace btas {
   template <typename Array, typename T>
   struct replace_value_type;
