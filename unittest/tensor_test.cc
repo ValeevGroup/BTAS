@@ -134,6 +134,25 @@ TEST_CASE("Tensor Constructors") {
 
     // range + vector of values
     CHECK_NOTHROW(DTensor(r1, T1.data()));
+
+    // range + generator lambda: gen(multi-index) → value
+    Range r2(3, 4);
+    DTensor T2(r2, [](auto const& idx) -> double {
+      return 10.0 * idx[0] + idx[1];
+    });
+    CHECK(T2.rank() == 2);
+    CHECK(T2.extent(0) == 3);
+    CHECK(T2.extent(1) == 4);
+    CHECK(T2.size() == 3 * 4);
+    for (auto i = 0u; i != 3; ++i)
+      for (auto j = 0u; j != 4; ++j)
+        CHECK(T2(i, j) == Approx(10.0 * i + j));
+
+    // generator returning an int (convertible to double) should also work
+    Tensor<int> Ti2(r2, [](auto const& idx) { return idx[0] + idx[1]; });
+    CHECK(Ti2.extent(0) == 3);
+    CHECK(Ti2.extent(1) == 4);
+    CHECK(Ti2(2, 3) == 5);
   }
 
   SECTION("Fixed Rank Tensor") {

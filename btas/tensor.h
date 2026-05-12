@@ -144,6 +144,25 @@ namespace btas {
       }
     }
 
+    /// construct from \c range object, fill each element from \c gen called on
+    /// the element's multi-index. \c gen must be callable with the range's
+    /// iteration value (its multi-index) and return a value convertible to
+    /// \c value_type.
+    template <typename Range, typename F,
+              typename = std::enable_if_t<
+                  btas::is_boxrange<Range>::value &&
+                  std::is_invocable_r_v<
+                      value_type, F,
+                      decltype(*std::begin(std::declval<const Range&>()))>>>
+    Tensor(const Range& range, F&& gen)
+        : range_(range.lobound(), range.upbound()) {
+      array_adaptor<storage_type>::resize(storage_, range_.area());
+      auto out_it = begin();
+      for (auto&& idx : range_) {
+        *out_it++ = gen(idx);
+      }
+    }
+
     /// construct from \c range and \c storage
     template <typename Range, typename Storage>
     Tensor(const Range& range, const Storage& storage,
