@@ -12,6 +12,7 @@
 
 #include <btas/fwd.h>
 
+#include <btas/error.h>
 #include <btas/index_traits.h>
 #include <btas/range_iterator.h>
 #include <btas/range_traits.h>
@@ -19,7 +20,6 @@
 #include <btas/types.h>
 
 #include <array>
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
@@ -87,8 +87,8 @@ class index {
   constexpr reference operator[](size_type i) noexcept { return data_[i]; }
   constexpr const_reference operator[](size_type i) const noexcept { return data_[i]; }
 
-  constexpr reference at(size_type i) { assert(i < size_); return data_[i]; }
-  constexpr const_reference at(size_type i) const { assert(i < size_); return data_[i]; }
+  constexpr reference at(size_type i) { BTAS_ASSERT(i < size_); return data_[i]; }
+  constexpr const_reference at(size_type i) const { BTAS_ASSERT(i < size_); return data_[i]; }
 
   constexpr iterator begin() noexcept { return data_.data(); }
   constexpr iterator end() noexcept { return data_.data() + size_; }
@@ -119,7 +119,7 @@ class index {
 
  private:
   static constexpr std::uint8_t check_size(size_type n) {
-    assert(n <= MaxRank);
+    BTAS_ASSERT(n <= MaxRank);
     return static_cast<std::uint8_t>(n);
   }
 
@@ -158,7 +158,7 @@ class ordinal_view {
   template <typename Index>
   std::enable_if_t<is_index<Index>::value, Ord>
   operator()(const Index& idx) const {
-    assert(static_cast<std::size_t>(idx.size()) == rank_);
+    BTAS_ASSERT(static_cast<std::size_t>(idx.size()) == rank_);
     using std::cbegin;
     Ord o{0};
     auto it = cbegin(idx);
@@ -230,6 +230,23 @@ class RangeNd {
       : extent_({static_cast<Ext>(e0), static_cast<Ext>(e1),
                  static_cast<Ext>(es)...}) {}
 
+  /// Construct from lobound/upbound pair. \c lobound must be all zeros
+  /// (zero-based ranges); \c upbound becomes the extent. Useful because
+  /// downstream code such as @c btas::Tensor 's @c (range, storage) ctor
+  /// instantiates @c range_type(lobound, upbound) even when the runtime
+  /// branch would not take that path.
+  template <typename Lo, typename Up,
+            typename = std::enable_if_t<is_index<std::decay_t<Lo>>::value &&
+                                        is_index<std::decay_t<Up>>::value>>
+  RangeNd(const Lo& lobound, const Up& upbound) : extent_(upbound) {
+    (void)lobound;
+    using std::cbegin;
+    using std::cend;
+    BTAS_ASSERT(std::all_of(cbegin(lobound), cend(lobound),
+                       [](auto v) { return v == 0; }) &&
+           "btas::zb::RangeNd: lobound must be all zeros");
+  }
+
   //
   // Rank, extent, lo/up bounds
   //
@@ -270,7 +287,7 @@ class RangeNd {
 
   template <typename I>
   std::enable_if_t<is_index<I>::value, Ord> ordinal(const I& idx) const {
-    assert(static_cast<std::size_t>(idx.size()) == rank());
+    BTAS_ASSERT(static_cast<std::size_t>(idx.size()) == rank());
     using std::cbegin;
     auto it = cbegin(idx);
     const auto r = rank();
