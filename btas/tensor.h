@@ -154,13 +154,13 @@ namespace btas {
                   btas::is_boxrange<Range>::value &&
                   std::is_invocable_r_v<
                       value_type, F,
-                      decltype(*std::begin(std::declval<const Range&>()))>>>
+                      decltype(*std::begin(std::declval<const range_type&>()))>>>
     Tensor(const Range& range, F&& gen)
         : range_(range.lobound(), range.upbound()) {
       array_adaptor<storage_type>::resize(storage_, range_.area());
       auto out_it = begin();
       for (auto&& idx : range_) {
-        *out_it++ = gen(idx);
+        *out_it++ = std::invoke(std::forward<F>(gen), idx);
       }
     }
 

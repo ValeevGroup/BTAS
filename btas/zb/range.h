@@ -262,12 +262,14 @@ class RangeNd {
             typename = std::enable_if_t<is_index<std::decay_t<Lo>>::value &&
                                         is_index<std::decay_t<Up>>::value>>
   RangeNd(const Lo& lobound, const Up& upbound) : extent_(upbound) {
-    (void)lobound;
     using std::cbegin;
     using std::cend;
+    using std::size;
+    BTAS_ASSERT(size(lobound) == size(upbound) &&
+                "btas::zb::RangeNd: lobound and upbound must have equal rank");
     BTAS_ASSERT(std::all_of(cbegin(lobound), cend(lobound),
-                       [](auto v) { return v == 0; }) &&
-           "btas::zb::RangeNd: lobound must be all zeros");
+                            [](auto v) { return v == 0; }) &&
+                "btas::zb::RangeNd: lobound must be all zeros");
   }
 
   //
@@ -391,7 +393,7 @@ class RangeNd {
 
  private:
   /// Static MaxRank-sized zero buffer; \c lobound_data() returns a pointer
-  /// into it. Callers iterate only the first \c rank() bytes.
+  /// into it. Callers iterate only the first \c rank() elements.
   static const Ext* zero_buffer() noexcept {
     static const std::array<Ext, MaxRank> z{};
     return z.data();

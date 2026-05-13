@@ -173,11 +173,11 @@ TEST_CASE("zb::RangeNd column-major layout") {
   CHECK(s[0] == 1);
   CHECK(s[1] == 10);
   CHECK(s[2] == 200);
-  // Iteration covers volume in column-major order.
+  // Iteration covers volume — and the ordinal of each visited index must
+  // equal the iteration count, which validates column-major traversal order.
   std::size_t count = 0;
-  typename RC::index_type prev;
   for (auto&& idx : r) {
-    (void)idx;
+    CHECK(r.ordinal(idx) == static_cast<RC::ordinal_type>(count));
     ++count;
   }
   CHECK(count == r.area());
