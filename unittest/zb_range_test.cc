@@ -150,7 +150,7 @@ TEST_CASE("zb::RangeNd equality and swap") {
 }
 
 TEST_CASE("zb::RangeNd with non-default template parameters") {
-  using R4 = RangeNd<4, std::int32_t, std::int64_t>;
+  using R4 = RangeNd<::blas::Layout::RowMajor, std::int32_t, std::int64_t, 4>;
   static_assert(sizeof(R4) == 20, "expected packed size for MaxRank=4, int32");
   static_assert(R4::max_rank == 4);
   R4 r(10, 20, 30);
@@ -158,4 +158,27 @@ TEST_CASE("zb::RangeNd with non-default template parameters") {
   CHECK(r.area() == 6000);
   CHECK(r.ordinal(typename R4::index_type{1, 2, 3}) ==
         1 * 20 * 30 + 2 * 30 + 3);
+}
+
+TEST_CASE("zb::RangeNd column-major layout") {
+  using RC = RangeNd<::blas::Layout::ColMajor>;
+  RC r(10, 20, 30);
+  CHECK(r.rank() == 3);
+  CHECK(r.area() == 6000);
+  // col-major: ordinal = i0 + i1*ext0 + i2*ext0*ext1
+  CHECK(r.ordinal(typename RC::index_type{1, 2, 3}) ==
+        1 + 2 * 10 + 3 * 10 * 20);
+  // strides[0]=1, strides[1]=ext0=10, strides[2]=ext0*ext1=200
+  auto s = r.stride();
+  CHECK(s[0] == 1);
+  CHECK(s[1] == 10);
+  CHECK(s[2] == 200);
+  // Iteration covers volume in column-major order.
+  std::size_t count = 0;
+  typename RC::index_type prev;
+  for (auto&& idx : r) {
+    (void)idx;
+    ++count;
+  }
+  CHECK(count == r.area());
 }

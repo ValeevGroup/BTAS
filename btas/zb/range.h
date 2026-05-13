@@ -2,9 +2,9 @@
  * zb/range.h
  *
  *  Slimmed-down version of RangeNd for zero-based indexing apps. State is just (extent[], rank); lobound is
- *  structurally zero, upbound = extent, strides are derived row-major on demand.
+ *  structurally zero, upbound = extent, strides are derived from extent (per the requested layout) on demand.
  *
- *  sizeof(zb::RangeNd<6, int16_t, int32_t>) == 14 (vs ~304 for btas::Range).
+ *  sizeof(zb::RangeNd<>) == 14 (vs ~304 for btas::Range).
  */
 
 #ifndef BTAS_ZB_RANGE_H_
@@ -19,12 +19,14 @@
 #include <btas/serialization.h>
 #include <btas/types.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
 #include <iterator>
 #include <type_traits>
+#include <utility>
 
 namespace btas {
 namespace zb {
@@ -37,6 +39,10 @@ namespace zb {
 template <std::size_t MaxRank, typename Int>
 class index {
  public:
+  // size_ is stored as a uint8_t so MaxRank must fit
+  static_assert(MaxRank > 0 && MaxRank < 256,
+                "btas::zb::index: MaxRank must lie in (0, 256)");
+
   using value_type = Int;
   using size_type = std::size_t;
   using reference = Int&;
@@ -128,13 +134,14 @@ class index {
 };
 
 /// Lightweight value type returned by \c RangeNd::ordinal() . Synthesizes
-/// strides from extent at construction; offset is always 0 and the range is
-/// always contiguous, by construction.
-template <std::size_t MaxRank, typename Ord>
+/// strides from extent at construction (row- or column-major per \c _Order );
+/// offset is always 0 and the range is always contiguous, by construction.
+template <::blas::Layout _Order, std::size_t MaxRank, typename Ord>
 class ordinal_view {
  public:
   using value_type = Ord;
   using stride_type = std::array<Ord, MaxRank>;
+  static constexpr ::blas::Layout order = _Order;
 
   ordinal_view() noexcept : stride_{}, rank_(0) {}
 
@@ -143,9 +150,19 @@ class ordinal_view {
     using std::cbegin;
     auto it = cbegin(ext);
     Ord vol{1};
-    for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(rank) - 1; i >= 0; --i) {
-      stride_[i] = vol;
-      vol *= static_cast<Ord>(*(it + i));
+    if constexpr (_Order == ::blas::Layout::RowMajor) {
+      // last dim is fastest: stride[N-1]=1, stride[i]=stride[i+1]*extent[i+1]
+      for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(rank) - 1; i >= 0;
+           --i) {
+        stride_[i] = vol;
+        vol *= static_cast<Ord>(*(it + i));
+      }
+    } else {
+      // first dim is fastest: stride[0]=1, stride[i]=stride[i-1]*extent[i-1]
+      for (std::size_t i = 0; i < rank; ++i) {
+        stride_[i] = vol;
+        vol *= static_cast<Ord>(*(it + i));
+      }
     }
   }
 
@@ -172,14 +189,20 @@ class ordinal_view {
   std::size_t rank_;
 };
 
-/// Zero-based row-major N-dim range optimized for applications with zero-based indexing.
+/// Zero-based N-dim range optimized for applications with zero-based indexing.
 ///
-/// \tparam MaxRank static cap on rank (default 6)
+/// Template parameter order matches \c btas::RangeNd (layout first, index/
+/// ordinal types next), with the static rank cap moved to the end so the
+/// common default form \c zb::RangeNd<> stays a single token.
+///
+/// \tparam _Order  data layout (default RowMajor)
 /// \tparam Ext     per-dim extent integer type (default int16_t)
 /// \tparam Ord     ordinal integer type (default int32_t)
-template <std::size_t MaxRank = 6,
+/// \tparam MaxRank static cap on rank (default 6)
+template <::blas::Layout _Order = ::blas::Layout::RowMajor,
           typename Ext = std::int16_t,
-          typename Ord = std::int32_t>
+          typename Ord = std::int32_t,
+          std::size_t MaxRank = 6>
 class RangeNd {
  public:
   static_assert(MaxRank > 0 && MaxRank < 256, "MaxRank must lie in (0, 256)");
@@ -187,7 +210,7 @@ class RangeNd {
   static_assert(std::is_integral_v<Ord> && std::is_signed_v<Ord>,
                 "Ord must be a signed integer type");
 
-  static constexpr ::blas::Layout order = ::blas::Layout::RowMajor;
+  static constexpr ::blas::Layout order = _Order;
   static constexpr std::size_t max_rank = MaxRank;
 
   using extent_type = index<MaxRank, Ext>;
@@ -278,19 +301,19 @@ class RangeNd {
   const Ext* upbound_data() const noexcept { return extent_.data(); }
 
   //
-  // Ordinal mapping (synthesized row-major; nothing stored)
+  // Ordinal mapping (synthesized from extent per _Order; nothing stored)
   //
 
-  ordinal_view<MaxRank, Ord> ordinal() const {
-    return ordinal_view<MaxRank, Ord>(extent_, rank());
+  ordinal_view<_Order, MaxRank, Ord> ordinal() const {
+    return ordinal_view<_Order, MaxRank, Ord>(extent_, rank());
   }
 
-  /// Row-major strides synthesized on demand. Returned by value (not by
+  /// Strides synthesized on demand per \c _Order . Returned by value (not by
   /// reference) so nothing is stored in the range itself — preserves the
   /// packed footprint. Callers that need a pointer (e.g. the BTAS generic
   /// permute, which forwards r.stride() into a btas::Range ctor) bind the
   /// temporary to a const& and copy from it.
-  using stride_type = typename ordinal_view<MaxRank, Ord>::stride_type;
+  using stride_type = typename ordinal_view<_Order, MaxRank, Ord>::stride_type;
   stride_type stride() const noexcept {
     return ordinal().stride();
   }
@@ -303,9 +326,16 @@ class RangeNd {
     const auto r = rank();
     Ord o{0};
     Ord vol{1};
-    for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(r) - 1; i >= 0; --i) {
-      o += static_cast<Ord>(*(it + i)) * vol;
-      vol *= static_cast<Ord>(extent_[i]);
+    if constexpr (_Order == ::blas::Layout::RowMajor) {
+      for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(r) - 1; i >= 0; --i) {
+        o += static_cast<Ord>(*(it + i)) * vol;
+        vol *= static_cast<Ord>(extent_[i]);
+      }
+    } else {
+      for (std::size_t i = 0; i < r; ++i) {
+        o += static_cast<Ord>(*(it + i)) * vol;
+        vol *= static_cast<Ord>(extent_[i]);
+      }
     }
     return o;
   }
@@ -319,15 +349,26 @@ class RangeNd {
   const_iterator cbegin() const { return begin(); }
   const_iterator cend() const { return end(); }
 
-  /// Row-major in-place increment used by \c RangeIterator . After the final
-  /// valid index, idx == upbound() (== extent_), which matches \c end() .
+  /// In-place increment used by \c RangeIterator , layout-aware per \c _Order .
+  /// After the final valid index, idx == upbound() (== extent_), which matches
+  /// \c end() .
   void increment(index_type& idx) const {
     const auto r = rank();
     if (r == 0) return;
-    for (std::ptrdiff_t d = static_cast<std::ptrdiff_t>(r) - 1; d >= 0; --d) {
-      ++idx[d];
-      if (idx[d] < extent_[d]) return;
-      idx[d] = Ext{0};
+    if constexpr (_Order == ::blas::Layout::RowMajor) {
+      // last dim varies fastest
+      for (std::ptrdiff_t d = static_cast<std::ptrdiff_t>(r) - 1; d >= 0; --d) {
+        ++idx[d];
+        if (idx[d] < extent_[d]) return;
+        idx[d] = Ext{0};
+      }
+    } else {
+      // first dim varies fastest
+      for (std::size_t d = 0; d < r; ++d) {
+        ++idx[d];
+        if (idx[d] < extent_[d]) return;
+        idx[d] = Ext{0};
+      }
     }
     for (std::size_t d = 0; d < r; ++d) idx[d] = extent_[d];
   }
@@ -359,9 +400,10 @@ class RangeNd {
   extent_type extent_{};
 };
 
-template <std::size_t MaxRank, typename Ext, typename Ord>
-inline void swap(RangeNd<MaxRank, Ext, Ord>& a,
-                 RangeNd<MaxRank, Ext, Ord>& b) noexcept {
+template <::blas::Layout _Order, typename Ext, typename Ord,
+          std::size_t MaxRank>
+inline void swap(RangeNd<_Order, Ext, Ord, MaxRank>& a,
+                 RangeNd<_Order, Ext, Ord, MaxRank>& b) noexcept {
   a.swap(b);
 }
 
@@ -371,23 +413,27 @@ inline void swap(RangeNd<MaxRank, Ext, Ord>& a,
 // Trait specializations placing zb::RangeNd into the BTAS Range concept.
 //
 
-template <std::size_t MaxRank, typename Ext, typename Ord>
-struct range_traits<zb::RangeNd<MaxRank, Ext, Ord>> {
-  static constexpr ::blas::Layout order = ::blas::Layout::RowMajor;
-  using index_type = typename zb::RangeNd<MaxRank, Ext, Ord>::index_type;
+template <::blas::Layout _Order, typename Ext, typename Ord,
+          std::size_t MaxRank>
+struct range_traits<zb::RangeNd<_Order, Ext, Ord, MaxRank>> {
+  static constexpr ::blas::Layout order = _Order;
+  using index_type =
+      typename zb::RangeNd<_Order, Ext, Ord, MaxRank>::index_type;
   using ordinal_type = Ord;
   static constexpr bool is_general_layout = false;
 };
 
-template <std::size_t MaxRank, typename Ext, typename Ord>
-class boxrange_iteration_order<zb::RangeNd<MaxRank, Ext, Ord>> {
+template <::blas::Layout _Order, typename Ext, typename Ord,
+          std::size_t MaxRank>
+class boxrange_iteration_order<zb::RangeNd<_Order, Ext, Ord, MaxRank>> {
  public:
   enum {
     row_major = boxrange_iteration_order<void>::row_major,
     other = boxrange_iteration_order<void>::other,
     column_major = boxrange_iteration_order<void>::column_major
   };
-  static constexpr int value = row_major;
+  static constexpr int value =
+      (_Order == ::blas::Layout::RowMajor) ? row_major : column_major;
 };
 
 }  // namespace btas
@@ -400,23 +446,31 @@ class boxrange_iteration_order<zb::RangeNd<MaxRank, Ext, Ord>> {
 namespace madness {
 namespace archive {
 
-template <class Archive, std::size_t MaxRank, typename Ext, typename Ord>
-struct ArchiveLoadImpl<Archive, btas::zb::RangeNd<MaxRank, Ext, Ord>> {
+template <class Archive, ::blas::Layout _Order, typename Ext, typename Ord,
+          std::size_t MaxRank>
+struct ArchiveLoadImpl<Archive, btas::zb::RangeNd<_Order, Ext, Ord, MaxRank>> {
   static inline void load(const Archive& ar,
-                          btas::zb::RangeNd<MaxRank, Ext, Ord>& r) {
+                          btas::zb::RangeNd<_Order, Ext, Ord, MaxRank>& r) {
     std::uint8_t rank{};
     ar& rank;
-    typename btas::zb::RangeNd<MaxRank, Ext, Ord>::extent_type ext(
+    // Guard against malformed archives: rank must fit in MaxRank,
+    // otherwise the underlying btas::zb::index would truncate the size_
+    // field and corrupt subsequent reads.
+    BTAS_ASSERT(static_cast<std::size_t>(rank) <= MaxRank &&
+                "btas::zb::RangeNd archive load: rank exceeds MaxRank");
+    typename btas::zb::RangeNd<_Order, Ext, Ord, MaxRank>::extent_type ext(
         static_cast<std::size_t>(rank));
     for (std::uint8_t i = 0; i < rank; ++i) ar& ext[i];
-    r = btas::zb::RangeNd<MaxRank, Ext, Ord>(ext);
+    r = btas::zb::RangeNd<_Order, Ext, Ord, MaxRank>(ext);
   }
 };
 
-template <class Archive, std::size_t MaxRank, typename Ext, typename Ord>
-struct ArchiveStoreImpl<Archive, btas::zb::RangeNd<MaxRank, Ext, Ord>> {
-  static inline void store(const Archive& ar,
-                           const btas::zb::RangeNd<MaxRank, Ext, Ord>& r) {
+template <class Archive, ::blas::Layout _Order, typename Ext, typename Ord,
+          std::size_t MaxRank>
+struct ArchiveStoreImpl<Archive, btas::zb::RangeNd<_Order, Ext, Ord, MaxRank>> {
+  static inline void store(
+      const Archive& ar,
+      const btas::zb::RangeNd<_Order, Ext, Ord, MaxRank>& r) {
     const std::uint8_t rank = static_cast<std::uint8_t>(r.rank());
     ar& rank;
     for (std::uint8_t i = 0; i < rank; ++i) ar& r.extent(i);
