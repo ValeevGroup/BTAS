@@ -285,6 +285,16 @@ class RangeNd {
     return ordinal_view<MaxRank, Ord>(extent_, rank());
   }
 
+  /// Row-major strides synthesized on demand. Returned by value (not by
+  /// reference) so nothing is stored in the range itself — preserves the
+  /// packed footprint. Callers that need a pointer (e.g. the BTAS generic
+  /// permute, which forwards r.stride() into a btas::Range ctor) bind the
+  /// temporary to a const& and copy from it.
+  using stride_type = typename ordinal_view<MaxRank, Ord>::stride_type;
+  stride_type stride() const noexcept {
+    return ordinal().stride();
+  }
+
   template <typename I>
   std::enable_if_t<is_index<I>::value, Ord> ordinal(const I& idx) const {
     BTAS_ASSERT(static_cast<std::size_t>(idx.size()) == rank());

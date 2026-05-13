@@ -36,7 +36,7 @@ namespace btas {
         ++itrY;
       }
     };
-    if (r_is_permutable)
+    if constexpr (r_is_permutable)
       do_perm(X, Y, permute(r, p));
     else {
       do_perm(X, Y, permute(btas::Range(r.lobound(), r.upbound(), r.stride()), p));
