@@ -14,6 +14,7 @@
 #include <functional>
 #include <iterator>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace btas {
@@ -141,6 +142,25 @@ namespace btas {
       array_adaptor<storage_type>::resize(storage_, size);
       for (auto output_it = begin(); output_it != end(); ++output_it, ++input_it) {
         *output_it = *input_it;
+      }
+    }
+
+    /// construct from \c range object, fill each element from \c gen called on
+    /// the element's multi-index. \c gen must be callable with the range's
+    /// iteration value (its multi-index) and return a value convertible to
+    /// \c value_type.
+    template <typename Range, typename F,
+              typename = std::enable_if_t<
+                  btas::is_boxrange<Range>::value &&
+                  std::is_invocable_r_v<
+                      value_type, F,
+                      decltype(*std::begin(std::declval<const range_type&>()))>>>
+    Tensor(const Range& range, F&& gen)
+        : range_(range.lobound(), range.upbound()) {
+      array_adaptor<storage_type>::resize(storage_, range_.area());
+      auto out_it = begin();
+      for (auto&& idx : range_) {
+        *out_it++ = std::invoke(std::forward<F>(gen), idx);
       }
     }
 

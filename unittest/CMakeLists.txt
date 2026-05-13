@@ -10,6 +10,7 @@ set(btas_test_src_files
         tensor_lapack_test.cc
         tensor_test.cc
         tensorview_test.cc
+        zb_range_test.cc
         ztensor_cp_test.cc
         test.cc
         )
