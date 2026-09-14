@@ -38,7 +38,8 @@ endif()
 
 # BTAS_ASSERT policy checks: btas/error.h is compiled against each of the 3
 # policies (with NDEBUG defined, to confirm that none of them depends on it),
-# regardless of how this build was configured
+# regardless of which BTAS_ASSERT_POLICY this build was configured with
+# (unlike the unit tests above, which need BTAS_ASSERT_THROW)
 foreach(_policy THROW ABORT IGNORE)
   set(_exec btas_assert_policy_${_policy}_test)
   add_executable(${_exec} EXCLUDE_FROM_ALL assert_policy_test.cc)

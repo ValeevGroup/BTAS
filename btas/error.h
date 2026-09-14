@@ -85,7 +85,7 @@ namespace btas {
 // N.B. the argument is NOT evaluated, hence must be free of side effects
 #  define BTAS_ASSERT( a )  do { } while(0)
 
-#else // BTAS_ASSERT_POLICY == BTAS_ASSERT_IGNORE
+#else // BTAS_ASSERT_POLICY != BTAS_ASSERT_IGNORE
 
 #  define BTAS_ASSERT( a )  \
      do { \

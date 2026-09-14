@@ -86,7 +86,17 @@ elseif (BUILD_TESTING)
 elseif (CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL MinSizeRel)
   set(BTAS_ASSERT_POLICY_DEFAULT BTAS_ASSERT_IGNORE)
 else()
+  # N.B. this also covers RelWithDebInfo (BTAS_ASSERT is live there, like
+  #      TA_ASSERT) and multi-config generators (CMAKE_BUILD_TYPE is empty at
+  #      configure time; the policy is a single configure-time choice exported
+  #      to consumers, so it cannot vary per configuration: set
+  #      BTAS_ASSERT_POLICY explicitly to get BTAS_ASSERT_IGNORE there)
   set(BTAS_ASSERT_POLICY_DEFAULT BTAS_ASSERT_ABORT)
+  get_property(_btas_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+  if (_btas_multi_config)
+    message(STATUS "Multi-config generator: BTAS_ASSERT_POLICY defaults to BTAS_ASSERT_ABORT for all configurations; set BTAS_ASSERT_POLICY=BTAS_ASSERT_IGNORE explicitly for a Release-like build")
+  endif()
+  unset(_btas_multi_config)
 endif()
 set(BTAS_ASSERT_POLICY ${BTAS_ASSERT_POLICY_DEFAULT} CACHE STRING "Controls the behavior of BTAS_ASSERT: BTAS_ASSERT_THROW makes it throw btas::exception, BTAS_ASSERT_ABORT makes it abort, BTAS_ASSERT_IGNORE makes it a no-op that does not even evaluate its argument; none of these are affected by NDEBUG; the default is BTAS_ASSERT_THROW if BUILD_TESTING=ON, else BTAS_ASSERT_IGNORE for Release/MinSizeRel builds and BTAS_ASSERT_ABORT otherwise")
 set_property(CACHE BTAS_ASSERT_POLICY PROPERTY

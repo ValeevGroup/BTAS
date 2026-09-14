@@ -19,11 +19,9 @@ namespace {
   }
 
 #if BTAS_ASSERT_POLICY == BTAS_ASSERT_ABORT
-  extern "C" void abort_handler(int) {
-    std::fprintf(stdout, "BTAS_ASSERT aborted, as expected\n");
-    std::fflush(stdout);
-    std::_Exit(EXIT_SUCCESS);
-  }
+  /// only async-signal-safe calls are permitted here, hence no stdio;
+  /// reaching this handler is the success condition
+  extern "C" void abort_handler(int) { std::_Exit(EXIT_SUCCESS); }
 #endif
 }  // namespace
 
