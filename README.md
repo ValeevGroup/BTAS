@@ -40,4 +40,10 @@ TL;DR version
 - `BTAS_USE_BLAS_LAPACK` -- specifies whether to enable the use of BLAS/LAPACK via the BLAS++/LAPACK++ APIs; the default is `ON`
 - `BTAS_BUILD_DEPS_FROM_SOURCE` -- specifies whether to enable building the missing dependencies (Boost) from source; the default is `OFF`
 - `BUILD_TESTING` -- specifies whether to build unit tests; the default is `ON`
+- `BTAS_ASSERT_POLICY` -- specifies what `BTAS_ASSERT(x)` does if `x` is false; the valid values are
+  - `BTAS_ASSERT_THROW` -- throw `btas::exception`; this is the default if `BUILD_TESTING=ON` (the unit tests check `BTAS_ASSERT` failures, hence must be able to catch them),
+  - `BTAS_ASSERT_ABORT` -- report to `stderr` and `abort()`; this is the default otherwise, except for `Release`/`MinSizeRel` builds,
+  - `BTAS_ASSERT_IGNORE` -- do nothing; `x` is *not* evaluated, hence it must be free of side effects. This is the default for `Release`/`MinSizeRel` builds with `BUILD_TESTING=OFF` (single-config generators only; multi-config generators such as Xcode/Visual Studio default to `BTAS_ASSERT_ABORT` for every configuration, since the policy is a single configure-time choice exported to consumers).
+
+  None of the policies is affected by `NDEBUG`. The choice is exported by the `BTAS` target as the `BTAS_ASSERT_POLICY` preprocessor macro, so consumers compile against the same policy. The boolean `BTAS_ASSERT_THROWS` variable is the deprecated predecessor of `BTAS_ASSERT_POLICY`; if it is given alone it provides the initial default (`ON` -> `BTAS_ASSERT_THROW`, `OFF` -> `BTAS_ASSERT_ABORT`).
 - `TARGET_MAX_INDEX_RANK` -- specifies the rank for which the default BTAS index type will use stack; the default is `6`
