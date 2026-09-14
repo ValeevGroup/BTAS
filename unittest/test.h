@@ -3,9 +3,11 @@
 
 #include "catch.hpp"
 
-// BTAS_ASSERT failures can only be checked if BTAS_ASSERT_THROWS is defined
-#if not defined(BTAS_ASSERT_THROWS)
-#  error "unit tests require BTAS_ASSERT_THROWS to be defined, define BTAS_ASSERT_THROWS cmake option (e.g. by adding -DBTAS_ASSERT_THROWS=ON to cmake command arguments)"
+#include <btas/error.h>
+
+// BTAS_ASSERT failures can only be checked if BTAS_ASSERT throws
+#if BTAS_ASSERT_POLICY != BTAS_ASSERT_THROW
+#  error "unit tests require BTAS_ASSERT to throw, configure with the BTAS_ASSERT_POLICY cmake cache variable set to BTAS_ASSERT_THROW (e.g. by adding -DBTAS_ASSERT_POLICY=BTAS_ASSERT_THROW to cmake command arguments)"
 #endif
 
 #endif

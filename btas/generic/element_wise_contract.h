@@ -30,15 +30,15 @@ namespace btas{
     using ind_t = typename _TensorA::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename _TensorA::range_type>::ordinal_type;
 
-    BTAS_ASSERT(A.rank() == 3)
-    BTAS_ASSERT(B.rank() == 2)
-    BTAS_ASSERT(A.extent(1) == B.extent(0))
-    BTAS_ASSERT(A.extent(2) == B.extent(1))
+    BTAS_ASSERT(A.rank() == 3);
+    BTAS_ASSERT(B.rank() == 2);
+    BTAS_ASSERT(A.extent(1) == B.extent(0));
+    BTAS_ASSERT(A.extent(2) == B.extent(1));
 
     if(!C.empty()){
       BTAS_ASSERT(C.rank() == 2);
-      BTAS_ASSERT(C.extent(0) == A.extent(0))
-      BTAS_ASSERT(C.extent(1) == A.extent(2))
+      BTAS_ASSERT(C.extent(0) == A.extent(0));
+      BTAS_ASSERT(C.extent(1) == A.extent(2));
     } else{
       C = _TensorC(A.extent(0), A.extent(2));
       NumericType<value_type>::fill(std::begin(C), std::end(C), NumericType<value_type>::zero());
@@ -85,17 +85,17 @@ namespace btas{
     using ind_t = typename _TensorA::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename _TensorA::range_type>::ordinal_type;
 
-    BTAS_ASSERT(A.rank() == 3)
-    BTAS_ASSERT(B.rank() == 2)
-    BTAS_ASSERT(A.extent(1) == B.extent(0))
+    BTAS_ASSERT(A.rank() == 3);
+    BTAS_ASSERT(B.rank() == 2);
+    BTAS_ASSERT(A.extent(1) == B.extent(0));
     ind_t rank = B.extent(1),
           idx3 = A.extent(2) / rank;
     BTAS_ASSERT(A.extent(2) / idx3 == B.extent(1));
 
     if(!C.empty()){
       BTAS_ASSERT(C.rank() == 2);
-      BTAS_ASSERT(C.extent(0) == A.extent(0))
-      BTAS_ASSERT(C.extent(1) == A.extent(2))
+      BTAS_ASSERT(C.extent(0) == A.extent(0));
+      BTAS_ASSERT(C.extent(1) == A.extent(2));
     } else{
       C = _TensorC(A.extent(0), A.extent(2));
       NumericType<value_type>::fill(std::begin(C), std::end(C), NumericType<value_type>::zero());
@@ -146,15 +146,15 @@ namespace btas{
     using ind_t = typename _TensorA::range_type::index_type::value_type;
     using ord_t = typename range_traits<typename _TensorA::range_type>::ordinal_type;
 
-    BTAS_ASSERT(A.rank() == 3)
-    BTAS_ASSERT(B.rank() == 2)
-    BTAS_ASSERT(A.extent(0) == B.extent(0))
-    BTAS_ASSERT(A.extent(2) == B.extent(1))
+    BTAS_ASSERT(A.rank() == 3);
+    BTAS_ASSERT(B.rank() == 2);
+    BTAS_ASSERT(A.extent(0) == B.extent(0));
+    BTAS_ASSERT(A.extent(2) == B.extent(1));
 
     if(!C.empty()){
       BTAS_ASSERT(C.rank() == 2);
-      BTAS_ASSERT(C.extent(0) == A.extent(1))
-      BTAS_ASSERT(C.extent(1) == A.extent(2))
+      BTAS_ASSERT(C.extent(0) == A.extent(1));
+      BTAS_ASSERT(C.extent(1) == A.extent(2));
     } else{
       C = _TensorC(A.extent(0), A.extent(1));
       NumericType<value_type>::fill(std::begin(C), std::end(C), NumericType<value_type>::zero());

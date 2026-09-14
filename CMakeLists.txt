@@ -70,8 +70,31 @@ include(CTest) # defines BUILD_TESTING option
 # Configure options
 redefaultable_option(BTAS_BUILD_DEPS_FROM_SOURCE "Whether to build missing dependencies from source" OFF)
 add_feature_info(BUILD_DEPS_FROM_SOURCE BTAS_BUILD_DEPS_FROM_SOURCE "Will build missing dependencies from source")
-redefaultable_option(BTAS_ASSERT_THROWS "Whether BTAS_ASSERT should throw; enable if BUILD_TESTING=ON" ${BUILD_TESTING})
-add_feature_info(ASSERT_THROWS BTAS_ASSERT_THROWS "BTAS_ASSERT(x) will throw if x is false, and not be affected by NDEBUG")
+# BTAS_ASSERT_POLICY controls the behavior of BTAS_ASSERT; the boolean
+# BTAS_ASSERT_THROWS is its deprecated predecessor and, if given alone,
+# only provides the default
+if (DEFINED BTAS_ASSERT_THROWS AND NOT DEFINED BTAS_ASSERT_POLICY)
+  if (BTAS_ASSERT_THROWS)
+    set(BTAS_ASSERT_POLICY_DEFAULT BTAS_ASSERT_THROW)
+  else()
+    set(BTAS_ASSERT_POLICY_DEFAULT BTAS_ASSERT_ABORT)
+  endif()
+  message(DEPRECATION "BTAS_ASSERT_THROWS is deprecated; use BTAS_ASSERT_POLICY=${BTAS_ASSERT_POLICY_DEFAULT} instead")
+elseif (BUILD_TESTING)
+  # unit tests check BTAS_ASSERT failures, hence must be able to catch them
+  set(BTAS_ASSERT_POLICY_DEFAULT BTAS_ASSERT_THROW)
+elseif (CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL MinSizeRel)
+  set(BTAS_ASSERT_POLICY_DEFAULT BTAS_ASSERT_IGNORE)
+else()
+  set(BTAS_ASSERT_POLICY_DEFAULT BTAS_ASSERT_ABORT)
+endif()
+set(BTAS_ASSERT_POLICY ${BTAS_ASSERT_POLICY_DEFAULT} CACHE STRING "Controls the behavior of BTAS_ASSERT: BTAS_ASSERT_THROW makes it throw btas::exception, BTAS_ASSERT_ABORT makes it abort, BTAS_ASSERT_IGNORE makes it a no-op that does not even evaluate its argument; none of these are affected by NDEBUG; the default is BTAS_ASSERT_THROW if BUILD_TESTING=ON, else BTAS_ASSERT_IGNORE for Release/MinSizeRel builds and BTAS_ASSERT_ABORT otherwise")
+set_property(CACHE BTAS_ASSERT_POLICY PROPERTY
+    STRINGS BTAS_ASSERT_THROW BTAS_ASSERT_ABORT BTAS_ASSERT_IGNORE)
+if (NOT BTAS_ASSERT_POLICY MATCHES "^BTAS_ASSERT_(THROW|ABORT|IGNORE)$")
+  message(FATAL_ERROR "Invalid BTAS_ASSERT_POLICY=\"${BTAS_ASSERT_POLICY}\"; valid values are BTAS_ASSERT_THROW, BTAS_ASSERT_ABORT, BTAS_ASSERT_IGNORE")
+endif()
+add_feature_info("ASSERT_POLICY=${BTAS_ASSERT_POLICY}" TRUE "BTAS_ASSERT(x) will obey ${BTAS_ASSERT_POLICY} if x is false, regardless of NDEBUG")
 redefaultable_option(BTAS_USE_BLAS_LAPACK "Whether to enable BLAS/LAPACK bindings via BLAS++/LAPACK++" ON)
 add_feature_info(USE_BLAS_LAPACK BTAS_USE_BLAS_LAPACK "Will use BLAS and LAPACK linear algebra distributions via their BLAS++/LAPACK++ interfaces" )
 option(ENABLE_WFN91_LINALG_DISCOVERY_KIT "Use linear algebra discovery kit from github.com/wavefunction91 [recommended]" ON)
@@ -185,9 +208,11 @@ include(external/boost.cmake)
 ##########################
 # configure BTAS_ASSERT
 ##########################
-if (BTAS_ASSERT_THROWS)
+target_compile_definitions(BTAS INTERFACE -DBTAS_ASSERT_POLICY=${BTAS_ASSERT_POLICY})
+if (BTAS_ASSERT_POLICY STREQUAL BTAS_ASSERT_THROW)
+  # deprecated, for the benefit of code that still tests for BTAS_ASSERT_THROWS
   target_compile_definitions(BTAS INTERFACE -DBTAS_ASSERT_THROWS=1)
-endif(BTAS_ASSERT_THROWS)
+endif()
 
 ##########################
 # dox
@@ -198,6 +223,10 @@ add_subdirectory(doc)
 # checking/testing
 ##########################
 if (BUILD_TESTING)
+  # the unit tests catch BTAS_ASSERT failures, hence need BTAS_ASSERT_POLICY=BTAS_ASSERT_THROW
+  if (NOT BTAS_ASSERT_POLICY STREQUAL BTAS_ASSERT_THROW)
+    message(WARNING "BUILD_TESTING=ON requires configuring with BTAS_ASSERT_POLICY=BTAS_ASSERT_THROW to build the BTAS unit tests; will skip them, only the BTAS_ASSERT policy tests will be available")
+  endif()
   add_custom_target_subproject(btas check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V -R "btas/unit/run")
   add_subdirectory(unittest)
 else(BUILD_TESTING)

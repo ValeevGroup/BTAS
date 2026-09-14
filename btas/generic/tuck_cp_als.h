@@ -98,13 +98,13 @@ namespace btas{
     /// \param[in] reference_is_core : was the reference tensor provided to TUCKER_CP_ALS a core tensor
     /// if no compute the core tensor.
    void set_tucker_factors(std::vector<Tensor> facs, bool reference_is_core = true){
-     BTAS_ASSERT(facs.size() == this->ndim)
+     BTAS_ASSERT(facs.size() == this->ndim);
      size_t num = 0;
      tucker_factors.reserve(ndim);
      // because the reference is transformed we need the untransformed as tensor_ref
      for(auto i : facs){
-       BTAS_ASSERT(i.rank() == 2)
-       BTAS_ASSERT(i.extent((reference_is_core ? 0 : 1)) == tensor_ref.extent(num))
+       BTAS_ASSERT(i.rank() == 2);
+       BTAS_ASSERT(i.extent((reference_is_core ? 0 : 1)) == tensor_ref.extent(num));
        tucker_factors.emplace_back(i);
        ++num;
      }

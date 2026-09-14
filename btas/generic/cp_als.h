@@ -328,7 +328,7 @@ namespace btas {
       A.reserve(ndim + 1);
       auto ptr = vecs.begin();
       for(size_t num = 0; num < ndim; ++num, ++ptr) {
-        BTAS_ASSERT((*ptr).extent(1) == rank)
+        BTAS_ASSERT((*ptr).extent(1) == rank);
         this->A.emplace_back((*ptr));
       }
       this->A.emplace_back((*ptr));
