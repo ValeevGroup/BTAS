@@ -8,7 +8,7 @@ Prerequisites
 
 * C++20 compiler
 * CMake
-* Boost C++ libraries
+* Boost C++ libraries, version 1.81 or later
   - (required) Container, Iterator, Random
   - (optional) Serialization for serialization (non-header-only)
 * (used by default, strongly recommended, but can be disabled) BLAS+LAPACK libraries and their BLAS++/LAPACK++ C++ APIs for optimized operations (non-header-only)
@@ -18,7 +18,6 @@ Building and Installing
 TL;DR version
 * `cmake -S /path/to/BTAS/srcdir -B /path/to/BTAS/builddir -DCMAKE_PREFIX_PATH="/path/to/boost;/path/to/blas/and/lapack"`
 * optional: `cmake --build /path/to/BTAS/builddir --target check`
-* if configured with `-DBTAS_BUILD_DEPS_FROM_SOURCE=ON`: `cmake --build /path/to/BTAS/builddir --target build-boost-in-BTAS`
 * `cmake --build /path/to/BTAS/builddir --target install`
 
 ## obtaining prerequisites
@@ -28,9 +27,7 @@ TL;DR version
     - APT package manager (e.g., on Ubuntu Linux): `apt-get install libboost-all-dev`
     - Homebrew package manager (on MacOS) via `brew install boost`.
   - You can also try to build Boost yourself by following instructions [here](https://www.boost.org/doc/libs/1_84_0/more/getting_started/unix-variants.html).
-  - Last resort is to let BTAS build Boost from source, as a CMake _subproject_ using [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html). Unfortunately, Boost's [emerging CMake harness](https://github.com/boostorg/cmake/) used to build it is not yet fully functional, hence may not be as robust as desired. Here are some ints:
-    - Configure with CMake cache variable `BTAS_BUILD_DEPS_FROM_SOURCE` to `ON` (either via command line or the `ccmake` GUI) 
-    - If BTAS is the top-level CMake project (i.e. it is not being built as a subproject itself) installing BTAS by building its install target may not build Boost libraries automatically. Thus the user may need to build `build-boost-in-BTAS` target manually before building `install` target.
+  - Last resort is to let BTAS build Boost from source, as a CMake _subproject_ using [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) and Boost's [CMake harness](https://github.com/boostorg/cmake/): configure with CMake cache variable `BTAS_BUILD_DEPS_FROM_SOURCE` set to `ON` (either via command line or the `ccmake` GUI). The Boost libraries used by BTAS are then built and installed along with BTAS.
 
 ## useful CMake variables
 - `CMAKE_CXX_COMPILER` -- specifies the C++ compiler (by default CMake will look for the C++ compiler in `PATH`)
