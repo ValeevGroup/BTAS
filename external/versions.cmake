@@ -1,4 +1,4 @@
-set(BTAS_TRACKED_VGCMAKEKIT_TAG 256d9462bb765787f5acb69be154b26d6efba8b6)
+set(BTAS_TRACKED_VGCMAKEKIT_TAG bbcf1ec7eaabe9b9578e95bb2c28c9a120a55e1a)
 
 # oldest Boost we can tolerate ... likely can use an earlier version, but:
 # - as of oct 2023 tested with 1.71 and up only
