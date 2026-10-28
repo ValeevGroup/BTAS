@@ -10,12 +10,12 @@ jobs:
       fail-fast: false
       matrix:
         build_type : [ Release, Debug ]
-        os : [ macos-latest, ubuntu-22.04 ]
+        os : [ macos-latest, ubuntu-24.04 ]
         linalg : [netlib, vendor]
         include:
-          - os: ubuntu-22.04
-            cc: /usr/bin/gcc-12
-            cxx: /usr/bin/g++-12
+          - os: ubuntu-24.04
+            cc: /usr/bin/gcc-14
+            cxx: /usr/bin/g++-14
           - os: macos-latest
             cc: clang
             cxx: clang++
@@ -57,10 +57,10 @@ jobs:
         fi
 
     - name: Install prerequisites Ubuntu packages
-      if: ${{ matrix.os == 'ubuntu-22.04' }}
+      if: ${{ matrix.os == 'ubuntu-24.04' }}
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build g++-12 liblapack-dev libboost-dev libboost-serialization-dev libboost-random-dev libeigen3-dev openmpi-bin libopenmpi-dev libtbb-dev ccache
+        sudo apt-get install ninja-build g++-14 liblapack-dev libboost-dev libboost-serialization-dev libboost-random-dev libeigen3-dev openmpi-bin libopenmpi-dev libtbb-dev ccache
         if [ "${{matrix.build_type}}" = "Release" ]; then
           sudo apt-get install graphviz fonts-liberation
           cd ${{github.workspace}}/build
@@ -130,7 +130,7 @@ jobs:
         cmake --build test_install
 
     - name: Build+Deploy Dox
-      if: ${{ matrix.os == 'ubuntu-22.04' && matrix.build_type == 'Release' && github.ref == 'refs/heads/master' }}
+      if: ${{ matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Release' && github.ref == 'refs/heads/master' }}
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: |

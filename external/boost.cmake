@@ -62,24 +62,12 @@ endif (TARGET Boost::serialization)
 target_link_libraries(BTAS INTERFACE ${Boost_LIBRARIES})
 target_compile_definitions(BTAS INTERFACE -DBTAS_HAS_BOOST_ITERATOR=1 -DBTAS_HAS_BOOST_CONTAINER=1 -DBTAS_DEFAULT_TARGET_MAX_INDEX_RANK=${TARGET_MAX_INDEX_RANK})
 
-# add artificial dependencies on some Boost components to ensure they are built before BTAS ... this is purely to
-# account for the fact that we do not properly deduce which targets we actually depend on AND some Boost targets
-# are not built when install target is built
+# add artificial dependencies on Boost components that the install target would not build (none with the current
+# kit-cmake, which installs the Boost libraries used by BTAS and builds them with the default target)
 if (Boost_BUILT_FROM_SOURCE)
   foreach (_target IN LISTS Boost_MODULAR_TARGETS_NOT_BUILT_BY_INSTALL)
     add_dependencies(BTAS boost_${_target})
   endforeach()
-  # unfortunately install ignores dependence of BTAS on these targets, presumably because it is an INTERFACE library
-  # and install target does not really build BTAS target ... this is OK if BTAS is built as a subproject and
-  # the BTAS target is consumed by the parent project, but if BTAS is built as a standalone project, then there is no
-  # correct way to install BTAS other than to ask the user to build a target that will build+install Boost first
-  if ("${PROJECT_NAME}" STREQUAL "${CMAKE_PROJECT_NAME}")
-    message(WARNING "BTAS is built as a standalone project, but Boost is built from source and cannot not be installed automatically.\nThus to install BTAS build the \"build-boost-in-BTAS\" target first, then build the \"install\" target")
-    add_custom_target(build-boost-in-BTAS)
-    foreach(_target IN LISTS Boost_FOUND_TARGETS Boost_MODULAR_TARGETS_NOT_BUILT_BY_INSTALL)
-      add_dependencies(build-boost-in-BTAS Boost::${_target})
-    endforeach()
-  endif()
 endif()
 
 # If building unit tests, perform a compile check with Boost
